@@ -17,6 +17,8 @@ const INT_MAX = 2n ** 62n - 1n;
 const OPS = new Map<string, string>([
     ['+', 'rt_add'], ['-', 'rt_sub'], ['*', 'rt_mul'], ['/', 'rt_div'], ['%', 'rt_mod'],
     ['<', 'rt_lt'], ['<=', 'rt_le'], ['>', 'rt_gt'], ['>=', 'rt_ge'], ['==', 'rt_eq'], ['!=', 'rt_ne'],
+    ['bit/and', 'rt_bit_and'], ['bit/or', 'rt_bit_or'], ['bit/xor', 'rt_bit_xor'],
+    ['bit/shl', 'rt_bit_shl'], ['bit/shr', 'rt_bit_shr'],
 ]);
 
 // The booleans, read as the symbols the reader makes of them (D11).

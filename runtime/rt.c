@@ -40,6 +40,38 @@ rt_value rt_mod(rt_value a, rt_value b) {
     return rt_int(rt_int_of(a) % rt_int_of(b));
 }
 
+// The bit operations take two integers (D15, D17): a boolean faults `not an
+// integer`. and, or and xor are on the sign-extended two's-complement value,
+// and their result is always in range (D15), so there is no check.
+rt_value rt_bit_and(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) & rt_int_of(b)); }
+rt_value rt_bit_or(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) | rt_int_of(b)); }
+rt_value rt_bit_xor(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) ^ rt_int_of(b)); }
+
+// A shift count is 0 to 62 (D16); any other faults `bad shift`, whatever the
+// value is. A left shift is a * 2^n, checked against range; a right shift is
+// a / 2^n rounded toward negative infinity, so the sign is kept and
+// (-7 shr 1) is -4 where (/ -7 2) is -3. The count and the value are read
+// before the call, since C does not order a call's arguments.
+static rt_value shift(rt_value a, rt_value b, int left) {
+    need_ints(a, b);
+    int64_t n = rt_int_of(b);
+    if (n < 0 || n > 62) rt_fault("bad shift");
+    int64_t x = rt_int_of(a);
+    int64_t d = INT64_C(1) << n;
+    if (left) {
+        int64_t r;
+        int o = __builtin_mul_overflow(x, d, &r);
+        return checked(r, o);
+    }
+    // Floor division by 2^n: a shift is enough for x >= 0; for x < 0,
+    // (x - (d - 1)) / d rounds toward negative infinity, and the form avoids
+    // negating x, which would overflow at MIN.
+    if (x >= 0) return rt_int(x >> n);
+    return rt_int((x - (d - 1)) / d);
+}
+rt_value rt_bit_shl(rt_value a, rt_value b) { return shift(a, b, 1); }
+rt_value rt_bit_shr(rt_value a, rt_value b) { return shift(a, b, 0); }
+
 // The orderings take two integers (D12). == and != take any two values:
 // values of different types are unequal, since their bits differ (D14),
 // so comparing the bits is the comparison.

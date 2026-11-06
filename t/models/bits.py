@@ -41,8 +41,8 @@ COUNTS = [0, 1, 2, 3, 31, 62]
 
 def mod(a, b):
     """The language's remainder: the dividend's sign (D5)."""
-    q = abs(a) // abs(b)
-    return a - q * b
+    r = abs(a) % abs(b)
+    return r if a >= 0 else -r
 
 def apply(op, a, b):
     """The value, or the fault's message (D15, D16, D17)."""
@@ -61,7 +61,9 @@ def apply(op, a, b):
 
 def fold(terms):
     """A balanced tree that adds the terms mod P, so the fold never
-    overflows and its depth is O(log n), not the chain clang caps at 256."""
+    overflows and its depth is O(log n), not the chain clang caps at 256.
+    The value mirrors the program: each (+) is reduced mod P, so the value
+    is the sum of the terms mod P, taken the way the program takes it."""
     if not terms:
         return '0', 0
     if len(terms) == 1:
