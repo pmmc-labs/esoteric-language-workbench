@@ -72,7 +72,12 @@ the calculator grows only when a step of the process needs it.
   can be ported to the language itself line by line. Pick the shape that
   makes self-hosting a translation rather than a rewrite.]
 - [Constraints the host platforms impose, as you learn them. Name the
-  symptom and the fix, so the lesson isn't relearned.]
+  symptom and the fix, so the lesson isn't relearned.] C doesn't order
+  a call's arguments: never pass a variable and a call that sets it in
+  the same argument list (`runtime/rt.c`'s arithmetic read `r` before
+  `__builtin_add_overflow` set it under clang, and gcc hid it). The
+  cloud machine's `cc` is gcc; the Mac's is clang; run the suite with
+  `LANG_CC=clang` too before calling a runtime change done.
 - Comments explain why, not what.
 
 ## Toolchain

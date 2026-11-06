@@ -18,6 +18,11 @@
 
 test: unit golden checks
 
+# The golden tests under another C compiler, since the cloud machine's cc
+# is gcc and a Mac's is clang: LANG_CC=clang make golden, or this.
+golden-clang:
+	@LANG_CC=clang ./t/run.sh
+
 unit:
 	node --test "compiler/tests/**/*.test.ts"
 
@@ -44,4 +49,4 @@ check:
 clean:
 	rm -rf build
 
-.PHONY: test unit golden checks models commits hooks check clean
+.PHONY: test unit golden golden-clang checks models commits hooks check clean

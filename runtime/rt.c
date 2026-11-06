@@ -8,14 +8,18 @@
 // Arithmetic on the 64-bit values, checked against 63-bit range after
 // (D4: a result that doesn't fit faults, rather than wrapping or growing).
 // __builtin_*_overflow catches the one case 64 bits can't hold either.
+// The flag is a statement of its own: C doesn't order a call's
+// arguments, and `checked(r, overflow(..., &r))` read r before it was
+// set under clang (0 on the M2) while gcc happened to set it first.
 static rt_value checked(int64_t n, int overflowed) {
     if (overflowed || n < RT_INT_MIN || n > RT_INT_MAX) rt_fault("overflow");
     return rt_int(n);
 }
 
-rt_value rt_add(rt_value a, rt_value b) { int64_t r; return checked(r, __builtin_add_overflow(rt_int_of(a), rt_int_of(b), &r)); }
-rt_value rt_sub(rt_value a, rt_value b) { int64_t r; return checked(r, __builtin_sub_overflow(rt_int_of(a), rt_int_of(b), &r)); }
-rt_value rt_mul(rt_value a, rt_value b) { int64_t r; return checked(r, __builtin_mul_overflow(rt_int_of(a), rt_int_of(b), &r)); }
+#define RT_CHECKED(op, a, b) do { int64_t r; int o = __builtin_##op##_overflow(rt_int_of(a), rt_int_of(b), &r); return checked(r, o); } while (0)
+rt_value rt_add(rt_value a, rt_value b) { RT_CHECKED(add, a, b); }
+rt_value rt_sub(rt_value a, rt_value b) { RT_CHECKED(sub, a, b); }
+rt_value rt_mul(rt_value a, rt_value b) { RT_CHECKED(mul, a, b); }
 
 // Division truncates toward zero and the remainder takes the dividend's
 // sign, as C's do (D5). RT_INT_MIN / -1 is 2^62, past the range.
