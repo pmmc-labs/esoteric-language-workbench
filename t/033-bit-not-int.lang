@@ -1,0 +1,3 @@
+; A boolean argument to a bit operation faults (D15, D17): the
+; fault ends the program before anything prints. From t/models/bits.py.
+(+ (* 2 3) (bit/and #true 7))
