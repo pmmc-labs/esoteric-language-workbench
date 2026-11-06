@@ -141,8 +141,17 @@ def trimmed(messages, keep, elide):
         if i in old and len(m.get("content", "")) > elide:
             m = dict(m, content=f"[{len(m['content'])} characters, cut from the context to save room; "
                                 f"read the file or run the command again if you need it]")
+        elif m.get("role") == "assistant" and m.get("thinking"):
+            # A thinking model's reasoning is its own, done with; resending
+            # it every turn is what filled the context in round 2.
+            m = {k: v for k, v in m.items() if k != "thinking"}
         out.append(m)
     return out
+
+
+def size(messages):
+    """A rough token count of what's sent, four characters a token."""
+    return sum(len(json.dumps(m)) for m in messages) // 4
 
 
 def resume(path, messages):
@@ -177,8 +186,8 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--timeout", type=int, default=600, help="seconds a command may run")
     ap.add_argument("--think", choices=["on", "off", "default"], default="default")
-    ap.add_argument("--keep", type=int, default=6, help="tool results kept in full, the newest")
-    ap.add_argument("--elide", type=int, default=1500, help="an older result longer than this is cut")
+    ap.add_argument("--keep", type=int, default=4, help="tool results kept in full, the newest")
+    ap.add_argument("--elide", type=int, default=1200, help="an older result longer than this is cut")
     ap.add_argument("--resume", action="store_true", help="continue from --out/transcript.jsonl")
     a = ap.parse_args()
 
@@ -201,7 +210,11 @@ def main():
     started = time.time()
 
     while totals["steps"] < a.max_steps and report is None:
-        payload = {"model": a.model, "messages": trimmed(messages, a.keep, a.elide), "tools": TOOLS,
+        sent = trimmed(messages, a.keep, a.elide)
+        est = size(sent)
+        if est > a.num_ctx * 0.8:
+            print(f"  context estimate {est} tokens, near --num-ctx {a.num_ctx}", file=sys.stderr)
+        payload = {"model": a.model, "messages": sent, "tools": TOOLS,
                    "stream": False, "options": {"temperature": 0, "seed": a.seed, "num_ctx": a.num_ctx}}
         if a.think != "default":
             payload["think"] = a.think == "on"
@@ -222,6 +235,7 @@ def main():
         messages.append(msg)
         calls = msg.get("tool_calls") or []
         transcript.write(json.dumps({"step": totals["steps"], "seconds": round(dt, 1),
+                                     "context_estimate": est,
                                      "prompt_eval_count": reply.get("prompt_eval_count"),
                                      "eval_count": reply.get("eval_count"),
                                      "message": msg}) + "\n")

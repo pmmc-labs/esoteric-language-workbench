@@ -42,7 +42,13 @@ with the same `--out` rebuilds the conversation from the transcript and
 goes on, the worktree being as the model left it. Ollama's own reason
 for a 5xx is in its log, on a Mac `~/.ollama/logs/server.log`; the
 usual ones are the context filling up and a tool call the server
-couldn't parse. `--think on|off` sets ollama's
+couldn't parse. Round 2's first attempt died that way on the M2 Max:
+the prompt had grown to 51,000 tokens, past the 32,768 asked for, and
+ollama's MLX runner prefilled it anyway until the GPU ran out of memory
+at 22 GiB. So on 32 GB with a 27B model, `--num-ctx 24576` is the safer
+setting, and the loop now cuts old results and never resends a thinking
+model's reasoning, and warns when its own estimate of the context nears
+the limit. `--think on|off` sets ollama's
 thinking switch for models that have one; the default leaves it to the
 model. `--max-steps` (80) ends a run that doesn't call `done`.
 
