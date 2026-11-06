@@ -30,6 +30,12 @@ test('what is not an operator is refused at its position', () => {
     fails('((+ 1 2) 3 4)', 'not an operator: list', 1, 2);
 });
 
+test('if takes three parts (D13)', () => {
+    fails('(if #true 1)', 'if takes 3 arguments, not 2', 1, 1);
+    fails('(if)', 'if takes 3 arguments, not 0', 1, 1);
+    fails('(+ 1 (if #true 2 3 4))', 'if takes 3 arguments, not 4', 1, 6);
+});
+
 test('the C for a nested expression', () => {
     assert.match(compileProgram(read('(* (+ 1 2) -3)')), /rt_mul\(rt_add\(rt_int\(1LL\), rt_int\(2LL\)\), rt_int\(-3LL\)\)/);
 });

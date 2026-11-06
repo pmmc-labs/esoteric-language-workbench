@@ -16,7 +16,14 @@ static rt_value checked(int64_t n, int overflowed) {
     return rt_int(n);
 }
 
-#define RT_CHECKED(op, a, b) do { int64_t r; int o = __builtin_##op##_overflow(rt_int_of(a), rt_int_of(b), &r); return checked(r, o); } while (0)
+// An integer's operand: a boolean or anything else that isn't one faults
+// (D14), which is what the checks before arithmetic are for.
+static int64_t int_arg(rt_value v) {
+    if ((v & 1) != RT_INT_TAG) rt_fault("not an integer");
+    return rt_int_of(v);
+}
+
+#define RT_CHECKED(op, a, b) do { int64_t x = int_arg(a); int64_t y = int_arg(b); int64_t r; int o = __builtin_##op##_overflow(x, y, &r); return checked(r, o); } while (0)
 rt_value rt_add(rt_value a, rt_value b) { RT_CHECKED(add, a, b); }
 rt_value rt_sub(rt_value a, rt_value b) { RT_CHECKED(sub, a, b); }
 rt_value rt_mul(rt_value a, rt_value b) { RT_CHECKED(mul, a, b); }
@@ -24,16 +31,43 @@ rt_value rt_mul(rt_value a, rt_value b) { RT_CHECKED(mul, a, b); }
 // Division truncates toward zero and the remainder takes the dividend's
 // sign, as C's do (D5). RT_INT_MIN / -1 is 2^62, past the range.
 rt_value rt_div(rt_value a, rt_value b) {
-    if (rt_int_of(b) == 0) rt_fault("division by zero");
-    return checked(rt_int_of(a) / rt_int_of(b), 0);
+    int64_t x = int_arg(a);
+    int64_t y = int_arg(b);
+    if (y == 0) rt_fault("division by zero");
+    return checked(x / y, 0);
 }
 rt_value rt_mod(rt_value a, rt_value b) {
-    if (rt_int_of(b) == 0) rt_fault("division by zero");
-    return rt_int(rt_int_of(a) % rt_int_of(b));
+    int64_t x = int_arg(a);
+    int64_t y = int_arg(b);
+    if (y == 0) rt_fault("division by zero");
+    return rt_int(x % y);
+}
+
+// The orderings check both operands are integers (D12); each reads its
+// operands into a statement of its own, as the arithmetic does above.
+#define RT_ORDER(name, op) rt_value rt_##name(rt_value a, rt_value b) { int64_t x = int_arg(a); int64_t y = int_arg(b); return rt_bool(x op y); }
+RT_ORDER(lt, <)
+RT_ORDER(le, <=)
+RT_ORDER(gt, >)
+RT_ORDER(ge, >=)
+
+// Equality is on any two values: the encodings are unique, so an integer
+// is never equal to a boolean, and two values of different types are
+// #false rather than a fault (D12).
+rt_value rt_eq(rt_value a, rt_value b) { return rt_bool(a == b); }
+rt_value rt_ne(rt_value a, rt_value b) { return rt_bool(a != b); }
+
+// The test of an `if` must be a boolean (D13); anything else faults.
+int rt_truth(rt_value v) {
+    if (v == RT_TRUE) return 1;
+    if (v == RT_FALSE) return 0;
+    rt_fault("not a boolean");
 }
 
 void rt_print(rt_value v) {
     if ((v & 1) == RT_INT_TAG) printf("%lld", (long long)rt_int_of(v));
+    else if (v == RT_TRUE) printf("#true");
+    else if (v == RT_FALSE) printf("#false");
     else rt_fault("unknown value");
 }
 

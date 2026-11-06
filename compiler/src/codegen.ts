@@ -11,7 +11,14 @@ const INT_MAX = 2n ** 62n - 1n;
 
 // Each operator's runtime function and how many arguments it takes (D3:
 // two, no variadic arithmetic, so (- 1) is an error rather than a guess).
-const OPS: Record<string, string> = { '+': 'rt_add', '-': 'rt_sub', '*': 'rt_mul', '/': 'rt_div', '%': 'rt_mod' };
+// The comparisons give a boolean (D12); the runtime checks the types.
+const OPS: Record<string, string> = {
+    '+': 'rt_add', '-': 'rt_sub', '*': 'rt_mul', '/': 'rt_div', '%': 'rt_mod',
+    '<': 'rt_lt', '<=': 'rt_le', '>': 'rt_gt', '>=': 'rt_ge', '==': 'rt_eq', '!=': 'rt_ne',
+};
+
+// The two booleans are names the reader gives as symbols (D11).
+const CONSTANTS: Record<string, string> = { '#true': 'RT_TRUE', '#false': 'RT_FALSE' };
 
 const fail = (f: Form, message: string): never => { throw new CompileError(message, f.pos.line, f.pos.col); };
 
@@ -20,9 +27,17 @@ const compileExpr = (f: Form): string => {
         if (f.value < INT_MIN || f.value > INT_MAX) fail(f, 'integer out of range');
         return `rt_int(${f.value}LL)`;
     }
-    if (f.kind === 'symbol') return fail(f, `unknown name ${f.name}`);
+    if (f.kind === 'symbol') {
+        if (f.name in CONSTANTS) return CONSTANTS[f.name]!;
+        return fail(f, `unknown name ${f.name}`);
+    }
     const [head, ...args] = f.items;
     if (head === undefined) return fail(f, 'empty call');
+    // `if` is a special form, not an operator: only the taken branch runs (D13).
+    if (head.kind === 'symbol' && head.name === 'if') {
+        if (args.length !== 3) fail(f, `if takes 3 arguments, not ${args.length}`);
+        return `(rt_truth(${compileExpr(args[0]!)}) ? (${compileExpr(args[1]!)}) : (${compileExpr(args[2]!)}))`;
+    }
     if (head.kind !== 'symbol' || !(head.name in OPS)) return fail(head, `not an operator: ${head.kind === 'symbol' ? head.name : head.kind}`);
     if (args.length !== 2) return fail(f, `${head.name} takes 2 arguments, not ${args.length}`);
     return `${OPS[head.name]}(${compileExpr(args[0]!)}, ${compileExpr(args[1]!)})`;

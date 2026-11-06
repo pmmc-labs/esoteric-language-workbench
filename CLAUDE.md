@@ -12,14 +12,21 @@ per era, dense, with golden test numbers and `Dn` references, so a
 claim can be checked against a test and a decision. Say what's **Next**
 at the end, and what's a candidate but not agreed. The workbench's own:]
 
-**Steps 0 and 1 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
+**Steps 0, 1 and 2 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
 with positions, a program of one expression compiled to C and linked
 with `runtime/rt.c` (D2), integers of 63 bits (D4), the five operators
 on two arguments each (D3), division C's way (D5), faults ending the
 program (D6; golden tests 000, 001, and 010 to 015 from
 `t/models/arith.py`), compile errors as unit tests (D7), and the
-mechanical checks, `t/checks.py` (D8, D10). **Next:** nothing agreed;
-the calculator grows only when a step of the process needs it.
+mechanical checks, `t/checks.py` (D8, D10). Step 2 adds `#true` and
+`#false` as immediates with tag `11` (D11, D14), the six comparisons
+(D12; the orderings fault `not an integer`, `==` and `!=` take any two
+values), and `if` as a special form in `codegen.ts` that evaluates only
+the taken branch and faults `not a boolean` on a non-boolean test (D13);
+golden tests 020 to 024 from `t/models/compare.py` and by hand. The
+compiler reports an `if` with other than three parts as a unit test.
+**Next:** nothing agreed; the calculator grows only when a step of the
+process needs it.
 
 ## Read first, in this order
 

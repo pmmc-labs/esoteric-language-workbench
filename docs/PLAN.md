@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 and 1 are done; the mechanical checks came with 1. Step 2 is written, with its tests red, as the experiment of `docs/MODELS.md`: a medium model and a small one each build it cold.
+**Progress:** steps 0, 1 and 2 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: a small model built it from the written step.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -70,7 +70,7 @@ written.
 - Compile errors (arity, an unknown name, not an operator) as unit
   tests (D7).
 
-### 2. Booleans, comparisons and `if`
+### 2. Booleans, comparisons and `if` (done)
 
 Size: medium. The decisions are made (D11 to D14), the model is written
 (`t/models/compare.py`), and the tests exist and fail: 020 to 024. The
