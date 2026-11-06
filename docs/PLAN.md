@@ -186,24 +186,33 @@ branches of its own, not on main: `exp-step0` (the repo at step 0,
 with history) and `exp-step0-clean` (without), `prop-opus`,
 `prop-sonnet` and `prop-haiku` (the proposals), and `build-opus`,
 `build-sonnet` and `build-haiku` (each built by the tier its Size line
-named). Open from it: `t/referee/calc.py` is recursive and fails past
-about 1,000 levels; write it as a loop.
+named). `t/referee/calc.py` was recursive and failed past about 1,000
+levels; it's a loop now, 100,000 deep, and `PROCESS.md` says a referee
+is written as one.
 
-### 5. [Local bindings.] Referee: [decide]. Size: medium.
+### 5. A budget: `(within n expr)` (an experiment, not agreed)
 
-### 5. [Heap values.]
+The next experiment of `docs/MODELS.md` ("The untested case"): one line
+of decision from the person, `(within n expr)` evaluates `expr` with a
+budget of `n` operations and faults when it's spent, and the rest for
+proposers to invent, on a step with no textbook. Not to be built on
+main until the experiment has run and the person has picked.
 
-### 6. [Procedures, calls and tail calls.]
+### 6. [Local bindings.] Referee: [decide]. Size: medium.
 
-### 7. [Closures.]
+### 7. [Heap values.]
 
-### 8. [Whatever the language is really about: its core rule.]
+### 8. [Procedures, calls and tail calls.]
 
-### 9. [The prelude, in the language.]
+### 9. [Closures.]
 
-### 10. [Examples: ports of existing programs, each a golden test.]
+### 10. [Whatever the language is really about: its core rule.]
 
-### 11. [Tooling: the runtime cached, tests in parallel, the guide's
+### 11. [The prelude, in the language.]
+
+### 12. [Examples: ports of existing programs, each a golden test.]
+
+### 13. [Tooling: the runtime cached, tests in parallel, the guide's
 code checked.]
 
 ## Proposals

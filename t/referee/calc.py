@@ -13,6 +13,11 @@ The builder of a step does not read this file: that's what makes the
 referee's agreement with the builder's model worth something. The
 judge runs it.
 
+Both the reader and the evaluator are loops with a stack of their own,
+not recursive functions: a program may nest thousands deep, and the
+first version of this file, recursive, failed past about a thousand
+where a builder's tests went deeper.
+
     python3 t/referee/calc.py t/010-arith.lang
 """
 
@@ -52,6 +57,14 @@ def shift_count(n):
         raise Fault('bad shift')
     return n
 
+# D19: a negative exponent faults; 0 ** 0 is 1 as Python's is.
+def power(a, b):
+    if b < 0:
+        raise Fault('bad exponent')
+    if b > 64 and abs(a) >= 2:
+        raise Fault('overflow')
+    return fit(a ** b)
+
 BIN = {
     '+': lambda a, b: fit(need_int(a) + need_int(b)),
     '-': lambda a, b: fit(need_int(a) - need_int(b)),
@@ -72,15 +85,8 @@ BIN = {
     '**': lambda a, b: power(need_int(a), need_int(b)),
 }
 
-# D19: a negative exponent faults; 0 ** 0 is 1 as Python's is.
-def power(a, b):
-    if b < 0:
-        raise Fault('bad exponent')
-    if b > 64 and abs(a) >= 2:
-        raise Fault('overflow')
-    return fit(a ** b)
-
-# The reader: integers, symbols, lists; ; comments.
+# The reader: integers, symbols, lists; `;` comments. A list is built on
+# a stack of open lists, so depth costs nothing but memory.
 def read(src):
     toks, i = [], 0
     while i < len(src):
@@ -97,37 +103,72 @@ def read(src):
             while j < len(src) and not src[j].isspace() and src[j] not in '();':
                 j += 1
             toks.append(src[i:j]); i = j
-    def form(k):
-        t = toks[k]
+    forms, stack = [], []
+    for t in toks:
         if t == '(':
-            items, k = [], k + 1
-            while toks[k] != ')':
-                item, k = form(k)
-                items.append(item)
-            return items, k + 1
-        d = t[1:] if t.startswith('-') else t
-        return (int(t) if d.isdigit() else t), k + 1
-    forms, k = [], 0
-    while k < len(toks):
-        f, k = form(k)
-        forms.append(f)
+            stack.append([])
+        elif t == ')':
+            done = stack.pop()
+            (stack[-1] if stack else forms).append(done)
+        else:
+            d = t[1:] if t.startswith('-') else t
+            atom = int(t) if d.isdigit() else t
+            (stack[-1] if stack else forms).append(atom)
+    assert not stack, "missing ')'"
     return forms
 
-def ev(f):
+def atom_value(f):
     if isinstance(f, int):
         return f
     if f == '#true':
         return True
     if f == '#false':
         return False
-    head, *args = f
-    if head == 'if':
-        t = ev(args[0])
-        if not isinstance(t, bool):
-            raise Fault('not a boolean')
-        return ev(args[1]) if t else ev(args[2])
-    # Arguments left to right; which fault wins when both would is open.
-    return BIN[head](ev(args[0]), ev(args[1]))
+    raise KeyError(f)
+
+# Evaluation as a loop: a frame is a list form, how far along it is, and
+# the values so far. An `if` evaluates its test, then only the taken
+# branch (D13); an operator evaluates both arguments left to right, then
+# applies.
+def ev(form):
+    if not isinstance(form, list):
+        return atom_value(form)
+    stack = [[form, 0, []]]
+    result = None
+    while stack:
+        f, i, vals = stack[-1]
+        head, args = f[0], f[1:]
+        if head == 'if':
+            if i == 0:
+                stack[-1][1] = 1
+                nxt = args[0]
+            elif i == 1:
+                t = vals[0]
+                if not isinstance(t, bool):
+                    raise Fault('not a boolean')
+                stack[-1][1] = 2
+                nxt = args[1] if t else args[2]
+            else:
+                result = vals[1]
+                stack.pop()
+                if stack:
+                    stack[-1][2].append(result)
+                continue
+        else:
+            if i < 2:
+                stack[-1][1] = i + 1
+                nxt = args[i]
+            else:
+                result = BIN[head](vals[0], vals[1])
+                stack.pop()
+                if stack:
+                    stack[-1][2].append(result)
+                continue
+        if isinstance(nxt, list):
+            stack.append([nxt, 0, []])
+        else:
+            stack[-1][2].append(atom_value(nxt))
+    return result
 
 def show(v):
     return '#true' if v is True else '#false' if v is False else str(v)

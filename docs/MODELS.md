@@ -379,15 +379,53 @@ next time.
 | Decisions | 6 | 8 | 9, numbered from D20 around the history |
 | Traps decided (division rule, zero divisor, min / -1, overflow at 63 bits, evaluation order) | all | all | all |
 | Compile errors with messages and positions decided | yes | yes | yes |
+| The order of compile errors within one form decided | yes (D13: shape, then operator, then operands) | no | no |
+| The integer literal's rule a decision of its own, with the warning that a model's `int()` takes more | folded into D13 | yes (D9) | `+5` only (D22) |
 | Straight-line C, a temporary per operand, settling C's argument order and clang's bracket limit at once | yes | yes | yes |
 | Tests planned, and where their outputs come from | 17: 2 by hand, 15 from a model | 29: 26 worked by hand in the step text, 3 from a model | 16, all from a model |
 | Referee | written; cross-checked against C with a 128-bit range on 51,000 pairs | written, iterative, so 1,000-deep programs work | written; self-checked on 30 cases |
 | Size line | medium, effort high, with the argument | medium, with the argument | large, saying it wasn't a large-model proposal |
-| The brief's gate | stop if the builder is smaller than the Size | the same | the same, and stop unless the person has picked the decisions |
+| The brief's gate | stop if the builder is smaller than the Size | the same, and "decide nothing; stop" | the same, and stop unless the person has picked the decisions |
+| Forbids the builder the git history | yes | no | no |
+| Referee survives 1,000-deep programs | no, recursive | yes, a loop, because its own tests go that deep | no, recursive |
 
 All three referees agree with each other and with this repo's on every
 trap. All three decided the same semantics, by the same reasoning,
-differing in the fault's name and in whether `%` came now.
+differing in the fault's name and in whether `%` came now. Read closely
+(at high effort, after the first write-up at low), the three differ in
+more than length:
+
+- **Opus** decided the one thing the other two left: the order in which
+  a form's errors are reported. Both other builders hit exactly that
+  silence and decided it themselves. Its test 012 weights the four sign
+  cases of division so that a floored one shows in a single number, one
+  test for the trap. Its rejections are argued to the point where the
+  reader can see why: variadic `+` is "four decisions for a shorthand".
+- **Sonnet** made the integer literal's rule a decision, with the
+  warning a model needs about Python's `int()`, which the others left
+  to an aside. Its D14, with the depth its tests reach and where Node's
+  stack gives out, is the most concrete. Its weak spot is the generated
+  test `mixed`: the step said "about 300 operations, a generator written
+  out", and left the rest to the builder, who then chose a seed by
+  taste and rejected one whose value came out 0. The content of a
+  golden test came from the builder's judgement, which is the thing a
+  model exists to remove; the referee covered it, but a proposal fixes
+  the generator or drops the test. Its D15 keeps `can't compile symbol
+  yet` as a permanent message.
+- **Haiku**'s reason for leaving `%` out doesn't hold: the rule it says
+  `%` would need, the dividend's sign, is a line, and its D24 already
+  took the harder half of the same decision. Its sixteen programs are
+  the best-chosen set of the three (`mul-wraps` for the 64-bit wrap,
+  three orderings for the fault order), and all of their expected
+  outputs come from the model, so the person has nothing to read by
+  eye. Numbering from D20 around the history was reasonable and leaves
+  a note in the log that refers to history the log otherwise doesn't.
+
+Two complaints the builders made were not the proposers' errors: "the
+thirty commands" for fifteen tests was right, two a test, and the
+builder miscounted; and the wrong paths in Haiku's brief came from the
+experiment's own setup, the brief written in one worktree and built in
+another.
 
 ### The builds
 
@@ -412,19 +450,26 @@ the person accepted D20 to D28 as proposed, since its gate required it.
 | Tokens, tool calls, time | 112K, 19, 2.9 min | 131K, 31, 7.7 min | 125K, 28, 5.1 min |
 
 No builder had to decide a semantic. What was left to them was the
-order of compile errors and the construction of a generated test,
-which is the right residue: a proposal that decides the traps leaves a
-builder only shape.
+order of compile errors, which Opus alone had decided, and the
+construction of a generated test, which Sonnet's step had left open.
+Sonnet's builder decided both and reported them, against its own
+brief's "decide nothing; stop": the flag-and-build fallback won over
+the brief's words, which is what this page now says it should as a
+sub-agent, and the brief should have said.
 
 ### What this says
 
 On this step, every tier wrote a proposal a builder could take cold,
-with the traps decided before the builder met them. The differences
-were in thoroughness, not in kind: Sonnet's step text, with its 26
+with the traps decided before the builder met them. Most of the
+differences were in thoroughness: Sonnet's step text, with its 26
 hand-worked outputs, was the one to hand over; Opus's referee was the
 most verified; Haiku's was the most careful about what it wasn't
 entitled to decide, and the only one that made the person's picks a
-gate. Against this page's claim that proposals are large work and not
+gate. One difference was in kind, and it went the way the tiers
+predict: the one silence a builder had to fill, Opus had closed and
+the others hadn't. That's small on this step, where the silence was
+the order of error messages. On a step whose silences are semantics,
+it's the whole job. Against this page's claim that proposals are large work and not
 to delegate: on a step with textbook semantics, that was too strong.
 Integer arithmetic has a right answer every tier knows, and no
 proposal had to invent. Whether that holds for a step whose semantics
@@ -439,11 +484,69 @@ to ask, flag and proceed is the cheaper default, since the suite and
 the referee catch what a smaller builder gets wrong; stop is for a
 session where a person can answer.
 
-Two small things the round found: this repo's referee is recursive
-and fails past about 1,000 levels of nesting, where Sonnet's is
-iterative, so a referee should be written as a loop; and `make hooks`
-in a worktree writes the hook into the main checkout's git directory,
-which every builder reported as a write it was told not to make.
+Two small things the round found. A referee is as deep as its
+proposer's tests: this repo's and two of the three proposers' were
+recursive and fail past about 1,000 levels, and would have failed
+Sonnet's tests; only Sonnet's, whose plan said its tests nest 1,000
+deep, was a loop. This repo's is a loop now, and `PROCESS.md` says a
+referee is written as one. And `make hooks` in a worktree writes the
+hook into the main checkout's git directory, which every builder
+reported as a write it was told not to make.
+
+## The untested case, and how to test it
+
+Every round so far had a textbook behind it. Integer arithmetic,
+comparisons, shifts and powers have right answers that every tier
+knows, so "decided the traps" meant "wrote down the known answer
+before the builder met it". The claim this page makes about large
+work is about the other case: semantics that are the language's own,
+where there's nothing to know and the proposer has to invent a rule
+that holds together, and where a silence isn't a missing textbook
+line but a hole a builder fills with whatever is nearest.
+
+The design, to run when wanted:
+
+- **The step.** A budget: `(within n expr)` evaluates `expr` with a
+  budget of `n` operations and faults when it's spent. One line of
+  decision from the person, as D18 was. Everything else is the
+  proposer's to invent, and none of it has a textbook: what counts as
+  an operation (each operator applied? a literal? the test of an
+  `if`? the `within` itself?), how `**` counts when the runtime loops
+  62 times for it, what a budget inside a budget means (its own, or
+  the lesser of the two, or both drawn down), a budget of 0, a
+  budget exhausted in the branch an `if` doesn't take, whether a
+  fault inside `within` is the fault or the budget's, what the fault
+  is called. Each has three defensible answers and the proposal has
+  to pick one and make the others fit it.
+- **The base.** The calculator as it stands after step 4, on an
+  orphan branch with no history, so `if` and `**` exist for the
+  budget to interact with.
+- **The proposers.** Opus, Sonnet and Haiku at high effort, cold, with
+  the proposal brief of the last round: decisions, step, referee,
+  brief, no build. The referee has to count, which is new: the one
+  for this repo evaluates, it doesn't meter.
+- **The builds.** Each proposal to the builder its Size line names,
+  as before. Each proposal's referee run over each other proposal's
+  tests as well as its own, which on a textbook step would agree and
+  on this one won't: where two referees disagree on a test, the
+  decisions of the test's proposer say which is right, and a proposer
+  whose decisions don't say has left the hole the experiment is for.
+- **The judge's reading**, since there's no right answer to count
+  against: for each proposal, the questions above and whether each is
+  decided; whether the decisions contradict each other; whether each
+  rule is tied to an existing decision by analogy or stands alone;
+  whether the tests reach the edges (nested budgets, zero, a budget
+  larger than needed, exhaustion in the untaken branch); and what
+  the builder reported as silence.
+- **What it costs:** about what the last round did, three proposals
+  and three builds, and a read of six referees against six test sets.
+
+The prediction to test is the one above: that on a step with no
+textbook, the number of silences a builder has to fill separates the
+tiers, and that the large tier's decisions hold together where the
+others' leave holes or contradict. If that doesn't happen, the claim
+that proposals are large work has no support left, and this page
+should say so.
 
 ## What to expect, by tier, on this process
 

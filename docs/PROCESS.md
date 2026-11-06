@@ -187,6 +187,12 @@ whose tests are a few lines by hand, or whose output is a direct read
 of the definition. Writing the referee is large work, and it's written
 or extended before the step is handed to a builder.
 
+And one rule of shape: a referee's reader and evaluator are loops with
+a stack of their own, not recursive functions. A program nests as deep
+as a test wants, and a referee that recurses is as deep as its own
+author's tests happened to go; this repo's failed past a thousand
+levels the first time a builder's tests went deeper.
+
 Two rules keep it honest. The builder of a step doesn't read the
 referee, so that agreement means two derivations and not one copied.
 And the referee is checked against the suite before it judges: this
