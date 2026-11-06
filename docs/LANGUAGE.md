@@ -24,7 +24,7 @@ sign: `(/ -7 2)` is `-3` and `(% -7 2)` is `-1`.
 
 `;` starts a comment, to the end of the line.
 
-## Booleans, comparisons and `if` (step 2, being built)
+## Booleans, comparisons and `if`
 
 `#true` and `#false`. `<`, `<=`, `>` and `>=` compare two integers and
 give a boolean; `==` and `!=` compare any two values. `(if test then

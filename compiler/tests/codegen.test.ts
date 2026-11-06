@@ -33,3 +33,24 @@ test('what is not an operator is refused at its position', () => {
 test('the C for a nested expression', () => {
     assert.match(compileProgram(read('(* (+ 1 2) -3)')), /rt_mul\(rt_add\(rt_int\(1LL\), rt_int\(2LL\)\), rt_int\(-3LL\)\)/);
 });
+
+test('a comparison takes two arguments (D12)', () => {
+    fails('(< 1 2 3)', '< takes 2 arguments, not 3', 1, 1);
+    fails('(== 1)', '== takes 2 arguments, not 1', 1, 1);
+});
+
+test('if takes three parts, its test first (D13)', () => {
+    fails('(if 1 2)', 'if takes 3 arguments, not 2', 1, 1);
+    fails('(if)', 'if takes 3 arguments, not 0', 1, 1);
+    fails('(+ 1 (if #true 2 3 4))', 'if takes 3 arguments, not 4', 1, 6);
+    assert.match(compileProgram(read('(if (< 1 2) #true 0)')), /rt_test\(rt_lt\(rt_int\(1LL\), rt_int\(2LL\)\)\) \? RT_TRUE : rt_int\(0LL\)/);
+});
+
+test('the booleans are their own names, and nothing else is', () => {
+    fails('#maybe', 'unknown name #maybe', 1, 1);
+    assert.match(compileProgram(read('#false')), /return RT_FALSE;/);
+});
+
+test('a name the prototype of an object has is not an operator', () => {
+    fails('(toString 1 2)', 'not an operator: toString', 1, 2);
+});

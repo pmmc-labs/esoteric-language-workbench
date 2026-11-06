@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 and 1 are done; the mechanical checks came with 1. Step 2 is written, with its tests red, as the experiment of `docs/MODELS.md`: a medium model and a small one each build it cold.
+**Progress:** steps 0, 1 and 2 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -70,12 +70,14 @@ written.
 - Compile errors (arity, an unknown name, not an operator) as unit
   tests (D7).
 
-### 2. Booleans, comparisons and `if`
+### 2. Booleans, comparisons and `if` (done)
 
-Size: medium. The decisions are made (D11 to D14), the model is written
-(`t/models/compare.py`), and the tests exist and fail: 020 to 024. The
-step is done when `make test` passes with no test or model changed, and
-`make sanitize` and `make golden-clang` pass too.
+Size: medium. The decisions were made (D11 to D14), the model is
+`t/models/compare.py`, and the tests 020 to 024 were red until the step. It
+is done: `make test`, `make sanitize` and `make golden-clang` pass with no
+test or model changed. One thing landed differently from the text: the
+reader still makes `#true` and `#false` symbols, and `codegen.ts` gives them
+their meaning.
 
 - `#true` and `#false` (D11): read as themselves (today the reader
   makes them symbols; either the reader or `codegen.ts` may give them

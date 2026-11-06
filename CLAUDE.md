@@ -12,14 +12,20 @@ per era, dense, with golden test numbers and `Dn` references, so a
 claim can be checked against a test and a decision. Say what's **Next**
 at the end, and what's a candidate but not agreed. The workbench's own:]
 
-**Steps 0 and 1 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
+**Steps 0 to 2 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
 with positions, a program of one expression compiled to C and linked
 with `runtime/rt.c` (D2), integers of 63 bits (D4), the five operators
 on two arguments each (D3), division C's way (D5), faults ending the
 program (D6; golden tests 000, 001, and 010 to 015 from
 `t/models/arith.py`), compile errors as unit tests (D7), and the
-mechanical checks, `t/checks.py` (D8, D10). **Next:** nothing agreed;
-the calculator grows only when a step of the process needs it.
+mechanical checks, `t/checks.py` (D8, D10). Step 2 (D11 to D14):
+`#true` and `#false` as immediates tagged `11` (golden tests 021, 023,
+024), the six comparisons on integers, `==` and `!=` on any values
+(020, from `t/models/compare.py`), and `if`, the test checked to be a
+boolean, only the taken branch run (022); built by Haiku 5.5 on a step
+marked medium. **Next:** nothing agreed; step 3 is still a placeholder
+in the plan, and the calculator grows only when a step of the process
+needs it.
 
 ## Read first, in this order
 
