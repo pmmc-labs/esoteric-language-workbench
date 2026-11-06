@@ -14,3 +14,50 @@ test('an integer past 63 bits is refused where it is', () => {
 test('a program is one form', () => {
     assert.throws(() => compileProgram(read('1 2')), /one form/);
 });
+
+// D15: each malformed form, with its message and where it is reported.
+// The expected values come from the decision, not from running the
+// compiler.
+const refused = (src: string, message: string, line: number, col: number) =>
+    assert.throws(() => compileProgram(read(src)), (e: unknown) =>
+        e instanceof CompileError && e.message === message && e.line === line && e.col === col);
+
+test('an empty form is reported at its (', () => refused('\n  ()', 'empty form', 2, 3));
+
+test('a head that is not a symbol is reported at the head', () => {
+    refused('(1 2)', 'expected an operator', 1, 2);
+    refused('( (+ 1 2) 3)', 'expected an operator', 1, 3);
+});
+
+test('an unknown operator is reported at the head', () => refused('\n (foo 1 2)', "unknown operator 'foo'", 2, 3));
+
+test('an operand count other than two is reported at the call', () => {
+    refused('(+ 1)', "'+' takes 2 arguments, got 1", 1, 1);
+    refused(' (+ 1 2 3)', "'+' takes 2 arguments, got 3", 1, 2);
+    refused('(%)', "'%' takes 2 arguments, got 0", 1, 1);
+});
+
+test('a symbol as a program or an operand is reported at the symbol', () => {
+    refused('\n  x', "can't compile symbol yet", 2, 3);
+    refused('+', "can't compile symbol yet", 1, 1);
+    refused('(+ 1 +)', "can't compile symbol yet", 1, 6);
+});
+
+test('an integer past 63 bits as an operand is reported at the integer', () =>
+    refused('(- 1 -4611686018427387905)', 'integer out of range', 1, 6));
+
+test('the outer form\'s error comes before the inner one\'s', () => {
+    refused('(foo (bar 1 2))', "unknown operator 'foo'", 1, 2);
+    refused('(+ (bar 1 2))', "'+' takes 2 arguments, got 1", 1, 1);
+    refused('(+ x (bar 1 2) 3)', "'+' takes 2 arguments, got 3", 1, 1);
+});
+
+test('left comes before right', () => {
+    refused('(+ (foo) (bar))', "unknown operator 'foo'", 1, 5);
+    refused('(+ x (foo))', "can't compile symbol yet", 1, 4);
+});
+
+test('a malformed form after an operand that would fault is still a compile error', () => {
+    refused('(+ (/ 1 0) (foo))', "unknown operator 'foo'", 1, 13);
+    refused('(+ (* 4611686018427387903 4611686018427387903) x)', "can't compile symbol yet", 1, 48);
+});
