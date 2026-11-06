@@ -22,6 +22,15 @@ operator applied to two expressions:
 and truncates toward zero, and `%` is the remainder, with the dividend's
 sign: `(/ -7 2)` is `-3` and `(% -7 2)` is `-1`.
 
+An operation's operands are evaluated left to right, and the first fault
+reached in that order is the program's. Within one operation the order is:
+its operands, then the budget's charge (see Budgets), then the check that
+its arguments are the right type, then its own checks (overflow, division
+by zero, a bad shift count, a bad exponent). So `(+ #true (/ 1 0))` is a
+division by zero, the right operand's fault reached before `+` looks at
+its arguments, and `(+ (/ 1 0) (/ 1 0))` is the same fault from the left
+one.
+
 `;` starts a comment, to the end of the line.
 
 ## Booleans, comparisons and `if`
@@ -48,13 +57,46 @@ a n)` is `a` divided by 2^n rounded toward negative infinity, so
 the answer would fit (`(** 1 -1)`), and a result past the range faults
 `overflow`. `(** 1 4611686018427387903)` is `1` without taking long.
 
+## Budgets
+
+`(within n expr)` gives `expr`'s value, with a budget of `n` operations
+for everything `expr` does. `n` is an integer literal of 0 or more, written
+in the source; a negative number, a name, or any other expression as `n` is
+a compile error, and so is a `within` without exactly two parts.
+
+Each performed application of an operator (`+ - * / %`, `< <= > >=`, `==
+!=`, `bit/and bit/or bit/xor bit/shl bit/shr`, `**`) and each performed `if`
+costs one. Literals, `#true`, `#false` and `within` itself cost nothing,
+and a branch of an `if` that is not taken costs nothing. A cost is one
+whatever the work: `(** 1 4611686018427387903)` costs one, and a shift costs
+one whatever its count. So `(within 2 (+ (* 2 3) 4))` is `10`, two
+operations in a budget of two, and `(within 1 (+ (* 2 3) 4))` faults, the
+`+` being the second. `(within 0 #true)` is `#true`, and `(within 1 (if
+#true 1 (/ 1 0)))` is `1`: the `if` costs one and the division is not
+performed.
+
+An operation is charged after its operands and before its type checks and
+its own checks, and the one that would take the count past the budget
+faults `budget spent`. So `(within 0 (/ 1 0))` is `budget spent`, and
+`(within 1 (/ 1 0))` is `division by zero`; `(within 1 (+ (/ 1 0) (+ 1
+2)))` is a division by zero because the left operand is reached first,
+while `(within 1 (+ (+ 1 2) (/ 1 0)))` is `budget spent`, the division
+being the second operation.
+
+An operation counts against every `within` around it, so a budget holds
+everything inside it, including inner budgets: `(within 2 (within 5 e))`
+holds `e` to two operations, and an inner `within` can lower the limit but
+never raise it. Outside any `within` nothing is counted.
+
 ## Faults
 
 A result that doesn't fit 63 bits, a division by zero, a shift count
-out of range, or a negative exponent ends the program: `fault: overflow`,
-`fault: division by zero`, `fault: bad shift` or `fault: bad exponent` on
-stderr, and exit 1. Nothing is printed on
-stdout.
+out of range, a negative exponent, or a spent budget ends the program:
+`fault: overflow`, `fault: division by zero`, `fault: bad shift`, `fault:
+bad exponent` or `fault: budget spent` on stderr, and exit 1. Nothing is
+printed on stdout. A value that is not the type an operation wants is
+`fault: not an integer` or `fault: not a boolean`. Where a call could fault
+two ways, the order is the one under Forms.
 
 ## Programs
 

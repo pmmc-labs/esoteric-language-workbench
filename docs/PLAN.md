@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 4 are done. Step 5 is proposed (D20 from the person; D21 to D27 are defaults for the person to pick), and its builder's brief is `docs/BRIEF.md`.
+**Progress:** steps 0 to 5 are done. Step 5 was built from the proposal (D20 from the person; D21 to D27 are defaults still waiting on the person); its builder's brief is `docs/BRIEF.md`.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -185,7 +185,20 @@ default the builder wrote; it waits on the person.
 it's a loop now, 100,000 deep, and `PROCESS.md` says a referee is
 written as one.
 
-### 5. A budget: `(within n expr)` (proposed)
+### 5. A budget: `(within n expr)` (done)
+
+Done: `make test`, `make golden-clang` and `make sanitize` pass, with the 26
+earlier tests unchanged. What landed differently from the text, below: the
+model is `t/models/within.py` and tests 051 to 063 were worked by hand
+before the values here were read, and agreed with them; the plan's note on
+061 ("the second `/` is the one passed") means the division is the second
+operation. A budget literal past the integers' range is `integer out of
+range`, the language's rule for any literal, which the text did not say.
+The generated C is the temporaries form of D27, and its unit assertions
+(the nested expression and the `if`'s test, the latter also gaining the
+`rt_charge` line) changed with it. The runtime's entry points are
+`rt_charge`, `rt_within_enter` and `rt_within_leave`; the limit is the
+largest `uint64_t` outside any `within`.
 
 Referee: extend `t/referee/calc.py` to cover this, written before the step is handed to a builder. The traps are the counts (D23), a nested budget's total (D24), the place of the spend among an operation's checks (D25), and the operand order (D21); a mirror of the runtime would copy each one.
 

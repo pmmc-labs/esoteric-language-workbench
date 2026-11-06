@@ -31,12 +31,28 @@ wrote, the model being the step's large part, and committed red before
 the code (the model's fold is a balanced tree, for clang's bracket
 limit). Not agreed, and avoided by the tests: which fault reports when a
 call could fault two ways (a boolean value and a bad count, say; the
-runtime checks the boolean first). Step 4 (D18, D19): `(** a b)` on two
+runtime checks the boolean first). Settled by D21, below. Step 4 (D18, D19): `(** a b)` on two
 integers, a negative exponent
 faulting `bad exponent` and `a ** 0` being 1 (D19, a default the builder
 had to add, since D18 gave only the operator); golden tests 040 to 045
 from `t/models/pow.py`, written and committed red before the code, by
-Sonnet 5.5. **Next:** step 5, a budget, `(within n expr)`, D20 from the person and nothing else decided; to be proposed.
+Sonnet 5.5. Step 5 (D20 to D27): a budget, `(within n expr)`, the
+operations inside it counted, one each, against every `within` around it
+and passing a limit faulting `budget spent` (D22 to D26; the charge comes
+after an operation's operands and before its checks, D25); the generated C
+now computes each operation's non-literal operands into temporaries in
+order (D27), so a fault depends on the language and not on the C compiler,
+which is why D21, the operand order, settles the open item about which
+fault reports when a call could fault two ways (the operands left to
+right, then the budget, then the type checks, then the operation's own;
+`(+ #true (/ 1 0))` is a division by zero). Golden tests 050 to 063: 050
+from `t/models/within.py` (every operator and `if` inside a budget of
+exactly one), 051 to 063 by hand from the decisions, committed red before
+the code, by Sonnet 5.5 on a step marked large for its model and medium for
+its build. D21 to D27 are defaults, still waiting on the person. The
+bracket limit no longer limits a program's depth in the C, but the
+compiler's own recursion still does. **Next:** step 6, local bindings, to
+be proposed.
 
 ## Read first, in this order
 
