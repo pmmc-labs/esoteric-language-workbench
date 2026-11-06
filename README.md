@@ -23,6 +23,7 @@ Lisps, actors or native code.
 | `docs/LANGUAGE.md` | Skeleton: the language as it is, for someone writing programs in it. |
 | `t/README.md` | The golden-test discipline: expected output from an independent source, never from the implementation. |
 | `t/models/README.md` | Models: small programs in another language that write expected outputs, rerun and never patched. |
+| `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Step 0, worked: the smallest end-to-end compiler, its runner and its tests. |
 
 ## Using it
 
@@ -32,6 +33,9 @@ Lisps, actors or native code.
 3. Write `docs/DESIGN.md`'s goals and the first decisions in
    `docs/DECISIONS.md` (D1 to D10 or so are the scope: what it's for,
    what's cut, what's borrowed). These are the person's, not the agent's.
-4. Write step 0 of `docs/PLAN.md`: the scaffold, the reader, a compiler
-   for one literal, and `t/run.sh`.
-5. Build step 0. From then on the loop in `docs/PROCESS.md` runs.
+4. Step 0 is built: a TypeScript compiler that Node runs as it is, a
+   program of one integer compiled to C and linked with a C runtime,
+   `t/run.sh`, a `Makefile` and golden tests 000 and 001. `make test`
+   should end `2 tests, 0 failed`. Rename `lang`, `langc` and `.lang` to
+   the language's own, or replace the C with the real target's code.
+5. Propose step 1. From then on the loop in `docs/PROCESS.md` runs.

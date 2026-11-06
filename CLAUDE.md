@@ -63,10 +63,14 @@ at the end, and what's a candidate but not agreed.]
 
 ## Toolchain
 
-- [Primary machine: compiler, versions.]
+- Node 22.18 or later (it runs the compiler's TypeScript as it is, so
+  the compiler uses only erasable syntax: no parameter properties, no
+  enums) and a C compiler as `cc`.
 - [The machine cloud sessions develop on, and how a target that isn't
-  native runs there (cross-compile and an emulator, say).]
-- [One command that checks the setup, and what it should print.]
+  native runs there (cross-compile and an emulator, say), once there is
+  one.]
+- `t/run.sh t/000-int.lang` checks the setup; it should end
+  `1 tests, 0 failed`.
 
 ## Layout
 
@@ -84,14 +88,20 @@ at the end, and what's a candidate but not agreed.]
 
 ## Commands
 
-- `make test`: everything, for every target. [How long it takes.]
-- `make unit`, `make golden`, ...: one at a time. `t/run.sh t/NNN-name.ext`
-  runs one golden test.
-- [The compiler's command line, its exit codes.]
+- `make test`: the unit tests, then the golden tests. [How long it
+  takes, once that matters.]
+- `make unit`, `make golden`: one at a time. `t/run.sh t/000-int.lang`
+  runs one golden test; `JOBS=1` runs them one at a time.
+- `make check`: `tsc --noEmit` (`npm install` once, for it).
+- `node bin/langc.ts -o out file.lang`: compile and link. It writes
+  `out.c` next to `out`. Exit codes: 0 ok, 1 compile error, 2 usage or
+  toolchain error, or a file it can't read or write; a fault in the
+  compiler itself is `langc: internal error: ...` with Node's stack.
+  `LANG_CC` overrides the C compiler.
 - [Environment variables a compiled program reads: the virtual clock,
   the heap cap, record and replay, the scheduling seed, the GC stress
   and poison knobs. `t/run.sh` sets the ones the tests assume.]
 
-[How the runtime reports a program's value, a fault, a deadlock, and the
-exit code for each; what a golden test compares (stdout and stderr
-together, plus `exit: N` when not 0).]
+The runtime prints the program's value, then a newline, and exits 0. A
+fault is `fault: ...` on stderr and exit 1. The golden tests check
+stdout and stderr together, plus `exit: N` when the status isn't 0.
