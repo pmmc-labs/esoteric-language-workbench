@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0, 1 and 2 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium.
+**Progress:** steps 0, 1 and 2 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium. Step 3 is written, with its decisions and no model or tests, as the second experiment: the model is the builder's to write.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -112,9 +112,35 @@ it moves, and "done when" includes them.
 - Leave out: `and`, `or`, `not`, `cond`, truthiness, anything else.
   Report, don't add, if something seems to need them.
 
-### 3. [Conditionals.]
+### 3. Bit operations
 
-### 4. [Local bindings.]
+Size: large, for the model; the build is medium once the model and its
+tests exist. The decisions are made (D15 to D17). No model and no tests
+exist: this step's first work is `t/models/bits.py`, and the tests it
+writes, 030 and up, before any code changes. The step is done when
+`make test`, `make golden-clang` and `make sanitize` pass, the model
+lists every file it writes (`make checks` holds it to that), and
+`LANGUAGE.md`, this heading and `CLAUDE.md`'s Status are moved.
+
+- `t/models/bits.py` first: the five operations over values that find
+  the edges, from the definition in D15 and D16 and nothing else. The
+  model's job is to compute what the decisions say, not what the
+  runtime does; `t/models/README.md` says how, and `arith.py` and
+  `compare.py` are the shape. Expected outputs for every value and
+  every fault the decisions name, 030 and up, each fault in a test of
+  its own since a fault ends the program (as 011 to 015).
+- Then the operations, as runtime functions beside the arithmetic in
+  `rt.c`, through the operator table in `codegen.ts`. `bit/shl` checks
+  its result's range (D4, D16); both shifts check the count (D16).
+  Note the clang lesson in CLAUDE.md, and that a left shift of a
+  negative value is undefined C (`rt.h`'s comment).
+- A fault's name as D17 says.
+- Unit tests for what a golden test can't see (D7), if anything new.
+- Leave out: `bit/not`, a count masked rather than checked, unsigned
+  anything. Report, don't add.
+
+
+### 4. [Local bindings.] Size: medium.
 
 ### 5. [Heap values.]
 

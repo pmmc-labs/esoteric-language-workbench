@@ -56,6 +56,32 @@ truthiness (anything but `#false` is true), which hides the mistake
 `(if 0 ...)`; and a two-part `if`, which would need a value for the
 missing branch.
 
+**D15. Bit operations on two integers: `bit/and`, `bit/or`, `bit/xor`,
+`bit/shl` and `bit/shr`.** *(User, as the step to test model-writing
+on; the shape default.)* Each takes two integers (D3) and gives one;
+a boolean faults `not an integer`. The integers are the mathematical
+ones in two's complement, so `bit/and`, `bit/or` and `bit/xor` are on
+the sign-extended value, as every width agrees: `(bit/and -1 7)` is
+7, `(bit/or -8 1)` is -7, `(bit/xor -1 0)` is -1. A result of these
+three is always in range. Rejected: `bit/not` (D3 says two arguments;
+`(bit/xor x -1)` is it); unsigned views; a width other than the
+integers' own.
+
+**D16. Shifts: `(bit/shl a n)` is `a` times 2^n, faulting `overflow`
+when that doesn't fit (D4); `(bit/shr a n)` is `a` divided by 2^n
+rounded toward negative infinity, so the sign is kept and `(bit/shr -7
+1)` is -4 where `(/ -7 2)` is -3 (D5).** *(Default)* The count `n` is
+from 0 to 62; any other count faults `bad shift`, since 63 or more
+shifts every bit of a 63-bit integer out, and a negative count is a
+mistake, not the other shift. Rejected: wrapping on `bit/shl` (D4
+rejected wrapping); a count masked to its low bits, C's and Java's
+way, which hides the mistake; `bit/shr` as division (it rounds the
+other way, and that's the point of having both).
+
+**D17. The faults' names: `not an integer`, `overflow` and `bad
+shift`.** *(Default)* The first two are the arithmetic's (D4, D14);
+the third is new and only the shifts give it.
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
