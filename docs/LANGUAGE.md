@@ -48,13 +48,37 @@ a n)` is `a` divided by 2^n rounded toward negative infinity, so
 the answer would fit (`(** 1 -1)`), and a result past the range faults
 `overflow`. `(** 1 4611686018427387903)` is `1` without taking long.
 
+## Budgets
+
+`(within n expr)` gives the value of `expr`, run with a budget of `n`
+operations. An operation is one application of an operator, any of the
+seventeen, however large its arguments (`(** 1 4611686018427387903)` is
+one); integers, booleans, `if` and `within` itself cost nothing, so an
+`if` costs its test and the branch it takes. A budget of `n` allows `n`
+operations, and the next one faults `out of budget`; nothing catches it.
+`(within 4 (+ (* 6 7) (- 10 (/ 7 2))))` is `49`, its four operators being
+the whole budget, and with 3 it faults.
+
+An operation is paid for after its arguments have run and before it
+looks at them, so `(within 0 (/ 1 0))` is `out of budget`, the budget
+having refused the division before it could fault, and `(within 1 (/ 1
+0))` is `division by zero`.
+
+`n` is any expression that gives an integer, run first and outside the
+budget it sets, so its operators are paid from the budgets around it. A
+negative `n` faults `bad budget`; 0 is a budget that allows nothing.
+Budgets nest by the smallest: every operation is charged to every
+`within` around it, so `(within 2 (within 100 e))` allows `e` two
+operations, and what an inner `within` spent is still spent when it ends.
+Two `within`s side by side have a budget each.
+
 ## Faults
 
 A result that doesn't fit 63 bits, a division by zero, a shift count
-out of range, or a negative exponent ends the program: `fault: overflow`,
-`fault: division by zero`, `fault: bad shift` or `fault: bad exponent` on
-stderr, and exit 1. Nothing is printed on
-stdout.
+out of range, a negative exponent, a spent budget, or a negative budget
+ends the program: `fault: overflow`, `fault: division by zero`, `fault:
+bad shift`, `fault: bad exponent`, `fault: out of budget` or `fault: bad
+budget` on stderr, and exit 1. Nothing is printed on stdout.
 
 ## Programs
 

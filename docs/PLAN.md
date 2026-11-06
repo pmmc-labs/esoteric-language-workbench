@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 4 are done. Step 5 is proposed below: D20 from the person, D21 to D27 the defaults that complete it, a referee extended and a brief written (`docs/BRIEF.md`); it waits for the person to confirm or change D21 to D27, and for a builder.
+**Progress:** steps 0 to 5 are done. Step 5 (a budget, `within`) was built by Sonnet 5.5 on a step marked medium, to D20 (the person's) and D21 to D27 (defaults, still waiting for the person to confirm or change them): tests 050 to 071, the runtime's count and limit, `within` in `codegen.ts`; `make test`, `make golden-clang`, `make sanitize` and `make check` pass, the referee agrees with all 48 tests. Next is step 6, not yet proposed.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -185,7 +185,16 @@ default the builder wrote; it waits on the person.
 it's a loop now, 100,000 deep, and `PROCESS.md` says a referee is
 written as one.
 
-### 5. A budget: `(within n expr)`
+### 5. A budget: `(within n expr)` (done)
+
+What landed: as the text below, with one difference. `compileWithin` also
+compiles the body once and throws the result away, so that a compile error
+in a `within`'s body comes at its place in reading order: the text had the
+body compiled only by the walk after `compileExpr` succeeded, which put
+`(+ (within 1 (f)) (g))`'s error at `g`, not `f`, against its own reason
+for the walk. Unit tests for both orders. No D entry was added: nothing
+the decisions say was left open. Tests 050 to 071 were committed red first,
+each failing at `not an operator: within` and for no other reason.
 
 Referee: `t/referee/calc.py`, extended in this proposal with `within` and
 the charge, from D20 to D27 and not from the runtime. Wanted because the

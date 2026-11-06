@@ -36,7 +36,24 @@ integers, a negative exponent
 faulting `bad exponent` and `a ** 0` being 1 (D19, a default the builder
 had to add, since D18 gave only the operator); golden tests 040 to 045
 from `t/models/pow.py`, written and committed red before the code, by
-Sonnet 5.5. **Next:** step 5, a budget, `(within n expr)`, D20 from the person and nothing else decided; to be proposed.
+Sonnet 5.5. Step 5 (D20 to D27): `(within n expr)`, a budget of `n` operations, an
+operation being one application of any of the seventeen operators (`if`,
+`within` and atoms are free, D21); `n` operations allowed and the next
+faulting `out of budget`, `n` evaluated outside its own budget and a
+negative one faulting `bad budget` (D22, D23); budgets nest by the
+smallest, every operation charged to each `within` around it (D24); the
+charge comes after an operation's arguments and before its own checks, so
+`(within 0 (/ 1 0))` is `out of budget` (D25); a special form of two
+parts, compiled to `rt_within(N, lang_within_L_C)` with a static C
+function per `within`, over a count and a limit in the runtime (D26,
+D27). Golden tests 050 to 071, worked by hand from the decisions and
+agreed by `t/referee/calc.py`; built by Sonnet 5.5 on a step marked
+medium. D20 is the person's; D21 to D27 are defaults not yet confirmed.
+Still unspecified and untested: the order a call's arguments run in, so
+which fault reports when each could fault differently (D25).
+**Next:** step 6, local bindings, in `docs/PLAN.md` as a heading only; to
+be proposed. A binding will have to say what it costs (D21) and how a
+`within` body sees it (D27: the body is a C function with no variables).
 
 ## Read first, in this order
 
