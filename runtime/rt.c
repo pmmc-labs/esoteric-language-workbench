@@ -5,6 +5,37 @@
 #include <stdlib.h>
 #include "rt.h"
 
+// A budget (D20 to D26). `spent` counts the operations performed inside a
+// `within`, `limit` is the count a `within` may not pass; outside every
+// `within` the limit is the largest value, which means nothing is counted
+// and a program without one is what it was (D24). An operation is charged
+// once, on entry, before its type checks and its own checks (D21, D25): the
+// one that would take the count past the limit faults. A helper an operator
+// calls does not charge again, so `**` costs one however many squarings it
+// takes (D23). Unsigned 64-bit, so nothing here is undefined on overflow.
+#define RT_NO_LIMIT UINT64_MAX
+static uint64_t spent = 0;
+static uint64_t limit = RT_NO_LIMIT;
+
+void rt_charge(void) {
+    if (limit == RT_NO_LIMIT) return;
+    if (spent >= limit) rt_fault("budget spent");
+    spent += 1;
+}
+
+// Entering `(within n ...)`: the limit becomes the count so far plus n, or
+// stays the outer limit when that is lower, so an outer budget holds
+// everything inside it (D24). Returns the outer limit, for rt_within_leave.
+// n is compared with the room left, not added to the count, so no sum can
+// wrap; spent never passes the limit, so the room is not negative.
+uint64_t rt_within_enter(uint64_t n) {
+    uint64_t outer = limit;
+    if (outer == RT_NO_LIMIT || n < outer - spent) limit = spent + n;
+    return outer;
+}
+
+void rt_within_leave(uint64_t outer) { limit = outer; }
+
 // Arithmetic and orderings take integers (D11, D14): a boolean is a fault
 // here, since the compiler can't know what an `if` gives.
 static void need_ints(rt_value a, rt_value b) {
@@ -23,18 +54,20 @@ static rt_value checked(int64_t n, int overflowed) {
 }
 
 #define RT_CHECKED(op, a, b) do { need_ints(a, b); int64_t r; int o = __builtin_##op##_overflow(rt_int_of(a), rt_int_of(b), &r); return checked(r, o); } while (0)
-rt_value rt_add(rt_value a, rt_value b) { RT_CHECKED(add, a, b); }
-rt_value rt_sub(rt_value a, rt_value b) { RT_CHECKED(sub, a, b); }
-rt_value rt_mul(rt_value a, rt_value b) { RT_CHECKED(mul, a, b); }
+rt_value rt_add(rt_value a, rt_value b) { rt_charge(); RT_CHECKED(add, a, b); }
+rt_value rt_sub(rt_value a, rt_value b) { rt_charge(); RT_CHECKED(sub, a, b); }
+rt_value rt_mul(rt_value a, rt_value b) { rt_charge(); RT_CHECKED(mul, a, b); }
 
 // Division truncates toward zero and the remainder takes the dividend's
 // sign, as C's do (D5). RT_INT_MIN / -1 is 2^62, past the range.
 rt_value rt_div(rt_value a, rt_value b) {
+    rt_charge();
     need_ints(a, b);
     if (rt_int_of(b) == 0) rt_fault("division by zero");
     return checked(rt_int_of(a) / rt_int_of(b), 0);
 }
 rt_value rt_mod(rt_value a, rt_value b) {
+    rt_charge();
     need_ints(a, b);
     if (rt_int_of(b) == 0) rt_fault("division by zero");
     return rt_int(rt_int_of(a) % rt_int_of(b));
@@ -43,19 +76,19 @@ rt_value rt_mod(rt_value a, rt_value b) {
 // The orderings take two integers (D12). == and != take any two values:
 // values of different types are unequal, since their bits differ (D14),
 // so comparing the bits is the comparison.
-rt_value rt_lt(rt_value a, rt_value b) { need_ints(a, b); return rt_bool(rt_int_of(a) < rt_int_of(b)); }
-rt_value rt_le(rt_value a, rt_value b) { need_ints(a, b); return rt_bool(rt_int_of(a) <= rt_int_of(b)); }
-rt_value rt_gt(rt_value a, rt_value b) { need_ints(a, b); return rt_bool(rt_int_of(a) > rt_int_of(b)); }
-rt_value rt_ge(rt_value a, rt_value b) { need_ints(a, b); return rt_bool(rt_int_of(a) >= rt_int_of(b)); }
-rt_value rt_eq(rt_value a, rt_value b) { return rt_bool(a == b); }
-rt_value rt_ne(rt_value a, rt_value b) { return rt_bool(a != b); }
+rt_value rt_lt(rt_value a, rt_value b) { rt_charge(); need_ints(a, b); return rt_bool(rt_int_of(a) < rt_int_of(b)); }
+rt_value rt_le(rt_value a, rt_value b) { rt_charge(); need_ints(a, b); return rt_bool(rt_int_of(a) <= rt_int_of(b)); }
+rt_value rt_gt(rt_value a, rt_value b) { rt_charge(); need_ints(a, b); return rt_bool(rt_int_of(a) > rt_int_of(b)); }
+rt_value rt_ge(rt_value a, rt_value b) { rt_charge(); need_ints(a, b); return rt_bool(rt_int_of(a) >= rt_int_of(b)); }
+rt_value rt_eq(rt_value a, rt_value b) { rt_charge(); return rt_bool(a == b); }
+rt_value rt_ne(rt_value a, rt_value b) { rt_charge(); return rt_bool(a != b); }
 
 // Bit operations on the sign-extended values (D15): two's complement of
 // any width agrees, so the 64-bit operators give the 63-bit answer, which
 // is always in range.
-rt_value rt_bit_and(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) & rt_int_of(b)); }
-rt_value rt_bit_or(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) | rt_int_of(b)); }
-rt_value rt_bit_xor(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) ^ rt_int_of(b)); }
+rt_value rt_bit_and(rt_value a, rt_value b) { rt_charge(); need_ints(a, b); return rt_int(rt_int_of(a) & rt_int_of(b)); }
+rt_value rt_bit_or(rt_value a, rt_value b) { rt_charge(); need_ints(a, b); return rt_int(rt_int_of(a) | rt_int_of(b)); }
+rt_value rt_bit_xor(rt_value a, rt_value b) { rt_charge(); need_ints(a, b); return rt_int(rt_int_of(a) ^ rt_int_of(b)); }
 
 // A shift's count is 0 to 62 (D16): 63 or more shifts every bit out of a
 // 63-bit integer, and a negative count is a mistake, not the other shift.
@@ -69,6 +102,7 @@ static int64_t shift_count(rt_value a, rt_value n) {
 // result past the range faults overflow. The count is a statement of its
 // own, for the argument-order reason at `checked`.
 rt_value rt_bit_shl(rt_value a, rt_value b) {
+    rt_charge();
     int64_t k = shift_count(a, b);
     int64_t r;
     int o = __builtin_mul_overflow(rt_int_of(a), (int64_t)1 << k, &r);
@@ -80,6 +114,7 @@ rt_value rt_bit_shl(rt_value a, rt_value b) {
 // dividend left a remainder. `>>` isn't used: a right shift of a negative
 // value is implementation-defined in C.
 rt_value rt_bit_shr(rt_value a, rt_value b) {
+    rt_charge();
     int64_t k = shift_count(a, b);
     int64_t d = (int64_t)1 << k;
     int64_t x = rt_int_of(a);
@@ -97,6 +132,7 @@ rt_value rt_bit_shr(rt_value a, rt_value b) {
 // here; 0, 1 and -1 never overflow). Overflow is the multiplication's own
 // check (D4), the flags statements of their own as at `checked`.
 rt_value rt_pow(rt_value a, rt_value b) {
+    rt_charge();
     need_ints(a, b);
     int64_t e = rt_int_of(b);
     if (e < 0) rt_fault("bad exponent");

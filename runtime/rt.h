@@ -42,6 +42,12 @@ rt_value rt_bit_xor(rt_value a, rt_value b);
 rt_value rt_bit_shl(rt_value a, rt_value b);
 rt_value rt_bit_shr(rt_value a, rt_value b);
 rt_value rt_pow(rt_value a, rt_value b);
+// The budget (D20 to D26): rt_charge counts one operation, and the generated
+// code calls it for an `if` after the test's operands; each operator charges
+// itself. rt_within_enter sets a limit and gives back the one to restore.
+void rt_charge(void);
+uint64_t rt_within_enter(uint64_t n);
+void rt_within_leave(uint64_t outer);
 int rt_test(rt_value v);
 void rt_print(rt_value v);
 void rt_fault(const char *what) __attribute__((noreturn));

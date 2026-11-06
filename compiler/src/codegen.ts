@@ -71,6 +71,7 @@ const compileIf = (f: Form, args: readonly Form[], next: number): Out => {
     const lines = [
         ...t.lines,
         `rt_value ${result};`,
+        'rt_charge();',
         `if (rt_test(${t.atoms[0]})) {`,
         ...indent(a.lines),
         '} else {',

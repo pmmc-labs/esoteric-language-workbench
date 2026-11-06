@@ -59,7 +59,7 @@ test('if takes three parts, its test first (D13)', () => {
     fails('(if 1 2)', 'if takes 3 arguments, not 2', 1, 1);
     fails('(if)', 'if takes 3 arguments, not 0', 1, 1);
     fails('(+ 1 (if #true 2 3 4))', 'if takes 3 arguments, not 4', 1, 6);
-    assert.match(compileProgram(read('(if (< 1 2) #true 0)')), /rt_value t0 = rt_lt\(rt_int\(1LL\), rt_int\(2LL\)\);\n\s*rt_value t1;\n\s*if \(rt_test\(t0\)\) \{\n\s*t1 = RT_TRUE;\n\s*\} else \{\n\s*t1 = rt_int\(0LL\);/);
+    assert.match(compileProgram(read('(if (< 1 2) #true 0)')), /rt_value t0 = rt_lt\(rt_int\(1LL\), rt_int\(2LL\)\);\n\s*rt_value t1;\n\s*rt_charge\(\);\n\s*if \(rt_test\(t0\)\) \{\n\s*t1 = RT_TRUE;\n\s*\} else \{\n\s*t1 = rt_int\(0LL\);/);
 });
 
 test('the booleans are their own names, and nothing else is', () => {
