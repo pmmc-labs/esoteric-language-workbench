@@ -79,6 +79,14 @@ test or model changed. One thing landed differently from the text: the
 reader still makes `#true` and `#false` symbols, and `codegen.ts` gives them
 their meaning.
 
+The experiment's record is in `docs/MODELS.md`. Two models built this
+step cold from the same commit: Sonnet's build is the branch
+`step2-sonnet`, Haiku's `step2-haiku`, which is what main took. What the
+step's text lacked, found by both: it named only code and tests, so
+neither was told to move `LANGUAGE.md`, the plan's heading or the
+Status; Sonnet left them, Haiku moved them. A step says which documents
+it moves, and "done when" includes them.
+
 - `#true` and `#false` (D11): read as themselves (today the reader
   makes them symbols; either the reader or `codegen.ts` may give them
   their meaning, but `(+ #true 1)` must fault at run time, not fail to

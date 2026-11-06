@@ -139,6 +139,56 @@ lead's check is the suite, not the summary. A sub-agent that reports
 process forbids, and only `make checks` or a read of the diff catches
 it. Ask for the diff.
 
+## What happened, once
+
+Step 2 of this repo's calculator, marked medium, with D11 to D14
+decided and tests 020 to 024 written and red, was built cold by Sonnet
+and by Haiku, each in a worktree from the same commit, with the same
+brief: read CLAUDE.md, the step and its decisions, build, report. One
+run each, so this is a record, not a measurement.
+
+| | Sonnet | Haiku |
+|---|---|---|
+| Green under gcc, clang and the sanitizers, nothing under `t/` touched | yes | yes |
+| Lines changed | 75 | 121 |
+| Tool calls, time | 11, 1.2 min | 31, 3.4 min |
+| Docs moved (the step didn't say to) | no, and said so | yes |
+| Uncertainties reported | 3, all real | 7, all real |
+
+Both runtimes were right, and alike: the tag check as a statement
+before the operation (both had read the clang lesson in CLAUDE.md),
+`if` as a special form on a runtime test, equality by bits with a
+comment saying why that's D12. Both chose codegen over the reader for
+`#true` and said so.
+
+Haiku found a bug outside the step that Sonnet and the step's author
+had missed: the operator table was a plain object looked up with `in`,
+so `toString` was an operator and `(toString 1 2)` emitted JavaScript's
+function source into the C. It fixed it, said in the commit that the
+fix was outside the step, and added a test. It also saw that the step
+touched a value's encoding, which this page lists under large, said so,
+and built anyway with the reason that D14 fixed the bits: the right
+call, made for the right reason, and reported for the person to check.
+And it raised two design questions a large model should have raised in
+the proposal: which fault reports when both arguments of a call fault,
+and that bitwise `==` won't survive heap values.
+
+Sonnet, in an earlier launch that handed it the wrong repository by
+mistake, read the plan, found no such step, listed what it had
+checked, built nothing and asked. That's the escalation behaviour
+above, unprompted.
+
+What this says against the tiers above: on a step with the design
+decided and the tests written, the small tier was not merely adequate
+but found more; the cost was three times the tool calls and a wider
+diff to read. The claim that held is the principle at the top: the
+downgrade was safe because the checks were complete. The claim that
+didn't is "small shouldn't be asked to decide anything": it decided
+well twice, and the difference was that it reported each decision.
+Two things the experiment can't say: how either does when the model
+in `t/models/` isn't written yet, and how either does on a step that
+goes wrong.
+
 ## What to expect, by tier, on this process
 
 - **Large**: the process as written. The person's time goes to

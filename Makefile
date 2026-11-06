@@ -46,10 +46,12 @@ models:
 commits:
 	@python3 t/checks.py commits
 
+# The hooks directory asked of git, since in a worktree .git is a file
+# and the hooks are the main checkout's.
 hooks:
-	@printf '#!/bin/sh\nexec python3 t/checks.py commit-msg "$$1" --staged\n' > .git/hooks/commit-msg
-	@chmod +x .git/hooks/commit-msg
-	@echo "installed .git/hooks/commit-msg"
+	@dir=$$(git rev-parse --git-path hooks) && mkdir -p "$$dir" && \
+	printf '#!/bin/sh\nexec python3 t/checks.py commit-msg "$$1" --staged\n' > "$$dir/commit-msg" && \
+	chmod +x "$$dir/commit-msg" && echo "installed $$dir/commit-msg"
 
 check:
 	npx tsc --noEmit
