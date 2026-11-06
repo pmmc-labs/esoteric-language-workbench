@@ -160,6 +160,26 @@ knobs early and never regretted it:
 For a language without processes most of these collapse to the first and
 last. Build what applies before the second step needs it.
 
+### Mechanical checks, where a rule can be one
+
+A rule an agent has to remember is a rule a weaker agent, or a long
+session, will forget. Where a rule can be checked by a script, it is,
+and the script is in `make test`:
+
+- **Models**: every file a model writes is regenerated and compared.
+  A patched `.expected` fails; so does a model changed without a rerun.
+  The convention that makes this possible is that a model's docstring
+  lists every command that writes a file, one a line.
+- **Tests**: every test has its `.expected`, and a test that names a
+  model names one that lists it.
+- **Commits**: a commit that touches the implementation names a `Dn`
+  or a plan step in its subject, checked over a range, or by a
+  commit-msg hook as you commit.
+
+`t/checks.py` has them. What can't be checked by script (that an
+expected output written by hand was in fact worked out by hand, that a
+proposal was read) stays a rule, and is the person's to watch.
+
 ### The documents, and what each is for
 
 - `LANGUAGE.md`: the language as it is, for a user. Every form, every
@@ -178,6 +198,9 @@ last. Build what applies before the second step needs it.
 - The guide (`docs/guide/`): for learning the language. Its code blocks
   are golden tests, checked against the files they came from, so the
   guide can't drift.
+- `MODELS.md`: which tasks need which size of model, when to escalate,
+  when a smaller one is safe, for choosing a session's model and a
+  sub-agent's.
 
 ### The person's machine
 

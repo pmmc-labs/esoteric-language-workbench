@@ -14,40 +14,74 @@ that changed it; the new entry says what it retires.
 Sections group entries by subject, not by time; a new entry goes in the
 section it belongs to. Number by time.
 
+The entries below are the workbench's own: a calculator, built to work
+the process out on. A language started from this template replaces
+them, keeping D8 to D10, which are the process.
+
 ## Scope
 
-**D1. [What it is.]** *(User)* [Why.]
+**D1. A calculator: integer expressions, compiled to a native binary
+that prints the value.** *(User: "let's make a small calculator language
+to work out these steps.")* The language exists to exercise the
+process: steps, models, checks. It grows only as far as that needs.
 
-**D2. [What's kept from before, what's dropped.]** *(User)* [Quote.]
-
-**D3. [What the runtime does, what's written in the language.]** *(User)*
-
-**D4. [Scale.]** *(User)*
-
-**D5. Aggressively simple; practical over pure.** *(User)* Any feature
-that adds complexity can be cut or changed.
-
-**D6. [Compilation model.]** *(User)* Rejected: [the alternative, and
-who proposed it, and why it lost].
-
-## The core rule
-
-**D7. [The decision everything leans on.]** *(User: "...")* [What it
-removes. What it costs.] Rejected: [...].
+**D2. The compiler is TypeScript run by Node as it is, and emits C.**
+*(Default)* C so step 0 runs wherever there's a C compiler; a native
+target through a target interface when something needs one. Node's
+type stripping, so there's no build step; the compiler uses only
+erasable syntax (no parameter properties, no enums).
 
 ## Language
 
+**D3. Operators take exactly two arguments.** *(Default)* `(+ 1 2 3)`
+and `(- 1)` are compile errors. Rejected: variadic `+` and `*` and
+unary `-`, which a Lisp usually has, because the calculator doesn't
+need them and a rule with no exceptions is easier to check.
+
 ## Values and memory
+
+**D4. Integers are 63 bits, and a result that doesn't fit faults.**
+*(Default)* One bit for a tag, so other values can come later without
+changing the integers. Overflow is a fault, `fault: overflow`, exit 1.
+Rejected: wrapping (silent, and no model of it is the definition);
+bignums (machinery the calculator doesn't need; a step later, if ever).
+
+**D5. Division truncates toward zero and the remainder takes the
+dividend's sign.** *(Default)* C's rule, so the runtime is `/` and `%`
+with a zero check. `(/ -7 2)` is `-3` and `(% -7 2)` is `-1`. Dividing
+by zero faults, `fault: division by zero`. Rejected: floored division,
+Python's, which would be a model-side convenience and a runtime-side
+cost; both are defensible, and the model (`t/models/arith.py`) says
+which this is, in its own functions.
 
 ## Runtime
 
+**D6. A fault ends the program: its message on stderr, exit 1, after
+whatever stdout had.** *(Default)* So a golden test checks a fault as
+two lines, the message and `exit: 1`.
+
 ## Compiler
+
+**D7. A compile error can't be a golden test; it's a unit test.**
+*(Default)* `t/run.sh` calls a failed compile a failure, which is what
+it should be for a test that's meant to run. Messages and positions
+are checked in `compiler/tests/`. Rejected: a `; compile-error:` header
+line in a golden test; it would come when a language has enough
+compile errors to want it.
 
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,
-never from the compiler.** *(User)* See `t/README.md`.
+never from the compiler.** *(User)* See `t/README.md`. `t/checks.py`
+enforces the half it can: a file a model writes is what the model
+writes now.
 
 **D9. Examples bend to the language.** *(User)* When a port needs a
 feature, the example changes or is left out. Rejected: adding to the
 language to make a port pass.
+
+**D10. A commit that touches the implementation names a decision or a
+plan step in its subject.** *(User)* So a change is found from the log
+and the log from a change. `make commits` checks a range and `make
+hooks` installs the check as a commit-msg hook. A commit that touches
+only docs or tests is exempt; the models' files count as tests.

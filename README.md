@@ -22,8 +22,10 @@ Lisps, actors or native code.
 | `docs/PLAN.md` | Skeleton: numbered steps, each one feature, each ending green with tests added. |
 | `docs/LANGUAGE.md` | Skeleton: the language as it is, for someone writing programs in it. |
 | `t/README.md` | The golden-test discipline: expected output from an independent source, never from the implementation. |
-| `t/models/README.md` | Models: small programs in another language that write expected outputs, rerun and never patched. |
-| `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Step 0, worked: the smallest end-to-end compiler, its runner and its tests. |
+| `t/models/README.md` | Models: small programs in another language that write expected outputs, rerun and never patched. `t/models/arith.py` is a worked one. |
+| `t/checks.py` | The mechanical checks: models rerun and compared, tests paired, commits naming their decision. |
+| `docs/MODELS.md` | Which tasks need which size of model, when to escalate, when a smaller one is safe. |
+| `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Steps 0 and 1, worked: a calculator, the smallest end-to-end compiler, its runner and its tests. |
 
 ## Using it
 
@@ -33,9 +35,11 @@ Lisps, actors or native code.
 3. Write `docs/DESIGN.md`'s goals and the first decisions in
    `docs/DECISIONS.md` (D1 to D10 or so are the scope: what it's for,
    what's cut, what's borrowed). These are the person's, not the agent's.
-4. Step 0 is built: a TypeScript compiler that Node runs as it is, a
-   program of one integer compiled to C and linked with a C runtime,
-   `t/run.sh`, a `Makefile` and golden tests 000 and 001. `make test`
-   should end `2 tests, 0 failed`. Rename `lang`, `langc` and `.lang` to
-   the language's own, or replace the C with the real target's code.
-5. Propose step 1. From then on the loop in `docs/PROCESS.md` runs.
+4. Steps 0 and 1 are built: a TypeScript compiler that Node runs as it
+   is, integer arithmetic compiled to C and linked with a C runtime,
+   `t/run.sh`, a `Makefile`, golden tests from a model, and the checks.
+   `make test` should pass; `make hooks` installs the commit check.
+   Rename `lang`, `langc` and `.lang` to the language's own, keep or
+   replace the calculator's decisions (D1 to D7), keep D8 to D10.
+5. Propose the next step. From then on the loop in `docs/PROCESS.md`
+   runs.

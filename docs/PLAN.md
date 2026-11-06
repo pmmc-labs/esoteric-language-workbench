@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** step 0 is done. Next: 1.
+**Progress:** steps 0 and 1 are done; the mechanical checks came with 1. Next: 2, if the calculator needs it; else this is where the template rests.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -41,9 +41,37 @@ with a note where what landed differs.
   `exit: N` when the status isn't 0, `JOBS` at a time, with a watchdog.
 - Golden tests 000 and 001, their outputs by hand.
 
-### 1. [Immediates: the rest of the literals.]
+Each step carries a **Size** line, the capability the step needs of
+the agent that builds it, by `docs/MODELS.md`'s tiers: *large* where
+there's a decision to propose, a runtime mechanism to design, or a
+model to write; *medium* where the design is agreed and the step
+describes its tests; *small* where the step is a pattern to repeat.
+A session's first move is to compare its own model with the step's size.
 
-### 2. [Primitives on them.]
+### 1. Arithmetic (done)
+
+Size: large, for the model and the decisions; medium once they're
+written.
+
+- `(+ a b)`, `-`, `*`, `/`, `%`, nested, on 63-bit integers (D3, D4,
+  D5); the runtime's checked operations in `runtime/rt.c`, the
+  operator table in `codegen.ts`.
+- Faults: overflow and division by zero end the program with a message
+  and exit 1 (D6).
+- `t/models/arith.py`: the operators over the edge values, Python's
+  integers with the range and the division rule applied after. It
+  writes tests 010 (every pair that gives a value, folded into one
+  expression) and 011 to 015 (each a fault). The first version of the
+  model folded a term before reducing it and overflowed: the compiler
+  found the model's bug, which is the other half of why a model is
+  worth having.
+- The mechanical checks, `t/checks.py` (D8, D10): `models`, `tests`,
+  `commits`, and the hook.
+- Compile errors (arity, an unknown name, not an operator) as unit
+  tests (D7).
+
+### 2. [Immediates: the rest of the literals, if the calculator grows:
+booleans and comparisons, say.] Size: medium.
 
 ### 3. [Conditionals.]
 

@@ -30,7 +30,8 @@ floating point, hashing, dates, scheduling order, encodings or more than
 a screen of output comes from a model.
 
 When a change moves an output a model wrote, **rerun the model**. Don't
-patch the file.
+patch the file. `make checks` reruns every model and fails on a file
+that differs, so a patch doesn't survive `make test`.
 
 ## Determinism
 

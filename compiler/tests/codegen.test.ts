@@ -5,12 +5,31 @@ import { compileProgram } from '../src/codegen.ts';
 import { CompileError } from '../src/errors.ts';
 
 // A compile error can't be a golden test (t/run.sh calls a failed
-// compile a failure), so the messages are checked here.
+// compile a failure, D7), so the messages are checked here.
+const fails = (src: string, message: string, line: number, col: number) =>
+    assert.throws(() => compileProgram(read(src)), (e: unknown) =>
+        e instanceof CompileError && e.message === message && e.line === line && e.col === col, `${src}: ${message} at ${line}:${col}`);
+
 test('an integer past 63 bits is refused where it is', () => {
-    assert.throws(() => compileProgram(read('\n 4611686018427387904')), (e: unknown) =>
-        e instanceof CompileError && e.message === 'integer out of range' && e.line === 2 && e.col === 2);
+    fails('\n 4611686018427387904', 'integer out of range', 2, 2);
 });
 
 test('a program is one form', () => {
-    assert.throws(() => compileProgram(read('1 2')), /one form/);
+    fails('1 2', 'a program is one form', 1, 1);
+});
+
+test('operators take two arguments (D3)', () => {
+    fails('(+ 1 2 3)', '+ takes 2 arguments, not 3', 1, 1);
+    fails('(- 1)', '- takes 2 arguments, not 1', 1, 1);
+});
+
+test('what is not an operator is refused at its position', () => {
+    fails('(+ 1 (f 2 3))', 'not an operator: f', 1, 7);
+    fails('x', 'unknown name x', 1, 1);
+    fails('()', 'empty call', 1, 1);
+    fails('((+ 1 2) 3 4)', 'not an operator: list', 1, 2);
+});
+
+test('the C for a nested expression', () => {
+    assert.match(compileProgram(read('(* (+ 1 2) -3)')), /rt_mul\(rt_add\(rt_int\(1LL\), rt_int\(2LL\)\), rt_int\(-3LL\)\)/);
 });
