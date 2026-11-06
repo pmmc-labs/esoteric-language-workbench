@@ -14,8 +14,7 @@ and every command that regenerates a file, one a line, exactly:
 
 `t/checks.py` reads those lines, runs each, and fails if the file
 differs; `make models` writes them. A model that lists no command, or a
-test that names a model that doesn't list it, fails too. `arith.py` is
-the worked example: copy its shape.
+test that names a model that doesn't list it, fails too.
 
 Rules:
 

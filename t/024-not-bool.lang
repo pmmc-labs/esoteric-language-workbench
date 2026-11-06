@@ -1,2 +1,0 @@
-; A test that is not a boolean faults (D13); no truthiness.
-(if (- 1 1) 1 2)

@@ -12,33 +12,12 @@ per era, dense, with golden test numbers and `Dn` references, so a
 claim can be checked against a test and a decision. Say what's **Next**
 at the end, and what's a candidate but not agreed. The workbench's own:]
 
-**Steps 0 to 2 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
-with positions, a program of one expression compiled to C and linked
-with `runtime/rt.c` (D2), integers of 63 bits (D4), the five operators
-on two arguments each (D3), division C's way (D5), faults ending the
-program (D6; golden tests 000, 001, and 010 to 015 from
-`t/models/arith.py`), compile errors as unit tests (D7), and the
-mechanical checks, `t/checks.py` (D8, D10). Step 2 (D11 to D14):
-`#true` and `#false` as immediates tagged `11` (golden tests 021, 023,
-024), the six comparisons on integers, `==` and `!=` on any values
-(020, from `t/models/compare.py`), and `if`, the test checked to be a
-boolean, only the taken branch run (022); built by Haiku 5.5 on a step
-marked medium. Step 3 (D15 to D17): `bit/and`, `bit/or` and `bit/xor`,
-and the shifts `bit/shl` (checked as a multiplication, so `overflow`)
-and `bit/shr` (floor division), a count outside 0 to 62 faulting `bad
-shift`; golden tests 030 to 036 from `t/models/bits.py`, which Haiku 5.5
-wrote, the model being the step's large part, and committed red before
-the code (the model's fold is a balanced tree, for clang's bracket
-limit). Not agreed, and avoided by the tests: which fault reports when a
-call could fault two ways (a boolean value and a bad count, say; the
-runtime checks the boolean first). Step 4 (D18, D19): `(** a b)` on two
-integers, a negative exponent
-faulting `bad exponent` and `a ** 0` being 1 (D19, a default the builder
-had to add, since D18 gave only the operator); golden tests 040 to 045
-from `t/models/pow.py`, written and committed red before the code, by
-Sonnet 5.5. **Next:** nothing agreed; step 5 is still a placeholder in
-the plan, and the calculator grows only when a step of the process needs
-it.
+**Step 0 of [`docs/PLAN.md`](docs/PLAN.md) is done**: a reader with
+positions, a program of one integer compiled to C and linked with
+`runtime/rt.c` (D2), integers of 63 bits, a compile error for a literal
+past them as a unit test (D4), golden tests 000 and 001 by hand, and the
+mechanical checks, `t/checks.py` (D5, D7). **Next:** step 1, to be
+proposed; nothing is agreed beyond D1 and D2.
 
 ## Read first, in this order
 
@@ -96,15 +75,15 @@ it.
 - [Constraints the host platforms impose, as you learn them. Name the
   symptom and the fix, so the lesson isn't relearned.] C doesn't order
   a call's arguments: never pass a variable and a call that sets it in
-  the same argument list (`runtime/rt.c`'s arithmetic read `r` before
-  `__builtin_add_overflow` set it under clang, and gcc hid it). The
+  the same argument list (a runtime function read `r` before the
+  builtin that set it under clang, and gcc hid it). The
   cloud machine's `cc` is gcc; the Mac's is clang; run the suite with
   `LANG_CC=clang` too before calling a runtime change done, and `make
   sanitize`, which found the second one: a left shift of a negative
   value is undefined before C23, so the tag multiplies instead. Clang
   also stops at 256 levels of brackets, so a generated expression that
-  nests one level per term of a long chain won't compile (the bit model
-  folds as a tree for this); the compiler itself nests one level per
+  nests one level per term of a long chain won't compile (a model that
+  folds many terms folds them as a tree); the compiler itself nests one level per
   operator, so a program that deep fails under clang too, and nothing
   fixes that yet.
 - Comments explain why, not what.

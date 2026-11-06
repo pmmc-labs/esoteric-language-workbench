@@ -172,10 +172,8 @@ isn't covered yet is skipped until the referee grows.
 It exists for one thing: to make a model written by someone else
 checkable. A model that mirrors the implementation passes every test;
 against a referee it either agrees or it doesn't, and the decisions say
-which is wrong. This repo's third and fourth experiments
-(`MODELS.md`) rested on it: without the referee, "the smaller model
-wrote a real model" would have been a judgement; with it, a diff. It
-also does what "verify a reported misbehaviour against an independent
+which is wrong. Without a referee, "the builder wrote a real model" is
+a judgement; with one, a diff. It also does what "verify a reported misbehaviour against an independent
 implementation" asks for, every time, mechanically.
 
 The large model decides when one is needed, at proposal time: the
@@ -189,9 +187,8 @@ or extended before the step is handed to a builder.
 
 Two rules keep it honest. The builder of a step doesn't read the
 referee, so that agreement means two derivations and not one copied.
-And the referee is checked against the suite before it judges: this
-repo's was wrong once on its first run, range-checking a quotient on
-the way to a remainder, and the suite showed it.
+And the referee is checked against the suite before it judges, since
+a referee can be wrong too, and the suite is where that shows.
 
 ### Mechanical checks, where a rule can be one
 
@@ -245,8 +242,8 @@ This is a second oracle the agent can't talk its way around, and it's
 where every platform difference was found (macOS's linker, Rosetta's
 floats, a loopback race).
 
-It found one in this repo's own step 1, on the first run. The runtime's
-arithmetic was written `checked(r, __builtin_add_overflow(a, b, &r))`.
+It found one in this repo on the first run of a runtime change. A
+checked operation was written `checked(r, builtin(a, b, &r))`.
 C doesn't order a call's arguments: gcc, the cloud machine's `cc`,
 happened to set `r` first and the suite passed; clang on the M2 read
 `r` before it was set, and three tests printed `0` where they should
@@ -267,8 +264,8 @@ followed is the shape every such find should take:
    `make sanitize`, which would have caught the read on Linux, and on
    its first run caught a second thing: a left shift of a negative
    value, undefined C that every compiler happens to do right).
-5. Name the finder in the commit (D4's subject says "Found by Stevan's
-   make test"), since who found what is part of the record.
+5. Name the finder in the commit ("Found by Stevan's make test"),
+   since who found what is part of the record.
 
 ## What a session looks like
 

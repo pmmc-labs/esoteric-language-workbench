@@ -1,3 +1,0 @@
-; (** 2 4611686018427387903) faults, after a value is computed: the fault
-; ends the program before anything prints. From t/models/pow.py.
-(+ (* 2 3) (** 2 4611686018427387903))
