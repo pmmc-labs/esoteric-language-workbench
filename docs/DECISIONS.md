@@ -85,6 +85,24 @@ the third is new and only the shifts give it.
 **D18. Exponentiation: `(** a b)`, a to the power b, on two integers.**
 *(User)*
 
+**D19. Exponentiation's edges: a negative exponent faults `bad exponent`,
+and `0` to the power `0` is `1`.** *(Default: not discussed; D18 says
+what the operator is and not these cases, so the building agent chose,
+and the person should confirm or change it.)* A negative exponent is a
+mistake, not a fraction: the language has no fractions, and a power
+below 1 is one only for the bases 1 and -1, so the operator would
+otherwise give an answer for some bases and not others. D16 already makes
+a negative shift count a fault for the same reason. The name `bad
+exponent` joins D17's list. `0` to the power `0` is the empty product,
+as in Python, C's `pow` and Lisp's `expt`; a fault would make `(** a 0)`
+depend on `a`. Rejected: a truncated result for a negative exponent
+(`1` over the power, rounded to 0 for a base past 1; a fault for 0),
+which hides the mistake as D16 rejects masking a count; `overflow` for a
+negative exponent, which names the wrong thing; a fault for `0` to the
+power `0`. Not decided, and avoided by the tests: which fault reports
+when a call could fault two ways (a boolean base and a negative
+exponent); the runtime checks the arguments first, as the rest do.
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**

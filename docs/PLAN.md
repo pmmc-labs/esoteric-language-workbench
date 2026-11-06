@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 3 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium. Step 3 was the second experiment: written with its decisions and no model or tests, so the builder wrote the model (`t/models/bits.py`) and its tests, red, before the code. Step 4 is the third: the same, on one line of decision.
+**Progress:** steps 0 to 4 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium. Step 3 was the second experiment: written with its decisions and no model or tests, so the builder wrote the model (`t/models/bits.py`) and its tests, red, before the code. Step 4 was the third: the same, on one line of decision (D18), and where D18 said nothing the builder decided and recorded it as a default (D19).
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -155,13 +155,23 @@ a user's program about 250 operators deep fails under clang's bracket
 limit. A decision when a program that deep is wanted: statements with
 temporaries, or `-fbracket-depth`, or a documented limit.
 
-### 4. Exponentiation
+### 4. Exponentiation (done)
 
 Size: large, for the model. D18. The model first, `t/models/pow.py`
 and its tests, 040 and up, then the code; done when `make test`,
 `make golden-clang` and `make sanitize` pass, the model lists what it
 writes, and `LANGUAGE.md`, this heading and `CLAUDE.md`'s Status are
 moved.
+
+What landed differently from the text: D18 is one line and doesn't say
+what a negative exponent or `0` to the power `0` gives. D19 does, as the
+builder's default (a fault `bad exponent`, and 1), not discussed with
+the person; it is the one place this step went beyond its decisions. The
+power is computed by squaring, so an exponent of 10^18 + 7 takes about
+63 steps; the model's expected output for 040 is a balanced fold, as
+`bits.py` has, for clang's bracket limit. For a base of 2 or more
+in magnitude and an exponent of 63 or more the model says overflow
+without computing the power, which Python couldn't do for 10^18 + 7.
 
 ### 5. [Local bindings.] Size: medium.
 

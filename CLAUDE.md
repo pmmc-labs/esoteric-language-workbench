@@ -12,7 +12,7 @@ per era, dense, with golden test numbers and `Dn` references, so a
 claim can be checked against a test and a decision. Say what's **Next**
 at the end, and what's a candidate but not agreed. The workbench's own:]
 
-**Steps 0 to 2 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
+**Steps 0 to 4 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
 with positions, a program of one expression compiled to C and linked
 with `runtime/rt.c` (D2), integers of 63 bits (D4), the five operators
 on two arguments each (D3), division C's way (D5), faults ending the
@@ -29,11 +29,26 @@ and `bit/shr` (floor division), a count outside 0 to 62 faulting `bad
 shift`; golden tests 030 to 036 from `t/models/bits.py`, which Haiku 5.5
 wrote, the model being the step's large part, and committed red before
 the code (the model's fold is a balanced tree, for clang's bracket
-limit). Not agreed, and avoided by the tests: which fault reports when a
-call could fault two ways (a boolean value and a bad count, say; the
-runtime checks the boolean first). **Next:** nothing agreed; step 4 is
-still a placeholder in the plan, and the calculator grows only when a
-step of the process needs it.
+limit). Not agreed, and avoided by the tests: which fault reports when a call
+could fault two ways (a boolean value and a bad count, say; the runtime
+checks the boolean first). Step 4 (D18, D19): `(** a b)`, a to the power
+b on two integers, computed by squaring so that an exponent of 10^18 + 7
+takes about 63 steps, and a result past the range faults overflow (D4);
+golden tests 040 (the powers that give a value, over 13 bases and 13
+exponents, folded as a balanced tree), 041 (overflow), 042 (`bad
+exponent`) and 043 (`not an integer`) from `t/models/pow.py`, which
+Haiku 5.5 wrote the model
+from D18 and D19 before the code and the files from it. D19 is the builder's
+default for what D18 left open, not discussed with the person: a
+negative exponent faults `bad exponent`, a name that joins D17's list,
+and `0` to the power `0` is 1. Haiku 5.5 built this on a step marked
+large for its model, against `docs/MODELS.md`'s tiers; the build went
+ahead on the caller's instruction, and the model has had no reader but a
+sweep of the runtime against its rule (about 7,000 cases, under UBSan).
+Not agreed for step 4 either, and avoided by the tests: which fault
+reports for a boolean base and a negative exponent. **Next:** nothing
+agreed; step 5 is still a placeholder in the plan, and the calculator
+grows only when a step of the process needs it.
 
 ## Read first, in this order
 

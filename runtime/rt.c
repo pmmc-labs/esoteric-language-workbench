@@ -88,6 +88,26 @@ rt_value rt_bit_shr(rt_value a, rt_value b) {
     return rt_int(q);
 }
 
+// Exponentiation (D18): a to the power b, by squaring, so a large b takes
+// about 63 steps. Each product is checked as a multiplication (D4). When
+// |a| >= 2, a product that overflows 64 bits is past the 63-bit range too:
+// each power squared to has an exponent no larger than b, so no larger in
+// magnitude than the result. The square after b's last bit is not taken,
+// since its exponent is past b. A negative exponent faults (D19).
+rt_value rt_pow(rt_value a, rt_value b) {
+    need_ints(a, b);
+    if (rt_int_of(b) < 0) rt_fault("bad exponent");
+    int64_t x = rt_int_of(a), n = rt_int_of(b), r = 1;
+    int o = 0;
+    while (1) {
+        if (n & 1) { int64_t t; o |= __builtin_mul_overflow(r, x, &t); r = t; }
+        n >>= 1;
+        if (n == 0) break;
+        int64_t t; o |= __builtin_mul_overflow(x, x, &t); x = t;
+    }
+    return checked(r, o);
+}
+
 // The test of an `if` is a boolean, and only a boolean (D13).
 int rt_test(rt_value v) {
     if (v == RT_TRUE) return 1;

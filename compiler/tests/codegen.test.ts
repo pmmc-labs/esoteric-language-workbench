@@ -45,6 +45,11 @@ test('a bit operation takes two arguments, and bit/not is not one (D15)', () => 
     fails('(bit/not 1)', 'not an operator: bit/not', 1, 2);
 });
 
+test('exponentiation takes two arguments, and is its runtime function (D18)', () => {
+    fails('(** 1)', '** takes 2 arguments, not 1', 1, 1);
+    assert.match(compileProgram(read('(** 2 -1)')), /rt_pow\(rt_int\(2LL\), rt_int\(-1LL\)\)/);
+});
+
 test('a shift is its runtime function (D16)', () => {
     assert.match(compileProgram(read('(bit/shr -7 1)')), /rt_bit_shr\(rt_int\(-7LL\), rt_int\(1LL\)\)/);
 });
