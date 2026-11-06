@@ -16,6 +16,60 @@ the model's size is a cost question. Where it isn't (a proposal, a
 model of the definition, a judgement about a design), the model's size
 is the quality.
 
+## Findings so far
+
+Six rounds on this repo's calculator, each one or two runs per cell,
+all three tiers of one model family, read by a large model. The
+records are below, each with its table; this is what they add up to.
+
+1. **Building a decided step** (design agreed, tests written): every
+   tier, every time, at every effort. Six Haiku builds, five Sonnet,
+   one Opus, all green under gcc, clang and the sanitizers, none
+   touching a test. The downgrade is safe exactly where the checks are
+   complete, and the checks were.
+2. **Effort** buys verification outside the tests (a hand check of an
+   expected value, a sweep, a find beside the step), not correctness
+   inside them. Low effort is enough to build; high is for reviewing,
+   modelling, proposing and debugging, where the agent's own checking
+   is the check.
+3. **Writing a model** can be delegated to medium, or small at high
+   effort, when the decisions carry the traps and a referee exists.
+   Every delegated model agreed with the referee. Without the referee
+   the claim couldn't have been made.
+4. **Thin decisions** didn't produce silent invention at either tier:
+   both wrote the choice as an attributed default with its rejections
+   and asked. The decision log's *(default)* is the working fallback
+   for a sub-agent that can't ask.
+5. **Proposing a textbook step** (arithmetic, from step 0): all three
+   tiers wrote a proposal a builder took cold and built green, and all
+   three converged on the semantics. The large tier alone closed the
+   one silence the builders then met.
+6. **Proposing a step with no textbook** (a budget, from one line):
+   all three held together and built green, agreed on the hard parts,
+   and differed only on choices each had flagged. Silences ran 0, 1
+   and 2 by tier. The large tier found a live bug on main while
+   proposing and made it the evidence for a decision; the medium tier
+   left one hole on purpose, with its reason, which made its built
+   language nondeterministic between compilers.
+
+So, which model for what: build with the small tier; write models and
+proposals with the medium tier when a large reader will read the
+result for silences and deliberate holes before the build; keep the
+large tier for that reading, for the referee's design, and for
+anything where what's found beside the step matters. The person's
+picks stay the source of quality: every round ended with a choice
+that was theirs.
+
+What the process gained from the rounds, beyond the model guidance:
+the referee, and the cross-check between referees; a referee as a
+loop; a brief that says stop or flag; a rule that a step names the
+documents it moves; a history-free branch for experiments; and three
+bugs the suite had never shown (an argument-order read under clang, a
+negative left shift, and compiler-dependent faults on siblings), each
+found by a second compiler, a sanitizer, or a proposer rather than a
+test. The limits hold throughout: one run per cell, small features,
+one family.
+
 ## Tiers
 
 - **Large**: the frontier model of the day (Fable, Opus). Sustained
