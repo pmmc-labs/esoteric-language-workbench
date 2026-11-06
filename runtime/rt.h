@@ -42,6 +42,7 @@ rt_value rt_bit_xor(rt_value a, rt_value b);
 rt_value rt_bit_shl(rt_value a, rt_value b);
 rt_value rt_bit_shr(rt_value a, rt_value b);
 rt_value rt_pow(rt_value a, rt_value b);
+rt_value rt_within(rt_value n, rt_value (*body)(void));
 int rt_test(rt_value v);
 void rt_print(rt_value v);
 void rt_fault(const char *what) __attribute__((noreturn));
