@@ -189,6 +189,61 @@ Two things the experiment can't say: how either does when the model
 in `t/models/` isn't written yet, and how either does on a step that
 goes wrong.
 
+## Effort
+
+Effort is a second axis, separate from size: size is what the model
+can see, effort is how long it looks. The two split the escalation
+signals above. Raise effort first when the symptom is that the agent
+isn't verifying: a fix that turned one test green and broke nothing it
+ran, a diff not read back, a report thinner than the work. Raise size
+when the symptom is that it doesn't see it: a wrong model of the
+definition, a design question not raised, a bug it can't place across
+layers. Effort won't supply what a model doesn't know; size won't make
+it check.
+
+### What happened, once more
+
+The same step 2, built cold by Haiku three times from the same commit:
+at low effort, at the default, and at high. One run each.
+
+| | Low | Default | High |
+|---|---|---|---|
+| Green under gcc, clang and the sanitizers, nothing under `t/` touched | yes | yes | yes |
+| Lines changed | 89 | 121 | 110 |
+| Tool calls, time | 16, 1.6 min | 31, 3.4 min | 48, 3.5 min |
+| Tokens | 100K | 152K | 151K |
+| The `toString` bug outside the step | missed, and copied the pattern into its new constants table | found and fixed, saying so | found, left out of the step, recommended a fix |
+| Checked 020's expected value by hand from the definition | no | no | yes |
+| Checked the fault-order question under both compilers before raising it | no | no | yes |
+| Uncertainties reported | 6, all real | 7, all real | 7, all real |
+
+All three runtimes were correct, and the low-effort one the most
+careful about the clang lesson, reading each operand into its own
+statement. What effort bought was not correctness, which the tests
+held at every level, but verification outside the tests: the hand
+check of an expected value, the compiler-by-compiler check of a
+question before raising it, and the find outside the step. High and
+default cost the same tokens; high spent them on half again as many
+tool calls, which is where the checking shows. Low cost two thirds and
+was blind to what the step didn't name.
+
+### Guidance
+
+- **Building a step whose checks are complete**: low effort is enough
+  for correctness, and the cheapest. What it loses is anything the step
+  didn't name, so a diff built at low effort wants a read by someone
+  who will see what's beside it.
+- **Reviewing a diff, writing a model, a proposal, a debug**: high.
+  These are the tasks where the agent's own checking is the check, and
+  high effort is more checking.
+- **Sweeps, searches, reports**: low.
+- A step's `Size` line stays; add an `Effort` line only where it isn't
+  the default, which is for the tasks under high above.
+- Small model at high effort against medium model at default: on this
+  step, the small model at high found more and cost less. That's one
+  comparison on one step, with the design decided and the tests
+  written; it says nothing about a step where they aren't.
+
 ## What to expect, by tier, on this process
 
 - **Large**: the process as written. The person's time goes to

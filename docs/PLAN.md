@@ -81,7 +81,9 @@ their meaning.
 
 The experiment's record is in `docs/MODELS.md`. Two models built this
 step cold from the same commit: Sonnet's build is the branch
-`step2-sonnet`, Haiku's `step2-haiku`, which is what main took. What the
+`step2-sonnet`, Haiku's `step2-haiku`, which is what main took; Haiku
+again at low and at high effort are `step2-haiku-low` and
+`step2-haiku-high`. What the
 step's text lacked, found by both: it named only code and tests, so
 neither was told to move `LANGUAGE.md`, the plan's heading or the
 Status; Sonnet left them, Haiku moved them. A step says which documents
