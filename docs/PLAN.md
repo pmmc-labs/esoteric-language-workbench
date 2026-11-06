@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 3 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium. Step 3 was the second experiment: written with its decisions and no model or tests, so the builder wrote the model (`t/models/bits.py`) and its tests, red, before the code.
+**Progress:** steps 0 to 3 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium. Step 3 was the second experiment: written with its decisions and no model or tests, so the builder wrote the model (`t/models/bits.py`) and its tests, red, before the code. Step 4 is the third: the same, on one line of decision.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -155,7 +155,15 @@ a user's program about 250 operators deep fails under clang's bracket
 limit. A decision when a program that deep is wanted: statements with
 temporaries, or `-fbracket-depth`, or a documented limit.
 
-### 4. [Local bindings.] Size: medium.
+### 4. Exponentiation
+
+Size: large, for the model. D18. The model first, `t/models/pow.py`
+and its tests, 040 and up, then the code; done when `make test`,
+`make golden-clang` and `make sanitize` pass, the model lists what it
+writes, and `LANGUAGE.md`, this heading and `CLAUDE.md`'s Status are
+moved.
+
+### 5. [Local bindings.] Size: medium.
 
 ### 5. [Heap values.]
 

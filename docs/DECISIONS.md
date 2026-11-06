@@ -82,6 +82,9 @@ other way, and that's the point of having both).
 shift`.** *(Default)* The first two are the arithmetic's (D4, D14);
 the third is new and only the shifts give it.
 
+**D18. Exponentiation: `(** a b)`, a to the power b, on two integers.**
+*(User)*
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
