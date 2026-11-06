@@ -169,6 +169,10 @@ What landed: `t/models/pow.py` and tests 040 to 045, committed red, then
 and the table entry. The model's one shortcut, overflow without computing
 when |a| >= 2 and b >= 63, is asserted against the real power up to 200.
 
+Both trials' branches are kept: `step4-sonnet`, which is what main
+took, and `step4-haiku`. The record is in `docs/MODELS.md`. D19 is a
+default the builder wrote; it waits on the person.
+
 ### 5. [Local bindings.] Size: medium.
 
 ### 5. [Heap values.]

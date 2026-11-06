@@ -297,6 +297,52 @@ What the experiment can't say: how either does when the decisions are
 thin, which is the usual case before a step is proposed, and that's
 where a mirror would come from.
 
+## Thin decisions
+
+The step 3 result rested on decisions written with the traps in them.
+Step 4 took that away: exponentiation, with one line of decision,
+D18, "`(** a b)`, a to the power b, on two integers", and a step that
+named the model and the done condition and nothing else. What D18
+leaves open is real: a negative exponent, zero to the zero, overflow,
+a huge exponent with a base of 0, 1 or -1 where a naive loop never
+ends. Under the working rules the move is to stop at "the step needs a
+decision that isn't in `DECISIONS.md`". Sonnet at default and Haiku
+at high, cold, one run each.
+
+| | Sonnet | Haiku, high |
+|---|---|---|
+| Noticed the gaps | all | all |
+| Decided silently | no | no |
+| Wrote the choice as a `Dn` marked default, with rejections, and asked for it to be confirmed | yes, D19 | yes, D19 |
+| The choices | negative exponent faults `bad exponent`; `0 ** 0` is 1; overflow by D4 | the same |
+| Model from the stated definition; expected outputs agree with the referee | 6 of 6 | 4 of 4 |
+| Green under gcc, clang and the sanitizers | yes | yes |
+| Tool calls, tokens, time | 14, 99K, 1.9 min | 45, 184K, 12.5 min |
+| Beyond the step | a test that a huge exponent doesn't hang | a 7,000-case sweep of the runtime against the model under UBSan, not committed |
+| Misreads | called itself the large tier | none |
+
+Neither stopped, and neither could: a subagent has no one to ask.
+What both did instead is the process's own fallback, the *(default)*
+attribution in `DECISIONS.md`: decide, write it down as a default with
+the reasons and what was rejected, and put it first in the report for
+the person to confirm or change. Both chose the same answers, by the
+same analogy (D16's rejection of a masked shift count), without
+seeing each other. Both ran their tests red before building. Both
+wrote the runtime by squaring, so a huge exponent takes 62 steps, and
+both argued in a comment why an intermediate overflow implies the
+result's.
+
+So on thin decisions the risk this page feared, a silent invention,
+didn't happen at either tier, and what happened instead was the right
+fallback. Two things to hold onto. First, a default that's been built
+on is harder to revisit than one that's only proposed, since tests
+now encode it; the person's confirmation of D19 is a real step, not a
+formality, and the brief should say which the agent is to do, stop or
+default, since in a session with a person it should stop. Second,
+this was a decision with an obvious best answer by analogy to one
+already in the log. A thin decision with no neighbour to reason from
+is the case that's still untested.
+
 ## What to expect, by tier, on this process
 
 - **Large**: the process as written. The person's time goes to
