@@ -244,6 +244,59 @@ was blind to what the step didn't name.
   comparison on one step, with the design decided and the tests
   written; it says nothing about a step where they aren't.
 
+## Writing a model, delegated
+
+The page above says a model is large work and not to delegate it,
+because the failure mode, a model that mirrors the implementation, is
+quiet. That was tested on step 3, bit operations, with D15 to D17
+decided and nothing else: no model, no tests. The step told the
+builder to write `t/models/bits.py` and its tests first, from the
+definition, then the code. Sonnet at default effort and Haiku at high
+each did it cold from the same commit. One run each.
+
+The judge was a referee written beforehand and kept out of the repo:
+an evaluator of the whole calculator in Python, from the decisions,
+checked against the thirteen existing tests before it judged anyone.
+It disagreed with one, and the referee was wrong (it range-checked a
+quotient on the way to a remainder, which D5 doesn't), which is the
+check a referee needs too. The decisions were written with the traps
+a mirror of C falls into: a shift count checked rather than masked, a
+left shift that faults rather than wraps, and a right shift that
+rounds toward negative infinity where division truncates.
+
+| | Sonnet | Haiku, high |
+|---|---|---|
+| Model from the definition, not the runtime | yes | yes |
+| Expected outputs agree with the referee | 11 of 11 | 7 of 7 |
+| Green under gcc, clang and the sanitizers | yes | yes |
+| Tool calls, tokens, time | 12, 95K, 2.0 min | 43, 172K, 5.8 min |
+| Edge values, shift counts | 11 values, 7 counts | 13 values, every count |
+| Model and tests committed red before the code | no, one commit | yes, two commits |
+| Hit clang's 256-bracket limit on a linear fold, fixed in the model | yes | yes |
+| Noticed the same limit applies to a user's program | no | yes, and left it for a decision |
+
+Both models were real: Python's unbounded integers, the right shift
+as floor division rather than `>>`, the left as multiplication with
+the range checked after, the count checked first. Neither borrowed
+from `rt.c`. Both runtimes avoided the two undefined-C traps, by
+different routes (complement and shift back; divide and correct). Both
+ran their tests red before building, as the step asked. Both raised
+the open question the decisions leave, which fault reports when a call
+could fault two ways, and neither decided it.
+
+So, against the page's own claim: a model can be delegated to the
+medium tier, and to the small tier at high effort, when the decisions
+are written with the traps in them and a referee exists. The
+condition is the point. The decisions did the large work (saying what
+a shift by 63 does, and that `bit/shr` isn't `/`), and the referee
+made the result checkable. Without the first, a model has nothing to
+compute from but the code; without the second, a mirror passes. What
+remains large is writing the decisions that way, and the referee.
+
+What the experiment can't say: how either does when the decisions are
+thin, which is the usual case before a step is proposed, and that's
+where a mirror would come from.
+
 ## What to expect, by tier, on this process
 
 - **Large**: the process as written. The person's time goes to

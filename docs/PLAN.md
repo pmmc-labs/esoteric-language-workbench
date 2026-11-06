@@ -148,6 +148,13 @@ arity and `bit/not`; they were added to `compiler/tests/codegen.test.ts`.
   anything. Report, don't add.
 
 
+Both trials' branches are kept: `step3-sonnet` and `step3-haiku`,
+which is what main took. The record is in `docs/MODELS.md`. Open, from
+Haiku's run: the compiler emits one nested C expression per program, so
+a user's program about 250 operators deep fails under clang's bracket
+limit. A decision when a program that deep is wanted: statements with
+temporaries, or `-fbracket-depth`, or a documented limit.
+
 ### 4. [Local bindings.] Size: medium.
 
 ### 5. [Heap values.]
