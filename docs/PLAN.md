@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 4 are done. Step 5 has its decision from the person, D20, and waits to be proposed.
+**Progress:** steps 0 to 4 are done. Step 5 is proposed (D20 from the person; D21 to D27 are defaults for the person to pick), and its builder's brief is `docs/BRIEF.md`.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -185,10 +185,37 @@ default the builder wrote; it waits on the person.
 it's a loop now, 100,000 deep, and `PROCESS.md` says a referee is
 written as one.
 
-### 5. A budget: `(within n expr)`
+### 5. A budget: `(within n expr)` (proposed)
 
-D20. To be proposed: its decisions, its text with Referee and Size
-lines, its referee, and a brief for its builder.
+Referee: extend `t/referee/calc.py` to cover this, written before the step is handed to a builder. The traps are the counts (D23), a nested budget's total (D24), the place of the spend among an operation's checks (D25), and the operand order (D21); a mirror of the runtime would copy each one.
+
+Size: large, for the model and the decisions; medium once they're written. The build is a counter in the runtime, a special form, and the generated C's new shape (D27), each of them stated in the decisions.
+
+- **What it adds.** `(within n expr)` (D22): `n` an integer literal of 0 or more, and the value is `expr`'s. An operation performed inside it costs one, charged against every `within` around it (D23, D24), and passing a limit faults `budget spent` (D25, D26). Operands are evaluated left to right and the first fault reached is the program's (D21). Outside any `within`, nothing is counted.
+- **Compile errors**, as unit tests (D7), in `compiler/tests/codegen.test.ts`, checked in this order: arity, then the budget, then `expr`:
+  - `(within 1)` and `(within 1 2 3)`: `within takes 2 arguments, not 1` and `within takes 2 arguments, not 3`, at 1:1.
+  - `(within -1 2)` and `(within x 2)`: `within's budget must be a non-negative integer literal`, at the budget's position, 1:9.
+  - An error inside `expr` is reported as it is anywhere.
+- **What it touches.** `compiler/src/codegen.ts`: the special form beside `if`, and the generated C in the shape of D27 (each operation's non-literal operands into temporaries, in order; a literal stays where it stands; an `if`'s branches as statements, only the taken one run). `runtime/rt.c` and `runtime/rt.h`: a counter and a limit, charged once on entry to each operator's runtime function and to `if`'s test, before that function's checks; the helpers an operator calls don't charge again. The counter is `uint64_t`, so UBSan finds nothing. `compiler/tests/codegen.test.ts`: the two assertions that match the nested form (the nested expression, and the `if`'s test) change to the new form, and the commit says so.
+- **Tests.** Tests 050 to 063, committed red before the code.
+  - `050-within-every-op` is from `t/models/within.py`, which writes `t/050-within-every-op.lang` and its `.expected`: every operator and `if`, each within a budget of exactly one (D23), over the operand pairs that give a value, folded as `pow.py` folds, with boolean results counted by an `if` outside the budget, as `compare.py` counts them. The model computes each value from its decision, copying no runtime code.
+  - The rest are worked by hand from the decisions, and each file's comment says what it is and its count. The builder works each out before reading the value listed here, and reports any difference rather than changing either:
+    - 051 `(within 2 (+ (* 2 3) 4))`: `10`. Two operations, a budget of two.
+    - 052 `(within 1 (+ (* 2 3) 4))`: `fault: budget spent`, exit 1. The `+` is the second.
+    - 053 `(within 0 #true)`: `#true`. No operation.
+    - 054 `(within 5 (+ (within 1 (* 2 3)) (+ 4 5)))`: `15`. Three operations; the inner budget holds its one.
+    - 055 `(within 2 (within 5 (+ (+ 1 2) (+ 3 4))))`: `fault: budget spent`, exit 1. The inner budget is 5; the outer, 2, is passed by the third operation.
+    - 056 `(within 1 (if #true 1 (/ 1 0)))`: `1`. The `if` costs one; the untaken division is not performed.
+    - 057 `(within 0 (if #true 1 2))`: `fault: budget spent`, exit 1.
+    - 058 `(within 0 (/ 1 0))`: `fault: budget spent`, exit 1. The charge comes before the zero check (D25).
+    - 059 `(within 1 (/ 1 0))`: `fault: division by zero`, exit 1.
+    - 060 `(within 1 (+ (/ 1 0) (+ 1 2)))`: `fault: division by zero`, exit 1. The left operand first (D21).
+    - 061 `(within 1 (+ (+ 1 2) (/ 1 0)))`: `fault: budget spent`, exit 1. The left operand is within budget, so the second `/` is the one passed.
+    - 062 `(within 1 (** 1 4611686018427387903))`: `1`. One operation, however large the exponent (D23).
+    - 063 `(within 1 (+ #true (/ 1 0)))`: `fault: division by zero`, exit 1. The right operand's fault comes before `+`'s type check (D21).
+- **Documents it moves.** `docs/LANGUAGE.md`: a section on budgets in prose, the operand order in its forms section, and `budget spent` in its faults section; no tables. This heading and the progress line. `CLAUDE.md`'s Status, at landing. `docs/DESIGN.md` is not moved: it is still the unfilled template, and the decisions carry the design for this step.
+- **Commits.** The red tests and the model, then the generated C (D27), then the runtime and the special form. Each subject names the step and the decisions it builds.
+- **What it leaves out.** Budgets across procedure calls, which step 8 has to decide. Weighing an operation by its work, and a budget for time, memory or the heap. A run-time budget (`n` as an expression). A budget that counts literals. Any flag, environment variable or knob for a budget. Changing how the compiler itself recurses (CLAUDE.md's bracket note, which D27 does not change).
 
 ### 6. [Local bindings.] Referee: [decide]. Size: medium.
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The referee: an evaluator of the calculator from its decisions (D3 to
-D7, D11 to D19), on Python's unbounded integers, with the 63-bit range
-and the division and shift rules applied as the decisions say. Written
+D7, D11 to D19, and the budget, D20 to D27), on Python's unbounded
+integers, with the 63-bit range and the division and shift rules applied
+as the decisions say. Written
 from DECISIONS.md and not from the runtime, so that it is a second
 implementation, and `make checks` runs it over every golden test and
 fails where the two disagree. A program it doesn't cover (an operator
@@ -37,6 +38,16 @@ def need_int(v):
     if isinstance(v, bool):
         raise Fault('not an integer')
     return v
+
+# D23 to D25: a budget. Each performed operator application and each
+# performed `if` is one operation, charged after its operands and before its
+# own checks, against every `within` around it. budget[0] is the count so
+# far and budget[1] the limit, None outside any `within`; passing the limit
+# faults `budget spent` (D26).
+def charge(budget):
+    budget[0] += 1
+    if budget[1] is not None and budget[0] > budget[1]:
+        raise Fault('budget spent')
 
 def quot(a, b):
     if b == 0:
@@ -129,12 +140,16 @@ def atom_value(f):
 # Evaluation as a loop: a frame is a list form, how far along it is, and
 # the values so far. An `if` evaluates its test, then only the taken
 # branch (D13); an operator evaluates both arguments left to right, then
-# applies.
+# applies (D21). A `within` takes its budget as a literal, not evaluated
+# (D22); its limit is the count so far plus the budget, or the outer limit
+# if that is lower (D24), and the outer limit is restored when its body is
+# done. The saved limit waits in the frame's values.
 def ev(form):
     if not isinstance(form, list):
         return atom_value(form)
     stack = [[form, 0, []]]
     result = None
+    budget = [0, None]
     while stack:
         f, i, vals = stack[-1]
         head, args = f[0], f[1:]
@@ -144,6 +159,7 @@ def ev(form):
                 nxt = args[0]
             elif i == 1:
                 t = vals[0]
+                charge(budget)
                 if not isinstance(t, bool):
                     raise Fault('not a boolean')
                 stack[-1][1] = 2
@@ -154,11 +170,27 @@ def ev(form):
                 if stack:
                     stack[-1][2].append(result)
                 continue
+        elif head == 'within':
+            if i == 0:
+                saved, end = budget[1], budget[0] + args[0]
+                if saved is None or end < saved:
+                    budget[1] = end
+                stack[-1][2].append(saved)
+                stack[-1][1] = 1
+                nxt = args[1]
+            else:
+                budget[1] = vals[0]
+                result = vals[1]
+                stack.pop()
+                if stack:
+                    stack[-1][2].append(result)
+                continue
         else:
             if i < 2:
                 stack[-1][1] = i + 1
                 nxt = args[i]
             else:
+                charge(budget)
                 result = BIN[head](vals[0], vals[1])
                 stack.pop()
                 if stack:

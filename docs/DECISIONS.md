@@ -101,6 +101,91 @@ fewer exceptions is easier to check); a bignum intermediate (D4).
 **D20. A budget: `(within n expr)` evaluates `expr` with a budget of
 `n` operations, and faults when it's spent.** *(User)*
 
+**D21. Evaluation order: operands left to right, and the first fault
+reached in that order is the program's.** Within one operation the
+order is: its operands, the budget's charge (D25), its type checks (D11,
+D14), then its own checks: overflow, division by zero, bad shift, bad
+exponent. *(Default)* A budget makes the order visible:
+`(within 1 (+ (/ 1 0) (+ 1 2)))` faults by division by zero, and
+`(within 1 (+ (+ 1 2) (/ 1 0)))` by `budget spent`. C leaves the order
+of a call's arguments unspecified, which is what CLAUDE.md's `checked`
+lesson is about: gcc and clang differ. The type checks before the
+operation's own are what `rt.c` already does (`need_ints` runs before the
+zero check and the shift count). So `(+ #true (/ 1 0))` is division by
+zero, the right operand's fault reached before `+`'s check. This is the
+question the Status left open, which fault reports when a call could
+fault two ways; it's settled here as a default, fair to revisit. No
+existing test has two faults in one program, so none moves. Rejected:
+C's order, which would make a fault depend on the compiler, so that the
+golden tests would be checking a compiler's choice; right to left,
+against reading order (the referee's loop already runs left to right);
+a fixed rank of the fault names, which is arbitrary and needs a table
+nothing else uses.
+
+**D22. `(within n expr)` is a special form, as `if` is (D13): `n` an
+integer literal of 0 or more, `expr` any expression, and the value is
+`expr`'s.** *(Default)* The budget has to exist before `expr` runs, and
+an operator evaluates its arguments first, so `within` can't be an
+operator. `n` is a literal, so a budget can be read from the source, and
+a budget that's negative or not an integer is a compile error (D7), not
+a run-time fault that a program can't test for. Rejected: `n` as an
+expression (a budget computed at run time needs its own evaluation and
+a fault for a non-integer or a negative one, for a need no step has
+yet); a negative `n` as a fault (the same mistake, found later and at
+run time); `within` as an operator (its `expr` would run before any
+budget was set, so nothing in it would be counted).
+
+**D23. What a budget counts: each performed application of one of the
+seventeen operators (`+ - * / %`, `< <= > >=`, `== !=`, `bit/and
+bit/or bit/xor bit/shl bit/shr`, `**`) and each performed `if` costs
+one.** Literals, `#true`, `#false` and `within` cost nothing, and an
+untaken branch costs nothing. A cost is one, not the work: `**` costs
+one whatever its exponent, and a shift one whatever its count.
+*(Default)* A bound on operations is one the author can check by
+counting the source and the run; it is not a bound on time, and
+`(within 1 (** 1 4611686018427387903))` is 1. Rejected: weighing an
+operation by its work (`**` by its squarings, a shift by its count),
+since the count would then depend on how the runtime computes and no one
+could read it from the program; counting only the arithmetic (the
+comparisons and `if` would be free, and a later step would have to
+change the count); counting literals (every program would cost its
+size).
+
+**D24. Nested budgets: an operation counts against every `within`
+around it, and the first limit passed faults.** A `within` sets its
+limit to the count so far plus `n`, or keeps the outer limit when that
+is lower, so `(within 2 (within 5 e))` holds everything in `e` to 2.
+Outside any `within` nothing is counted, and a program without one is
+what it was. *(Default)* The outer budget is the total of everything
+inside it, however the inner ones are set: a budget bounds what is
+around it. Rejected: charging only the innermost `within` (an outer
+budget would then bound nothing that sat inside another, and `within`
+would lose its meaning); the inner `within` replacing the outer (an
+inner budget could then exceed the outer one); a nested `within` as a
+compile error (a restriction with nothing behind it, when the rule is
+one comparison in the runtime).
+
+**D25. When a budget is spent: the operation that would take the count
+past its limit faults `budget spent`, and it is charged after its
+operands and before any of its checks (D21).** So `(within 0 (/ 1 0))` is
+`budget spent`, and `(within 1 (/ 1 0))` is `division by zero`.
+*(Default)* "Faults when it's spent" (D20), read as: the operation that
+would go past the budget is refused before it runs, so the budget stops
+the program at that operation. That is the check
+a computation that doesn't end would need, which is why it's made as the
+program goes and not at the end: procedures (step 8) can make one. Rejected:
+checking when the `within` finishes (a budget spent in the middle would
+be known only at the end, and nothing would stop a computation that
+never ends); charging after the operation's own checks (an operation
+over budget that also faults would be reported as its own fault, and the
+budget would seem to have passed nothing).
+
+**D26. The fault is named `budget spent`.** *(Default)* Beside D17's
+names and D19's `bad exponent`, in the same plain shape. It ends the
+program as any fault does (D6). Rejected: `budget exceeded` (a budget is
+spent, not exceeded, and "exceeded" suggests the excess was allowed);
+`out of budget` (it names the state rather than what happened).
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
@@ -137,6 +222,26 @@ it should be for a test that's meant to run. Messages and positions
 are checked in `compiler/tests/`. Rejected: a `; compile-error:` header
 line in a golden test; it would come when a language has enough
 compile errors to want it.
+
+**D27. The generated C evaluates operands in order: each operation's
+non-literal operands are computed into temporaries, in order, and the
+operation is one statement after them. A literal is used where it
+stands, and only the taken branch of an `if` runs.** *(Default)* This is
+how D21 is kept in C. A call's argument order is unspecified, and the
+nested form the compiler emits now is exactly a call's arguments. The
+change alters the C, so the two unit tests in `compiler/tests/codegen.test.ts`
+that match the nested form (the nested expression, and the `if`'s test)
+are changed to the new form by the step; they assert the shape of the C,
+not what a program does, and the commit says so. The tests that match a
+single operation on literals still match. It also takes the nesting out
+of the generated C, so the bracket limit in PLAN step 3 no longer limits
+a program's depth in the C; the compiler's own recursion, one level per
+operator, still does, and this doesn't change it. Rejected: a
+comma-operator sequence inside the nested form (it keeps the nesting,
+and sequences by a trick a reader of the C would have to decode); the
+order left to the C compiler (then D21 would be the compiler's, and the
+suite would report a difference between gcc and clang as a language
+fact).
 
 ## Project
 
