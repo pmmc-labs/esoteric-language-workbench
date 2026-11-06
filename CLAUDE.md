@@ -36,7 +36,20 @@ integers, a negative exponent
 faulting `bad exponent` and `a ** 0` being 1 (D19, a default the builder
 had to add, since D18 gave only the operator); golden tests 040 to 045
 from `t/models/pow.py`, written and committed red before the code, by
-Sonnet 5.5. **Next:** step 5, a budget, `(within n expr)`, D20 from the person and nothing else decided; to be proposed.
+Sonnet 5.5. Step 5 (D20 to D27): `(within n expr)`, a budget of
+operator applications (all seventeen operators, one each; literals, `if`
+and `within` free), the charge after an operator's operands and before
+its checks, nesting with every budget in force, `budget spent` and `bad
+budget` as faults (D21 to D24, defaults on D20 that the person hasn't
+confirmed); evaluation left to right (D25), which gcc and clang had
+disagreed on; golden tests 050 to 069, written by hand from the step and
+committed red before the code. The runtime keeps `spent` and `limit`
+(D27), each operator function charging first; the generated C puts two
+list operands in temporaries and a `within` in a comma expression
+(D26). Built by Sonnet 5.5 on a step marked medium. **Next:** step 6 is
+still the template's placeholder; to be proposed. Not agreed: which
+fault reports when one operator could fault two ways, and the bracket
+limit.
 
 ## Read first, in this order
 
@@ -97,7 +110,10 @@ Sonnet 5.5. **Next:** step 5, a budget, `(within n expr)`, D20 from the person a
   symptom and the fix, so the lesson isn't relearned.] C doesn't order
   a call's arguments: never pass a variable and a call that sets it in
   the same argument list (`runtime/rt.c`'s arithmetic read `r` before
-  `__builtin_add_overflow` set it under clang, and gcc hid it). The
+  `__builtin_add_overflow` set it under clang, and gcc hid it), and
+  never two arguments that can fault or charge a budget: the compiler
+  puts an operator's two list operands in temporaries with the comma
+  operator (D26). The
   cloud machine's `cc` is gcc; the Mac's is clang; run the suite with
   `LANG_CC=clang` too before calling a runtime change done, and `make
   sanitize`, which found the second one: a left shift of a negative
