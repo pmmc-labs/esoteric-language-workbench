@@ -85,6 +85,19 @@ the third is new and only the shifts give it.
 **D18. Exponentiation: `(** a b)`, a to the power b, on two integers.**
 *(User)*
 
+**D19. What D18 left open: `a ** 0` is 1 for every `a`, `0 ** 0`
+included; a negative exponent faults `bad exponent`, whatever the base;
+a result past the range faults `overflow` (D4).** *(Default, written by
+the agent that built step 4, which could not ask; fair to revisit.)* A
+boolean as either argument faults `not an integer` (D11, D14). The
+negative-exponent rule is on the exponent, so `(** 1 -1)` faults though
+1 would fit, and one rule needs no list of bases. `bad exponent` is a
+fourth fault name beside D17's. Rejected: a negative exponent giving 0
+or the truncated reciprocal (a silent answer for what is nearly always a
+mistake, as D16 rejected masking a count); reusing `bad shift` (the
+wrong word); `0 ** 0` faulting (the empty product is 1, and a rule with
+fewer exceptions is easier to check); a bignum intermediate (D4).
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**

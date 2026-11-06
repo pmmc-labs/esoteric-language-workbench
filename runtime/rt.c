@@ -88,6 +88,34 @@ rt_value rt_bit_shr(rt_value a, rt_value b) {
     return rt_int(q);
 }
 
+// a to the power b (D18, D19). A negative exponent faults `bad exponent`,
+// even for a base of 1 or -1 whose power would fit. Squaring, so the loop
+// runs at most 62 times however large b is, and a base of 0, 1 or -1 with
+// the largest exponent doesn't take 2^62 steps. The base is squared only
+// while bits remain: then some later step multiplies by it or a larger
+// square, so a square that overflows means the result does too (|base| >= 2
+// here; 0, 1 and -1 never overflow). Overflow is the multiplication's own
+// check (D4), the flags statements of their own as at `checked`.
+rt_value rt_pow(rt_value a, rt_value b) {
+    need_ints(a, b);
+    int64_t e = rt_int_of(b);
+    if (e < 0) rt_fault("bad exponent");
+    int64_t base = rt_int_of(a);
+    int64_t r = 1;
+    while (e > 0) {
+        if (e & 1) {
+            int o = __builtin_mul_overflow(r, base, &r);
+            checked(r, o);
+        }
+        e >>= 1;
+        if (e > 0) {
+            int o = __builtin_mul_overflow(base, base, &base);
+            checked(base, o);
+        }
+    }
+    return checked(r, 0);
+}
+
 // The test of an `if` is a boolean, and only a boolean (D13).
 int rt_test(rt_value v) {
     if (v == RT_TRUE) return 1;

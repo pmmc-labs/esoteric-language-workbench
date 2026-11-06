@@ -49,6 +49,12 @@ test('a shift is its runtime function (D16)', () => {
     assert.match(compileProgram(read('(bit/shr -7 1)')), /rt_bit_shr\(rt_int\(-7LL\), rt_int\(1LL\)\)/);
 });
 
+test('** takes two arguments, its base first (D18)', () => {
+    fails('(** 2)', '** takes 2 arguments, not 1', 1, 1);
+    fails('(** 2 3 4)', '** takes 2 arguments, not 3', 1, 1);
+    assert.match(compileProgram(read('(** 2 -1)')), /rt_pow\(rt_int\(2LL\), rt_int\(-1LL\)\)/);
+});
+
 test('if takes three parts, its test first (D13)', () => {
     fails('(if 1 2)', 'if takes 3 arguments, not 2', 1, 1);
     fails('(if)', 'if takes 3 arguments, not 0', 1, 1);

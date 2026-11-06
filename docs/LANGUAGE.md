@@ -40,11 +40,20 @@ times 2^n and faults `overflow` when the result doesn't fit; `(bit/shr
 a n)` is `a` divided by 2^n rounded toward negative infinity, so
 `(bit/shr -7 1)` is `-4`. A count outside 0 to 62 faults `bad shift`.
 
+## Exponentiation
+
+`(** a b)` is `a` to the power `b`, both integers: `(** 2 10)` is
+`1024`, `(** -3 3)` is `-27`, and `(** a 0)` is `1` for every `a`,
+`(** 0 0)` too. A negative exponent faults `bad exponent`, even where
+the answer would fit (`(** 1 -1)`), and a result past the range faults
+`overflow`. `(** 1 4611686018427387903)` is `1` without taking long.
+
 ## Faults
 
-A result that doesn't fit 63 bits, a division by zero, or a shift count
-out of range ends the program: `fault: overflow`, `fault: division by
-zero` or `fault: bad shift` on stderr, and exit 1. Nothing is printed on
+A result that doesn't fit 63 bits, a division by zero, a shift count
+out of range, or a negative exponent ends the program: `fault: overflow`,
+`fault: division by zero`, `fault: bad shift` or `fault: bad exponent` on
+stderr, and exit 1. Nothing is printed on
 stdout.
 
 ## Programs

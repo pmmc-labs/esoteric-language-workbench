@@ -31,9 +31,14 @@ wrote, the model being the step's large part, and committed red before
 the code (the model's fold is a balanced tree, for clang's bracket
 limit). Not agreed, and avoided by the tests: which fault reports when a
 call could fault two ways (a boolean value and a bad count, say; the
-runtime checks the boolean first). **Next:** nothing agreed; step 4 is
-still a placeholder in the plan, and the calculator grows only when a
-step of the process needs it.
+runtime checks the boolean first). Step 4 (D18, D19): `(** a b)` on two
+integers, a negative exponent
+faulting `bad exponent` and `a ** 0` being 1 (D19, a default the builder
+had to add, since D18 gave only the operator); golden tests 040 to 045
+from `t/models/pow.py`, written and committed red before the code, by
+Sonnet 5.5. **Next:** nothing agreed; step 5 is still a placeholder in
+the plan, and the calculator grows only when a step of the process needs
+it.
 
 ## Read first, in this order
 
