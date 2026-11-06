@@ -139,8 +139,7 @@ list, for D9's whitespace; `codegen.test.ts` has more than one test per
 ordering rule (outer before inner, left before right) and one for D14's
 shape. `t/models/arith.py` draws `mixed` with half its left operands
 being the newest call, so that values compound (drawing both operands
-uniformly from the pool, the largest value in the first dozen seeds tried
-was about 2^36), and its seed is the first of those tried that satisfies the
+uniformly from the pool, the one seed tried reached only about 2^36), and its seed is the first of those tried that satisfies the
 assertions at the end of `mixed`, which say what the test must exercise
 (300 operations, every operator, every sign pair of `/` and `%`, a
 product past 2^40, a program value past 2^32).
