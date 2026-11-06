@@ -1,0 +1,2 @@
+; Budgets, D22: the charge comes before the operator's own checks. Expected output by hand from step 5.
+(within 0 (/ 1 0))

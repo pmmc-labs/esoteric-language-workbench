@@ -1,0 +1,8 @@
+; Budgets, D21 and D22: the program of 052 with one operation too few; fails if any operator is not charged. Expected output by hand from step 5.
+(within 16
+  (bit/xor (** (bit/shr (bit/shl 3 4) 2) 2)
+           (if (== (< 1 2) (>= 3 3))
+               (if (!= (<= 5 4) (> 5 4))
+                   (+ (bit/and 12 10) (bit/or (- 7 (* 2 3)) (% (/ 17 2) 5)))
+                   0)
+               0)))

@@ -1,0 +1,2 @@
+; Budgets, D21: ** is one operation whatever its exponent. Expected output by hand from step 5.
+(within 1 (** 1 4611686018427387903))
