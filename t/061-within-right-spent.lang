@@ -1,0 +1,4 @@
+; By hand, no model. The left (+ 1 2) is the first operation and spends the
+; budget of one; the right (/ 1 0) is charged before its zero check (D21,
+; D25), so it is the second and the budget is what faults.
+(within 1 (+ (+ 1 2) (/ 1 0)))

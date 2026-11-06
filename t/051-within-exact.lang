@@ -1,0 +1,3 @@
+; By hand, no model. Two operations (* then +) in a budget of two: spent exactly,
+; not passed (D23, D25). 6 + 4 = 10.
+(within 2 (+ (* 2 3) 4))

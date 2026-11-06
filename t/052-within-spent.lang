@@ -1,0 +1,3 @@
+; By hand, no model. Two operations in a budget of one: the * is the first,
+; and the + would be the second, so it is refused (D25).
+(within 1 (+ (* 2 3) 4))

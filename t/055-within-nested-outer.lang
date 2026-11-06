@@ -1,0 +1,4 @@
+; By hand, no model. The inner budget is five, the outer two. The first two
+; + are within both; the third operation (the outer +) passes the outer
+; budget, which holds everything inside it (D24).
+(within 2 (within 5 (+ (+ 1 2) (+ 3 4))))

@@ -1,0 +1,3 @@
+; By hand, no model. No operation, so a budget of zero is not spent (D23);
+; #true costs nothing.
+(within 0 #true)

@@ -1,0 +1,3 @@
+; By hand, no model. The charge comes before the operation's own checks
+; (D25), so the budget is spent before the division by zero is found.
+(within 0 (/ 1 0))

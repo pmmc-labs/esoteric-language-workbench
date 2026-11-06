@@ -1,0 +1,4 @@
+; By hand, no model. The right operand runs first, its operation charged
+; and within the budget, and its division by zero is reached before the
+; + is charged or checks its #true (D21).
+(within 1 (+ #true (/ 1 0)))

@@ -1,0 +1,4 @@
+; By hand, no model. Three operations: the inner * (inside its budget of
+; one), the (+ 4 5), and the outer +. The outer budget of five holds all
+; three (D24). 6 + 9 = 15.
+(within 5 (+ (within 1 (* 2 3)) (+ 4 5)))
