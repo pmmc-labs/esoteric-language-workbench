@@ -1,5 +1,6 @@
 // What to emit. A program is one expression: an integer, a boolean, an
-// operator applied to expressions, or an `if`. The output is C that
+// operator applied to expressions, an `if`, or a `within` (a budget, D20 to
+// D27). The output is C that
 // computes it with the runtime's checked operations (overflow and division
 // by zero fault, D4, D5; a bad shift count or exponent faults, D16, D19; a non-integer or
 // non-boolean faults, D11, D13, D14, D15). Later steps emit assembly
@@ -35,6 +36,36 @@ const compileIf = (f: Form, args: readonly Form[]): string => {
     return `(rt_test(${compileExpr(test)}) ? ${compileExpr(then)} : ${compileExpr(otherwise)})`;
 };
 
+// `within` is a special form, not an operator: its body must run after the
+// budget is set (D26), so the body is a C function the runtime calls (D27),
+// named by the form's position. The function itself is emitted by
+// `withinFunctions`; `n` is evaluated where the form is, outside the budget
+// it sets (D23).
+const withinName = (f: Form): string => `lang_within_${f.pos.line}_${f.pos.col}`;
+
+const compileWithin = (f: Form, args: readonly Form[]): string => {
+    if (args.length !== 2) fail(f, `within takes 2 arguments, not ${args.length}`);
+    const n = compileExpr(args[0]!);
+    // The body is compiled here only to find its errors at its place in
+    // reading order; its C is made by `withinFunctions`, after this succeeds.
+    compileExpr(args[1]!);
+    return `rt_within(${n}, ${withinName(f)})`;
+};
+
+const isWithin = (f: Form): f is Form & { kind: 'list' } =>
+    f.kind === 'list' && f.items[0]?.kind === 'symbol' && f.items[0].name === 'within';
+
+// The C function of every `within` in a program, each after the ones inside
+// it so that it can name them. Run only once `compileExpr` has succeeded,
+// so that a compile error is the first one in reading order and every
+// `within` here has its two parts.
+const withinFunctions = (f: Form): string[] => {
+    if (f.kind !== 'list') return [];
+    const inner = f.items.slice(1).flatMap(withinFunctions);
+    if (!isWithin(f)) return inner;
+    return [...inner, `static rt_value ${withinName(f)}(void) {\n    return ${compileExpr(f.items[2]!)};\n}\n`];
+};
+
 const compileExpr = (f: Form): string => {
     if (f.kind === 'int') {
         if (f.value < INT_MIN || f.value > INT_MAX) fail(f, 'integer out of range');
@@ -47,6 +78,7 @@ const compileExpr = (f: Form): string => {
     const [head, ...args] = f.items;
     if (head === undefined) return fail(f, 'empty call');
     if (head.kind === 'symbol' && head.name === 'if') return compileIf(f, args);
+    if (head.kind === 'symbol' && head.name === 'within') return compileWithin(f, args);
     const name = head.kind === 'symbol' ? head.name : undefined;
     const op = name === undefined ? undefined : OPS.get(name);
     if (name === undefined || op === undefined) return fail(head, `not an operator: ${name ?? head.kind}`);
@@ -56,10 +88,12 @@ const compileExpr = (f: Form): string => {
 
 export const compileProgram = (forms: readonly Form[]): string => {
     if (forms.length !== 1) throw new CompileError('a program is one form', forms[0]?.pos.line ?? 1, forms[0]?.pos.col ?? 1);
+    const main = compileExpr(forms[0]!);
     return [
         '#include "rt.h"',
+        ...withinFunctions(forms[0]!),
         'rt_value lang_main(void) {',
-        `    return ${compileExpr(forms[0]!)};`,
+        `    return ${main};`,
         '}',
         '',
     ].join('\n');

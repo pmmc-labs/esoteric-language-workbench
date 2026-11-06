@@ -70,3 +70,36 @@ test('the booleans are their own names, and nothing else is', () => {
 test('a name the prototype of an object has is not an operator', () => {
     fails('(toString 1 2)', 'not an operator: toString', 1, 2);
 });
+
+test('within takes two parts, and says where (D26)', () => {
+    fails('(within 5)', 'within takes 2 arguments, not 1', 1, 1);
+    fails('(within)', 'within takes 2 arguments, not 0', 1, 1);
+    fails('(+ 1 (within 1 2 3))', 'within takes 2 arguments, not 3', 1, 6);
+});
+
+test('within is a form, not a name (D26)', () => {
+    fails('within', 'unknown name within', 1, 1);
+    fails('(+ 1 within)', 'unknown name within', 1, 6);
+});
+
+test('the first compile error in reading order is the one reported (D26)', () => {
+    fails('(+ (g) (within 1 (f)))', 'not an operator: g', 1, 5);
+    fails('(+ (within 1 (f)) (g))', 'not an operator: f', 1, 15);
+    fails('(+ (within 1 2 3) (g))', 'within takes 2 arguments, not 3', 1, 4);
+});
+
+test('the C for nested withins: one static function each, the inner first (D27)', () => {
+    const c = compileProgram(read('(within 5 (+ (within 2 (* 3 4)) 1))'));
+    assert.equal(c.match(/static rt_value lang_within_/g)?.length, 2);
+    assert.match(c, /static rt_value lang_within_1_14\(void\) \{\n    return rt_mul\(rt_int\(3LL\), rt_int\(4LL\)\);\n\}/);
+    assert.match(c, /static rt_value lang_within_1_1\(void\) \{\n    return rt_add\(rt_within\(rt_int\(2LL\), lang_within_1_14\), rt_int\(1LL\)\);\n\}/);
+    assert.ok(c.indexOf('lang_within_1_14(void)') < c.indexOf('lang_within_1_1(void)'));
+    assert.ok(c.indexOf('lang_within_1_1(void)') < c.indexOf('lang_main'));
+    assert.match(c, /return rt_within\(rt_int\(5LL\), lang_within_1_1\);/);
+});
+
+test('a within in n is evaluated where the form is, and has its function too (D23, D27)', () => {
+    const c = compileProgram(read('(within (within 1 (+ 1 1)) 7)'));
+    assert.match(c, /return rt_within\(rt_within\(rt_int\(1LL\), lang_within_1_9\), lang_within_1_1\);/);
+    assert.ok(c.indexOf('lang_within_1_9(void)') < c.indexOf('lang_within_1_1(void)'));
+});
