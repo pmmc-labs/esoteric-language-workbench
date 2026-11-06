@@ -1,6 +1,6 @@
 // What to emit. A program is one expression: an integer, a boolean, an
-// operator applied to expressions, or an `if`. The output is C that
-// computes it with the runtime's checked operations (overflow and division
+// operator applied to expressions, or an `if`. The output is C, a
+// statement per operation in evaluation order (D21, D27), that computes it with the runtime's checked operations (overflow and division
 // by zero fault, D4, D5; a bad shift count or exponent faults, D16, D19; a non-integer or
 // non-boolean faults, D11, D13, D14, D15). Later steps emit assembly
 // through a target interface; C is the quickest way to a binary on any
@@ -27,39 +27,93 @@ const BOOLS = new Map<string, string>([['#true', 'RT_TRUE'], ['#false', 'RT_FALS
 
 const fail = (f: Form, message: string): never => { throw new CompileError(message, f.pos.line, f.pos.col); };
 
-// `if` is a special form, not an operator: only the taken branch runs
-// (D13), which the C conditional gives.
-const compileIf = (f: Form, args: readonly Form[]): string => {
-    if (args.length !== 3) fail(f, `if takes 3 arguments, not ${args.length}`);
-    const [test, then, otherwise] = args as [Form, Form, Form];
-    return `(rt_test(${compileExpr(test)}) ? ${compileExpr(then)} : ${compileExpr(otherwise)})`;
+// What compiling an expression gives: the C statements that compute it,
+// and the C expression that is its value once they have run. `atom` is
+// true when that expression is a literal or a temporary, so a parent can
+// use it where it stands; otherwise it is a call, which the parent binds to
+// a temporary of its own, in order (D27). `next` is the next free
+// temporary's number, threaded through rather than kept in a variable.
+type Out = { lines: string[]; expr: string; atom: boolean; next: number };
+
+const indent = (lines: readonly string[]): string[] => lines.map((l) => `    ${l}`);
+
+// Compile an operation's operands in order, each non-literal one into a
+// temporary as soon as it is computed, so that a later operand's statements
+// run after it (D21, D27). C would leave the order of a call's arguments to
+// the compiler.
+const compileOperands = (forms: readonly Form[], next: number): { lines: string[]; atoms: string[]; next: number } => {
+    const lines: string[] = [];
+    const atoms: string[] = [];
+    for (const form of forms) {
+        const out = compileExpr(form, next);
+        lines.push(...out.lines);
+        next = out.next;
+        if (out.atom) atoms.push(out.expr);
+        else {
+            lines.push(`rt_value t${next} = ${out.expr};`);
+            atoms.push(`t${next}`);
+            next += 1;
+        }
+    }
+    return { lines, atoms, next };
 };
 
-const compileExpr = (f: Form): string => {
+// `if` is a special form, not an operator: only the taken branch runs
+// (D13), so the branches are statements of their own, and the value is
+// whichever of them set the result's temporary.
+const compileIf = (f: Form, args: readonly Form[], next: number): Out => {
+    if (args.length !== 3) fail(f, `if takes 3 arguments, not ${args.length}`);
+    const [test, then, otherwise] = args as [Form, Form, Form];
+    const t = compileOperands([test], next);
+    const result = `t${t.next}`;
+    const a = compileBranch(then, result, t.next + 1);
+    const b = compileBranch(otherwise, result, a.next);
+    const lines = [
+        ...t.lines,
+        `rt_value ${result};`,
+        `if (rt_test(${t.atoms[0]})) {`,
+        ...indent(a.lines),
+        '} else {',
+        ...indent(b.lines),
+        '}',
+    ];
+    return { lines, expr: result, atom: true, next: b.next };
+};
+
+// A branch: its statements, then its value stored in the result.
+const compileBranch = (f: Form, result: string, next: number): { lines: string[]; next: number } => {
+    const out = compileExpr(f, next);
+    return { lines: [...out.lines, `${result} = ${out.expr};`], next: out.next };
+};
+
+const compileExpr = (f: Form, next: number): Out => {
     if (f.kind === 'int') {
         if (f.value < INT_MIN || f.value > INT_MAX) fail(f, 'integer out of range');
-        return `rt_int(${f.value}LL)`;
+        return { lines: [], expr: `rt_int(${f.value}LL)`, atom: true, next };
     }
     if (f.kind === 'symbol') {
         const bool = BOOLS.get(f.name);
-        return bool ?? fail(f, `unknown name ${f.name}`);
+        return { lines: [], expr: bool ?? fail(f, `unknown name ${f.name}`), atom: true, next };
     }
     const [head, ...args] = f.items;
     if (head === undefined) return fail(f, 'empty call');
-    if (head.kind === 'symbol' && head.name === 'if') return compileIf(f, args);
+    if (head.kind === 'symbol' && head.name === 'if') return compileIf(f, args, next);
     const name = head.kind === 'symbol' ? head.name : undefined;
     const op = name === undefined ? undefined : OPS.get(name);
     if (name === undefined || op === undefined) return fail(head, `not an operator: ${name ?? head.kind}`);
     if (args.length !== 2) return fail(f, `${name} takes 2 arguments, not ${args.length}`);
-    return `${op}(${compileExpr(args[0]!)}, ${compileExpr(args[1]!)})`;
+    const operands = compileOperands(args, next);
+    return { lines: operands.lines, expr: `${op}(${operands.atoms[0]}, ${operands.atoms[1]})`, atom: false, next: operands.next };
 };
 
 export const compileProgram = (forms: readonly Form[]): string => {
     if (forms.length !== 1) throw new CompileError('a program is one form', forms[0]?.pos.line ?? 1, forms[0]?.pos.col ?? 1);
+    const out = compileExpr(forms[0]!, 0);
     return [
         '#include "rt.h"',
         'rt_value lang_main(void) {',
-        `    return ${compileExpr(forms[0]!)};`,
+        ...indent(out.lines),
+        `    return ${out.expr};`,
         '}',
         '',
     ].join('\n');
