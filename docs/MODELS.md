@@ -650,6 +650,18 @@ three tiers of one family, whose agreement may be shared training as
 much as reasoning. A feature with more surface, or a second family,
 would test both.
 
+## A second family
+
+Every round above is one model family, and the convergence between its
+tiers may be shared training as much as reasoning. The same rounds on
+a model served by ollama on a laptop, through a plain loop of our own
+so a failure is the model's or the brief's (`exp/local/`, its README),
+are the test of that, and of this page's claim about the local tier:
+that context, not reasoning, is its limit, and the documents are cut
+to the step. Round 1 is building step 2 from its red tests, with a
+brief of 1,300 tokens standing in for CLAUDE.md, the plan and the
+decisions; the record of each run goes in `exp/local/runs/`.
+
 ## What to expect, by tier, on this process
 
 - **Large**: the process as written. The person's time goes to

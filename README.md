@@ -26,6 +26,7 @@ Lisps, actors or native code.
 | `t/checks.py` | The mechanical checks: models rerun and compared, tests paired, the referee agreeing with every test, commits naming their decision. |
 | `t/referee/` | The referee: a second implementation from the decisions, which a delegated model is judged against. |
 | `docs/MODELS.md` | Which tasks need which size of model, when to escalate, when a smaller one is safe. |
+| `exp/local/` | The same experiments on a local model through ollama: a plain agent loop, the briefs, the runs. |
 | `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Steps 0 and 1, worked: a calculator, the smallest end-to-end compiler, its runner and its tests. |
 
 ## Using it
