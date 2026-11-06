@@ -707,8 +707,65 @@ and the proposal, are where the other half is tested.
 
 `exp/local/brief-step3.md`, from the commit where step 3 has its
 decisions and nothing else (`936aec3`): the model first, committed
-red, then the build; judged by the referee as the Claude models were.
-Not yet run.
+red, then the build. The same model and machine; a brief of 1,800
+tokens, with the rules for a model and D15 to D17, and the instruction
+not to read the runtime's bit code for the answer. One run, in two
+pieces: the first attempt died at step 8 when ollama ran out of GPU
+memory (the server was set to a 64K context and the prompt had reached
+51K tokens), and the run was resumed from its transcript with the loop
+trimming old results and no longer resending the model's thinking.
+
+| | qwen3.8:27b, local | Sonnet | Haiku, high |
+|---|---|---|---|
+| Model from the definition, not the runtime | yes | yes | yes |
+| Expected outputs agree with the referee | 6 of 6 | 11 of 11 | 7 of 7 |
+| Green under gcc, clang and the sanitizers; nothing existing under `t/` changed | yes | yes | yes |
+| Model and tests committed red before the code | yes | no | yes |
+| Tool calls, model turns | 46, 37 | 12 | 43 |
+| Model time | 50 min | 2.0 min | 5.8 min |
+| Edge values, shift counts | 9 values, 6 counts | 11 values, 7 counts | 13 values, every count |
+| Hit clang's bracket limit and folded as a tree | folded as a tree from the start, told to by the brief | yes, found it | yes, found it |
+
+The model is what the brief asked for: Python's integers, `&`, `|` and
+`^` as they are, the left shift as multiplication with the range
+checked after, the right shift as floor division with the comment that
+it rounds the other way from `/`, the count checked first; the faults
+written by hand with a note that the model has no booleans, as Sonnet's
+had. The referee agrees with every file it wrote.
+
+Two things in the transcript are worth more than the table. First, the
+model's first fold computed the sum of the terms reduced once at the
+end, and the program it emitted reduced at every node; with the
+language's signed remainder those differ, and the compiler's output
+disagreed with the expected file. The model-writer worked out that the
+model had misread its own program and changed the model's arithmetic,
+not the expected file: the compiler was the signal, the program's text
+the authority, and the referee the confirmation. That is the same
+shape as this repo's own step 1, where the compiler found the model's
+fold overflowing. Second, its floor division took three attempts: the
+first negated the dividend and the sanitizer caught the overflow at the
+minimum, the second was off by one and a test caught it, the third was
+right. Each wrong attempt was caught by a check the process had put
+there, and the report says so in order.
+
+It also edited the source files in place this time, with anchored
+Python scripts, rather than rewriting them whole as in round 1; the
+brief's line about context may have done that. The context estimate
+stayed between 6K and 12K tokens for thirty turns after the resume.
+
+What this says: writing a model from decisions with the traps in them
+carried to the second family too, with the referee agreeing on every
+output, and the one correction the model-writer made was the right
+kind. The cost was time, fifty minutes of model time against two for
+Sonnet, and a run that needed the harness to keep its context in
+bounds, which is the local tier's limit as this page predicted it.
+
+### Round 3: proposing a step
+
+`exp/local/brief-propose.md`, from `exp-step0-clean`: the repo at
+step 0 with no history, the one line of D1 and D2, and a brief that
+says what a proposal is, since the local tier doesn't read
+`PROCESS.md`. Not yet run.
 
 ## What to expect, by tier, on this process
 

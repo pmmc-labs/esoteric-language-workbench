@@ -85,7 +85,20 @@ Judge as before, plus the referee: on main, `python3 t/referee/calc.py`
 over each new `t/03*.lang` must print its `.expected`. Push the branch
 and commit the run directory on main.
 
-## Round 3
+## Round 3: proposing step 1 from step 0
 
-Proposing step 1 from step 0 (`exp-step0-clean`), with a brief of its
-own, once rounds 1 and 2 have been read.
+`exp-step0-clean` (commit `4f6563e`) is the repository at step 0 with
+the process as it stands and no history. The brief says what a
+proposal is, since the local tier doesn't read PROCESS.md: decisions
+with rejections, the step's text with its Referee and Size lines, the
+referee, and a brief for a builder; no build.
+
+```
+git worktree add -b local-MODEL-propose ../wt-local-p 4f6563e
+python3 exp/local/agent.py --repo ../wt-local-p --brief exp/local/brief-propose.md \
+    --model qwen3.8:27b --out exp/local/runs/MODEL-propose --num-ctx 24576
+```
+
+Judged as the Claude proposals were: the decisions read for the traps
+and for silences, the referee checked against the others', and the
+proposal handed to a builder.
