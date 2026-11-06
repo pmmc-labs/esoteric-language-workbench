@@ -52,13 +52,23 @@ records are below, each with its table; this is what they add up to.
    left one hole on purpose, with its reason, which made its built
    language nondeterministic between compilers.
 
+7. **A second family** (a 27B model through ollama on a laptop, with
+   a plain loop as the harness): built a step and wrote a model as well
+   as the smallest Claude tier, with the referee agreeing, at no cost
+   in tokens and ten to twenty times the wall time; and could not
+   propose a step, reasoning it out correctly and losing the result
+   before it could write it. Context, not reasoning, as the local-tier
+   claim said, and context meaning the working memory for a design.
+
 So, which model for what: build with the small tier; write models and
 proposals with the medium tier when a large reader will read the
 result for silences and deliberate holes before the build; keep the
 large tier for that reading, for the referee's design, and for
-anything where what's found beside the step matters. The person's
-picks stay the source of quality: every round ended with a choice
-that was theirs.
+anything where what's found beside the step matters; a local model
+builds and writes models from a brief cut to the step, and doesn't
+propose at this size. The person's picks stay the source of quality:
+every round ended with a choice that was theirs. `REPORT.md` is the
+whole on one page.
 
 What the process gained from the rounds, beyond the model guidance:
 the referee, and the cross-check between referees; a referee as a
@@ -797,8 +807,12 @@ the result long enough to write it. The two Claude tiers that proposed
 this step held the design in context and emitted it afterwards; the
 local tier needs to write each decision as it makes it, the file being
 its memory. The brief now says so, and the loop carries a cut-off
-thought into the next turn. A third attempt is to be run; the first
-two are kept (`exp/local/runs/qwen-propose-1`, `qwen-propose`).
+thought into the next turn. The round was stopped there: the laptop
+had reached its limit, and the remaining failures were the harness's
+to solve rather than the question's. The two attempts are kept
+(`exp/local/runs/qwen-propose-1`, `qwen-propose`), and the brief and
+loop are ready for whoever runs a third. `REPORT.md` has the whole in
+one page.
 
 ## What to expect, by tier, on this process
 
