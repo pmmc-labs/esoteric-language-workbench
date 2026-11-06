@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 4 are done. Step 5 is proposed (D20 from the person; D21 to D27 defaults, for the person to confirm), with its referee and its brief (`docs/BRIEF.md`), and waits to be built.
+**Progress:** steps 0 to 5 are done. Step 5 (D20 from the person; D21 to D27 defaults, still for the person to confirm) landed as proposed. Step 6 is a placeholder, not yet planned.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -185,7 +185,7 @@ default the builder wrote; it waits on the person.
 it's a loop now, 100,000 deep, and `PROCESS.md` says a referee is
 written as one.
 
-### 5. A budget: `(within n expr)`
+### 5. A budget: `(within n expr)` (done)
 
 Referee: `t/referee/calc.py`, extended with the proposal, before any
 build. Wanted because the semantics are the language's own, with no
@@ -211,6 +211,13 @@ D21 to D27 are defaults the person hasn't confirmed. If they change
 any, this text and the tests change with them before the build, and
 the referee is rerun over the tests. A build on them unconfirmed builds
 them as written.
+
+Landed as written: tests 050 to 069 committed red (all twenty failing
+under gcc, all but 059 under clang), then the runtime's counter, the
+compiler's `within` and temporaries, and the unit tests; `make test`,
+`make golden-clang`, `make sanitize` and `make check` pass, with no
+earlier file under `t/` changed and no decision added. Built by Sonnet
+5.5 from the brief, on a step marked medium.
 
 Done when: tests 050 to 069 are written exactly as below and committed
 red before the code (every one fails to compile today, since `within`
