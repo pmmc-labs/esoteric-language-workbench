@@ -15,6 +15,14 @@ typedef intptr_t rt_value;
 // before C23, and UBSan says so; the compiler emits the shift anyway.
 static inline rt_value rt_int(int64_t n) { return (rt_value)(n * (1 << RT_INT_SHIFT)) | RT_INT_TAG; }
 
+// The five operations (D9, D10): the exact result, or a fault. Operands
+// are tagged values, as rt_int makes them.
+rt_value rt_add(rt_value a, rt_value b);
+rt_value rt_sub(rt_value a, rt_value b);
+rt_value rt_mul(rt_value a, rt_value b);
+rt_value rt_div(rt_value a, rt_value b);
+rt_value rt_rem(rt_value a, rt_value b);
+
 rt_value lang_main(void);
 void rt_print(rt_value v);
 void rt_fault(const char *what) __attribute__((noreturn));

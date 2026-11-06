@@ -4,8 +4,10 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** step 0 is done, and so are the mechanical checks. Next: step 1, proposed below
-(D8 to D13, defaults until the person agrees), its referee written.
+**Progress:** steps 0 and 1 are done, and so are the mechanical checks
+and the referee for the calculator (`t/referee/calc.py`). Next: step 2,
+to be proposed; nothing is agreed beyond D1 and D2, and D8 to D13 are
+defaults until the person agrees.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -51,7 +53,7 @@ model to write; *medium* where the design is agreed and the step
 describes its tests; *small* where the step is a pattern to repeat.
 A session's first move is to compare its own model with the step's size.
 
-### 1. Arithmetic (proposed)
+### 1. Arithmetic (done)
 
 - The form: an operation, `(op a b)`, `op` one of `+ - * / %` and each
   operand an integer literal or an operation (D8). A program is one

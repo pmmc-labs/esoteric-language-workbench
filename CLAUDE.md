@@ -16,8 +16,18 @@ at the end, and what's a candidate but not agreed. The workbench's own:]
 positions, a program of one integer compiled to C and linked with
 `runtime/rt.c` (D2), integers of 63 bits, a compile error for a literal
 past them as a unit test (D4), golden tests 000 and 001 by hand, and the
-mechanical checks, `t/checks.py` (D5, D7). **Next:** step 1, to be
-proposed; nothing is agreed beyond D1 and D2.
+mechanical checks, `t/checks.py` (D5, D7). **Step 1 is done** (built by
+Sonnet, size medium): `(op a b)` for `+ - * / %` (D8), checked at 63 bits
+by the runtime's `rt_add` to `rt_rem` with `integer overflow` and
+`division by zero` (D9, D10), operands sequenced left to right as
+straight-line C, one statement per operation (D11), nothing folded and
+no position in a fault (D12), and the whole program checked first, in
+D13's order, with its six messages (unit tests in
+`compiler/tests/codegen.test.ts`). Golden tests 010 and 011 by hand and
+012 to 026 from `t/models/arith.py`, 19 in all, which the referee
+(`t/referee/calc.py`) agrees with; clang and the sanitizers are clean.
+**Next:** step 2, to be proposed; nothing is agreed beyond D1 and D2,
+and D8 to D13 are defaults.
 
 ## Read first, in this order
 

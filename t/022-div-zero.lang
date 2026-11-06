@@ -1,0 +1,2 @@
+; Step 1, written by t/models/arith.py (D10): a divisor of zero is a fault.
+(/ 1 0)

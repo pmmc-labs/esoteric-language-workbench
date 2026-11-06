@@ -1,0 +1,2 @@
+; Step 1, written by t/models/arith.py (D9, D10): the minimum divided by -1 is 2**62 and faults.
+(/ -4611686018427387904 -1)

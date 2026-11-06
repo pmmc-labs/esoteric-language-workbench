@@ -1,0 +1,2 @@
+; Step 1, written by t/models/arith.py (D11): the first fault in left to right order is reported: here the left one, division by zero.
+(+ (/ 1 0) (+ 4611686018427387903 1))

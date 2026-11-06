@@ -23,8 +23,21 @@ on, but bring it up before baking it in further.
 
 ## The language
 
-[The forms, the values, the evaluation model. Short; `LANGUAGE.md` has
-them in full for a user.]
+A program is one form: an integer, or an operation `(op a b)` of one of
+`+ - * / %` and exactly two operands, each an integer or an operation
+(D8). An integer is 63 bits; an operation's result is the exact one, and
+a result out of range is the fault `integer overflow`, intermediate
+results included, so the check is at 63 bits and not at the machine's 64
+(D9). `/` and `%` truncate toward zero, `%` takes the dividend's sign,
+and a divisor of zero is the fault `division by zero` (D10). Operands
+are evaluated left to right and the first fault ends the program (D11).
+Nothing is folded at compile time, so a fault is a run-time event and
+its message has no position (D12). A malformed program is a compile
+error at the form at fault, one of six messages, the whole program
+checked before anything runs (D13). `LANGUAGE.md` has them in full for a
+user.
+
+[The rest of the language, as it is added.]
 
 ## The core rule
 

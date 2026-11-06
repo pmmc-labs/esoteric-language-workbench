@@ -1,0 +1,2 @@
+; Step 1, written by t/models/arith.py (D9): 2**64 faults though int64 wraps it to 0, which is in range.
+(* 4294967296 4294967296)

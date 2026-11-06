@@ -1,0 +1,4 @@
+; Step 1: all five operators in one tree, operands that are operations
+; (D8, D10). Expected output by hand: 6 * 7 = 42; 9 / 2 = 4 and
+; 9 % 2 = 1, which sum to 5; 42 - 5 = 37.
+(- (* 6 7) (+ (/ 9 2) (% 9 2)))

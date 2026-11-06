@@ -1,0 +1,2 @@
+; Step 1, written by t/models/arith.py (D10): % takes the dividend's sign in all four sign cases, weighted so a floored one shows.
+(+ (* 1000 (% -7 2)) (+ (* 100 (% 7 -2)) (+ (* 10 (% -7 -2)) (% 7 2))))
