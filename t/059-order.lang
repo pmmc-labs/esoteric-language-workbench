@@ -1,0 +1,2 @@
+; Evaluation order, D25: the left operand first, so the division faults, whichever C compiler. Expected output by hand from step 5.
+(+ (/ 1 0) (+ #true 1))

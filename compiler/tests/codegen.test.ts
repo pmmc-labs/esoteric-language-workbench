@@ -70,3 +70,21 @@ test('the booleans are their own names, and nothing else is', () => {
 test('a name the prototype of an object has is not an operator', () => {
     fails('(toString 1 2)', 'not an operator: toString', 1, 2);
 });
+
+// Step 5: budgets (D20 to D27).
+test('within takes two parts, its budget first (D24)', () => {
+    fails('(within)', 'within takes 2 arguments, not 0', 1, 1);
+    fails('(within 5)', 'within takes 2 arguments, not 1', 1, 1);
+    fails('(+ 1 (within 1 2 3))', 'within takes 2 arguments, not 3', 1, 6);
+    fails('within', 'unknown name within', 1, 1);
+});
+
+test('two list operands go through temporaries, left first (D25, D26)', () => {
+    assert.match(compileProgram(read('(+ (/ 1 0) (+ #true 1))')),
+        /\((t\d+) = rt_div\(rt_int\(1LL\), rt_int\(0LL\)\), (t\d+) = rt_add\(RT_TRUE, rt_int\(1LL\)\), rt_add\(\1, \2\)\)/);
+});
+
+test('a within saves the limit and restores it around its body (D26)', () => {
+    assert.match(compileProgram(read('(within 5 (+ 1 2))')),
+        /\((b\d+) = rt_within\(rt_int\(5LL\)\), rt_within_end\(\1, rt_add\(rt_int\(1LL\), rt_int\(2LL\)\)\)\)/);
+});

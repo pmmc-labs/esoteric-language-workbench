@@ -42,6 +42,10 @@ rt_value rt_bit_xor(rt_value a, rt_value b);
 rt_value rt_bit_shl(rt_value a, rt_value b);
 rt_value rt_bit_shr(rt_value a, rt_value b);
 rt_value rt_pow(rt_value a, rt_value b);
+// A budget (D24, D27): rt_within puts one in force and returns the limit
+// it replaced; rt_within_end restores it and passes the body's value on.
+int64_t rt_within(rt_value n);
+rt_value rt_within_end(int64_t saved, rt_value v);
 int rt_test(rt_value v);
 void rt_print(rt_value v);
 void rt_fault(const char *what) __attribute__((noreturn));

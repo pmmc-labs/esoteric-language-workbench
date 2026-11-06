@@ -235,6 +235,9 @@ proposal was read) stays a rule, and is the person's to watch.
   The Status is the handoff: dense, with `Dn`s and test numbers.
 - `BACKGROUND.md`: prior art, what was borrowed, what's parked (other
   targets, other ideas). Where things go so they stop coming up.
+- `briefs/`: the brief each step was built from, where one was written
+  for a builder other than the proposer; `5-budget.md` is the worked
+  example.
 - The guide (`docs/guide/`): for learning the language. Its code blocks
   are golden tests, checked against the files they came from, so the
   guide can't drift.
