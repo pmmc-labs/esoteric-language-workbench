@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0, 1 and 2 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium. Step 3 is written, with its decisions and no model or tests, as the second experiment: the model is the builder's to write.
+**Progress:** steps 0, 1, 2 and 3 are done; the mechanical checks came with 1. Step 2 was the experiment of `docs/MODELS.md`: written with its tests red, then built by a small model (Haiku 5.5) on a step marked medium. Step 3 was the second experiment: written with its decisions and no model or tests, the model (`t/models/bits.py`, tests 030 to 040) was the builder's to write.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -112,7 +112,7 @@ it moves, and "done when" includes them.
 - Leave out: `and`, `or`, `not`, `cond`, truthiness, anything else.
   Report, don't add, if something seems to need them.
 
-### 3. Bit operations
+### 3. Bit operations (done)
 
 Size: large, for the model; the build is medium once the model and its
 tests exist. The decisions are made (D15 to D17). No model and no tests
@@ -138,6 +138,13 @@ lists every file it writes (`make checks` holds it to that), and
 - Unit tests for what a golden test can't see (D7), if anything new.
 - Leave out: `bit/not`, a count masked rather than checked, unsigned
   anything. Report, don't add.
+
+Landed as written. Notes: the model's folds are balanced trees, since a
+linear fold of 363 terms nests past clang's 256-bracket limit; tests 039
+and 040 (a boolean as an argument) are written out by the model, which
+has no booleans; the order of checks when both a boolean and a bad count
+are present is not in the decisions, and no test depends on it (the
+runtime checks integers first).
 
 
 ### 4. [Local bindings.] Size: medium.

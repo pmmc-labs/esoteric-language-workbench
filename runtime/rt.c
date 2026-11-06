@@ -40,6 +40,39 @@ rt_value rt_mod(rt_value a, rt_value b) {
     return rt_int(rt_int_of(a) % rt_int_of(b));
 }
 
+// Bit operations (D15, D16). and, or and xor on the sign-extended 64-bit
+// values agree with two's complement of any width and stay in range.
+rt_value rt_band(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) & rt_int_of(b)); }
+rt_value rt_bor(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) | rt_int_of(b)); }
+rt_value rt_bxor(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) ^ rt_int_of(b)); }
+
+// The count is checked before the value is used, whatever a is (D16).
+static int64_t shift_count(rt_value b) {
+    int64_t n = rt_int_of(b);
+    if (n < 0 || n > 62) rt_fault("bad shift");
+    return n;
+}
+
+// a * 2^n, multiplied rather than shifted (a left shift of a negative is
+// undefined C), with the range checked after (D4, D16). 2^62 fits int64.
+rt_value rt_shl(rt_value a, rt_value b) {
+    need_ints(a, b);
+    int64_t n = shift_count(b);
+    int64_t r;
+    int o = __builtin_mul_overflow(rt_int_of(a), INT64_C(1) << n, &r);
+    return checked(r, o);
+}
+
+// Rounds toward negative infinity (D16). C's >> on a negative is
+// implementation-defined, so a negative is complemented, shifted and
+// complemented back: ~a is non-negative, and ~(~a >> n) is the floor.
+rt_value rt_shr(rt_value a, rt_value b) {
+    need_ints(a, b);
+    int64_t n = shift_count(b);
+    int64_t x = rt_int_of(a);
+    return rt_int(x >= 0 ? x >> n : ~(~x >> n));
+}
+
 // The orderings take two integers (D12). == and != take any two values:
 // values of different types are unequal, since their bits differ (D14),
 // so comparing the bits is the comparison.

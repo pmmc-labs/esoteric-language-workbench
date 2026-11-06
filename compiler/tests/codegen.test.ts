@@ -46,6 +46,13 @@ test('if takes three parts, its test first (D13)', () => {
     assert.match(compileProgram(read('(if (< 1 2) #true 0)')), /rt_test\(rt_lt\(rt_int\(1LL\), rt_int\(2LL\)\)\) \? RT_TRUE : rt_int\(0LL\)/);
 });
 
+test('a bit operation takes two arguments (D15)', () => {
+    fails('(bit/and 1)', 'bit/and takes 2 arguments, not 1', 1, 1);
+    fails('(bit/shl 1 2 3)', 'bit/shl takes 2 arguments, not 3', 1, 1);
+    fails('(bit/not 1)', 'not an operator: bit/not', 1, 2);
+    assert.match(compileProgram(read('(bit/shr -7 1)')), /rt_shr\(rt_int\(-7LL\), rt_int\(1LL\)\)/);
+});
+
 test('the booleans are their own names, and nothing else is', () => {
     fails('#maybe', 'unknown name #maybe', 1, 1);
     assert.match(compileProgram(read('#false')), /return RT_FALSE;/);

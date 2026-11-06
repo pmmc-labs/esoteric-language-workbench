@@ -11,11 +11,12 @@ const INT_MIN = -(2n ** 62n);
 const INT_MAX = 2n ** 62n - 1n;
 
 // Each operator's runtime function (D3: two arguments each, no variadic
-// arithmetic, so (- 1) is an error rather than a guess). The orderings
-// and == and != are D12. A Map, not an object: a name like `toString`
+// arithmetic, so (- 1) is an error rather than a guess). The bit
+// operations are D15 and D16, the orderings and == and != D12. A Map, not an object: a name like `toString`
 // would be found on an object's prototype.
 const OPS = new Map<string, string>([
     ['+', 'rt_add'], ['-', 'rt_sub'], ['*', 'rt_mul'], ['/', 'rt_div'], ['%', 'rt_mod'],
+    ['bit/and', 'rt_band'], ['bit/or', 'rt_bor'], ['bit/xor', 'rt_bxor'], ['bit/shl', 'rt_shl'], ['bit/shr', 'rt_shr'],
     ['<', 'rt_lt'], ['<=', 'rt_le'], ['>', 'rt_gt'], ['>=', 'rt_ge'], ['==', 'rt_eq'], ['!=', 'rt_ne'],
 ]);
 
