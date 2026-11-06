@@ -30,9 +30,9 @@ sign: `(/ -7 2)` is `-3` and `(% -7 2)` is `-1`.
 give a boolean; `==` and `!=` compare any two values. `(if test then
 else)` gives `then` when `test` is `#true` and `else` when it's
 `#false`, evaluating only that one; anything else as the test faults.
-Arithmetic or an ordering on a boolean faults.
+Arithmetic, an ordering or a bit operation on a boolean faults.
 
-## Bit operations (step 3, being built)
+## Bit operations
 
 `bit/and`, `bit/or` and `bit/xor` on two integers, as two's complement
 of any width agrees: `(bit/and -1 7)` is `7`. `(bit/shl a n)` is `a`
@@ -42,9 +42,10 @@ a n)` is `a` divided by 2^n rounded toward negative infinity, so
 
 ## Faults
 
-A result that doesn't fit 63 bits, or a division by zero, ends the
-program: `fault: overflow` or `fault: division by zero` on stderr, and
-exit 1. Nothing is printed on stdout.
+A result that doesn't fit 63 bits, a division by zero, or a shift count
+out of range ends the program: `fault: overflow`, `fault: division by
+zero` or `fault: bad shift` on stderr, and exit 1. Nothing is printed on
+stdout.
 
 ## Programs
 

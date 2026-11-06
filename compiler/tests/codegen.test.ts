@@ -39,6 +39,16 @@ test('a comparison takes two arguments (D12)', () => {
     fails('(== 1)', '== takes 2 arguments, not 1', 1, 1);
 });
 
+test('a bit operation takes two arguments, and bit/not is not one (D15)', () => {
+    fails('(bit/shl 1)', 'bit/shl takes 2 arguments, not 1', 1, 1);
+    fails('(bit/and 1 2 3)', 'bit/and takes 2 arguments, not 3', 1, 1);
+    fails('(bit/not 1)', 'not an operator: bit/not', 1, 2);
+});
+
+test('a shift is its runtime function (D16)', () => {
+    assert.match(compileProgram(read('(bit/shr -7 1)')), /rt_bit_shr\(rt_int\(-7LL\), rt_int\(1LL\)\)/);
+});
+
 test('if takes three parts, its test first (D13)', () => {
     fails('(if 1 2)', 'if takes 3 arguments, not 2', 1, 1);
     fails('(if)', 'if takes 3 arguments, not 0', 1, 1);

@@ -1,9 +1,10 @@
 // What to emit. A program is one expression: an integer, a boolean, an
 // operator applied to expressions, or an `if`. The output is C that
 // computes it with the runtime's checked operations (overflow and division
-// by zero fault, D4, D5; a non-integer or non-boolean faults, D11, D13,
-// D14). Later steps emit assembly through a target interface; C is the
-// quickest way to a binary on any machine and is enough to start.
+// by zero fault, D4, D5; a bad shift count faults, D16; a non-integer or
+// non-boolean faults, D11, D13, D14, D15). Later steps emit assembly
+// through a target interface; C is the quickest way to a binary on any
+// machine and is enough to start.
 import { CompileError } from './errors.ts';
 import type { Form } from './sexp.ts';
 
@@ -12,11 +13,13 @@ const INT_MAX = 2n ** 62n - 1n;
 
 // Each operator's runtime function (D3: two arguments each, no variadic
 // arithmetic, so (- 1) is an error rather than a guess). The orderings
-// and == and != are D12. A Map, not an object: a name like `toString`
-// would be found on an object's prototype.
+// and == and != are D12, the bit operations D15 and D16. A Map, not an
+// object: a name like `toString` would be found on an object's prototype.
 const OPS = new Map<string, string>([
     ['+', 'rt_add'], ['-', 'rt_sub'], ['*', 'rt_mul'], ['/', 'rt_div'], ['%', 'rt_mod'],
     ['<', 'rt_lt'], ['<=', 'rt_le'], ['>', 'rt_gt'], ['>=', 'rt_ge'], ['==', 'rt_eq'], ['!=', 'rt_ne'],
+    ['bit/and', 'rt_bit_and'], ['bit/or', 'rt_bit_or'], ['bit/xor', 'rt_bit_xor'],
+    ['bit/shl', 'rt_bit_shl'], ['bit/shr', 'rt_bit_shr'],
 ]);
 
 // The booleans, read as the symbols the reader makes of them (D11).

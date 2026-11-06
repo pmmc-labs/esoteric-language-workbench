@@ -2,8 +2,8 @@
 """t/030 to t/036: the five bit operations (D15, D16) and the faults the
 decisions name (D17, and D11 for the booleans).
 
-030: bit/and, bit/or and bit/xor over every pair of the edge values, each
-     term folded into one expression as 010 folds the arithmetic.
+030: bit/and, bit/or and bit/xor over every pair of the edge values, folded
+     into one expression (fold below; 010 folds the same way, as a chain).
 031: bit/shl over every value and every count 0 to 62 that gives a value.
 032: bit/shr over every value and every count 0 to 62.
 033: (bit/shl 1 62) faults overflow: 2^62 is past the range (D4, D16).
@@ -118,15 +118,22 @@ def pairs(name):
     return out
 
 def fold(terms):
-    """The terms, each reduced mod PRIME before it's added, folded into one
-    expression: (% (+ acc (% t p)) p). Returns the text and the value."""
-    text, v = terms[0]
-    acc_text = f'(% {text} {PRIME})'
-    acc = tmod(v, PRIME)
-    for text, v in terms[1:]:
-        acc_text = f'(% (+ {acc_text} (% {text} {PRIME})) {PRIME})'
-        acc = tmod(acc + tmod(v, PRIME), PRIME)
-    return acc_text, acc
+    """The terms, each reduced mod PRIME before anything is added, summed
+    pairwise into one expression: (% (+ L R) p) at each join, so nothing in
+    the sum leaves the range. The sum is a balanced tree and not a chain,
+    since a chain nests one bracket per term, and clang stops at 256 (the
+    first version, a chain of 500 terms, didn't compile under clang).
+    Returns the text and the value."""
+    level = [(f'(% {text} {PRIME})', tmod(v, PRIME)) for text, v in terms]
+    while len(level) > 1:
+        nxt = []
+        for i in range(0, len(level) - 1, 2):
+            (lt, lv), (rt, rv) = level[i], level[i + 1]
+            nxt.append((f'(% (+ {lt} {rt}) {PRIME})', tmod(lv + rv, PRIME)))
+        if len(level) % 2:
+            nxt.append(level[-1])
+        level = nxt
+    return level[0]
 
 def folded(names):
     terms = []

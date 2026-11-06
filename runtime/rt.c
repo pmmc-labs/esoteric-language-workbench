@@ -50,6 +50,44 @@ rt_value rt_ge(rt_value a, rt_value b) { need_ints(a, b); return rt_bool(rt_int_
 rt_value rt_eq(rt_value a, rt_value b) { return rt_bool(a == b); }
 rt_value rt_ne(rt_value a, rt_value b) { return rt_bool(a != b); }
 
+// Bit operations on the sign-extended values (D15): two's complement of
+// any width agrees, so the 64-bit operators give the 63-bit answer, which
+// is always in range.
+rt_value rt_bit_and(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) & rt_int_of(b)); }
+rt_value rt_bit_or(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) | rt_int_of(b)); }
+rt_value rt_bit_xor(rt_value a, rt_value b) { need_ints(a, b); return rt_int(rt_int_of(a) ^ rt_int_of(b)); }
+
+// A shift's count is 0 to 62 (D16): 63 or more shifts every bit out of a
+// 63-bit integer, and a negative count is a mistake, not the other shift.
+static int64_t shift_count(rt_value a, rt_value n) {
+    need_ints(a, n);
+    if (rt_int_of(n) < 0 || rt_int_of(n) > 62) rt_fault("bad shift");
+    return rt_int_of(n);
+}
+
+// A left shift is a multiplication by 2^k, checked as one (D4, D16): a
+// result past the range faults overflow. The count is a statement of its
+// own, for the argument-order reason at `checked`.
+rt_value rt_bit_shl(rt_value a, rt_value b) {
+    int64_t k = shift_count(a, b);
+    int64_t r;
+    int o = __builtin_mul_overflow(rt_int_of(a), (int64_t)1 << k, &r);
+    return checked(r, o);
+}
+
+// A right shift rounds toward negative infinity (D16), where `/` rounds
+// toward zero (D5). So the quotient is C's, corrected when a negative
+// dividend left a remainder. `>>` isn't used: a right shift of a negative
+// value is implementation-defined in C.
+rt_value rt_bit_shr(rt_value a, rt_value b) {
+    int64_t k = shift_count(a, b);
+    int64_t d = (int64_t)1 << k;
+    int64_t x = rt_int_of(a);
+    int64_t q = x / d;
+    if (x < 0 && x % d != 0) q -= 1;
+    return rt_int(q);
+}
+
 // The test of an `if` is a boolean, and only a boolean (D13).
 int rt_test(rt_value v) {
     if (v == RT_TRUE) return 1;

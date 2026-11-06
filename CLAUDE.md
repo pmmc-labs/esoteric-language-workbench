@@ -23,9 +23,17 @@ mechanical checks, `t/checks.py` (D8, D10). Step 2 (D11 to D14):
 024), the six comparisons on integers, `==` and `!=` on any values
 (020, from `t/models/compare.py`), and `if`, the test checked to be a
 boolean, only the taken branch run (022); built by Haiku 5.5 on a step
-marked medium. **Next:** nothing agreed; step 3 is still a placeholder
-in the plan, and the calculator grows only when a step of the process
-needs it.
+marked medium. Step 3 (D15 to D17): `bit/and`, `bit/or` and `bit/xor`,
+and the shifts `bit/shl` (checked as a multiplication, so `overflow`)
+and `bit/shr` (floor division), a count outside 0 to 62 faulting `bad
+shift`; golden tests 030 to 036 from `t/models/bits.py`, which Haiku 5.5
+wrote, the model being the step's large part, and committed red before
+the code (the model's fold is a balanced tree, for clang's bracket
+limit). Not agreed, and avoided by the tests: which fault reports when a
+call could fault two ways (a boolean value and a bad count, say; the
+runtime checks the boolean first). **Next:** nothing agreed; step 4 is
+still a placeholder in the plan, and the calculator grows only when a
+step of the process needs it.
 
 ## Read first, in this order
 
@@ -85,7 +93,12 @@ needs it.
   cloud machine's `cc` is gcc; the Mac's is clang; run the suite with
   `LANG_CC=clang` too before calling a runtime change done, and `make
   sanitize`, which found the second one: a left shift of a negative
-  value is undefined before C23, so the tag multiplies instead.
+  value is undefined before C23, so the tag multiplies instead. Clang
+  also stops at 256 levels of brackets, so a generated expression that
+  nests one level per term of a long chain won't compile (the bit model
+  folds as a tree for this); the compiler itself nests one level per
+  operator, so a program that deep fails under clang too, and nothing
+  fixes that yet.
 - Comments explain why, not what.
 
 ## Toolchain
