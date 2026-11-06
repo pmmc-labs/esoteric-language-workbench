@@ -61,3 +61,16 @@ test('a malformed form after an operand that would fault is still a compile erro
     refused('(+ (/ 1 0) (foo))', "unknown operator 'foo'", 1, 13);
     refused('(+ (* 4611686018427387903 4611686018427387903) x)', "can't compile symbol yet", 1, 48);
 });
+
+// D14: one statement per node, a temporary each, numbered in the order
+// evaluated; the last one is returned. The statements are written out
+// from the decision's own example.
+test('the C is straight-line, a temporary per node in evaluation order', () => {
+    const c = compileProgram(read('(+ (* 2 3) 4)'));
+    const lines = c.split('\n').map((l) => l.trim());
+    const at = (s: string) => lines.findIndex((l) => l.endsWith(s));
+    const order = ['t0 = rt_int(2LL);', 't1 = rt_int(3LL);', 't2 = rt_mul(t0, t1);', 't3 = rt_int(4LL);', 't4 = rt_add(t2, t3);', 'return t4;'].map(at);
+    assert.ok(order.every((i) => i >= 0), c);
+    assert.deepEqual(order, [...order].sort((a, b) => a - b));
+    assert.ok(!/rt_\w+\([^)]*rt_\w+\(/.test(c.replace(/rt_int\(/g, 'i(')), 'no nested calls');
+});

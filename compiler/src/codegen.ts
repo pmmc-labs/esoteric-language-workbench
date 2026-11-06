@@ -11,6 +11,9 @@ const INT_MAX = 2n ** 62n - 1n;
 
 const OPERATORS: readonly string[] = ['+', '-', '*', '/', '%'];
 
+// The runtime function for each operator the code generator handles.
+const RT_FUNCTION: Readonly<Record<string, string>> = { '+': 'rt_add', '-': 'rt_sub', '*': 'rt_mul' };
+
 const err = (message: string, f: Form): CompileError => new CompileError(message, f.pos.line, f.pos.col);
 
 // The checks of D15, over every form before any C is written, so that a
@@ -38,7 +41,21 @@ type Emitted = { code: string[]; result: string; next: number };
 
 const emit = (f: Form, n: number): Emitted => {
     if (f.kind === 'int') return { code: [`rt_value t${n} = rt_int(${f.value}LL);`], result: `t${n}`, next: n + 1 };
-    throw err(`can't compile ${f.kind} yet`, f);
+    if (f.kind !== 'list') throw err(`can't compile ${f.kind} yet`, f);
+    const head = f.items[0]!;
+    const fn = head.kind === 'symbol' ? RT_FUNCTION[head.name] : undefined;
+    if (fn === undefined) throw err(`can't compile ${f.kind} yet`, f);
+    // Left operand's statements, then the right's, then the operation:
+    // the order the temporaries are numbered in is the order of evaluation
+    // (D12, D14).
+    const left = emit(f.items[1]!, n);
+    const right = emit(f.items[2]!, left.next);
+    const t = `t${right.next}`;
+    return {
+        code: [...left.code, ...right.code, `rt_value ${t} = ${fn}(${left.result}, ${right.result});`],
+        result: t,
+        next: right.next + 1,
+    };
 };
 
 export const compileProgram = (forms: readonly Form[]): string => {
