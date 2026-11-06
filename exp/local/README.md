@@ -45,10 +45,14 @@ usual ones are the context filling up and a tool call the server
 couldn't parse. Round 2's first attempt died that way on the M2 Max:
 the prompt had grown to 51,000 tokens, past the 32,768 asked for, and
 ollama's MLX runner prefilled it anyway until the GPU ran out of memory
-at 22 GiB. So on 32 GB with a 27B model, `--num-ctx 24576` is the safer
-setting, and the loop now cuts old results and never resends a thinking
-model's reasoning, and warns when its own estimate of the context nears
-the limit. `--think on|off` sets ollama's
+at 22 GiB. The server had been set to a 64K context, and on this
+runner the server's setting sizes the model's cache when it loads, so
+the request's `--num-ctx` didn't cap it. Set ollama's own context
+length (the app's setting, or `OLLAMA_CONTEXT_LENGTH`) to what the
+machine holds beside the model, 32768 or 24576 on 32 GB with a 27B
+model and speculative decoding on; the loop cuts old results and never
+resends a thinking model's reasoning, so its prompts stay far below
+that, and it warns when its own estimate nears the limit. `--think on|off` sets ollama's
 thinking switch for models that have one; the default leaves it to the
 model. `--max-steps` (80) ends a run that doesn't call `done`.
 
