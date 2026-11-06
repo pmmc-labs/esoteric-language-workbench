@@ -36,9 +36,11 @@ integers, a negative exponent
 faulting `bad exponent` and `a ** 0` being 1 (D19, a default the builder
 had to add, since D18 gave only the operator); golden tests 040 to 045
 from `t/models/pow.py`, written and committed red before the code, by
-Sonnet 5.5. **Next:** nothing agreed; step 5 is still a placeholder in
-the plan, and the calculator grows only when a step of the process needs
-it.
+Sonnet 5.5. **Next:** step 5, a budget, proposed three ways on branches
+(`docs/PLAN.md`, step 5), waiting on the person's three picks. Open:
+on main, a call whose two operands could each fault reports a different
+fault under gcc and clang, since the C passes them as one call's
+arguments; two of the step 5 proposals fix it.
 
 ## Read first, in this order
 

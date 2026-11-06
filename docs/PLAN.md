@@ -192,11 +192,20 @@ is written as one.
 
 ### 5. A budget: `(within n expr)` (an experiment, not agreed)
 
-The next experiment of `docs/MODELS.md` ("The untested case"): one line
-of decision from the person, `(within n expr)` evaluates `expr` with a
-budget of `n` operations and faults when it's spent, and the rest for
-proposers to invent, on a step with no textbook. Not to be built on
-main until the experiment has run and the person has picked.
+The experiment of `docs/MODELS.md` ("The untested case, run"): one
+line of decision from the person, D20 on the branch `exp-step5`, and
+the rest proposed three ways, on `prop5-opus`, `prop5-sonnet` and
+`prop5-haiku`, each built green on `build5-opus`, `build5-sonnet` and
+`build5-haiku`. The three agree on the charge point, on nesting and on
+the edges, and differ on three choices the person picks: whether an
+`if` costs an operation, whether `n` is a literal or an expression, and
+the fault's name. Main takes one of them once the person has picked.
+
+Open, found by the round: the language on main is nondeterministic
+between gcc and clang where a call's two operands could each fault,
+`(+ (/ 1 0) (+ #true 1))`, since the generated C passes them as one
+call's arguments. Opus's D25 and D26 and Haiku's D21 and D27 each fix
+it; the fix comes to main with step 5.
 
 ### 6. [Local bindings.] Referee: [decide]. Size: medium.
 

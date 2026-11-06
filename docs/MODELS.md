@@ -493,60 +493,108 @@ referee is written as one. And `make hooks` in a worktree writes the
 hook into the main checkout's git directory, which every builder
 reported as a write it was told not to make.
 
-## The untested case, and how to test it
+## The untested case, run
 
-Every round so far had a textbook behind it. Integer arithmetic,
-comparisons, shifts and powers have right answers that every tier
-knows, so "decided the traps" meant "wrote down the known answer
-before the builder met it". The claim this page makes about large
-work is about the other case: semantics that are the language's own,
-where there's nothing to know and the proposer has to invent a rule
-that holds together, and where a silence isn't a missing textbook
-line but a hole a builder fills with whatever is nearest.
+The round above was repeated on a step with no textbook: a budget,
+`(within n expr)`, one line of decision from the person (D20) on the
+calculator as it stood after step 4, on an orphan branch with no
+history (`exp-step5`). Opus, Sonnet and Haiku, each at high effort,
+cold, proposed it: decisions, step text, referee, brief, no build. Then
+Sonnet at high effort built all three, since every Size line said
+medium for the build and one builder for all keeps the builder out of
+the comparison. One run per cell, read at high effort.
 
-The design, to run when wanted:
+What D20 leaves open, and nothing in the repo answered: what counts as
+an operation, how `**` counts when the runtime loops for it, what a
+budget inside a budget means, a budget of zero, the branch an `if`
+doesn't take, a fault inside a budget, what `n` may be, the fault's
+name. None of that was in the branch; the proposers found the questions
+themselves.
 
-- **The step.** A budget: `(within n expr)` evaluates `expr` with a
-  budget of `n` operations and faults when it's spent. One line of
-  decision from the person, as D18 was. Everything else is the
-  proposer's to invent, and none of it has a textbook: what counts as
-  an operation (each operator applied? a literal? the test of an
-  `if`? the `within` itself?), how `**` counts when the runtime loops
-  62 times for it, what a budget inside a budget means (its own, or
-  the lesser of the two, or both drawn down), a budget of 0, a
-  budget exhausted in the branch an `if` doesn't take, whether a
-  fault inside `within` is the fault or the budget's, what the fault
-  is called. Each has three defensible answers and the proposal has
-  to pick one and make the others fit it.
-- **The base.** The calculator as it stands after step 4, on an
-  orphan branch with no history, so `if` and `**` exist for the
-  budget to interact with.
-- **The proposers.** Opus, Sonnet and Haiku at high effort, cold, with
-  the proposal brief of the last round: decisions, step, referee,
-  brief, no build. The referee has to count, which is new: the one
-  for this repo evaluates, it doesn't meter.
-- **The builds.** Each proposal to the builder its Size line names,
-  as before. Each proposal's referee run over each other proposal's
-  tests as well as its own, which on a textbook step would agree and
-  on this one won't: where two referees disagree on a test, the
-  decisions of the test's proposer say which is right, and a proposer
-  whose decisions don't say has left the hole the experiment is for.
-- **The judge's reading**, since there's no right answer to count
-  against: for each proposal, the questions above and whether each is
-  decided; whether the decisions contradict each other; whether each
-  rule is tied to an existing decision by analogy or stands alone;
-  whether the tests reach the edges (nested budgets, zero, a budget
-  larger than needed, exhaustion in the untaken branch); and what
-  the builder reported as silence.
-- **What it costs:** about what the last round did, three proposals
-  and three builds, and a read of six referees against six test sets.
+### The proposals
 
-The prediction to test is the one above: that on a step with no
-textbook, the number of silences a builder has to fill separates the
-tiers, and that the large tier's decisions hold together where the
-others' leave holes or contradict. If that doesn't happen, the claim
-that proposals are large work has no support left, and this page
-should say so.
+| | Opus | Sonnet | Haiku |
+|---|---|---|---|
+| Tokens, tool calls, time | 205K, 47, 23.6 min | 195K, 39, 14.5 min | 208K, 32, 8.4 min |
+| What an operation is | the seventeen operators; `if`, `within` and atoms free; `**` one | the same | the seventeen, and each `if` taken, one each |
+| The charge | after the operands, before the operator's own checks | the same | the same |
+| Nesting | every budget in force, the lowest governs, the inner's unused part dropped | the same | the same |
+| `n` | any expression, evaluated outside its own budget; a boolean `not an integer`, a negative `bad budget` | the same | a literal, 0 or more; else a compile error |
+| The order of a call's operands | decided, left to right, with the evidence that gcc and clang disagree on main today | left unspecified, named as a step of its own, and tests with two faulting siblings forbidden | decided, left to right, and the order of one operator's own checks too |
+| The generated C | C's comma operator with two temporaries where both operands are lists; nothing else changes | a static C function per `within`, no sequencing of operands | straight-line statements, a temporary per operand, which retires the bracket limit |
+| The fault's name | `budget spent`, `bad budget` | `out of budget`, `bad budget` | `budget spent` |
+| Tests | 20, all by hand; every operator once in one program | 22, all by hand; checked in a prototype against eight deliberately wrong runtimes | 13 by hand and one from a model the builder writes |
+| The referee checked against | a prototype on 1,200 random programs under gcc and clang | the prototype and the eight mutants | its author, on 30 cases |
+| Size | medium | medium | large for the model, medium for the build |
+
+The three agree on the parts that were hardest to see: where the
+charge falls, which decides `(within 0 (/ 1 0))`; that every budget in
+force applies; that `**` is one operation however it's computed; that
+a budget of zero allows a program with no operations. They split on
+three choices, and each proposer flagged its own choice as the one the
+person should look at: whether an `if` costs, whether `n` is a literal,
+and what the fault is called.
+
+The one real divergence is the order of operands. Opus found, while
+proposing, that the language on main is already nondeterministic:
+`(+ (/ 1 0) (+ #true 1))` faults `not an integer` under gcc and
+`division by zero` under clang, and no test had noticed because none
+had two faulting siblings. It decided the order and wrote the bug into
+D25 as the reason. Haiku decided the order too, from the general
+lesson in CLAUDE.md. Sonnet saw it, judged the codegen rewrite a step
+of its own, and forbade tests that would expose it. Under a budget that
+isn't a corner: in Sonnet's built language `(within 1 (+ (* 2 3) (/ 1
+0)))` faults `division by zero` under gcc and `out of budget` under
+clang, and the suite passes under both.
+
+### The builds and the cross-check
+
+| | Opus's | Sonnet's | Haiku's |
+|---|---|---|---|
+| Green under gcc, clang and the sanitizers | 46 tests | 48 tests | 40 tests |
+| Builder's tokens, tool calls, time | 111K, 18, 3.5 min | 119K, 24, 4.0 min | 138K, 33, 6.4 min |
+| Silences or errors the builder met | none | one error: D27 claimed its lifted functions reported compile errors in reading order, and they didn't; the builder fixed it and reported it | two silences: a budget literal past the integer range, decided and reported; when an `if` is charged relative to its test, decided without noticing it was open |
+| gcc and clang agree on the built language | yes | no | yes |
+
+Each proposal's referee was then run over every build's tests, with
+the two fault names treated as one. Opus's and Sonnet's agree on all 94
+of each other's tests. Both differ from Haiku's on one test, the one
+that charges an `if`. Haiku's differs from theirs on seven each, every
+one a test that charges an `if` or computes `n`. Three derivations of
+semantics nobody had written down, and nothing hidden between them:
+every disagreement is one of the three flagged choices.
+
+### What this says
+
+The prediction was that on a step with no textbook, the silences a
+builder has to fill would separate the tiers, and the large tier's
+decisions would hold together where the others' left holes. The
+gradient is there and it runs the predicted way: no silence in Opus's,
+one wrong claim in Sonnet's, two silences in Haiku's. It's smaller than
+predicted, since all three held together and all three built green.
+The one hole that matters, the order, was Sonnet's, and it wasn't an
+oversight: it was weighed, named, and left, with the reason that the
+fix was a rewrite. That is a judgement a person can overrule in a
+minute, and it's exactly the judgement the proposal exists to put in
+front of them. What the large tier did that the others didn't was find
+the live bug on main and make it the evidence for the decision.
+
+So the claim at the top of this page survives, narrower. Proposing a
+step whose semantics are the language's own can be delegated to the
+medium tier, and the small tier's was buildable too; the result will
+hold together and build. What the large tier adds is in what's left
+open and in what it finds beside the step, and that's what a large
+reader of a delegated proposal looks for before the build: the
+silences, the holes left on purpose, and whether the reasons for them
+hold. The reading is the large work. Writing the referee held at every
+tier, and the cross-check between referees is what made the
+convergence a fact rather than an impression; it costs minutes and
+should follow every round of this kind.
+
+Limits: one run per cell; a small feature with few interactions; and
+three tiers of one family, whose agreement may be shared training as
+much as reasoning. A feature with more surface, or a second family,
+would test both.
 
 ## What to expect, by tier, on this process
 
