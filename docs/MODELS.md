@@ -763,9 +763,25 @@ bounds, which is the local tier's limit as this page predicted it.
 ### Round 3: proposing a step
 
 `exp/local/brief-propose.md`, from `exp-step0-clean`: the repo at
-step 0 with no history, the one line of D1 and D2, and a brief that
-says what a proposal is, since the local tier doesn't read
-`PROCESS.md`. Not yet run.
+step 0 with no history, D1 and D2, and a brief that says what a
+proposal is, since the local tier doesn't read `PROCESS.md`.
+
+The first attempt failed, and the failure is the finding this round was
+most likely to give. The model spent nineteen turns reading: every
+document, every source file, the test runner, the checks, and then the
+same files again, since the loop had cut them from its context after
+four newer results and it went back for what it had lost. On the
+twentieth turn it generated for an hour without a tool call, the same
+text over and over (the speculative decoder's acceptance rate was 99%,
+which is what repetition looks like), until the request timed out, with
+the machine swapping. A build needs the step and three files in view; a
+proposal needs the decisions, the plan, the code and the test
+conventions all at once, and a 27B model with a 24K context couldn't
+hold them, which is what this page's "Local" tier said: the limit is
+context, not reasoning. The loop was changed to cut results only when
+the context is actually near its budget and to cap a reply's length,
+and the round is to be rerun; the first run's transcript is kept
+(`exp/local/runs/qwen-propose-1`).
 
 ## What to expect, by tier, on this process
 

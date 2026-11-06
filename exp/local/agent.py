@@ -108,7 +108,7 @@ def call_tool(repo, name, args, timeout):
         return str(e)
 
 
-def chat(host, payload, tries=3):
+def chat(host, payload, tries=3, timeout=1800):
     """One request; a 5xx or a dropped connection is retried, with the
     server's own message kept, since ollama says why in the body."""
     last = None
@@ -116,7 +116,7 @@ def chat(host, payload, tries=3):
         req = urllib.request.Request(f"{host}/api/chat", data=json.dumps(payload).encode(),
                                      headers={"Content-Type": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=3600) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return json.load(resp)
         except urllib.error.HTTPError as e:
             body = e.read().decode(errors="replace")[:500]
@@ -131,27 +131,31 @@ def chat(host, payload, tries=3):
     raise RuntimeError(last)
 
 
-def trimmed(messages, keep, elide):
-    """The messages as sent: every tool result but the last `keep` cut to
-    a stub once it's longer than `elide` characters."""
-    tool_at = [i for i, m in enumerate(messages) if m.get("role") == "tool"]
-    old = set(tool_at[:-keep]) if keep else set(tool_at)
-    out = []
-    for i, m in enumerate(messages):
-        if i in old and len(m.get("content", "")) > elide:
-            m = dict(m, content=f"[{len(m['content'])} characters, cut from the context to save room; "
-                                f"read the file or run the command again if you need it]")
-        elif m.get("role") == "assistant" and m.get("thinking"):
-            # A thinking model's reasoning is its own, done with; resending
-            # it every turn is what filled the context in round 2.
-            m = {k: v for k, v in m.items() if k != "thinking"}
-        out.append(m)
-    return out
-
-
 def size(messages):
     """A rough token count of what's sent, four characters a token."""
     return sum(len(json.dumps(m)) for m in messages) // 4
+
+
+def trimmed(messages, keep, elide, budget):
+    """The messages as sent. A thinking model's reasoning is never resent
+    (it filled the context in round 2). Tool results are cut to a stub
+    only while the whole is over `budget` tokens, oldest long result
+    first, and never the newest `keep`: round 3's first run cut results
+    the model still needed and it read the same files over and over."""
+    out = []
+    for m in messages:
+        if m.get("role") == "assistant" and m.get("thinking"):
+            m = {k: v for k, v in m.items() if k != "thinking"}
+        out.append(dict(m))
+    tool_at = [i for i, m in enumerate(out) if m.get("role") == "tool"]
+    cuttable = tool_at[:-keep] if keep else tool_at
+    for i in cuttable:
+        if size(out) <= budget:
+            break
+        if len(out[i].get("content", "")) > elide:
+            out[i]["content"] = (f"[{len(out[i]['content'])} characters, cut from the context to save room; "
+                                 f"read the file or run the command again if you need it]")
+    return out
 
 
 def resume(path, messages):
@@ -198,8 +202,11 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--timeout", type=int, default=600, help="seconds a command may run")
     ap.add_argument("--think", choices=["on", "off", "default"], default="default")
-    ap.add_argument("--keep", type=int, default=4, help="tool results kept in full, the newest")
-    ap.add_argument("--elide", type=int, default=1200, help="an older result longer than this is cut")
+    ap.add_argument("--keep", type=int, default=4, help="tool results never cut, the newest")
+    ap.add_argument("--elide", type=int, default=1200, help="a result shorter than this is never cut")
+    ap.add_argument("--budget", type=float, default=0.6, help="cut old results only past this share of --num-ctx")
+    ap.add_argument("--num-predict", type=int, default=8192, help="the most tokens one reply may have; a model in a loop is cut there")
+    ap.add_argument("--request-timeout", type=int, default=1800, help="seconds one request may take")
     ap.add_argument("--resume", action="store_true", help="continue from --out/transcript.jsonl")
     a = ap.parse_args()
 
@@ -222,17 +229,18 @@ def main():
     started = time.time()
 
     while totals["steps"] < a.max_steps and report is None:
-        sent = trimmed(messages, a.keep, a.elide)
+        sent = trimmed(messages, a.keep, a.elide, int(a.num_ctx * a.budget))
         est = size(sent)
         if est > a.num_ctx * 0.8:
             print(f"  context estimate {est} tokens, near --num-ctx {a.num_ctx}", file=sys.stderr)
-        payload = {"model": a.model, "messages": sent, "tools": TOOLS,
-                   "stream": False, "options": {"temperature": 0, "seed": a.seed, "num_ctx": a.num_ctx}}
+        payload = {"model": a.model, "messages": sent, "tools": TOOLS, "stream": False,
+                   "options": {"temperature": 0, "seed": a.seed, "num_ctx": a.num_ctx,
+                               "num_predict": a.num_predict}}
         if a.think != "default":
             payload["think"] = a.think == "on"
         t0 = time.time()
         try:
-            reply = chat(a.host, payload)
+            reply = chat(a.host, payload, timeout=a.request_timeout)
         except RuntimeError as e:
             transcript.write(json.dumps({"error": str(e), "step": totals["steps"]}) + "\n")
             print(f"error from {a.host}: {e}\nrerun with --resume to continue from here", file=sys.stderr)
@@ -252,6 +260,8 @@ def main():
                                      "eval_count": reply.get("eval_count"),
                                      "message": msg}) + "\n")
         transcript.flush()
+        if reply.get("done_reason") == "length":
+            print(f"  the reply hit --num-predict {a.num_predict}; the model may be looping", file=sys.stderr)
         if not calls:
             if nudged:
                 print("the model stopped calling tools; ending", file=sys.stderr)

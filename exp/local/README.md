@@ -102,3 +102,15 @@ python3 exp/local/agent.py --repo ../wt-local-p --brief exp/local/brief-propose.
 Judged as the Claude proposals were: the decisions read for the traps
 and for silences, the referee checked against the others', and the
 proposal handed to a builder.
+
+The first attempt on the M2 Max failed in a way the builds hadn't: the
+model read for nineteen turns, re-reading files the loop had cut from
+its context, then at the twentieth generated the same text for an hour
+until the request timed out, with the draft model's guesses accepted
+99% of the time, the mark of a model repeating itself. So the loop now
+caps a reply (`--num-predict`, 8192 tokens: a model in a loop is cut
+there and the run says so), times a request out at 30 minutes
+(`--request-timeout`), and cuts old results only once the context is
+past `--budget` (0.6 of `--num-ctx`), oldest first, rather than
+everything older than the last few. A failed run's directory is kept
+as it is (`qwen-propose-1`); the rerun goes to a fresh one.
