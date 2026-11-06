@@ -34,7 +34,15 @@ python3 exp/local/agent.py --repo ../wt-local --brief exp/local/brief-step2.md \
 `d5a0f3a` is the commit the Claude builders started from. The agent
 prints each tool call to stderr as it goes, and the totals at the end.
 `--num-ctx` defaults to 32768; if the model won't load at that size,
-try 16384 and say so in the record. `--think on|off` sets ollama's
+try 16384 and say so in the record. The loop keeps the context in
+bounds by cutting old long tool results to a stub (`--keep`, `--elide`);
+the transcript keeps them whole. A run that dies, on a 5xx ollama
+answers three times or anything else, says so and stops; `--resume`
+with the same `--out` rebuilds the conversation from the transcript and
+goes on, the worktree being as the model left it. Ollama's own reason
+for a 5xx is in its log, on a Mac `~/.ollama/logs/server.log`; the
+usual ones are the context filling up and a tool call the server
+couldn't parse. `--think on|off` sets ollama's
 thinking switch for models that have one; the default leaves it to the
 model. `--max-steps` (80) ends a run that doesn't call `done`.
 

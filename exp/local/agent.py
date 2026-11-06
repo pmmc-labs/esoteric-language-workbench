@@ -15,6 +15,16 @@ limit. Temperature 0 and a fixed seed, so a run is as repeatable as the
 model allows; --num-ctx is passed explicitly, since ollama's default
 context is small and a brief plus a few files overflows it silently.
 
+The context is the local tier's limit, so the loop keeps it in bounds:
+a tool result older than the last --keep is cut to a stub once it's
+longer than --elide characters, and the model can read the file again.
+The stub says so. The transcript keeps every result in full.
+
+A run that dies (ollama answered 5xx three times, the machine slept)
+continues from its transcript with --resume: the messages are rebuilt
+from --out/transcript.jsonl and the loop goes on, appending to it. The
+repository's working tree is the state the model left it in.
+
 The transcript (--out/transcript.jsonl) holds every request and reply
 with ollama's own counts, and --out/report.md the model's final report
 and the run's totals. Standard library only.
@@ -26,6 +36,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 TOOLS = [
@@ -52,7 +63,9 @@ TOOLS = [
             "report": {"type": "string"}}}}},
 ]
 
-SYSTEM = """You are an agent working alone in a code repository on the person's computer. You have four tools: read_file, write_file, run, and done. Work only through them. Read the brief that follows, do what it says in the order it says, and when you are finished, or have stopped for one of the reasons it gives, call done with your report. Do not describe what you would do; do it, one tool call at a time, and read each result before the next."""
+SYSTEM = """You are an agent working alone in a code repository on the person's computer. You have four tools: read_file, write_file, run, and done. Work only through them. Read the brief that follows, do what it says in the order it says, and when you are finished, or have stopped for one of the reasons it gives, call done with your report. Do not describe what you would do; do it, one tool call at a time, and read each result before the next. Keep each command's output short (tail, head, grep) where you can: your context is limited, and old results are cut from it."""
+
+NUDGE = "Continue with a tool call, or call done with your report."
 
 
 def under(repo, path):
@@ -95,11 +108,61 @@ def call_tool(repo, name, args, timeout):
         return str(e)
 
 
-def chat(host, payload):
-    req = urllib.request.Request(f"{host}/api/chat", data=json.dumps(payload).encode(),
-                                 headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=3600) as resp:
-        return json.load(resp)
+def chat(host, payload, tries=3):
+    """One request; a 5xx or a dropped connection is retried, with the
+    server's own message kept, since ollama says why in the body."""
+    last = None
+    for attempt in range(tries):
+        req = urllib.request.Request(f"{host}/api/chat", data=json.dumps(payload).encode(),
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=3600) as resp:
+                return json.load(resp)
+        except urllib.error.HTTPError as e:
+            body = e.read().decode(errors="replace")[:500]
+            last = f"HTTP {e.code}: {body}"
+            if e.code < 500:
+                break
+        except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+            last = str(e)
+        print(f"  request failed ({last}); retry {attempt + 1} of {tries - 1}" if attempt < tries - 1
+              else f"  request failed ({last})", file=sys.stderr)
+        time.sleep(float(os.environ.get("AGENT_RETRY_SLEEP", 10)) * (attempt + 1))
+    raise RuntimeError(last)
+
+
+def trimmed(messages, keep, elide):
+    """The messages as sent: every tool result but the last `keep` cut to
+    a stub once it's longer than `elide` characters."""
+    tool_at = [i for i, m in enumerate(messages) if m.get("role") == "tool"]
+    old = set(tool_at[:-keep]) if keep else set(tool_at)
+    out = []
+    for i, m in enumerate(messages):
+        if i in old and len(m.get("content", "")) > elide:
+            m = dict(m, content=f"[{len(m['content'])} characters, cut from the context to save room; "
+                                f"read the file or run the command again if you need it]")
+        out.append(m)
+    return out
+
+
+def resume(path, messages):
+    """Rebuild the conversation from a transcript, and the totals."""
+    totals = {"steps": 0, "tool_calls": 0, "prompt_tokens": 0, "output_tokens": 0, "seconds": 0.0}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            d = json.loads(line)
+            if "message" in d:
+                messages.append(d["message"])
+                totals["steps"] = d["step"]
+                totals["prompt_tokens"] += d.get("prompt_eval_count") or 0
+                totals["output_tokens"] += d.get("eval_count") or 0
+                totals["seconds"] += d.get("seconds") or 0
+            elif "tool" in d:
+                messages.append({"role": "tool", "content": d["result"], "tool_name": d["tool"]})
+                totals["tool_calls"] += 1
+            elif "nudge" in d:
+                messages.append({"role": "user", "content": NUDGE})
+    return totals
 
 
 def main():
@@ -114,29 +177,41 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--timeout", type=int, default=600, help="seconds a command may run")
     ap.add_argument("--think", choices=["on", "off", "default"], default="default")
+    ap.add_argument("--keep", type=int, default=6, help="tool results kept in full, the newest")
+    ap.add_argument("--elide", type=int, default=1500, help="an older result longer than this is cut")
+    ap.add_argument("--resume", action="store_true", help="continue from --out/transcript.jsonl")
     a = ap.parse_args()
 
     repo = os.path.realpath(a.repo)
     os.makedirs(a.out, exist_ok=True)
     brief = open(a.brief, encoding="utf-8").read()
     messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": brief}]
-    transcript = open(os.path.join(a.out, "transcript.jsonl"), "w", encoding="utf-8")
-    totals = {"steps": 0, "tool_calls": 0, "prompt_tokens": 0, "output_tokens": 0, "seconds": 0.0}
+    tpath = os.path.join(a.out, "transcript.jsonl")
+    if a.resume:
+        totals = resume(tpath, messages)
+        print(f"resumed at step {totals['steps']}, {totals['tool_calls']} tool calls so far", file=sys.stderr)
+        transcript = open(tpath, "a", encoding="utf-8")
+        transcript.write(json.dumps({"resumed": True, "at": totals["steps"]}) + "\n")
+    else:
+        totals = {"steps": 0, "tool_calls": 0, "prompt_tokens": 0, "output_tokens": 0, "seconds": 0.0}
+        transcript = open(tpath, "w", encoding="utf-8")
     report = None
     nudged = False
+    ended = "step limit"
     started = time.time()
 
     while totals["steps"] < a.max_steps and report is None:
-        payload = {"model": a.model, "messages": messages, "tools": TOOLS, "stream": False,
-                   "options": {"temperature": 0, "seed": a.seed, "num_ctx": a.num_ctx}}
+        payload = {"model": a.model, "messages": trimmed(messages, a.keep, a.elide), "tools": TOOLS,
+                   "stream": False, "options": {"temperature": 0, "seed": a.seed, "num_ctx": a.num_ctx}}
         if a.think != "default":
             payload["think"] = a.think == "on"
         t0 = time.time()
         try:
             reply = chat(a.host, payload)
-        except Exception as e:  # the run is the record; say what ended it
+        except RuntimeError as e:
             transcript.write(json.dumps({"error": str(e), "step": totals["steps"]}) + "\n")
-            print(f"error from {a.host}: {e}", file=sys.stderr)
+            print(f"error from {a.host}: {e}\nrerun with --resume to continue from here", file=sys.stderr)
+            ended = f"error: {e}"
             break
         dt = time.time() - t0
         totals["steps"] += 1
@@ -154,9 +229,11 @@ def main():
         if not calls:
             if nudged:
                 print("the model stopped calling tools; ending", file=sys.stderr)
+                ended = "no tool call twice"
                 break
             nudged = True
-            messages.append({"role": "user", "content": "Continue with a tool call, or call done with your report."})
+            messages.append({"role": "user", "content": NUDGE})
+            transcript.write(json.dumps({"nudge": True, "step": totals["steps"]}) + "\n")
             continue
         for call in calls:
             fn = call.get("function", {})
@@ -175,6 +252,7 @@ def main():
             messages.append({"role": "tool", "content": result, "tool_name": name})
             if name == "done":
                 report = args.get("report", "")
+                ended = "done"
                 break
 
     totals["wall_seconds"] = round(time.time() - started, 1)
@@ -182,7 +260,7 @@ def main():
     with open(os.path.join(a.out, "report.md"), "w", encoding="utf-8") as f:
         f.write(f"# {a.model}\n\n")
         f.write("Totals: " + json.dumps(totals) + "\n\n")
-        f.write("Ended by: " + ("done" if report is not None else "step limit or error") + "\n\n")
+        f.write("Ended by: " + ended + "\n\n")
         f.write("## Report\n\n" + (report or "(none)") + "\n")
     print(json.dumps(totals), file=sys.stderr)
 
