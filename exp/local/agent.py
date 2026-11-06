@@ -171,6 +171,18 @@ def resume(path, messages):
                 totals["tool_calls"] += 1
             elif "nudge" in d:
                 messages.append({"role": "user", "content": NUDGE})
+    # A run cut off between a reply and its tool results leaves that step
+    # unanswered: drop it, and the model decides it again. What its tools
+    # did before the cut stays in the tree, where the model will see it.
+    last = max((i for i, m in enumerate(messages) if m.get("role") == "assistant"), default=None)
+    if last is not None:
+        calls = len(messages[last].get("tool_calls") or [])
+        answered = sum(1 for m in messages[last + 1:] if m.get("role") == "tool")
+        if calls and answered < calls:
+            del messages[last:]
+            totals["steps"] -= 1
+            totals["tool_calls"] -= answered
+            print(f"dropped an unfinished step ({answered} of {calls} tool results recorded)", file=sys.stderr)
     return totals
 
 
