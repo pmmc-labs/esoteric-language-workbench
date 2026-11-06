@@ -33,3 +33,8 @@ test('what is not an operator is refused at its position', () => {
 test('the C for a nested expression', () => {
     assert.match(compileProgram(read('(* (+ 1 2) -3)')), /rt_mul\(rt_add\(rt_int\(1LL\), rt_int\(2LL\)\), rt_int\(-3LL\)\)/);
 });
+
+test('if takes three arguments (D13)', () => {
+    fails('(if #true 1)', 'if takes 3 arguments, not 2', 1, 1);
+    fails('(if #true 1 2 3)', 'if takes 3 arguments, not 4', 1, 1);
+});
