@@ -1,0 +1,2 @@
+; within charge first: the charge comes before the operator's own fault (D25).
+(within 0 (/ 1 0))

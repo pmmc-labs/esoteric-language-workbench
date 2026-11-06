@@ -1,0 +1,2 @@
+; within then fault: an operation paid for then faults its own way (D25).
+(within 1 (/ 1 0))

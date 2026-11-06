@@ -1,0 +1,4 @@
+; within all ops over: one operation fewer than all of them faults (D21, D22).
+(within 24 (if (< 1 2) (if (<= 2 2) (if (> 3 2) (if (>= 3 2) (if (== 1 1) (if (!= 1 2)
+  (+ (+ (+ (+ (+ (+ (+ (+ (+ (- 10 4) (* 2 3)) (/ 9 2)) (% 9 4)) (bit/and 12 10)) (bit/or 12 10)) (bit/xor 12 10)) (bit/shl 1 4)) (bit/shr 64 2)) (** 2 5))
+  0) 0) 0) 0) 0) 0))

@@ -1,0 +1,2 @@
+; within exact: exactly n operations fit the budget (D22).
+(within 4 (+ (* 6 7) (- 10 (/ 7 2))))

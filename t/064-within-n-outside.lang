@@ -1,0 +1,2 @@
+; within n outside: n is evaluated outside its own budget (D23).
+(within 2 (within (* 1 1) (+ 3 4)))

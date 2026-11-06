@@ -1,0 +1,2 @@
+; within nested charges outer: the operations of an inner within count against the outer (D24).
+(within 3 (+ (within 100 (* 2 3)) (* 4 5)))

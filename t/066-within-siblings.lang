@@ -1,0 +1,2 @@
+; within siblings: two withins in sequence do not share a budget (D24).
+(within 3 (+ (within 1 (+ 1 1)) (within 1 (+ 2 2))))

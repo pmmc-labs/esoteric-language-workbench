@@ -1,0 +1,2 @@
+; within zero: a budget of 0 is a budget, and atoms cost nothing (D21, D22, D23).
+(if (within 0 #true) (within 0 7) 8)

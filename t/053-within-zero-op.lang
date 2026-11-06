@@ -1,0 +1,2 @@
+; within zero op: a budget of 0 allows no operator (D22).
+(within 0 (+ 1 2))

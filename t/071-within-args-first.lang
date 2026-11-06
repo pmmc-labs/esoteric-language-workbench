@@ -1,0 +1,2 @@
+; within args first: an operation is charged after its arguments run (D25).
+(within 1 (+ (/ 1 0) 2))

@@ -1,0 +1,2 @@
+; within if lazy: if costs nothing and the branch not taken is not run (D21, D13).
+(within 2 (if (< 1 2) (+ 1 2) (* (* 1 2) (* 3 4))))

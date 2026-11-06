@@ -1,0 +1,2 @@
+; within nested: budgets nest, each with its own count, siblings apart (D24).
+(within 5 (+ (within 2 (* 3 4)) (within 3 (- (+ 1 2) (* 3 4)))))

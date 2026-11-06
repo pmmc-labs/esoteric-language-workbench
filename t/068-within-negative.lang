@@ -1,0 +1,2 @@
+; within negative: a negative n faults bad budget (D23).
+(within -1 5)

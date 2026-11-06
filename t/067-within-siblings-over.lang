@@ -1,0 +1,2 @@
+; within siblings over: a sibling's budget is its own: the second runs out alone (D24).
+(within 100 (+ (within 1 (+ 1 1)) (within 1 (+ (* 2 2) 3))))
