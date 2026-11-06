@@ -13,7 +13,9 @@ typedef intptr_t rt_value;
 #define RT_INT_MIN (-(INT64_C(1) << 62))
 #define RT_INT_MAX ((INT64_C(1) << 62) - 1)
 
-static inline rt_value rt_int(int64_t n) { return (rt_value)(n << RT_INT_SHIFT) | RT_INT_TAG; }
+// Multiplied, not shifted: a left shift of a negative value is undefined
+// before C23, and UBSan says so; the compiler emits the shift anyway.
+static inline rt_value rt_int(int64_t n) { return (rt_value)(n * (1 << RT_INT_SHIFT)) | RT_INT_TAG; }
 static inline int64_t rt_int_of(rt_value v) { return (int64_t)v >> RT_INT_SHIFT; }
 
 rt_value lang_main(void);

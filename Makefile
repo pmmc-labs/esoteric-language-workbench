@@ -8,6 +8,11 @@
 # make commits  every commit since origin/main that touches the
 #               implementation names a decision or a plan step
 # make hooks    install the commit-msg hook that checks that as you commit
+# make sanitize the golden tests built with clang's UBSan and ASan, every
+#               finding fatal; not part of make test, since it needs
+#               clang's sanitizer runtime (Xcode has it; on Ubuntu,
+#               apt-get install libclang-rt-18-dev). Run it after any
+#               change to the runtime
 # make check    type-check the compiler (needs `npm install` first)
 # make clean    remove build/
 #
@@ -22,6 +27,9 @@ test: unit golden checks
 # is gcc and a Mac's is clang: LANG_CC=clang make golden, or this.
 golden-clang:
 	@LANG_CC=clang ./t/run.sh
+
+sanitize:
+	@LANG_CC="clang -fsanitize=undefined,address -fno-sanitize-recover=all" ./t/run.sh
 
 unit:
 	node --test "compiler/tests/**/*.test.ts"
@@ -49,4 +57,4 @@ check:
 clean:
 	rm -rf build
 
-.PHONY: test unit golden golden-clang checks models commits hooks check clean
+.PHONY: test unit golden golden-clang sanitize checks models commits hooks check clean

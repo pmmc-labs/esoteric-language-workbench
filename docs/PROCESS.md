@@ -229,7 +229,10 @@ followed is the shape every such find should take:
    argument list), naming the symptom, so it's recognised and not just
    obeyed.
 4. Make the check mechanical where it can be (`make golden-clang`, the
-   suite under the other compiler, so the cloud side runs both).
+   suite under the other compiler, so the cloud side runs both; and
+   `make sanitize`, which would have caught the read on Linux, and on
+   its first run caught a second thing: a left shift of a negative
+   value, undefined C that every compiler happens to do right).
 5. Name the finder in the commit (D4's subject says "Found by Stevan's
    make test"), since who found what is part of the record.
 

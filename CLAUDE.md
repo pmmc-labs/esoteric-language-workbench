@@ -77,7 +77,9 @@ the calculator grows only when a step of the process needs it.
   the same argument list (`runtime/rt.c`'s arithmetic read `r` before
   `__builtin_add_overflow` set it under clang, and gcc hid it). The
   cloud machine's `cc` is gcc; the Mac's is clang; run the suite with
-  `LANG_CC=clang` too before calling a runtime change done.
+  `LANG_CC=clang` too before calling a runtime change done, and `make
+  sanitize`, which found the second one: a left shift of a negative
+  value is undefined before C23, so the tag multiplies instead.
 - Comments explain why, not what.
 
 ## Toolchain
@@ -115,6 +117,8 @@ the calculator grows only when a step of the process needs it.
   files; `make commits` checks the subjects since origin/main; `make
   hooks` installs the commit-msg hook.
 - `make check`: `tsc --noEmit` (`npm install` once, for it).
+- `make sanitize`: the golden tests under UBSan and ASan, not part of
+  `make test` (it needs clang's sanitizer runtime).
 - `node bin/langc.ts -o out file.lang`: compile and link. It writes
   `out.c` next to `out`. Exit codes: 0 ok, 1 compile error, 2 usage or
   toolchain error, or a file it can't read or write; a fault in the
