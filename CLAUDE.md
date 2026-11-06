@@ -12,12 +12,19 @@ per era, dense, with golden test numbers and `Dn` references, so a
 claim can be checked against a test and a decision. Say what's **Next**
 at the end, and what's a candidate but not agreed. The workbench's own:]
 
-**Step 0 of [`docs/PLAN.md`](docs/PLAN.md) is done**: a reader with
-positions, a program of one integer compiled to C and linked with
-`runtime/rt.c` (D2), integers of 63 bits, a compile error for a literal
-past them as a unit test (D4), golden tests 000 and 001 by hand, and the
-mechanical checks, `t/checks.py` (D5, D7). **Next:** step 1, to be
-proposed; nothing is agreed beyond D1 and D2.
+**Steps 0 and 1 of [`docs/PLAN.md`](docs/PLAN.md) are done.** Step 0: a
+reader with positions, a program of one integer compiled to C and linked
+with `runtime/rt.c` (D2), integers of 63 bits, a compile error for a
+literal past them as a unit test (D4), golden tests 000 and 001 by hand,
+and the mechanical checks, `t/checks.py` (D5, D7). Step 1: the five
+binary operators `+ - * / %` (D8), checked at every node against the
+63-bit range with truncating division (D10, D11, D13), operands left to
+right with nothing folded (D12), the C straight-line with a temporary per
+node (D14) and the malformed-call errors found before any C is written
+(D15), as golden tests 002 to 027 by hand and 028 to 030 from
+`t/models/arith.py`, the referee agreeing with all 31; built by Sonnet
+(medium), as the step's Size said. D8 to D12 are defaults, not confirmed.
+**Next:** step 2, to be proposed; nothing is agreed beyond D1 and D2.
 
 ## Read first, in this order
 

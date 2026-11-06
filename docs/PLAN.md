@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** step 0 is done, and so are the mechanical checks. Step 1 is proposed below (D8 to D15, all defaults, none confirmed); the referee for it, `t/referee/calc.py`, is written.
+**Progress:** steps 0 and 1 are done, and so are the mechanical checks. Step 1 (D8 to D15, all defaults, none confirmed) landed with golden tests 000 to 030 and `t/referee/calc.py` agreeing with all 31. Step 2 is to be proposed.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -50,7 +50,7 @@ model to write; *medium* where the design is agreed and the step
 describes its tests; *small* where the step is a pattern to repeat.
 A session's first move is to compare its own model with the step's size.
 
-### 1. Arithmetic (proposed)
+### 1. Arithmetic (done)
 
 - The five operators `+ - * / %`, each a call `(op a b)` with two
   operands (D8). A program is still one form, now a literal or a call,
@@ -129,6 +129,21 @@ A session's first move is to compare its own model with the step's size.
   anything but integers, bignums, constant folding, a limit on nesting or
   an error for exceeding Node's stack, a new environment variable or
   knob for `t/run.sh`, any change to the reader, a native target.
+
+**What landed differs in small ways.** Each golden test's `.lang` has a
+comment line above the program (the plan said the one line). `codegen.ts`
+has the D15 checks as one pass (`check`) and the C as another (`emit`),
+which returns the statements, the temporary holding the value and the
+next free number. `reader.test.ts` has a third test beyond the plan's
+list, for D9's whitespace; `codegen.test.ts` has more than one test per
+ordering rule (outer before inner, left before right) and one for D14's
+shape. `t/models/arith.py` draws `mixed` with half its left operands
+being the newest call, so that values compound (drawing both operands
+uniformly from the pool, the largest value in the first dozen seeds tried
+was about 2^36), and its seed is the first of those tried that satisfies the
+assertions at the end of `mixed`, which say what the test must exercise
+(300 operations, every operator, every sign pair of `/` and `%`, a
+product past 2^40, a program value past 2^32).
 
 **Referee:** `t/referee/calc.py`, written with this proposal, from D1 to
 D4 and D8 to D15; `make checks` runs it over every golden test and it

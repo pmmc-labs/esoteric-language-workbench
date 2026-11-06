@@ -23,8 +23,15 @@ on, but bring it up before baking it in further.
 
 ## The language
 
-[The forms, the values, the evaluation model. Short; `LANGUAGE.md` has
-them in full for a user.]
+A program is one form, an integer or a call `(op a b)`; the five
+operators `+ - * / %` each take exactly two operands (D8 **(open)**).
+An integer is an optional `-` and digits, nothing else (D9 **(open)**),
+63 bits, and an operation whose exact result is out of range is the
+fault `integer overflow`, checked at every node (D10 **(open)**). `/`
+truncates toward zero and `%` takes the dividend's sign; a zero divisor
+is `division by zero` (D11 **(open)**). Operands are evaluated left to
+right, always both, and nothing is folded: the first fault to happen is
+the one reported (D12 **(open)**). `LANGUAGE.md` has them in full.
 
 ## The core rule
 
@@ -47,5 +54,11 @@ convention. Name it, so a proposal that touches it is recognised.]
 
 ## Open questions
 
-[Each **(open)** item, in one place, so the person can settle them in a
-batch.]
+Defaults the agent proposed that the person hasn't confirmed:
+
+- **D8**: a call is `(op a b)`, five binary operators, no one-operand `-`.
+- **D9**: what an integer is, so `+5`, `1_0`, `1.5`, `0x10` are symbols.
+- **D10**: out-of-range results fault at every node; no wraparound,
+  saturation or bignums.
+- **D11**: `/` truncates toward zero, `%` takes the dividend's sign.
+- **D12**: left to right, no short-circuit, no constant folding.
