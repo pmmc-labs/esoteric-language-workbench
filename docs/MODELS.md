@@ -33,7 +33,9 @@ is the quality.
 
 ## Tasks, by what they need
 
-**Large, and don't delegate:**
+**Large, and don't delegate** (tested once, on a step with textbook
+semantics, where the medium and small tiers did it too; see
+"Proposing a step"):
 
 - The referee (`PROCESS.md`), when a step's proposal says one is
   wanted, and that decision itself: it's what makes a delegated model
@@ -346,6 +348,102 @@ default, since in a session with a person it should stop. Second,
 this was a decision with an obvious best answer by analogy to one
 already in the log. A thin decision with no neighbour to reason from
 is the case that's still untested.
+
+## Proposing a step
+
+The large work itself, tested once: the repo as it stood at step 0,
+with the process as it is now and every record of steps 1 to 4 cut
+(the branch `exp-step0`), given to Opus, Sonnet and Haiku, each at
+high effort, cold, with one task: propose the next step and don't
+build it. The deliverable was what `PROCESS.md` calls large work: the
+decisions marked default with their rejections and the traps decided,
+the step's text with its Referee and Size lines, the referee if
+wanted, and a brief a builder could be handed. Then each proposal went,
+unchanged, to the builder its own Size line asked for. One run per
+cell. The reader of all of it was Fable at low effort.
+
+A flaw in the setup, found by the proposers: the branch kept its git
+history, and all three looked at `git log`. The commit subjects named
+the four steps and that overflow was checked at run time. The step
+choice was obvious from D1 anyway; the traps, the referee, the tests
+and the brief were theirs. Opus noticed the history, refused to read
+it, and forbade its builder to. `exp-step0-clean` has no history, for
+next time.
+
+### The proposals
+
+| | Opus | Sonnet | Haiku |
+|---|---|---|---|
+| Tokens, tool calls, time | 136K, 19, 7.2 min | 132K, 23, 5.9 min | 170K, 24, 6.1 min |
+| The step | five operators | five operators | four, `%` left out with a reason |
+| Decisions | 6 | 8 | 9, numbered from D20 around the history |
+| Traps decided (division rule, zero divisor, min / -1, overflow at 63 bits, evaluation order) | all | all | all |
+| Compile errors with messages and positions decided | yes | yes | yes |
+| Straight-line C, a temporary per operand, settling C's argument order and clang's bracket limit at once | yes | yes | yes |
+| Tests planned, and where their outputs come from | 17: 2 by hand, 15 from a model | 29: 26 worked by hand in the step text, 3 from a model | 16, all from a model |
+| Referee | written; cross-checked against C with a 128-bit range on 51,000 pairs | written, iterative, so 1,000-deep programs work | written; self-checked on 30 cases |
+| Size line | medium, effort high, with the argument | medium, with the argument | large, saying it wasn't a large-model proposal |
+| The brief's gate | stop if the builder is smaller than the Size | the same | the same, and stop unless the person has picked the decisions |
+
+All three referees agree with each other and with this repo's on every
+trap. All three decided the same semantics, by the same reasoning,
+differing in the fault's name and in whether `%` came now.
+
+### The builds
+
+Every proposal first went to Haiku at high effort, as the earlier rounds
+had, and all three Haiku builders stopped at the brief's gate without
+building: each read its tier, read the Size line, and reported. In the
+earlier rounds, on briefs this repo's author wrote, Haiku flagged the
+mismatch and built, correctly every time. The difference is the
+briefs: three proposers, independently, turned CLAUDE.md's "say so and
+escalate rather than press on" into a hard stop, and the builder
+obeyed. Three stopped runs cost 260K tokens and built nothing. Then
+each proposal went to the builder its Size line named, Haiku's after
+the person accepted D20 to D28 as proposed, since its gate required it.
+
+| | Opus's, built by Sonnet | Sonnet's, built by Sonnet | Haiku's, built by Opus |
+|---|---|---|---|
+| Green under gcc, clang and the sanitizers | yes | yes | yes |
+| Golden tests | 19 | 31 | 18 |
+| Builder's model agrees with the proposer's referee | 19 of 19 | 31 of 31 | 18 of 18 |
+| Decisions the builder found missing | none | none | none |
+| Silences the builder filled and reported | none | three orderings among compile errors; how the random tree is drawn | the order of errors within one form |
+| Tokens, tool calls, time | 112K, 19, 2.9 min | 131K, 31, 7.7 min | 125K, 28, 5.1 min |
+
+No builder had to decide a semantic. What was left to them was the
+order of compile errors and the construction of a generated test,
+which is the right residue: a proposal that decides the traps leaves a
+builder only shape.
+
+### What this says
+
+On this step, every tier wrote a proposal a builder could take cold,
+with the traps decided before the builder met them. The differences
+were in thoroughness, not in kind: Sonnet's step text, with its 26
+hand-worked outputs, was the one to hand over; Opus's referee was the
+most verified; Haiku's was the most careful about what it wasn't
+entitled to decide, and the only one that made the person's picks a
+gate. Against this page's claim that proposals are large work and not
+to delegate: on a step with textbook semantics, that was too strong.
+Integer arithmetic has a right answer every tier knows, and no
+proposal had to invent. Whether that holds for a step whose semantics
+are the language's own, with no textbook to reason from, is the case
+that's still untested, and it's the case the claim was about.
+
+The finding that wasn't looked for: the briefs. A rule written as
+"flag and escalate" in CLAUDE.md became "stop" in three briefs, and a
+small builder stopped three times on steps it had built correctly
+before. A brief should say which it means. For a sub-agent with no one
+to ask, flag and proceed is the cheaper default, since the suite and
+the referee catch what a smaller builder gets wrong; stop is for a
+session where a person can answer.
+
+Two small things the round found: this repo's referee is recursive
+and fails past about 1,000 levels of nesting, where Sonnet's is
+iterative, so a referee should be written as a loop; and `make hooks`
+in a worktree writes the hook into the main checkout's git directory,
+which every builder reported as a write it was told not to make.
 
 ## What to expect, by tier, on this process
 

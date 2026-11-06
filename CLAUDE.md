@@ -83,8 +83,10 @@ it.
   implementation the step's model is checked against, and agreement
   means nothing if one was copied from the other.
 - At the start of a step, compare the step's **Size** line with your own
-  model, by `docs/MODELS.md`; say so if they don't match, and escalate
-  on its signals rather than pressing on.
+  model, by `docs/MODELS.md`, and say so if they don't match. Then: in
+  a session with a person, stop and ask; as a sub-agent with no one to
+  ask, build and put the mismatch first in your report, unless the
+  brief says to stop. Escalate on `MODELS.md`'s signals as they come.
 
 ## Code style
 

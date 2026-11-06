@@ -181,6 +181,14 @@ Both trials' branches are kept: `step4-sonnet`, which is what main
 took, and `step4-haiku`. The record is in `docs/MODELS.md`. D19 is a
 default the builder wrote; it waits on the person.
 
+The proposal experiment (`docs/MODELS.md`, "Proposing a step") is on
+branches of its own, not on main: `exp-step0` (the repo at step 0,
+with history) and `exp-step0-clean` (without), `prop-opus`,
+`prop-sonnet` and `prop-haiku` (the proposals), and `build-opus`,
+`build-sonnet` and `build-haiku` (each built by the tier its Size line
+named). Open from it: `t/referee/calc.py` is recursive and fails past
+about 1,000 levels; write it as a loop.
+
 ### 5. [Local bindings.] Referee: [decide]. Size: medium.
 
 ### 5. [Heap values.]
