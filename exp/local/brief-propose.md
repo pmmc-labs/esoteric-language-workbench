@@ -78,16 +78,39 @@ when it has four parts, below. Do not change the compiler, the runtime,
 
 ## Order of work
 
+Your context is small and does not carry your reasoning from one reply
+to the next. So **do not design the whole step in your head and write
+it afterwards: decide one thing, write it to the file, then decide the
+next.** Each decision is one `write_file` or one appending `run`
+(`cat >> docs/DECISIONS.md <<'EOF' ... EOF`), and the file is your
+memory. A reply that reasons for thousands of words without a tool call
+is cut off, and what it worked out is lost.
+
 1. `make test` once for the baseline: 2 golden tests, green.
-2. Read `docs/DECISIONS.md`, `docs/PLAN.md` (step 0 and the layout),
-   `docs/LANGUAGE.md`, `t/models/README.md`, `t/referee/README.md`, and
-   the code: `compiler/src/codegen.ts`, `runtime/rt.h`, `runtime/rt.c`,
-   and `t/000-int.lang`.
-3. Write the decisions. Then the step text. Then the referee, and run
-   `make checks`. Then the brief.
-4. `git add -A` and commit with a subject like `Propose step 1:
+2. Read only these: `docs/DECISIONS.md`, step 0 in `docs/PLAN.md`,
+   `docs/LANGUAGE.md`, `t/models/README.md`, `t/referee/README.md`,
+   `compiler/src/codegen.ts`, `runtime/rt.h`, `runtime/rt.c`,
+   `t/000-int.lang`. Not `PROCESS.md`, `MODELS.md`, `CLAUDE.md`,
+   `DESIGN.md`, the reader or the tests' runner: this brief has what
+   they'd tell you.
+3. Decide and write, one at a time, appending each to
+   `docs/DECISIONS.md` as soon as it's decided: the shape of a call and
+   the number of operands (D8); what happens when a result doesn't fit
+   63 bits (D9); how division rounds, and the zero divisor (D10); the
+   order operands are evaluated in, and which fault reports when more
+   than one could (D11); what is computed at compile time, if anything
+   (D12); what a malformed form is, with its messages (D13). Then read
+   the file back once, whole.
+4. Write the step's text into `docs/PLAN.md`, replacing the `### 1.`
+   placeholder, in two or three writes if it's long: the operations and
+   files, then the tests with their programs and outputs, then the
+   documents it moves, what it leaves out, and the Referee and Size
+   lines.
+5. Write `t/referee/calc.py` from your decisions; `make checks`.
+6. Write `docs/BRIEF.md`.
+7. `git add -A` and commit with a subject like `Propose step 1:
    arithmetic (D8 to D13)`. Do not push.
-5. Call `done` with your report.
+8. Call `done` with your report.
 
 ## Report
 

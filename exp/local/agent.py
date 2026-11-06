@@ -65,7 +65,8 @@ TOOLS = [
 
 SYSTEM = """You are an agent working alone in a code repository on the person's computer. You have four tools: read_file, write_file, run, and done. Work only through them. Read the brief that follows, do what it says in the order it says, and when you are finished, or have stopped for one of the reasons it gives, call done with your report. Do not describe what you would do; do it, one tool call at a time, and read each result before the next. Keep each command's output short (tail, head, grep) where you can: your context is limited, and old results are cut from it."""
 
-NUDGE = "Continue with a tool call, or call done with your report."
+NUDGE = ("Your last reply was cut off before any tool call. Don't start over: take what you had decided and "
+         "write it down now with a tool call, one piece at a time, then go on. Or call done with your report.")
 
 
 def under(repo, path):
@@ -143,8 +144,13 @@ def trimmed(messages, keep, elide, budget):
     first, and never the newest `keep`: round 3's first run cut results
     the model still needed and it read the same files over and over."""
     out = []
-    for m in messages:
-        if m.get("role") == "assistant" and m.get("thinking"):
+    for i, m in enumerate(messages):
+        # A thinking model's reasoning is dropped once it led to tool calls:
+        # done with, and resending it filled the context in round 2. A reply
+        # with no tool call was a thought cut off (round 3: the whole design
+        # of a step, twice, each time from the start), and that one is kept
+        # so the next turn continues it rather than beginning again.
+        if m.get("role") == "assistant" and m.get("thinking") and m.get("tool_calls"):
             m = {k: v for k, v in m.items() if k != "thinking"}
         out.append(dict(m))
     tool_at = [i for i, m in enumerate(out) if m.get("role") == "tool"]

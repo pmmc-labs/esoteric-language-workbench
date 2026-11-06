@@ -780,8 +780,25 @@ conventions all at once, and a 27B model with a 24K context couldn't
 hold them, which is what this page's "Local" tier said: the limit is
 context, not reasoning. The loop was changed to cut results only when
 the context is actually near its budget and to cap a reply's length,
-and the round is to be rerun; the first run's transcript is kept
-(`exp/local/runs/qwen-propose-1`).
+and the round was rerun.
+
+The second attempt failed differently, and the difference is the
+finding. Seven turns of reading, each file once, then a reply of thirty
+thousand characters of design reasoning in the model's thinking
+channel: the shape of a call, the operands, overflow, division, the
+zero divisor, the order of faults, temporaries in the C. It is the
+reasoning a proposal needs, and it isn't repetition; it was cut at the
+loop's cap of 8,192 tokens before it reached a tool call. The nudge
+that followed got the same reasoning again from its first sentence,
+cut again, this time mid-thought about the Size line, because the loop
+didn't resend thinking and the whole design had evaporated between
+turns. So the local tier could reason the step out and couldn't hold
+the result long enough to write it. The two Claude tiers that proposed
+this step held the design in context and emitted it afterwards; the
+local tier needs to write each decision as it makes it, the file being
+its memory. The brief now says so, and the loop carries a cut-off
+thought into the next turn. A third attempt is to be run; the first
+two are kept (`exp/local/runs/qwen-propose-1`, `qwen-propose`).
 
 ## What to expect, by tier, on this process
 

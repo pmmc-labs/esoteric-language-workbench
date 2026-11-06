@@ -114,3 +114,14 @@ there and the run says so), times a request out at 30 minutes
 past `--budget` (0.6 of `--num-ctx`), oldest first, rather than
 everything older than the last few. A failed run's directory is kept
 as it is (`qwen-propose-1`); the rerun goes to a fresh one.
+
+The second attempt (`qwen-propose`) failed differently and more
+tellingly: seven turns of reading, then a reply of 30,000 characters of
+sound design reasoning in the thinking channel, cut at the cap before
+any tool call, and after the nudge the same reasoning again from its
+first sentence, since the loop didn't resend thinking. The model could
+reason the step out; it couldn't hold the result and then emit it. Two
+changes: a reply that made no tool call keeps its thinking in the next
+turn, so a cut-off thought continues; and the brief now tells the model
+to write each decision as it decides it, the file being its memory,
+and to read less. The third attempt goes to `qwen-propose-2`.
