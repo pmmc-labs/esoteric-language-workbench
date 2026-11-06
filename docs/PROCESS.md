@@ -211,6 +211,28 @@ This is a second oracle the agent can't talk its way around, and it's
 where every platform difference was found (macOS's linker, Rosetta's
 floats, a loopback race).
 
+It found one in this repo's own step 1, on the first run. The runtime's
+arithmetic was written `checked(r, __builtin_add_overflow(a, b, &r))`.
+C doesn't order a call's arguments: gcc, the cloud machine's `cc`,
+happened to set `r` first and the suite passed; clang on the M2 read
+`r` before it was set, and three tests printed `0` where they should
+have faulted. Nothing on the cloud side would have shown it, since the
+agent had run the suite only under the compiler that hid it. What
+followed is the shape every such find should take:
+
+1. Reproduce where the agent is, before changing anything (`LANG_CC=clang`
+   on the cloud machine failed the same three tests).
+2. Fix the cause, not the symptom (the flag computed in a statement of
+   its own; not a `volatile`, not a reordering that happens to work).
+3. Record the lesson where the next session will read it (CLAUDE.md's
+   code style: never pass a variable and a call that sets it in one
+   argument list), naming the symptom, so it's recognised and not just
+   obeyed.
+4. Make the check mechanical where it can be (`make golden-clang`, the
+   suite under the other compiler, so the cloud side runs both).
+5. Name the finder in the commit (D4's subject says "Found by Stevan's
+   make test"), since who found what is part of the record.
+
 ## What a session looks like
 
 1. Read `CLAUDE.md`. Its Status says where things are.
