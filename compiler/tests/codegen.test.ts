@@ -70,3 +70,25 @@ test('the booleans are their own names, and nothing else is', () => {
 test('a name the prototype of an object has is not an operator', () => {
     fails('(toString 1 2)', 'not an operator: toString', 1, 2);
 });
+
+test('within takes two parts, a literal budget first, checked in that order (D22)', () => {
+    fails('(within 1)', 'within takes 2 arguments, not 1', 1, 1);
+    fails('(within 1 2 3)', 'within takes 2 arguments, not 3', 1, 1);
+    fails('(within -1 2)', "within's budget must be a non-negative integer literal", 1, 9);
+    fails('(within x 2)', "within's budget must be a non-negative integer literal", 1, 9);
+    fails('(within (+ 1 2) 3)', "within's budget must be a non-negative integer literal", 1, 9);
+    // The arity comes before the budget, the budget before the body.
+    fails('(within x)', 'within takes 2 arguments, not 1', 1, 1);
+    fails('(within -1 (f 1 2))', "within's budget must be a non-negative integer literal", 1, 9);
+    fails('(within 1 (f 1 2))', 'not an operator: f', 1, 12);
+    fails('(+ 1 (within 1))', 'within takes 2 arguments, not 1', 1, 6);
+});
+
+test('a budget past the integers is a literal past the range (D22, D4)', () => {
+    fails('(within 4611686018427387904 1)', 'integer out of range', 1, 9);
+});
+
+test('within sets the limit, computes its body into a temporary, then restores it (D22, D24)', () => {
+    assert.match(compileProgram(read('(within 3 (+ 1 2))')),
+        /uint64_t t0 = rt_within_enter\(3ULL\);\n\s*rt_value t1 = rt_add\(rt_int\(1LL\), rt_int\(2LL\)\);\n\s*rt_within_leave\(t0\);\n\s*return t1;/);
+});

@@ -1,5 +1,5 @@
 // What to emit. A program is one expression: an integer, a boolean, an
-// operator applied to expressions, or an `if`. The output is C, a
+// operator applied to expressions, an `if`, or a `within`. The output is C, a
 // statement per operation in evaluation order (D21, D27), that computes it with the runtime's checked operations (overflow and division
 // by zero fault, D4, D5; a bad shift count or exponent faults, D16, D19; a non-integer or
 // non-boolean faults, D11, D13, D14, D15). Later steps emit assembly
@@ -87,6 +87,31 @@ const compileBranch = (f: Form, result: string, next: number): { lines: string[]
     return { lines: [...out.lines, `${result} = ${out.expr};`], next: out.next };
 };
 
+// `(within n expr)` is a special form beside `if` (D22): the budget has to
+// be set before `expr` runs. `n` is an integer literal of 0 or more, read
+// from the source; the checks are in this order: the arity, the budget,
+// then `expr`, whose errors are its own. The limit is restored after `expr`
+// has been computed into a temporary, since the value must exist before the
+// budget around it ends.
+const compileWithin = (f: Form, args: readonly Form[], next: number): Out => {
+    if (args.length !== 2) fail(f, `within takes 2 arguments, not ${args.length}`);
+    const [budget, body] = args as [Form, Form];
+    if (budget.kind !== 'int' || budget.value < 0n) return fail(budget, "within's budget must be a non-negative integer literal");
+    if (budget.value > INT_MAX) return fail(budget, 'integer out of range');
+    const saved = `t${next}`;
+    const out = compileExpr(body, next + 1);
+    const lines = [`uint64_t ${saved} = rt_within_enter(${budget.value}ULL);`, ...out.lines];
+    let expr = out.expr;
+    let n = out.next;
+    if (!out.atom) {
+        lines.push(`rt_value t${n} = ${out.expr};`);
+        expr = `t${n}`;
+        n += 1;
+    }
+    lines.push(`rt_within_leave(${saved});`);
+    return { lines, expr, atom: true, next: n };
+};
+
 const compileExpr = (f: Form, next: number): Out => {
     if (f.kind === 'int') {
         if (f.value < INT_MIN || f.value > INT_MAX) fail(f, 'integer out of range');
@@ -99,6 +124,7 @@ const compileExpr = (f: Form, next: number): Out => {
     const [head, ...args] = f.items;
     if (head === undefined) return fail(f, 'empty call');
     if (head.kind === 'symbol' && head.name === 'if') return compileIf(f, args, next);
+    if (head.kind === 'symbol' && head.name === 'within') return compileWithin(f, args, next);
     const name = head.kind === 'symbol' ? head.name : undefined;
     const op = name === undefined ? undefined : OPS.get(name);
     if (name === undefined || op === undefined) return fail(head, `not an operator: ${name ?? head.kind}`);
