@@ -1,0 +1,2 @@
+; Step 1 (D8): worked out by hand, not run.
+(- (* 3 (+ 4 5)) (/ 100 (% 17 5)))

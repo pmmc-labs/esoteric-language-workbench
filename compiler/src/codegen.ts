@@ -11,8 +11,8 @@ const INT_MAX = 2n ** 62n - 1n;
 
 const OPERATORS: readonly string[] = ['+', '-', '*', '/', '%'];
 
-// The runtime function for each operator the code generator handles.
-const RT_FUNCTION: Readonly<Record<string, string>> = { '+': 'rt_add', '-': 'rt_sub', '*': 'rt_mul' };
+// The runtime function for each operator.
+const RT_FUNCTION: Readonly<Record<string, string>> = { '+': 'rt_add', '-': 'rt_sub', '*': 'rt_mul', '/': 'rt_div', '%': 'rt_rem' };
 
 const err = (message: string, f: Form): CompileError => new CompileError(message, f.pos.line, f.pos.col);
 

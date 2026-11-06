@@ -39,6 +39,20 @@ rt_value rt_mul(rt_value a, rt_value b) {
     return encode(product);
 }
 
+// C's / and % truncate toward zero and give % the dividend's sign, which
+// is D11, so there is no fix-up. The zero divisor is checked first. The
+// minimum is only 2^62 in magnitude, so INT64_MIN / -1, the one divide
+// that traps, cannot occur; the minimum / -1 is 2^62, which encode faults.
+rt_value rt_div(rt_value a, rt_value b) {
+    if (decode(b) == 0) rt_fault("division by zero");
+    return encode(decode(a) / decode(b));
+}
+
+rt_value rt_rem(rt_value a, rt_value b) {
+    if (decode(b) == 0) rt_fault("division by zero");
+    return encode(decode(a) % decode(b));
+}
+
 int main(void) {
     rt_print(lang_main());
     putchar('\n');

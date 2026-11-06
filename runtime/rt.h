@@ -31,4 +31,6 @@ void rt_fault(const char *what) __attribute__((noreturn));
 rt_value rt_add(rt_value a, rt_value b);
 rt_value rt_sub(rt_value a, rt_value b);
 rt_value rt_mul(rt_value a, rt_value b);
+rt_value rt_div(rt_value a, rt_value b);
+rt_value rt_rem(rt_value a, rt_value b);
 #endif
