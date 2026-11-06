@@ -1,0 +1,3 @@
+; Step 1 (D24): a negative divisor truncates toward zero, not down.
+; The program and its expected output are from t/models/arith.py.
+(/ 7 -2)

@@ -15,7 +15,18 @@ typedef intptr_t rt_value;
 // before C23, and UBSan says so; the compiler emits the shift anyway.
 static inline rt_value rt_int(int64_t n) { return (rt_value)(n * (1 << RT_INT_SHIFT)) | RT_INT_TAG; }
 
+// The range of an integer (D23), the one the literals have.
+#define RT_INT_MIN (-((int64_t)1 << 62))
+#define RT_INT_MAX (((int64_t)1 << 62) - 1)
+
 rt_value lang_main(void);
 void rt_print(rt_value v);
 void rt_fault(const char *what) __attribute__((noreturn));
+
+// The four operators (D20). Each faults rather than give a result outside
+// the range (D23), and rt_div on a zero divisor (D24).
+rt_value rt_add(rt_value a, rt_value b);
+rt_value rt_sub(rt_value a, rt_value b);
+rt_value rt_mul(rt_value a, rt_value b);
+rt_value rt_div(rt_value a, rt_value b);
 #endif

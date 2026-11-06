@@ -16,8 +16,22 @@ at the end, and what's a candidate but not agreed. The workbench's own:]
 positions, a program of one integer compiled to C and linked with
 `runtime/rt.c` (D2), integers of 63 bits, a compile error for a literal
 past them as a unit test (D4), golden tests 000 and 001 by hand, and the
-mechanical checks, `t/checks.py` (D5, D7). **Next:** step 1, to be
-proposed; nothing is agreed beyond D1 and D2.
+mechanical checks, `t/checks.py` (D5, D7).
+
+**Step 1 is done**: `+`, `-`, `*` and `/` as binary prefix forms (D20),
+with the D21 compile errors found over the whole tree before any C is
+written, unit-tested with their positions in
+`compiler/tests/arith.test.ts`, `+5` a symbol (D22), and two faults,
+`integer overflow` for a result outside 63 bits (D23, D25, including
+`(/ -2^62 -1)`) and `division by zero` (D24), with `/` truncating
+toward zero. The runtime's `rt_add`, `rt_sub`, `rt_mul` and `rt_div`
+check with `__builtin_*_overflow` before the range (D26); the codegen
+binds every operand to its own temporary, left to right, so the first
+fault in that order wins (D27), and folds nothing (D28). Golden tests
+050 to 065 come from `t/models/arith.py`, and the referee agrees on
+all eighteen; green under gcc, clang and `make sanitize`. Built with
+Opus, the step's size (large). **Next:** step 2, to be proposed;
+nothing is agreed beyond D1 to D7 and D20 to D28.
 
 ## Read first, in this order
 
@@ -85,7 +99,10 @@ proposed; nothing is agreed beyond D1 and D2.
   nests one level per term of a long chain won't compile (a model that
   folds many terms folds them as a tree); the compiler itself nests one level per
   operator, so a program that deep fails under clang too, and nothing
-  fixes that yet.
+  fixes that yet. Since step 1 every operand is bound to a temporary
+  (D27), so the generated C doesn't nest at all; the limit is now
+  Node's stack in the reader, somewhere between 4000 and 8000 levels,
+  reported as an internal error.
 - Comments explain why, not what.
 
 ## Toolchain

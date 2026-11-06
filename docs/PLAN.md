@@ -4,7 +4,8 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** step 0 is done, and so are the mechanical checks. Step 1 (arithmetic) is proposed on D20 to D28, which the person accepted as proposed; next: its build.
+**Progress:** steps 0 and 1 are done, and so are the mechanical checks.
+Next: step 2, to be proposed.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -50,7 +51,18 @@ model to write; *medium* where the design is agreed and the step
 describes its tests; *small* where the step is a pattern to repeat.
 A session's first move is to compare its own model with the step's size.
 
-### 1. Arithmetic (proposed; not agreed)
+### 1. Arithmetic (done)
+
+*Landed as written, with tests 050 to 065 from `t/models/arith.py`, the
+referee agreeing on all eighteen golden tests, and the D21 errors in
+`compiler/tests/arith.test.ts`. Where the text was silent: within one
+form, its own error (no operator, an unknown one, the wrong count, in
+that order) is reported before its operands', which are checked left to
+right; every operand, a literal too, gets its own temporary, so the C
+has no nesting at all and clang's limit of 256 brackets no longer
+applies to a long chain; and a wrong count names the operator it's for
+(`/ takes two operands`), as D21's "naming the operator" says.*
+
 
 Adds `+`, `-`, `*` and `/` as binary prefix forms, `(op a b)`, with their
 faults. Every choice in it (D20 to D28) was proposed as a default and

@@ -1,0 +1,3 @@
+; Step 1 (D20): two plus three.
+; The program and its expected output are from t/models/arith.py.
+(+ 2 3)

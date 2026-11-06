@@ -1,0 +1,2 @@
+fault: integer overflow
+exit: 1

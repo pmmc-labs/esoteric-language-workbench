@@ -1,0 +1,3 @@
+; Step 1 (D27): the left operand faults before the right.
+; The program and its expected output are from t/models/arith.py.
+(+ (+ 4611686018427387903 1) (/ 1 0))

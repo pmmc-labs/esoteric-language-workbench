@@ -1,0 +1,3 @@
+; Step 1 (D20): a form as an operand.
+; The program and its expected output are from t/models/arith.py.
+(* (+ 1 2) (- 10 4))
