@@ -12,14 +12,25 @@ per era, dense, with golden test numbers and `Dn` references, so a
 claim can be checked against a test and a decision. Say what's **Next**
 at the end, and what's a candidate but not agreed. The workbench's own:]
 
-**Steps 0 and 1 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
+**Steps 0 to 2 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
 with positions, a program of one expression compiled to C and linked
 with `runtime/rt.c` (D2), integers of 63 bits (D4), the five operators
 on two arguments each (D3), division C's way (D5), faults ending the
 program (D6; golden tests 000, 001, and 010 to 015 from
 `t/models/arith.py`), compile errors as unit tests (D7), and the
-mechanical checks, `t/checks.py` (D8, D10). **Next:** nothing agreed;
-the calculator grows only when a step of the process needs it.
+mechanical checks, `t/checks.py` (D8, D10). Step 2 adds booleans as an
+immediate with tag `11`, `#false` 3 and `#true` 7 (D11, D14); the six
+comparisons as runtime functions, the orderings on integers and `==`
+on any two values, where unlike types are never equal (D12); and
+`(if test then else)` as C's `?:`, its test checked by `rt_truth`
+(D13), with the operators faulting `not an integer` on a boolean
+(golden tests 020 to 024 from `t/models/compare.py` and by hand; unit
+tests for the arities). Built by a small model (Haiku) on a medium step,
+with no test or model changed, and `make test`, `make golden-clang` and
+`make sanitize` green. **Next:** nothing agreed; the calculator grows
+only when a step of the process needs it. Open for the person: which
+fault wins when two operands of one operator both fault (C leaves the
+order of arguments unspecified; it's a fault either way).
 
 ## Read first, in this order
 

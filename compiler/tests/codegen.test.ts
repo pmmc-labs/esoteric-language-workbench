@@ -30,6 +30,20 @@ test('what is not an operator is refused at its position', () => {
     fails('((+ 1 2) 3 4)', 'not an operator: list', 1, 2);
 });
 
+test('if takes three parts (D13)', () => {
+    fails('(if #true 1)', 'if takes 3 arguments, not 2', 1, 1);
+    fails('(if)', 'if takes 3 arguments, not 0', 1, 1);
+});
+
+test('the comparisons take two arguments (D12)', () => {
+    fails('(< 1)', '< takes 2 arguments, not 1', 1, 1);
+    fails('(== 1 2 3)', '== takes 2 arguments, not 3', 1, 1);
+});
+
+test('the C for an if is a conditional, so only the taken branch runs', () => {
+    assert.match(compileProgram(read('(if #true 1 (/ 1 0))')), /rt_truth\(rt_bool\(1\)\) \? rt_int\(1LL\) : rt_div\(rt_int\(1LL\), rt_int\(0LL\)\)/);
+});
+
 test('the C for a nested expression', () => {
     assert.match(compileProgram(read('(* (+ 1 2) -3)')), /rt_mul\(rt_add\(rt_int\(1LL\), rt_int\(2LL\)\), rt_int\(-3LL\)\)/);
 });

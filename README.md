@@ -25,7 +25,7 @@ Lisps, actors or native code.
 | `t/models/README.md` | Models: small programs in another language that write expected outputs, rerun and never patched. `t/models/arith.py` is a worked one. |
 | `t/checks.py` | The mechanical checks: models rerun and compared, tests paired, commits naming their decision. |
 | `docs/MODELS.md` | Which tasks need which size of model, when to escalate, when a smaller one is safe. |
-| `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Steps 0 and 1, worked: a calculator, the smallest end-to-end compiler, its runner and its tests. |
+| `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Steps 0 to 2, worked: a calculator, the smallest end-to-end compiler, its runner and its tests. |
 
 ## Using it
 
@@ -35,8 +35,9 @@ Lisps, actors or native code.
 3. Write `docs/DESIGN.md`'s goals and the first decisions in
    `docs/DECISIONS.md` (D1 to D10 or so are the scope: what it's for,
    what's cut, what's borrowed). These are the person's, not the agent's.
-4. Steps 0 and 1 are built: a TypeScript compiler that Node runs as it
-   is, integer arithmetic compiled to C and linked with a C runtime,
+4. Steps 0 to 2 are built: a TypeScript compiler that Node runs as it
+   is, integer arithmetic, booleans and `if` compiled to C and linked
+   with a C runtime,
    `t/run.sh`, a `Makefile`, golden tests from a model, and the checks.
    `make test` should pass; `make hooks` installs the commit check.
    Rename `lang`, `langc` and `.lang` to the language's own, keep or
