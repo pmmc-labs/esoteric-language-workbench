@@ -37,7 +37,7 @@ that differs, so a patch doesn't survive `make test`.
 
 `referee/` holds a second implementation of the language, an evaluator
 written from the decisions, that prints what any program's `.expected`
-must be. `make checks` runs it over every test (none yet). It is what a model
+must be. `make checks` runs it over every test (`calc.py`, from step 1). It is what a model
 written by someone else is judged against, so the builder of a step
 doesn't read it (`docs/PROCESS.md`, "The referee").
 
