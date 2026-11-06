@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The referee: an evaluator of the calculator from its decisions (D3 to
-D7, D11 to D19), on Python's unbounded integers, with the 63-bit range
+D7, D11 to D25), on Python's unbounded integers, with the 63-bit range
 and the division and shift rules applied as the decisions say. Written
 from DECISIONS.md and not from the runtime, so that it is a second
 implementation, and `make checks` runs it over every golden test and
@@ -17,6 +17,13 @@ Both the reader and the evaluator are loops with a stack of their own,
 not recursive functions: a program may nest thousands deep, and the
 first version of this file, recursive, failed past about a thousand
 where a builder's tests went deeper.
+
+Budgets (D20 to D25) are kept the way the decisions say them, not the
+way the runtime is told to (D27): a list of what each budget in force
+has left, every operation charged to all of them, and refused when any
+is at 0 (D23). That costs the depth of `within`s per operation, which
+a referee can afford, and it makes the runtime's single limit a second
+derivation rather than a copy.
 
     python3 t/referee/calc.py t/010-arith.lang
 """
@@ -117,6 +124,25 @@ def read(src):
     assert not stack, "missing ')'"
     return forms
 
+# D21, D22: an operation is charged when it's applied, its operands
+# already evaluated, before it checks or computes anything; every budget
+# in force pays (D23), and the operation is refused if any has nothing
+# left. Outside every `within` the list is empty and nothing is refused.
+def charge(budgets):
+    if any(b == 0 for b in budgets):
+        raise Fault('budget spent')
+    for k in range(len(budgets)):
+        budgets[k] -= 1
+
+# D24: the budget is an integer and not negative, checked before the
+# body is evaluated.
+def budget_of(n):
+    if isinstance(n, bool):
+        raise Fault('not an integer')
+    if n < 0:
+        raise Fault('bad budget')
+    return n
+
 def atom_value(f):
     if isinstance(f, int):
         return f
@@ -129,16 +155,34 @@ def atom_value(f):
 # Evaluation as a loop: a frame is a list form, how far along it is, and
 # the values so far. An `if` evaluates its test, then only the taken
 # branch (D13); an operator evaluates both arguments left to right, then
-# applies.
+# is charged (D22), then applies (D25); a `within` evaluates its budget
+# under the budgets already in force, checks it, puts it in force for
+# its body, and takes it away after (D23, D24).
 def ev(form):
     if not isinstance(form, list):
         return atom_value(form)
+    budgets = []
     stack = [[form, 0, []]]
     result = None
     while stack:
         f, i, vals = stack[-1]
         head, args = f[0], f[1:]
-        if head == 'if':
+        if head == 'within':
+            if i == 0:
+                stack[-1][1] = 1
+                nxt = args[0]
+            elif i == 1:
+                budgets.append(budget_of(vals[0]))
+                stack[-1][1] = 2
+                nxt = args[1]
+            else:
+                budgets.pop()
+                result = vals[1]
+                stack.pop()
+                if stack:
+                    stack[-1][2].append(result)
+                continue
+        elif head == 'if':
             if i == 0:
                 stack[-1][1] = 1
                 nxt = args[0]
@@ -159,6 +203,9 @@ def ev(form):
                 stack[-1][1] = i + 1
                 nxt = args[i]
             else:
+                if head not in BIN:
+                    raise KeyError(head)
+                charge(budgets)
                 result = BIN[head](vals[0], vals[1])
                 stack.pop()
                 if stack:

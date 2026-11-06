@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 4 are done. Step 5 has its decision from the person, D20, and waits to be proposed.
+**Progress:** steps 0 to 4 are done. Step 5 is proposed (D20 from the person; D21 to D27 defaults, for the person to confirm), with its referee and its brief (`docs/BRIEF.md`), and waits to be built.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -187,8 +187,165 @@ written as one.
 
 ### 5. A budget: `(within n expr)`
 
-D20. To be proposed: its decisions, its text with Referee and Size
-lines, its referee, and a brief for its builder.
+Referee: `t/referee/calc.py`, extended with the proposal, before any
+build. Wanted because the semantics are the language's own, with no
+textbook answer to check by eye, and with traps a mirror of the runtime
+would copy: the budget's edge (n operations run, the n+1th faults), the
+charge before or after the operands and before or after the checks, an
+inner budget escaping the outer, and C's argument order, which gcc and
+clang already disagree on (D25). It agrees with the 26 tests before
+this step and with the 20 below, and, while proposing, with a
+prototype of D26 and D27 (kept out of the repo) on 1,200 random
+programs under gcc and clang.
+
+Size: medium. D20 is the person's and D21 to D27 decide the rest,
+including the shape of the C and of the runtime's counter; every test's
+program and expected output is written below; the referee exists. No
+model is written: each output is read off a program of a line or two,
+and the one that takes more than a glance, 052, is worked here. What's
+left is code to a stated design, under complete checks, which is
+medium by `docs/MODELS.md`. The brief is `docs/BRIEF.md`; a builder
+smaller than medium builds and flags, as it says.
+
+D21 to D27 are defaults the person hasn't confirmed. If they change
+any, this text and the tests change with them before the build, and
+the referee is rerun over the tests. A build on them unconfirmed builds
+them as written.
+
+Done when: tests 050 to 069 are written exactly as below and committed
+red before the code (every one fails to compile today, since `within`
+is unknown, except 059, which fails under gcc and passes under clang:
+that's D25's bug); then `make test`, `make golden-clang` and `make
+sanitize` pass, with no file under `t/` changed but the twenty added
+(and `make check` passes too, if `npm install` works where it's built);
+and `LANGUAGE.md`, this heading, the progress line, and `CLAUDE.md`'s
+Status and code style are moved.
+
+- `within` (D24): a special form in `codegen.ts`, beside `if`: two
+  parts, else the compile error `within takes 2 arguments, not N` at
+  the form. It emits `(bK = rt_within(N), rt_within_end(bK, E))`
+  (D26).
+- The order (D25, D26): an operator whose two operands are both lists
+  emits `(tI = L, tJ = R, op(tI, tJ))`; with an atom on either side,
+  the plain call it emits now. The temporaries are declared at the top
+  of `lang_main`, `rt_value tI` and `int64_t bK`, numbered per program
+  from 0 (a count threaded through `compileExpr`, or a counter made in
+  `compileProgram` and passed down; not module state, since the unit
+  tests compile many programs in one process). `if` stays C's `?:`.
+- The runtime (D27): `spent` and `limit` in `rt.c`, static; a `charge`
+  at the top of each of the seventeen operator functions, before
+  `need_ints` (and in `rt_eq` and `rt_ne`, which have no check, and
+  through `RT_CHECKED` for `+`, `-` and `*`); `rt_within` and
+  `rt_within_end` declared in `rt.h`. The clang lesson in `CLAUDE.md`
+  holds: compute `spent + n` only after the comparison that says it
+  fits.
+- Golden tests 050 to 069, below. Each file is one comment line, of the
+  builder's wording, naming the decisions it tests and saying the
+  expected output is by hand from this step (not naming a model: a path
+  under `t/models/` in a comment is a claim `make checks` holds the
+  test to), then the program as given. Each expected is as given,
+  ending in a newline; a fault is two lines. Every expected output was
+  worked by hand from D21 to D25 and agrees with the referee.
+  - 050 `within`: `(within 3 (+ (* 2 3) (- 10 4)))` gives `12`; three
+    operations, a budget of three (D22).
+  - 051 `within-spent`: `(within 2 (+ (* 2 3) (- 10 4)))` gives
+    `fault: budget spent` / `exit: 1`; the third is refused (D22).
+  - 052 `within-every-op`: the program below gives `155`: each of the
+    seventeen operators once, so seventeen operations (D21). Worked:
+    `(bit/shl 3 4)` 48, `(bit/shr 48 2)` 12, `(** 12 2)` 144; `(< 1 2)`
+    and `(>= 3 3)` `#true`, `==` `#true`; `(<= 5 4)` `#false`, `(> 5 4)`
+    `#true`, `!=` `#true`; `(bit/and 12 10)` 8, `(* 2 3)` 6, `(- 7 6)` 1,
+    `(/ 17 2)` 8, `(% 8 5)` 3, `(bit/or 1 3)` 3, `(+ 8 3)` 11; `(bit/xor
+    144 11)` 155. The two `0`s are branches not taken. The file holds
+    the block as shown, less its indent, so `(within 17` starts the
+    line.
+
+        (within 17
+          (bit/xor (** (bit/shr (bit/shl 3 4) 2) 2)
+                   (if (== (< 1 2) (>= 3 3))
+                       (if (!= (<= 5 4) (> 5 4))
+                           (+ (bit/and 12 10) (bit/or (- 7 (* 2 3)) (% (/ 17 2) 5)))
+                           0)
+                       0)))
+
+  - 053 `within-every-op-spent`: the same program with `16` for `17`
+    gives `fault: budget spent` / `exit: 1`. With 052, it fails if any
+    one operator isn't charged.
+  - 054 `within-free`: `(within 0 (if #true (within 0 7) (/ 1 0)))`
+    gives `7`: `if`, `within` and literals cost nothing, and the branch
+    not taken isn't charged (D21, D24).
+  - 055 `within-if`: `(within 2 (if (< 1 2) (+ 40 2) (+ (+ 1 1) (+ 1
+    1))))` gives `42`: the test and the taken branch, two; the other
+    branch would have been three (D21).
+  - 056 `within-pow`: `(within 1 (** 1 4611686018427387903))` gives
+    `1`: `**` is one operation, whatever its exponent (D21).
+  - 057 `within-charge-after-operands`: `(within 1 (+ (/ 1 0) 2))`
+    gives `fault: division by zero` / `exit: 1`: the division is the
+    one operation the budget allows (D22).
+  - 058 `within-charge-first`: `(within 0 (/ 1 0))` gives `fault:
+    budget spent` / `exit: 1`: the charge comes before the operator's
+    checks (D22).
+  - 059 `order`: `(+ (/ 1 0) (+ #true 1))` gives `fault: division by
+    zero` / `exit: 1`: the left operand first (D25). Red under gcc
+    today, which says `not an integer`.
+  - 060 `within-order`: `(within 1 (+ (* 2 3) (/ 1 0)))` gives
+    `fault: budget spent` / `exit: 1`: the multiplication takes the
+    one, so the division is refused (D22, D25).
+  - 061 `within-outer-binds`: `(within 1 (within 5 (+ (+ 1 2) 3)))`
+    gives `fault: budget spent` / `exit: 1` (D23).
+  - 062 `within-inner-binds`: `(within 5 (within 1 (+ (+ 1 2) 3)))`
+    gives `fault: budget spent` / `exit: 1` (D23).
+  - 063 `within-nested`: `(within 3 (+ (within 5 (+ (+ 1 2) 3)) 4))`
+    gives `10`: the inner's two operations and the outer `+` (D23).
+  - 064 `within-nested-spent`: the same with `2` for the outer `3`
+    gives `fault: budget spent` / `exit: 1`: the outer paid for the
+    inner's two (D23).
+  - 065 `within-computed`: `(within 2 (within (+ 1 1) (* 3 4)))` gives
+    `12` (D24).
+  - 066 `within-computed-spent`: `(within 1 (within (+ 1 1) (* 3 4)))`
+    gives `fault: budget spent` / `exit: 1`: the budget's `+` is
+    charged to the outer (D24).
+  - 067 `within-not-int`: `(within #true 1)` gives `fault: not an
+    integer` / `exit: 1` (D24).
+  - 068 `within-bad-budget`: `(within -1 (/ 1 0))` gives `fault: bad
+    budget` / `exit: 1`: checked before the body runs (D24).
+  - 069 `within-bool`: `(within 1 (< 1 2))` gives `#true`: a
+    `within`'s value is its body's, of any type (D22).
+- Unit tests, in `compiler/tests/codegen.test.ts`, added beside the
+  others (D7), none of the existing ones changed. With the file's own
+  `fails`:
+
+        fails('(within)', 'within takes 2 arguments, not 0', 1, 1);
+        fails('(within 5)', 'within takes 2 arguments, not 1', 1, 1);
+        fails('(+ 1 (within 1 2 3))', 'within takes 2 arguments, not 3', 1, 6);
+        fails('within', 'unknown name within', 1, 1);
+        assert.match(compileProgram(read('(+ (/ 1 0) (+ #true 1))')),
+            /\((t\d+) = rt_div\(rt_int\(1LL\), rt_int\(0LL\)\), (t\d+) = rt_add\(RT_TRUE, rt_int\(1LL\)\), rt_add\(\1, \2\)\)/);
+        assert.match(compileProgram(read('(within 5 (+ 1 2))')),
+            /\((b\d+) = rt_within\(rt_int\(5LL\)\), rt_within_end\(\1, rt_add\(rt_int\(1LL\), rt_int\(2LL\)\)\)\)/);
+
+- Documents: `LANGUAGE.md` gains a section on budgets after
+  exponentiation (what an operation is, the edge, nesting, the budget
+  as an expression, with examples from the tests above, no tables), a
+  sentence under Forms that evaluation is left to right and the first
+  fault ends the program (D25), and `budget spent` and `bad budget` in
+  Faults. This heading gains (done) and a note of what landed
+  differently, if anything; the progress line moves. `CLAUDE.md`'s
+  Status gains step 5 (D20 to D27, tests 050 to 069, the builder's
+  model and tier) and its **Next**; its code style's argument-order
+  lesson gains D26's rule (two operands that can fault or charge are
+  never two arguments of one call). `DECISIONS.md` gains an entry only
+  if the build had to decide something these don't (`docs/BRIEF.md`
+  says how). `DESIGN.md` isn't moved: it's still the template's
+  skeleton, as through steps 1 to 4.
+- Leave out: a way to catch `budget spent` or to ask what's left; a
+  budget of anything but operator applications (time, memory, depth);
+  which of one operator's own checks comes first (open; no test applies
+  an operator that could fail two of its own checks); the
+  bracket limit (open since step 3; D26 keeps it where it was, and no
+  test goes deeper); a model under `t/models/`; an environment variable
+  or flag for a default budget. Report, don't add, if something seems
+  to need them.
 
 ### 6. [Local bindings.] Referee: [decide]. Size: medium.
 
