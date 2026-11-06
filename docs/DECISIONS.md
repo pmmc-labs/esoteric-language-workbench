@@ -1,0 +1,70 @@
+# Decision log
+
+What was decided, why, and what was turned down, roughly in the order it
+came up. **User** means [the person] decided it; **default** means the
+agent proposed it and it wasn't explicitly discussed. Defaults are fair to
+revisit. Open questions are listed at the end of [`DESIGN.md`](DESIGN.md).
+
+An entry has: a number that's never reused, a one-line title in bold,
+the attribution in italics (quote the person where the words matter),
+the reason, and `Rejected:` with each alternative and why it lost. A
+decision that's later changed stays, with a note pointing to the entry
+that changed it; the new entry says what it retires.
+
+Sections group entries by subject, not by time; a new entry goes in the
+section it belongs to. Number by time.
+
+The entries below are the workbench's own: a calculator, built to work
+the process out on. A language started from this template replaces
+them, keeping D5 to D7, which are the process.
+
+## Scope
+
+**D1. A calculator: integer expressions, compiled to a native binary
+that prints the value.** *(User: "let's make a small calculator language
+to work out these steps.")* The language exists to exercise the
+process: steps, models, checks. It grows only as far as that needs.
+
+**D2. The compiler is TypeScript run by Node as it is, and emits C.**
+*(Default)* C so step 0 runs wherever there's a C compiler; a native
+target through a target interface when something needs one. Node's
+type stripping, so there's no build step; the compiler uses only
+erasable syntax (no parameter properties, no enums).
+
+## Language
+
+## Language
+
+## Values and memory
+
+## Runtime
+
+**D3. A fault ends the program: its message on stderr, exit 1, after
+whatever stdout had.** *(Default)* So a golden test checks a fault as
+two lines, the message and `exit: 1`.
+
+## Compiler
+
+**D4. A compile error can't be a golden test; it's a unit test.**
+*(Default)* `t/run.sh` calls a failed compile a failure, which is what
+it should be for a test that's meant to run. Messages and positions
+are checked in `compiler/tests/`. Rejected: a `; compile-error:` header
+line in a golden test; it would come when a language has enough
+compile errors to want it.
+
+## Project
+
+**D5. Golden tests' expected output comes from an independent source,
+never from the compiler.** *(User)* See `t/README.md`. `t/checks.py`
+enforces the half it can: a file a model writes is what the model
+writes now.
+
+**D6. Examples bend to the language.** *(User)* When a port needs a
+feature, the example changes or is left out. Rejected: adding to the
+language to make a port pass.
+
+**D7. A commit that touches the implementation names a decision or a
+plan step in its subject.** *(User)* So a change is found from the log
+and the log from a change. `make commits` checks a range and `make
+hooks` installs the check as a commit-msg hook. A commit that touches
+only docs or tests is exempt; the models' files count as tests.
