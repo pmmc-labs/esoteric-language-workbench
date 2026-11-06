@@ -160,6 +160,39 @@ knobs early and never regretted it:
 For a language without processes most of these collapse to the first and
 last. Build what applies before the second step needs it.
 
+### The referee
+
+A referee is a second implementation of the language, small and slow,
+written from the decisions and not from the runtime: an evaluator in
+Python that takes any program and prints what the `.expected` must be.
+It lives in `t/referee/`, and `make checks` runs it over every golden
+test, so the suite and the referee are held to agree, and a test that
+isn't covered yet is skipped until the referee grows.
+
+It exists for one thing: to make a model written by someone else
+checkable. A model that mirrors the implementation passes every test;
+against a referee it either agrees or it doesn't, and the decisions say
+which is wrong. This repo's third and fourth experiments
+(`MODELS.md`) rested on it: without the referee, "the smaller model
+wrote a real model" would have been a judgement; with it, a diff. It
+also does what "verify a reported misbehaviour against an independent
+implementation" asks for, every time, mechanically.
+
+The large model decides when one is needed, at proposal time: the
+step's text says `Referee: extend t/referee/NAME.py to cover this` or
+`Referee: none`, with the reason. It's wanted when the model is to be
+delegated, when the semantics have traps a mirror would copy, or when
+expected outputs aren't checkable by eye. It isn't wanted for a step
+whose tests are a few lines by hand, or whose output is a direct read
+of the definition. Writing the referee is large work, and it's written
+or extended before the step is handed to a builder.
+
+Two rules keep it honest. The builder of a step doesn't read the
+referee, so that agreement means two derivations and not one copied.
+And the referee is checked against the suite before it judges: this
+repo's was wrong once on its first run, range-checking a quotient on
+the way to a remainder, and the suite showed it.
+
 ### Mechanical checks, where a rule can be one
 
 A rule an agent has to remember is a rule a weaker agent, or a long
@@ -175,6 +208,7 @@ and the script is in `make test`:
 - **Commits**: a commit that touches the implementation names a `Dn`
   or a plan step in its subject, checked over a range, or by a
   commit-msg hook as you commit.
+- **Referee**: every referee agrees with every golden test it covers.
 
 `t/checks.py` has them. What can't be checked by script (that an
 expected output written by hand was in fact worked out by hand, that a

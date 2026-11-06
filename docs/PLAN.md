@@ -41,8 +41,10 @@ with a note where what landed differs.
   `exit: N` when the status isn't 0, `JOBS` at a time, with a watchdog.
 - Golden tests 000 and 001, their outputs by hand.
 
-Each step carries a **Size** line, the capability the step needs of
-the agent that builds it, by `docs/MODELS.md`'s tiers: *large* where
+Each step carries a **Referee** line, set when the step is proposed:
+`extend t/referee/NAME.py to cover this`, or `none`, with the reason
+(`docs/PROCESS.md`, "The referee"), and a **Size** line, the capability
+the step needs of the agent that builds it, by `docs/MODELS.md`'s tiers: *large* where
 there's a decision to propose, a runtime mechanism to design, or a
 model to write; *medium* where the design is agreed and the step
 describes its tests; *small* where the step is a pattern to repeat.
@@ -114,6 +116,9 @@ it moves, and "done when" includes them.
 
 ### 3. Bit operations (done)
 
+Referee: `t/referee/calc.py` covered this before the trials, kept out
+of the repo then, in since; it judged both builders' models.
+
 Size: large, for the model; the build is medium once the model and its
 tests exist. The decisions are made (D15 to D17). No model and no tests
 existed: this step's first work was `t/models/bits.py`, and the tests it
@@ -157,6 +162,9 @@ temporaries, or `-fbracket-depth`, or a documented limit.
 
 ### 4. Exponentiation (done)
 
+Referee: `t/referee/calc.py`, extended with the builders' D19 once
+they'd stated it, since the decision was theirs to propose.
+
 Size: large, for the model. D18 (and D19, which the build had to add:
 D18 gave only the operator). The model first, `t/models/pow.py`
 and its tests, 040 and up, then the code; done when `make test`,
@@ -173,7 +181,7 @@ Both trials' branches are kept: `step4-sonnet`, which is what main
 took, and `step4-haiku`. The record is in `docs/MODELS.md`. D19 is a
 default the builder wrote; it waits on the person.
 
-### 5. [Local bindings.] Size: medium.
+### 5. [Local bindings.] Referee: [decide]. Size: medium.
 
 ### 5. [Heap values.]
 

@@ -35,6 +35,10 @@ is the quality.
 
 **Large, and don't delegate:**
 
+- The referee (`PROCESS.md`), when a step's proposal says one is
+  wanted, and that decision itself: it's what makes a delegated model
+  checkable, so it can't be delegated to the same tier.
+
 - A proposal: options, a recommendation, what each costs. This is where
   the person's decision is only as good as what they're shown.
 - Anything touching the core rule, the collector, the scheduler, the

@@ -23,7 +23,8 @@ Lisps, actors or native code.
 | `docs/LANGUAGE.md` | Skeleton: the language as it is, for someone writing programs in it. |
 | `t/README.md` | The golden-test discipline: expected output from an independent source, never from the implementation. |
 | `t/models/README.md` | Models: small programs in another language that write expected outputs, rerun and never patched. `t/models/arith.py` is a worked one. |
-| `t/checks.py` | The mechanical checks: models rerun and compared, tests paired, commits naming their decision. |
+| `t/checks.py` | The mechanical checks: models rerun and compared, tests paired, the referee agreeing with every test, commits naming their decision. |
+| `t/referee/` | The referee: a second implementation from the decisions, which a delegated model is judged against. |
 | `docs/MODELS.md` | Which tasks need which size of model, when to escalate, when a smaller one is safe. |
 | `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Steps 0 and 1, worked: a calculator, the smallest end-to-end compiler, its runner and its tests. |
 

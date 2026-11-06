@@ -12,6 +12,10 @@ what the models write.
             has a .expected and the other way round; a test that names a
             model (`t/models/x.py` in its comments) names one that
             exists and that lists the test's files.
+  referee   Every referee in t/referee/ (an evaluator of the language
+            written from the decisions, not the runtime) is run over
+            every golden test, and must print the .expected, or say the
+            program is outside what it covers (exit 3), which is skipped.
   commits   Every commit in a range (BASE..HEAD, default origin/main..HEAD)
             that touches compiler/, runtime/ or lib/ names a decision
             (D12) or a plan step (step 3) in its subject, so that the
@@ -86,6 +90,27 @@ def check_tests():
                 bad.append(f'{exp}: no {EXT} file')
     return bad
 
+def check_referee():
+    bad, ran, skipped = [], 0, 0
+    referees = sorted(glob.glob('t/referee/*.py'))
+    for ref in referees:
+        for d in TEST_DIRS:
+            for src in sorted(glob.glob(f'{d}/*{EXT}')):
+                exp = src[:-len(EXT)] + '.expected'
+                if not os.path.exists(exp):
+                    continue
+                r = subprocess.run(['python3', '-I', ref, src], capture_output=True)
+                if r.returncode == 3:
+                    skipped += 1
+                elif r.returncode != 0:
+                    bad.append(f'{ref} on {src}: exit {r.returncode}\n{r.stderr.decode()}')
+                elif r.stdout != open(exp, 'rb').read():
+                    bad.append(f'{ref} on {src}: the referee and the .expected disagree; one of them is wrong, and the decisions say which')
+                else:
+                    ran += 1
+    print(f'referee: {len(referees)} referees, {ran} tests agree, {skipped} outside them')
+    return bad
+
 SUBJECT_OK = re.compile(r'\bD\d+\b|\bstep \d+\b', re.I)
 
 def touches_impl(files):
@@ -119,13 +144,15 @@ def main(argv):
         bad = check_models('--write' in argv)
     elif what == 'tests':
         bad = check_tests()
+    elif what == 'referee':
+        bad = check_referee()
     elif what == 'commits':
         upstream = subprocess.run(['git', 'rev-parse', '--verify', '-q', 'origin/main'], capture_output=True).returncode == 0
         bad = check_commits(argv[1] if len(argv) > 1 else 'origin/main..HEAD' if upstream else 'HEAD')
     elif what == 'commit-msg':
         bad = check_commit_msg(argv[1], '--staged' in argv)
     elif what == 'all':
-        bad = check_models() + check_tests()
+        bad = check_models() + check_tests() + check_referee()
     else:
         sys.exit(__doc__)
     for b in bad:

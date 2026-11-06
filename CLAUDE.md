@@ -79,6 +79,9 @@ it.
 - Update the Status section above as steps land.
 - A commit that touches the implementation names its decision or plan
   step in the subject (`make hooks` installs the check).
+- The builder of a step doesn't read `t/referee/`: it's the second
+  implementation the step's model is checked against, and agreement
+  means nothing if one was copied from the other.
 - At the start of a step, compare the step's **Size** line with your own
   model, by `docs/MODELS.md`; say so if they don't match, and escalate
   on its signals rather than pressing on.
@@ -128,7 +131,7 @@ it.
 | `lib/` | The prelude, compiled into every program, and the libraries a program asks for |
 | `examples/` | Example programs; each with a `.expected` is a golden test |
 | `docs/guide/` | The guide; its code blocks are golden tests too |
-| `t/` | Golden tests: `NNN-name.ext` + `NNN-name.expected`; `run.sh`; `models/`; `data/` |
+| `t/` | Golden tests: `NNN-name.ext` + `NNN-name.expected`; `run.sh`; `models/`; `referee/` (an evaluator of the language from the decisions, run over every test by `checks.py`; the builder of a step doesn't read it); `data/` |
 | `build/` | Output (ignored) |
 
 ## Commands

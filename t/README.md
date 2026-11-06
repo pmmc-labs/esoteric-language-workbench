@@ -33,6 +33,14 @@ When a change moves an output a model wrote, **rerun the model**. Don't
 patch the file. `make checks` reruns every model and fails on a file
 that differs, so a patch doesn't survive `make test`.
 
+## The referee
+
+`referee/` holds a second implementation of the language, an evaluator
+written from the decisions, that prints what any program's `.expected`
+must be. `make checks` runs it over every test. It is what a model
+written by someone else is judged against, so the builder of a step
+doesn't read it (`docs/PROCESS.md`, "The referee").
+
 ## Determinism
 
 A test runs the same way every time or it isn't a test. `run.sh` sets

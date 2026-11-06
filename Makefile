@@ -1,6 +1,7 @@
 # make test     the compiler's unit tests, the golden tests (t/run.sh), and
 #               the mechanical checks (t/checks.py: every model's files are
-#               what it writes now; every test has its .expected)
+#               what it writes now; every test has its .expected; every
+#               referee in t/referee/ agrees with every test it covers)
 # make unit     the unit tests alone (node:test)
 # make golden   the golden tests alone; JOBS=n runs n at once
 # make checks   the mechanical checks alone
