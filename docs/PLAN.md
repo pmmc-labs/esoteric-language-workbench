@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** step 0 is done, and so are the mechanical checks. Step 1 (arithmetic) is proposed, on D20 to D28, all defaults and none agreed; next: the person's picks, then its build.
+**Progress:** step 0 is done, and so are the mechanical checks. Step 1 (arithmetic) is proposed on D20 to D28, which the person accepted as proposed; next: its build.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -53,9 +53,8 @@ A session's first move is to compare its own model with the step's size.
 ### 1. Arithmetic (proposed; not agreed)
 
 Adds `+`, `-`, `*` and `/` as binary prefix forms, `(op a b)`, with their
-faults. Every choice in it is a default (D20 to D28) for the person to
-pick or change before the build; if one is turned down, this step is
-rewritten before anything is built.
+faults. Every choice in it (D20 to D28) was proposed as a default and
+accepted by the person as proposed, so the build can go ahead.
 
 - **The forms** (D20, D21, D22): exactly two operands, and a nested form
   is an operand. A malformed form and a bare symbol are compile errors,
