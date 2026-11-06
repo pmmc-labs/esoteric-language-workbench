@@ -658,9 +658,57 @@ a model served by ollama on a laptop, through a plain loop of our own
 so a failure is the model's or the brief's (`exp/local/`, its README),
 are the test of that, and of this page's claim about the local tier:
 that context, not reasoning, is its limit, and the documents are cut
-to the step. Round 1 is building step 2 from its red tests, with a
-brief of 1,300 tokens standing in for CLAUDE.md, the plan and the
-decisions; the record of each run goes in `exp/local/runs/`.
+to the step. The record of each run is in `exp/local/runs/`.
+
+### Round 1: building step 2
+
+`qwen3.8:27b` on an M2 Max with 32 GB, through `exp/local/agent.py`,
+from the commit the Claude builders had, with a brief of 1,300 tokens
+standing in for CLAUDE.md, the plan and the decisions
+(`exp/local/brief-step2.md`). One run.
+
+| | qwen3.8:27b, local | Sonnet | Haiku, high |
+|---|---|---|---|
+| Green under gcc, clang and the sanitizers, nothing under `t/` touched | yes | yes | yes |
+| Lines changed | 78 | 75 | 110 |
+| Tool calls, model turns | 21, 13 | 11 | 48 |
+| Wall time | 14.4 min | 1.2 min | 3.5 min |
+| Tokens | 296K prompt (the context resent each turn, 23K on average), 9K output, 15K characters of thinking | 122K | 151K |
+| Uncertainties reported | 3, all real: equality by bits, the `if` message's wording, parenthesising the branches | 3 | 7 |
+| Found the `toString` bug beside the step | no | no | yes |
+
+The diff reads like the better Claude builds: the tag check as a
+statement before the operation, `if` as a special form on a runtime
+test with its branches parenthesised, equality by bits with the
+argument why written in the comment, every comment citing its
+decision. It read the three files and the tests first, ran the
+baseline, wrote the runtime, then the compiler, appended the unit test
+with a heredoc rather than rewriting the test file, ran all three
+checks, confirmed nothing under `t/` moved, committed with the right
+subject, and stopped. The three uncertainties it reported are the same
+three the Claude builders reported on the same step.
+
+Two things to hold against it. It rewrote `rt.c`, `rt.h` and
+`codegen.ts` whole with `write_file`, since the loop has no edit tool,
+and reproduced the untouched parts exactly; on a longer file that
+would have been the risk. And the brief said nothing about tiers, so
+the size check never came up: the local tier was told only the step.
+
+What this says: the process carried, on a decided step with complete
+checks, to a model that shares no training with the family the rounds
+were built on, at a quarter the size of the smallest tier tried and at
+no cost in tokens. The convergence inside the family on this kind of
+step was not only shared training. And the prediction about the local
+tier held in its first half: the documents cut to the step were
+enough, and the context never overflowed. Rounds 2 and 3, the model
+and the proposal, are where the other half is tested.
+
+### Round 2: writing the model for step 3
+
+`exp/local/brief-step3.md`, from the commit where step 3 has its
+decisions and nothing else (`936aec3`): the model first, committed
+red, then the build; judged by the referee as the Claude models were.
+Not yet run.
 
 ## What to expect, by tier, on this process
 

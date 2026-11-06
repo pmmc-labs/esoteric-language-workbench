@@ -51,8 +51,23 @@ Commit and push the worktree's branch, and commit the run directory on
 main, so the diff and the transcript can be read. The transcript is
 the model's record; `report.md` is its own account of the run.
 
-## Rounds 2 and 3
+## Round 2: writing the model for step 3, then building it
 
-Writing the model for step 3 from D15 to D17 (the referee judges it),
-and proposing step 1 from step 0 (`exp-step0-clean`), each with a brief
-of its own, once round 1 has been run and read.
+The commit `936aec3` has step 3's decisions (D15 to D17) and no model
+and no tests; the brief asks for the model first, committed red, then
+the build.
+
+```
+git worktree add -b local-MODEL-step3 ../wt-local3 936aec3
+python3 exp/local/agent.py --repo ../wt-local3 --brief exp/local/brief-step3.md \
+    --model qwen3.8:27b --out exp/local/runs/MODEL-step3
+```
+
+Judge as before, plus the referee: on main, `python3 t/referee/calc.py`
+over each new `t/03*.lang` must print its `.expected`. Push the branch
+and commit the run directory on main.
+
+## Round 3
+
+Proposing step 1 from step 0 (`exp-step0-clean`), with a brief of its
+own, once rounds 1 and 2 have been read.
