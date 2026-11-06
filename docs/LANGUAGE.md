@@ -24,6 +24,14 @@ sign: `(/ -7 2)` is `-3` and `(% -7 2)` is `-1`.
 
 `;` starts a comment, to the end of the line.
 
+## Booleans, comparisons and `if` (step 2, being built)
+
+`#true` and `#false`. `<`, `<=`, `>` and `>=` compare two integers and
+give a boolean; `==` and `!=` compare any two values. `(if test then
+else)` gives `then` when `test` is `#true` and `else` when it's
+`#false`, evaluating only that one; anything else as the test faults.
+Arithmetic or an ordering on a boolean faults.
+
 ## Faults
 
 A result that doesn't fit 63 bits, or a division by zero, ends the

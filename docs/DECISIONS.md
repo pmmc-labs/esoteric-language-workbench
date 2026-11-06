@@ -38,6 +38,24 @@ and `(- 1)` are compile errors. Rejected: variadic `+` and `*` and
 unary `-`, which a Lisp usually has, because the calculator doesn't
 need them and a rule with no exceptions is easier to check.
 
+**D11. Booleans, `#true` and `#false`, a type of their own.** *(User,
+as the step to test the process on; the shape default.)* They print as
+written. Neither is an integer: arithmetic on one faults `not an
+integer`. Rejected: 0 and 1 as the booleans (no way to fault a
+`(+ #true 1)`, and the calculator is here to have faults to test).
+
+**D12. Comparisons: `<`, `<=`, `>`, `>=` on two integers, `==` and
+`!=` on any two values, each giving a boolean.** *(Default)* An
+ordering given a boolean faults `not an integer`. `==` on two values of
+different types is `#false`, not a fault, as `eq?` is in a Lisp.
+
+**D13. `(if test then else)`: three parts, the test a boolean at run
+time or the program faults `not a boolean`, and only the taken branch
+evaluated.** *(Default)* So `(if #true 1 (/ 1 0))` is 1. Rejected:
+truthiness (anything but `#false` is true), which hides the mistake
+`(if 0 ...)`; and a two-part `if`, which would need a value for the
+missing branch.
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
@@ -45,6 +63,12 @@ need them and a rule with no exceptions is easier to check.
 changing the integers. Overflow is a fault, `fault: overflow`, exit 1.
 Rejected: wrapping (silent, and no model of it is the definition);
 bignums (machinery the calculator doesn't need; a step later, if ever).
+
+**D14. A boolean is an immediate with its own tag: the low two bits
+`11`, the value in bit 2.** *(Default)* An integer's low bit stays 0
+(D4), so integers are untouched, and `01` is left for what comes next.
+The runtime checks a value's tag before arithmetic and comparison now
+that the compiler can't know what an `if` gives.
 
 **D5. Division truncates toward zero and the remainder takes the
 dividend's sign.** *(Default)* C's rule, so the runtime is `/` and `%`

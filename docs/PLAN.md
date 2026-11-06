@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 and 1 are done; the mechanical checks came with 1. Next: 2, if the calculator needs it; else this is where the template rests.
+**Progress:** steps 0 and 1 are done; the mechanical checks came with 1. Step 2 is written, with its tests red, as the experiment of `docs/MODELS.md`: a medium model and a small one each build it cold.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -70,8 +70,35 @@ written.
 - Compile errors (arity, an unknown name, not an operator) as unit
   tests (D7).
 
-### 2. [Immediates: the rest of the literals, if the calculator grows:
-booleans and comparisons, say.] Size: medium.
+### 2. Booleans, comparisons and `if`
+
+Size: medium. The decisions are made (D11 to D14), the model is written
+(`t/models/compare.py`), and the tests exist and fail: 020 to 024. The
+step is done when `make test` passes with no test or model changed, and
+`make sanitize` and `make golden-clang` pass too.
+
+- `#true` and `#false` (D11): read as themselves (today the reader
+  makes them symbols; either the reader or `codegen.ts` may give them
+  their meaning, but `(+ #true 1)` must fault at run time, not fail to
+  compile, since D11 says what it does). An immediate with its own tag
+  (D14), in `runtime/rt.h`; `rt_print` prints them as written.
+- The six comparisons (D12), as runtime functions beside the arithmetic
+  in `rt.c`, through the operator table in `codegen.ts`. The orderings
+  check both arguments are integers; `==` and `!=` compare any two
+  values.
+- The arithmetic checks its arguments are integers (D14), faulting
+  `not an integer`; before this step nothing but an integer could reach
+  it.
+- `(if test then else)` (D13): a special form in `codegen.ts`, not an
+  operator, since only the taken branch runs. The test is checked to be
+  a boolean at run time, faulting `not a boolean`. C's `?:` does this;
+  a form with other than three parts is a compile error, as a unit test.
+- Tests: 020 (every comparison over the edge values, counted with `if`,
+  from the model), 021 to 024 (by hand: a boolean printed; only the
+  taken branch runs; `not an integer`; `not a boolean`). Unit tests for
+  the compile errors (`if` with two parts; `(if)`).
+- Leave out: `and`, `or`, `not`, `cond`, truthiness, anything else.
+  Report, don't add, if something seems to need them.
 
 ### 3. [Conditionals.]
 

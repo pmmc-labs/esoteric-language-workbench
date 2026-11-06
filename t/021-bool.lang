@@ -1,0 +1,2 @@
+; A boolean prints as written (D11).
+(== (+ 1 2) 3)
