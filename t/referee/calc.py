@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The referee: an evaluator of the calculator from its decisions (D3 to
-D7, D11 to D19), on Python's unbounded integers, with the 63-bit range
+D7, D11 to D19, D20 to D27), on Python's unbounded integers, with the 63-bit range
 and the division and shift rules applied as the decisions say. Written
 from DECISIONS.md and not from the runtime, so that it is a second
 implementation, and `make checks` runs it over every golden test and
@@ -12,6 +12,12 @@ is wanted (docs/PROCESS.md, "The referee").
 The builder of a step does not read this file: that's what makes the
 referee's agreement with the builder's model worth something. The
 judge runs it.
+
+The budget (D20 to D27) is kept as the decisions state it and not as the
+runtime counts it: a list of what each enclosing `within` has left, every
+operation taking one from every entry, and a fault when an entry is
+already at 0. The runtime keeps a count and a limit instead; the two
+agree or `make checks` says so.
 
 Both the reader and the evaluator are loops with a stack of their own,
 not recursive functions: a program may nest thousands deep, and the
@@ -64,6 +70,17 @@ def power(a, b):
     if b > 64 and abs(a) >= 2:
         raise Fault('overflow')
     return fit(a ** b)
+
+# D21, D22, D24: an operation is charged to every enclosing budget when
+# it is applied, before it looks at its arguments; the one that finds an
+# entry at 0 faults. `if`, `within` and the atoms cost nothing.
+budgets = []
+
+def charge():
+    if any(b == 0 for b in budgets):
+        raise Fault('out of budget')
+    for i in range(len(budgets)):
+        budgets[i] -= 1
 
 BIN = {
     '+': lambda a, b: fit(need_int(a) + need_int(b)),
@@ -138,7 +155,27 @@ def ev(form):
     while stack:
         f, i, vals = stack[-1]
         head, args = f[0], f[1:]
-        if head == 'if':
+        if head == 'within':
+            # D23, D25: n first, outside the new budget; an integer, not
+            # negative; then the body inside it; the budget ends with it.
+            if i == 0:
+                stack[-1][1] = 1
+                nxt = args[0]
+            elif i == 1:
+                n = need_int(vals[0])
+                if n < 0:
+                    raise Fault('bad budget')
+                budgets.append(n)
+                stack[-1][1] = 2
+                nxt = args[1]
+            else:
+                budgets.pop()
+                result = vals[1]
+                stack.pop()
+                if stack:
+                    stack[-1][2].append(result)
+                continue
+        elif head == 'if':
             if i == 0:
                 stack[-1][1] = 1
                 nxt = args[0]
@@ -159,6 +196,9 @@ def ev(form):
                 stack[-1][1] = i + 1
                 nxt = args[i]
             else:
+                if head not in BIN:
+                    raise KeyError(head)
+                charge()
                 result = BIN[head](vals[0], vals[1])
                 stack.pop()
                 if stack:

@@ -101,6 +101,150 @@ fewer exceptions is easier to check); a bignum intermediate (D4).
 **D20. A budget: `(within n expr)` evaluates `expr` with a budget of
 `n` operations, and faults when it's spent.** *(User)*
 
+D21 to D27 are what D20 left open, proposed with step 5 and not yet
+confirmed by the person (all *default*): what counts as an operation,
+where the edge of the budget is, what `n` may be, how budgets nest,
+which fault reports first, what kind of form it is, and how it runs.
+
+**D21. An operation is one application of an operator, and nothing
+else is.** *(Default, proposed with step 5; fair to revisit.)* The
+seventeen operators of the table (`+ - * / %`, the six comparisons,
+the five `bit/` operations, `**`) cost one each, `==` and `!=` too,
+however large their arguments are: `(** 1 4611686018427387903)` is one
+operation, whatever the exponent. Integers, booleans,
+`if` and `within` cost nothing: an `if` costs its test and the branch it
+takes, as those are operations, and the branch it doesn't take is not
+run (D13). The cost of a program is therefore a count of operators
+applied, and is the same however the arguments are ordered. A form a later
+step adds (a binding, a call) says what it costs when it arrives; this
+entry is only about what exists. Rejected: counting every node, literals
+included (the size of the program, not its work: `(within 0 5)` would
+fault); counting `if` (it is a form, not an operator, D13, and cannot
+repeat, so it does no work of its own to bound); the work an operation does
+(`**`'s squarings, a division's steps): that is the runtime's loop, and
+the definition of the language is not to be the number of times a loop
+in `rt.c` turns; a weight per operator (a table to remember and to
+get wrong, for no use the calculator has).
+
+**D22. A budget of `n` allows `n` operations; the next one faults `out
+of budget`, and nothing catches it.** *(Default, proposed with step 5;
+fair to revisit. D20 says "faults when it's spent", which reads two
+ways; this is the first.)* A program whose body applies exactly `n`
+operators gives its value, and one that would apply the `n+1`th ends
+there with `fault: out of budget`, exit 1, nothing on stdout (D6). So
+`(within 0 e)` allows `e` no operator, and `(within 3 e)` is `e`'s
+value when `e` costs 3 or fewer. A `within` that completes is its body's
+value, whatever type. Rejected: faulting when the `n`th operation
+completes (it throws away a result the budget paid for, so `n` would have to
+be written one more than the operations wanted, and a budget of 0 and a
+budget of 1 would both allow none); a `within` that gives a
+value, `#false` or a pair, when spent (D6 has no handlers and no
+catching, and the value would need a type to be told from the body's);
+a message that carries `n` or the count (D6's messages are a name).
+
+**D23. `n` is an expression, evaluated first and outside the budget it
+sets; it must be an integer, and not negative.** *(Default, proposed
+with step 5; fair to revisit.)* `(within (+ 1 1) e)` is allowed. The
+operators in `n` are charged to the budgets that surround the `within`,
+not to the one it makes, which does not exist yet. A boolean as `n`
+faults `not an integer` (D11, D14); a negative `n` faults `bad budget`,
+a fifth fault name beside D17's and D19's, and is checked after the
+type, so `n` of `#true` is `not an integer` and never `bad budget`.
+Zero is a budget, and the largest integer, 4611686018427387903, is one
+(it is far past what any program can spend). The check is at run
+time, for a literal too: `(within -1 5)` compiles. Rejected: `n` a
+literal only (a restriction the next step, with a name to bind, would
+have to undo, and a second rule for what may stand in the place);
+`n` evaluated inside the budget it sets (circular: its cost would be the
+first operations of a budget whose size it decides); a negative `n`
+treated as 0 (D16 and D19 rejected the same silence for a bad shift and
+a bad exponent) or as no limit (the opposite of what a budget is for);
+a compile error for a negative literal (the run-time fault is needed for
+the expression anyway, and two rules for one mistake is what D3 chose against).
+
+**D24. Budgets nest by the smallest: an operation is charged to every
+`within` around it.** *(Default, proposed with step 5; fair to revisit.)*
+In `(within 2 (within 100 e))` the inner budget does not extend the
+outer: `e` may apply 2 operations. In `(within 100 (+ (within 2 a) b))`
+the operations of `a` count against the outer budget too, and still
+count when the inner `within` has ended, so `b` has what the outer one has
+left. Two `within`s one after the other, or one in each argument, have
+a budget each and do not share: the operations of the first are not taken
+from the second. Where an operation finds two budgets spent the fault is
+`out of budget` for both, so there is no choice of which to report.
+Rejected: an inner budget that replaces the outer for its body (a limit
+that a nested `within 1000000` undoes is no limit, and the point of a
+budget is to be a guard around code you did not write); an inner budget
+whose unspent part is returned to the outer, or is thrown away (what was
+spent is spent, and what is not has no owner after the `within`); a
+fault name for each level (nothing to tell the program, and the
+single name is what makes the order of two budgets not matter).
+
+**D25. When it is charged, and which fault reports first.** *(Default,
+proposed with step 5; fair to revisit.)* An operation is charged when it
+is applied: after its arguments have been evaluated and before it looks
+at them. So `(within 0 (/ 1 0))` is `out of budget`, the budget having
+refused the operation before it could fault, and `(within 1 (/ 1 0))`
+is `division by zero`, the operation having been paid for. Likewise
+`(within 0 (+ #true 1))` is `out of budget` and `(within 1 (+ #true 1))`
+`not an integer`. The `n` of a `within` is evaluated before its body; the
+test of an `if` before its branch. What stays as it was, unspecified
+and untested (the Status says so): the order a call's two arguments are
+evaluated in, and so which fault reports when each argument could fault
+differently. The budget adds one more such pair (a spent budget in one
+argument and another fault in the other); no test has one, and the total
+number of operations a program that completes applies does not depend on
+the order. Rejected: charging after the operation (a budget that stops
+work would report an operation it had already let run, and the
+operation's own fault would win over the budget); charging an
+application before its arguments are evaluated (the same total for a
+program that completes, but `(within 1 (+ (/ 1 0) 2))` would be `out of
+budget` and not `division by zero`: the `+` would be paid for before
+the division that has to happen first); deciding the order of arguments now
+(left to right: the generated C would have to sequence them, by
+temporaries, which rewrites the compiler's output and moves unit tests
+that match its text, and that is a step of its own that would also give
+clang's bracket limit its fix; not this one).
+
+**D26. `within` is a special form with exactly two parts, like `if`.**
+*(Default, proposed with step 5; fair to revisit.)* Not an operator:
+its body must run after the budget is set, which an operator, whose
+arguments are all evaluated before the operator is called, cannot do.
+Another number of parts is a compile error at the form's start,
+`within takes 2 arguments, not N` (D7, D13's wording), and a unit test.
+`within` alone, not in head position, is `unknown name within` as any
+other name. The form costs nothing (D21). Rejected: an operator of two
+arguments (D3), which would run the body outside the budget it sets; a
+third part for what to do when spent (D22: nothing catches).
+
+**D27. The runtime keeps a count of operations and a limit, and a
+`within` is a C function the runtime calls.** *(Default, proposed with
+step 5; fair to revisit.)* `rt.c` counts every operation applied, in or
+out of any `within`, and faults `out of budget` when the count passes
+the limit, which starts at the largest 64-bit integer. Each of the
+seventeen operator functions charges first, as its first statement
+(D25). `(within n e)` compiles to a call `rt_within(N, lang_within_L_C)`
+where `lang_within_L_C` is a static C function returning `e`, named by the
+form's line and column; the functions are emitted before `lang_main`,
+inner ones first. `rt_within` checks `n` (D23), saves the limit, lowers
+it to the count plus `n` if that is lower, calls the body, puts the saved
+limit back, and returns the value; a fault ends the program (D6) so
+nothing needs undoing on that way out. That is D24 as arithmetic: the
+limit in force is the smallest of the surrounding ones. The count plus
+`n` cannot pass 2^63: `n` is below 2^62, and a count that high takes
+longer than a machine runs. The known cost: the body's function sees no
+variables, so a step that binds names has to give it an environment or
+change this (D2 leaves C as the target; step 6 decides). Rejected: GNU
+statement expressions, `({ ... })`, in place (not ISO C; and the arguments of a call are unsequenced against each
+other, so two that are statement expressions may in principle
+interleave, where two calls never do: the function is right by the
+standard and not only by what gcc and clang do); the comma operator with `rt_enter` and `rt_leave`
+(the saved limits would need a stack of unbounded depth in the runtime,
+or a fixed one that is a limit on nesting); a remaining count
+decremented at every level (a stack again, and an unwind to write);
+counting only inside a `within` (a test in each operator for no
+difference in what a program computes).
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
