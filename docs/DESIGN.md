@@ -132,8 +132,9 @@ value adds its lines.
   UTF-8, and a surrogate escape is an error), so equal code units are
   equal code points: **inherits**, with test 086 (`"é"` and `"e\u{301}"`
   differ, `"😀"` and `"\u{1F600}"` agree).
-- **Printing a string** (D32): `JSON.stringify` writes `\u0007`, and
-  surrogate pairs past U+FFFF, neither of which is D32. **Overrides**:
+- **Printing a string** (D32): `JSON.stringify` writes `\u0007`, where
+  D32 writes `\u{7}`, and its escapes are JSON's, not this language's
+  (D32 rejects them). **Overrides**:
   `show` writes D32's escapes itself, a code point at a time (tests 070
   to 072).
 - **Output encoding** (D32): `fs.writeSync` of a string writes UTF-8, as
