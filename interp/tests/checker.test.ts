@@ -51,7 +51,7 @@ test("an if with other than three parts, even in a branch never taken (D13, D28)
   assert.equal(checked("(if)"), "1:1 if takes 3 arguments, not 0");
   assert.equal(checked("(if #true 1 2 3)"), "1:1 if takes 3 arguments, not 4");
   assert.equal(checked("(if #false (+ 1 2 3) 0)"), "1:12 + takes 2 arguments, not 3");
-  assert.equal(checked("(if #true 0 (if 1 2))"), "1:15 if takes 3 arguments, not 2");
+  assert.equal(checked("(if #true 0 (if 1 2))"), "1:13 if takes 3 arguments, not 2");
 });
 
 test("if on its own is an unknown name, and #true is no operator", () => {
