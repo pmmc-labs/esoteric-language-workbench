@@ -11,8 +11,14 @@ never freed.
 ## Status
 
 Design complete (D1 to D33, every form, error and fault in
-`docs/LANGUAGE.md`; the six examples drafted in `docs/DESIGN.md`). No
-code yet. **Next:** step 0, the scaffold.
+`docs/LANGUAGE.md`; the six examples drafted in `docs/DESIGN.md`). Step 0
+(the scaffold) is done: the whole lexer (every token, interpolation,
+newline rule, every lexical error), and a parser, resolver, codegen and
+C runtime for calls of `print` with int arguments; `bin/ditto`
+`build`/`run`/`c` (D31); `t/run.sh` (parallel), `t/checks.py`, the
+Makefile; golden tests 000 to 028 and 48 unit tests, all green under
+`cc`, clang and the sanitizers. Builder defaults awaiting review: D34 to
+D37. **Next:** step 1, expressions on ints, bools and nil.
 
 ## Read first, in this order
 

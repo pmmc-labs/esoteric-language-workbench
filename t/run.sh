@@ -35,19 +35,23 @@ run_one() {
   fi
 }
 
+# Paths given on the command line are relative to where the caller stands.
+args=()
+for p in "$@"; do
+  [[ $p == --one ]] || p=$(realpath --relative-to="$root" "$p")
+  args+=("$p")
+done
 cd "$root" || exit 2
 mkdir -p "$outdir"
 
-if [[ ${1:-} == --one ]]; then
-  run_one "$2"
+if [[ ${args[0]:-} == --one ]]; then
+  run_one "${args[1]}"
   exit
 fi
 
 tests=()
-if (( $# > 0 )); then
-  for p in "$@"; do
-    tests+=("$(realpath --relative-to="$root" "$(cd "$OLDPWD" && realpath "$p")")")
-  done
+if (( ${#args[@]} > 0 )); then
+  tests=("${args[@]}")
   export DITTO_DIFF=1
 else
   shopt -s nullglob
@@ -60,9 +64,16 @@ if (( ${#tests[@]} == 0 )); then
 fi
 
 jobs=$(nproc 2>/dev/null || echo 4)
-fails=$(printf '%s\0' "${tests[@]}" | xargs -0 -n1 -P "$jobs" "$0" --one)
+fails=$(printf '%s\0' "${tests[@]}" | xargs -0 -n1 -P "$jobs" "$root/t/run.sh" --one)
+status=$?
+# xargs exits 123 when a run exited 1 (a failed test); anything else is a
+# problem with the runner itself, and must not read as a pass.
+if (( status != 0 && status != 123 )) || { (( status == 123 )) && [[ -z $fails ]]; }; then
+  echo "$tag: the runner failed (xargs status $status)"
+  exit 2
+fi
 if [[ -n $fails ]]; then
-  echo "$fails" | sort
+  if [[ -n ${DITTO_DIFF:-} ]]; then echo "$fails"; else echo "$fails" | sort; fi
   nfail=$(echo "$fails" | grep -c '^FAIL ')
   echo "$tag: $nfail of ${#tests[@]} failed"
   exit 1

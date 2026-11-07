@@ -77,7 +77,8 @@ test('newlines are dropped inside ( ) and [ ] but kept inside { }', () => {
     'op:[', 'int:1', 'op:,', 'int:2', 'op:]', 'newline:\\n', 'eof:',
   ]);
   assert.deepEqual(toks('{\n}').map((s) => s.split('@')[0]), ['op:{', 'newline:\\n', 'op:}', 'eof:']);
-  assert.deepEqual(toks('f([\n1\n],\n{\na: 1\n})').filter((s) => s.startsWith('newline')).length, 2);
+  assert.equal(toks('x = {\na: 1\n}').filter((s) => s.startsWith('newline')).length, 2);
+  assert.equal(toks('f([\n1\n],\n{\na: 1\n})').filter((s) => s.startsWith('newline')).length, 0);
 });
 
 test('a stray closer does not make later newlines vanish', () => {
@@ -91,7 +92,7 @@ test('semicolons are tokens', () => {
 test('columns count bytes, tabs count one', () => {
   assert.deepEqual(toks('\tx').slice(0, 1), ['name:x@1:2']);
   assert.deepEqual(toks('"\xc3\xa9" x').slice(1, 2), ['name:x@1:6']);
-  assert.deepEqual(toks('// \xc3\xa9\nx').slice(1, 3), ['newline:\\n@1:6', 'name:x@2:1']);
+  assert.deepEqual(toks('x // \xc3\xa9\ny').slice(1, 3), ['newline:\\n@1:8', 'name:y@2:1']);
 });
 
 const parts = (src: string) => (lex(src)[0] as any).parts;
@@ -128,15 +129,15 @@ test('interpolation holds strings, nesting, and braces', () => {
   assert.equal(p.length, 1);
   const inner = p[0].tokens;
   assert.deepEqual(inner.map((t: Token) => t.kind), ['name', 'op', 'string', 'op']);
-  assert.deepEqual(inner[2].parts[1].pos, { line: 1, col: 9 });
-  assert.deepEqual(show(inner[2].parts[1].tokens), ['name:y@1:10']);
+  assert.deepEqual(inner[2].parts[1].pos, { line: 1, col: 7 });
+  assert.deepEqual(show(inner[2].parts[1].tokens), ['name:y@1:8']);
   const q = parts('"{ {a: 1}[0] }"');
   assert.deepEqual(show(q[0].tokens).map((s: string) => s.split('@')[0]),
     ['op:{', 'name:a', 'op::', 'int:1', 'op:}', 'op:[', 'int:0', 'op:]']);
 });
 
 test('tokens after a string carry on at the right column', () => {
-  assert.deepEqual(toks('"a{1}b" x').slice(1, 2), ['name:x@1:8']);
+  assert.deepEqual(toks('"a{1}b" x').slice(1, 2), ['name:x@1:9']);
 });
 
 test('unexpected characters', () => {

@@ -5,7 +5,8 @@ the end of every step, and each step adds one feature. The budget is ten
 steps, step 0 and the examples included (the brief); steps 0 to 8 are
 planned and step 9 is held in reserve for friction the examples show.
 
-**Progress:** design done; step 0 next.
+**Progress:** design done; step 0 done (scaffold, 28 golden tests, 48 unit
+tests); step 1 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -47,7 +48,13 @@ Makefile
 
 ## Steps
 
-### 0. Scaffold
+### 0. Scaffold **(done)**
+
+Landed as planned. Differences: tests 000 to 028 (no model: every output
+is a few lines, written by hand); the runtime also has a unit test
+(`compiler/tests/runtime.test.ts`) that links a hand-written C main, since
+no Ditto program can fault yet; the golden runs under `cc` and clang add
+`-Wall -Wextra -Werror` (D37); defaults D34 to D36.
 
 - `Makefile` with `test`, `unit`, `golden`, `golden-clang`, `sanitize`,
   `checks` (D33). `sanitize` is clang with

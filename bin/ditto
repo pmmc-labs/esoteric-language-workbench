@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+import { main } from '../compiler/src/main.ts';
+
+main(process.argv.slice(2));

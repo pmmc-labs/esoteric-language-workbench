@@ -202,6 +202,24 @@ byte (UTF-8 text should print as itself).
 lines. Rejected: line-at-a-time input (a second builtin and an
 end-of-input value); command-line arguments (no example needs them).
 
+**D34. A call's arguments may end with a comma.** *(default)*
+`LANGUAGE.md` allows it for lists and maps only and is silent on calls;
+Go and TypeScript allow it, and a call broken over several lines reads
+better with it. `print(,)` is still an error. Rejected: forbidding it
+(one more thing to trip over for the audience).
+
+**D35. Lexer details the spec left open.** *(default)* A bare `}` in a
+string is an ordinary byte (only `{` starts interpolation). A backslash
+at the end of a line is `unterminated string`. A string that runs off
+the line inside an interpolation makes that interpolation
+`unterminated interpolation`, at its `{`, rather than a second
+`unterminated string`. An interpolation holding only spaces is
+`empty interpolation`. Leading zeros in an integer are allowed
+(`007` is 7). A run of newlines (with comments and blank lines) is one
+newline token, and none comes before the first token. Rejected:
+rejecting a bare `}` (Python's f-strings do; not worth a rule here),
+leading-zero errors (octal confusion doesn't arise: there is no octal).
+
 ## Values and memory
 
 **D26. A value is a 16-byte tagged struct passed by value; heap
@@ -255,6 +273,14 @@ writes the C next to the executable as `EXE.c` and compiles it with
 compiler fails (always a compiler bug), otherwise `run` exits with the
 program's status.
 
+**D36. Parser errors at step 0.** *(default)* A statement that doesn't
+start with a name is `expected a statement, found Y`; a name must be
+followed by `(`, an argument by `,` or `)`, and a finished statement by a
+newline, `;` or the end of the file (`expected newline, found Y`). A
+file ending inside a call is `expected ')', found end of file`, at the
+position after the last byte. These are the `expected X, found Y`
+sites `DESIGN.md` leaves to the builder.
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,
@@ -278,3 +304,12 @@ standard input is `NNN-name.stdin` if it exists, otherwise empty.
 `-fsanitize=undefined,address`, and `t/checks.py`. Rejected: header
 comments for stdin (escapes in a comment are harder to read than a
 file).
+
+**D37. The golden runs compile with `-Wall -Wextra -Werror` under `cc`
+and clang; `t/run.sh` fails loudly if it can't run.** *(default)* The
+generated C and the runtime are meant to be warning-free, and a warning
+under one compiler is a portability bug under the other. The runner
+treats anything but "some test failed" from `xargs` as a runner failure,
+not a pass. Rejected: warnings off (D30's ordering bugs hide behind
+them); `-Werror` under the sanitizer run (the flags there are the
+sanitizer's, per D6).

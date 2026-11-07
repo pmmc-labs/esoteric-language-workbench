@@ -65,7 +65,8 @@ These are keywords and can't be names: `and break continue else false fn
 for if in let nil not or return true while`.
 
 **Integers** are decimal digits, with `_` allowed between digits
-(`1_000_000`). A literal that starts with a digit and goes on with a
+(`1_000_000`); leading zeros are allowed and mean nothing (`007` is 7).
+A literal that starts with a digit and goes on with a
 letter or `_` in the wrong place (`12ab`, `1_`, `1__0`) is
 `malformed number`; one above 9223372036854775807 is
 `integer literal too large`. Both point at the literal's first byte.
@@ -76,14 +77,17 @@ smallest int is written `-9223372036854775807 - 1`.
 `\t`, `\r`, `\\`, `\"`, `\{` and `\}`; any other is
 `unknown escape '\q'` at the backslash. A newline or end of file before
 the closing quote is `unterminated string`, at the opening quote. Bytes
-other than these pass through as they are, so a string can hold UTF-8.
+other than these pass through as they are, so a string can hold UTF-8;
+that includes a bare `}`, which only means something inside an
+interpolation. A backslash at the end of a line is `unterminated string`.
 
 Inside a string, `{expr}` is **interpolation**: the expression is
 evaluated and its printed form (as `str` gives it) put in its place.
 The expression can be anything, including strings and nested
 interpolation: `"total: {len(xs)} items, first {xs[0]}"`. `{}` with
 nothing in it is `empty interpolation`, at the `{`; an interpolation that
-reaches the end of the line is `unterminated interpolation`, at the `{`.
+reaches the end of the line (even inside a string written in it) is
+`unterminated interpolation`, at the `{` (D35).
 Parts are evaluated left to right. (Step 4, D15.)
 
 ## Values
@@ -308,7 +312,8 @@ left: `a else b else c` tries `a`, then `b`, then gives `c`.
 
 ### Calls
 
-`f(a, b)` calls the function or builtin `f`. Arguments are evaluated
+`f(a, b)` calls the function or builtin `f`. The argument list may break
+across lines and may end with a comma (D34). Arguments are evaluated
 left to right, then the call is made. Each function and most builtins
 take a fixed number of arguments; another number is
 `f takes 2 arguments, got 3` (`1 argument` when it's one), at the name.
