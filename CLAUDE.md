@@ -11,7 +11,16 @@ text) read plainly and the history makes some of them shorter.
 
 **Design** (D1 to D32): the whole language is decided in `docs/DESIGN.md`,
 `docs/DECISIONS.md` and `docs/LANGUAGE.md`; seven steps in
-`docs/PLAN.md`. Nothing built yet. **Next:** step 0, the scaffold.
+`docs/PLAN.md`. **Step 0** (scaffold) is built: `bin/strata build|run`
+(D30), the Makefile with `unit`, `golden`, `golden-clang`, `sanitize` and
+`checks`, `t/run.sh`, `t/checks.py`, the arena and `strata_fault` in
+`runtime/` (D23, D26), the full-token-set lexer with every lexical error
+of D24 unit-tested (integer range checked in the lexer, D34), and a
+parser, resolver and codegen for `print INTEGER` only, whose values are
+already one-layer histories (D11, D35); golden tests `000` to `005` pass
+under gcc, clang and clang with `-fsanitize=undefined,address`. Parse
+errors read `expected expression, found 'x'` (D33). **Next:** step 1,
+numbers (D19, D20, D25), tests `100` up.
 
 ## Read first, in this order
 

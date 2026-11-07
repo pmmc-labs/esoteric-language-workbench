@@ -1,0 +1,36 @@
+#!/bin/sh
+# strata build FILE -o OUT | strata run FILE   (D30)
+# Exit codes: 0 ok, 2 compile error, 3 the C compiler failed (a compiler bug).
+root=$(cd "$(dirname "$0")/.." && pwd)
+
+build() {
+  src=$1 out=$2
+  node "$root/compiler/src/main.ts" "$src" "$out.c"
+  rc=$?
+  if [ $rc -ne 0 ]; then
+    [ $rc -eq 2 ] && exit 2
+    echo "internal error: compiler crashed" >&2
+    exit 3
+  fi
+  # -w: warnings on generated code would land in a golden test's output.
+  log=$(${LANG_CC:-cc} -std=c11 -O1 -w $LANG_CFLAGS -I "$root/runtime" \
+    "$out.c" "$root/runtime/strata.c" -o "$out" 2>&1) || {
+    echo "internal error: cc failed" >&2
+    echo "$log" >&2
+    exit 3
+  }
+}
+
+usage() { echo "usage: strata build FILE -o OUT | strata run FILE" >&2; exit 64; }
+
+case "$1" in
+  build) [ $# -eq 4 ] && [ "$3" = "-o" ] || usage; build "$2" "$4" ;;
+  run)
+    [ $# -eq 2 ] || usage
+    mkdir -p "$root/build"
+    out="$root/build/$(basename "$2" .strata)"
+    build "$2" "$out"
+    exec "$out"
+    ;;
+  *) usage ;;
+esac

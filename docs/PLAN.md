@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Seven steps,
 inside the brief's budget of ten.
 
-**Progress:** design done; no step built. Next: step 0.
+**Progress:** design done; step 0 built (D33 to D35). Next: step 1.
 
 Read [`DESIGN.md`](DESIGN.md), [`LANGUAGE.md`](LANGUAGE.md) and the
 decisions each step cites first. Every step: write the model (if any)
@@ -35,7 +35,7 @@ Makefile
 
 ## Steps
 
-### 0. Scaffold
+### 0. Scaffold (done)
 
 - `bin/strata`, `Makefile`, `runtime/strata.{h,c}` with the arena
   (D26) and `strata_fault` (D23), linked into every program.

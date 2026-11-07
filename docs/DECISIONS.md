@@ -282,3 +282,41 @@ not numbered. Source files end `.strata`.
 
 **D32. Each step's tests and models are committed red before its code,
 in their own commit; the code commit makes them green.** *(experimenter)*
+
+## Step 0 defaults
+
+**D33. A parse error is `expected THING, found TOKEN`, where THING is
+`statement` or `expression` and TOKEN is the offending token's source
+text in single quotes, or `end of file`, at that token's position (the
+end of file is the line and column just past the last byte).**
+*(default)* D24 fixes the shape but not the words. Naming the grammar
+class rather than the one form that happens to be legal in step 0
+(`integer`) means the messages in tests `004` and later don't change as
+forms arrive. Rejected: `expected integer` (stale at step 1); quoting
+token kinds (`found name`) rather than text (says less); a list of
+every token that could have appeared (machinery).
+
+**D34. Lexer details D24 leaves open.** *(default)* The source is read
+as latin1, one character per byte, so columns are byte columns. All of
+the file is lexed before parsing, so a lexical error anywhere is
+reported ahead of an earlier parse error. An unterminated string is
+reported at its opening quote; an unknown escape at its backslash. A
+byte that is not printable ASCII is shown as `\xHH` in `unexpected
+character`. `integer literal out of range` is checked in the lexer
+(from step 0, though PLAN.md lists it under step 1), at the literal's
+first digit. Rejected: lexing on demand (a streaming lexer for a
+first-error rule that costs nothing now); decoding UTF-8 (columns
+would stop being bytes); leaving the range check to step 1 (the
+lexical-error unit tests of step 0 want all four of D24's).
+
+**D35. The runtime's shape for step 0.** *(default)* `strata.h` defines
+the atom (`is_str` and a union of `int64_t` and a string pointer), the
+layer `{atom, below, depth}` and `strata_hist` as a `const` pointer to
+a layer, NULL for empty. Generated code is one `int main(void)` of
+temporaries and `strata_*` calls, each taking the source `L, C` it can
+fault at; `strata_print` takes a history and prints its top (faulting
+`empty history` on NULL) so `print` is already D22. The compiler writes
+`OUT.c` next to the binary and `bin/strata` keeps it. Arena requests
+larger than a chunk get a chunk of their own. Rejected: a `main`
+that calls generated `strata_main` (nothing needs the split yet);
+deleting the C file (a failing sanitizer run is easier to read with it).
