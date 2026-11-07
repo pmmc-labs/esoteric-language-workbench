@@ -814,6 +814,15 @@ to solve rather than the question's. The two attempts are kept
 loop are ready for whoever runs a third. `REPORT.md` has the whole in
 one page.
 
+## An interpreter
+
+The same process on an interpreter instead of a compiler, seven builds
+by Sonnet and Haiku from bare sessions, a control without the host
+checklist, and two steps aimed at Node's differences: recorded in
+[`exp/interpreter/`](../exp/interpreter/README.md). Every build was
+green and agreed with the referee; the checklist's worth was in depth,
+the one leak no test reached.
+
 ## What to expect, by tier, on this process
 
 - **Large**: the process as written. The person's time goes to

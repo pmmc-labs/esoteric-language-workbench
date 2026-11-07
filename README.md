@@ -30,6 +30,7 @@ Lisps, actors or native code.
 | `t/referee/` | The referee: a second implementation from the decisions, which a delegated model is judged against. |
 | `docs/MODELS.md` | Which tasks need which size of model, when to escalate, when a smaller one is safe. |
 | `exp/local/` | The same experiments on a local model through ollama: a plain agent loop, the briefs, the runs. |
+| `exp/interpreter/` | The interpreter experiment: the workbench as an interpreter (the `interpreter` branch), seven builds by bare sessions, a control without the host checklist, and two step 6s aimed at the host; the record, the briefs, the judge and its results. |
 | `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Steps 0 and 1, worked: a calculator, the smallest end-to-end compiler, its runner and its tests. |
 
 ## Using it
