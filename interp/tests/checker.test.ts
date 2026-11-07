@@ -65,3 +65,8 @@ test("the bit operations take two arguments", () => {
   assert.equal(checked("(bit/not 1)"), "1:2 unknown name bit/not");
   assert.equal(checked("(bit/shl 1)"), "1:1 bit/shl takes 2 arguments, not 1");
 });
+
+test("** takes two arguments", () => {
+  assert.equal(checked("(** 2 3)"), "ok");
+  assert.equal(checked("(** 2)"), "1:1 ** takes 2 arguments, not 1");
+});

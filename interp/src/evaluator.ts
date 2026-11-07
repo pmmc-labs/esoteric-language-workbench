@@ -28,6 +28,20 @@ const shiftCount = (n: bigint): bigint => {
   return n;
 };
 
+// a ** b without a bignum intermediate that never ends: bigint ** would
+// try 2 ** 4611686018427387903 (D19). The exponent is checked first, so
+// (** 1 -1) faults though 1 would fit; 0, 1 and -1 are answered by the
+// exponent alone; any other base is at least 2 in magnitude, and 2^63
+// is past the range, so an exponent past 62 overflows without a loop.
+const power = (a: bigint, b: bigint): bigint => {
+  if (b < 0n) throw new Fault("bad exponent");
+  if (b === 0n) return 1n;
+  if (a === 0n || a === 1n) return a;
+  if (a === -1n) return b % 2n === 0n ? 1n : -1n;
+  if (b > 62n) throw new Fault("overflow");
+  return fit(a ** b);
+};
+
 export const OPERATORS: Map<string, Op> = new Map([
   ["+", ints((a, b) => fit(a + b))],
   ["-", ints((a, b) => fit(a - b))],
@@ -50,6 +64,7 @@ export const OPERATORS: Map<string, Op> = new Map([
   // Status), and this is the interpreter's.
   ["bit/shl", ints((a, n) => fit(a << shiftCount(n)))],
   ["bit/shr", ints((a, n) => a >> shiftCount(n))],
+  ["**", ints(power)],
   ["/", ints((a, b) => { if (b === 0n) throw new Fault("division by zero"); return fit(a / b); })],
   ["%", ints((a, b) => { if (b === 0n) throw new Fault("division by zero"); return a % b; })],
 ]);
