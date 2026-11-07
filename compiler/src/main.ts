@@ -1,6 +1,7 @@
 // The command line (D31): build FILE -o EXE, run FILE, c FILE.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codegen } from './codegen.ts';
@@ -52,12 +53,37 @@ function build(path: string, exe: string) {
   writeFileSync(exe + '.c', c);
   const cc = process.env.LANG_CC || 'cc';
   const flags = (process.env.LANG_CFLAGS || '').split(/\s+/).filter((f) => f !== '');
-  const r = spawnSync(cc, ['-std=c11', '-O1', ...flags, '-I', join(root, 'runtime'),
-    exe + '.c', join(root, 'runtime', 'ditto.c'), '-o', exe], { stdio: ['ignore', 'inherit', 'inherit'] });
+  const base = ['-std=c11', '-O1', ...flags, '-I', join(root, 'runtime')];
+  const rt = runtimeObject(cc, base);
+  const r = rt === null ? r3() : spawnSync(cc, [...base, exe + '.c', rt, '-o', exe],
+    { stdio: ['ignore', 'inherit', 'inherit'] });
   if (r.status !== 0) {
     console.error(`ditto: the C compiler failed on ${exe}.c (a compiler bug)`);
     process.exit(3);
   }
+}
+
+function r3() {
+  return { status: 3 };
+}
+
+// The runtime compiled once per compiler, flags and source, cached under
+// build/rt/: compiling it for every test made the suite several times slower.
+// Written to a temporary name and renamed, so parallel builds can share it.
+function runtimeObject(cc: string, base: string[]): string | null {
+  const src = join(root, 'runtime', 'ditto.c');
+  const h = createHash('sha256').update(cc).update(base.join('\0'))
+    .update(readFileSync(src)).update(readFileSync(join(root, 'runtime', 'ditto.h')))
+    .digest('hex').slice(0, 16);
+  const dir = join(root, 'build', 'rt');
+  const obj = join(dir, h + '.o');
+  if (existsSync(obj)) return obj;
+  mkdirSync(dir, { recursive: true });
+  const tmp = `${obj}.${process.pid}.tmp`;
+  const r = spawnSync(cc, [...base, '-c', src, '-o', tmp], { stdio: ['ignore', 'inherit', 'inherit'] });
+  if (r.status !== 0) return null;
+  renameSync(tmp, obj);
+  return obj;
 }
 
 export function main(argv: string[]) {
