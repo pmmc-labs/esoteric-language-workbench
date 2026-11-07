@@ -449,7 +449,7 @@ before `<` inside lists (a second rule); a store that mutates a list nobody
 else holds (D7 rejects it); evaluating a compound assignment's path once
 and keeping the containers (a second code path for the same result).
 
-**D44. Step 6 details the spec left open.** *(default; builder, awaiting review)*
+**D44. Step 6 details the spec left open.** *(default; designer, kept)*
 Parsing: a map key is judged by its first tokens: a name (the string it
 spells; a keyword is not a name), a string without interpolation, an int
 literal, or `-` followed by an int literal; anything else is `map key must
@@ -489,6 +489,14 @@ miss (a wrong type is a fault `else` must not catch); a separate message for
 `m.name` on a missing key (`missing key "name"` is what `m["name"]` says).
 
 ## Project
+
+**D45. The runtime is compiled once per C compiler, flags and source,
+and cached as `build/rt/HASH.o`.** *(designer, at step 6's review)*
+`make test` had grown past six minutes, a third of it compiling
+`ditto.c` for each of 1500 builds. The object is written under a
+temporary name and renamed, so parallel builds share it safely.
+Rejected: a Makefile rule for the object (the driver is what `run` and
+the tests both use).
 
 **D8. Golden tests' expected output comes from an independent source,
 never from the compiler.** *(designer)* See `t/README.md`.
