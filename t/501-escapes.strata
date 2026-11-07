@@ -1,0 +1,7 @@
+print "a\tb"
+print "line1\nline2"
+print "say \"hi\""
+print "back\\slash"
+write "\\n"
+print ""
+print len("\n\t\"\\")

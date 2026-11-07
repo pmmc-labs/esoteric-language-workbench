@@ -1,0 +1,3 @@
+12
+fault at 2:12: expected a number, got a string
+exit: 1

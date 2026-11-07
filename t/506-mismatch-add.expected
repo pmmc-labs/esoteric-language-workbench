@@ -1,0 +1,3 @@
+a
+fault at 2:9: mismatched types: number and string
+exit: 1

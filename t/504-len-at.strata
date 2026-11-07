@@ -1,0 +1,16 @@
+print len("hello")
+print len("")
+print len("héllo")
+print at("hello", 0)
+print at("hello", 4)
+print len(at("abc", 1))
+print #len("x")
+let s = "abc"
+let i = 0
+while i < len(s) {
+  write at(s, i)
+  write "-"
+  i <- i + 1
+}
+print ""
+print at("abc", 0) + at("abc", 2)

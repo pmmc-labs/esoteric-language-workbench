@@ -1,0 +1,6 @@
+print "hello, world"
+write "a"
+write "b"
+print ""
+print ""
+print "end"

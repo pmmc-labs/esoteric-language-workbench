@@ -1,0 +1,10 @@
+print str(42)
+print str(0)
+print str(-7)
+print str(9223372036854775807)
+let m = -9223372036854775807 - 1
+print str(m)
+print len(str(m))
+print str(12) + str(34)
+print str(1 + 2) + "!"
+print len(str(100))

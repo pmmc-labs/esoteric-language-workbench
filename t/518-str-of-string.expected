@@ -1,0 +1,2 @@
+fault at 1:7: expected a number, got a string
+exit: 1

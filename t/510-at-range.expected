@@ -1,0 +1,3 @@
+c
+fault at 2:7: index out of range (index 3, length 3)
+exit: 1

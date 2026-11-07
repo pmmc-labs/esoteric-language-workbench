@@ -1,0 +1,11 @@
+print "foo" + "bar"
+print "a" + "b" + "c"
+let s = "a"
+s <- s + "b"
+s <- s + s
+print s
+print #s
+print s@1
+print "" + "x"
+print "x" + ""
+print len("" + "")

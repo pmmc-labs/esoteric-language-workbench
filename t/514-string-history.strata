@@ -1,0 +1,21 @@
+let s = ["a", "b", "c"]
+print s
+print s@1
+print s@2
+print #s
+s <- "d"
+print s@1
+print s + "!"
+print s@1 + s@2
+let i = 0
+while i < #s {
+  write s@i
+  i <- i + 1
+}
+print ""
+let m = [1, "x"]
+print m
+print m@1
+m <- 5
+print m@2 + 1
+print m@1
