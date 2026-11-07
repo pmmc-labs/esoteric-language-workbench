@@ -4,6 +4,7 @@
 
 export type Form =
   | { t: "int"; v: bigint; line: number; col: number }
+  | { t: "bool"; v: boolean; line: number; col: number }
   | { t: "sym"; name: string; line: number; col: number }
   | { t: "list"; items: Form[]; line: number; col: number };
 
@@ -56,6 +57,8 @@ export function read(src: string): Form {
         if (v < MIN || v > MAX)
           throw new CheckError(`integer ${text} is out of range (63 bits)`, sl, sc);
         put({ t: "int", v, line: sl, col: sc });
+      } else if (text === "#true" || text === "#false") {
+        put({ t: "bool", v: text === "#true", line: sl, col: sc });
       } else put({ t: "sym", name: text, line: sl, col: sc });
     }
   }

@@ -20,10 +20,12 @@ interpreter in TypeScript on Node, steps 0 to 5 of
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). **Steps 0 and 1 are built:** the host's answers, D30, the reader, driver, checker
-(arity, unknown names, heads: `interp/tests/checker.test.ts`) and
-`+ - * / %` on `bigint`s range-checked (D4, D5), tests 000 to 015
-green under both Nodes. **Next:** step 2, booleans and `if`.
+interpreter reports before evaluating (D28, exit 2). **Steps 0 to 2 are built:** the host's answers, D30, reader, driver,
+checker, `+ - * / %` on range-checked `bigint`s (D4, D5), booleans as
+JS booleans with `typeof` as the tag (D11), the six comparisons with
+`===` only (D12), `if` (D13) with its arity checked in untaken
+branches (D28), tests 000 to 024 green under both Nodes.
+**Next:** step 3, bit operations.
  Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
