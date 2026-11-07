@@ -347,6 +347,11 @@ program in a different host. An interpreter has to arrange it.
   is the "earlier interpreter" among the independent sources above, the
   oracle for a compiler that follows, for the surface that's kept.
 
+`MODELS.md`'s "An interpreter, from the decisions" tests this section:
+seven builds by two tiers, all green and agreeing with the referee;
+with the checklist, depth became a flagged decision, and without it,
+whatever Node's stack allowed.
+
 ## What a session looks like
 
 1. Read `CLAUDE.md`. Its Status says where things are.

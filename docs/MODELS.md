@@ -814,6 +814,148 @@ to solve rather than the question's. The two attempts are kept
 loop are ready for whoever runs a third. `REPORT.md` has the whole in
 one page.
 
+## An interpreter, from the decisions
+
+The person asked how much of the process would carry to an interpreter.
+The answer, `PROCESS.md`'s "An interpreter instead of a compiler", was
+most of it, with the independent checks arranged on purpose: the host
+leaking into the language, what was static staying static, the referee
+in another host, the host's versions as the second oracle, depth. The
+`interpreter` branch is the template so arranged (D28, D29), and these
+rounds test it: bare cloud sessions, given a branch with no history and
+a three-line prompt, with no person to ask, building the calculator
+again as a tree-walker in TypeScript on Node. Judged by the suite under
+Node 22 and 24, by probes of what no golden test can see
+(`exp/interp/judge.py`, never on a builder's branch), by random
+programs against the referee, by the history, and by each transcript,
+read for any look at `t/referee/`.
+
+### Round 1: steps 0 to 5, and a control
+
+Three runs from the decisions and the 46 tests of main's steps 0 to 5:
+Sonnet and Haiku on `exp-interp`, and Sonnet again on
+`exp-interp-control`, the same base without `DESIGN.md`'s "What the host
+gives" and `PROCESS.md`'s interpreter section, to see what the checklist
+itself buys.
+
+| | Sonnet | Haiku | Sonnet, no checklist |
+|---|---|---|---|
+| Green: 46 tests under both Nodes, every check | yes | yes | yes |
+| Probes, 25 | all as wanted | all as wanted | all as wanted |
+| 2,000 random programs against the referee | none differ | none differ | none differ |
+| The host's answers committed before the code | yes | yes | (no checklist) |
+| A golden test failed while building | none | none | none |
+| Integers | `bigint` from the start | the same | the same |
+| Nesting past the host's stack | D30, 1000 deep, flagged | D30, 1000 deep, flagged | a `RangeError`, exit 3, past about 6,000: noted, not decided |
+| Exit status for an internal error | 3, decided (D30) | 3, decided (D34) | 3, not recorded |
+| Decisions added | 1 | 5 | 0 |
+| Size line against tier | match | mismatch, said first | match |
+| `t/referee/` read | no | no | no |
+| Time, turns, output tokens, cost | 6.8 min, 39, 34K, $1.33 | 10.4 min, 63, 111K, $0.87 | 4.2 min, 27, 28K, $0.97 |
+
+All three built the same language, green, with no golden test ever red
+for them: the decisions and the tests carried an interpreter as they
+had carried a compiler. The numbers were never in doubt. Each builder
+took `bigint` before writing code, the control too, so on this
+language and these models the checklist didn't buy the obvious host
+leak: the model's own knowledge of JavaScript did.
+
+What the checklist bought was the quiet one. With it, both builders
+made depth a decision, wrote it down as a default, put it among the
+open questions and said so first in the report, and the same program
+nested 20,000 deep gets an error with a position on every Node. Without
+it, Sonnet measured the same limit, wrote it into `DESIGN.md` as a
+fact, and filed it under "outside the steps": the language's depth is
+whatever Node's stack happens to be, in Node's words. That is the
+"host leaking into the language" the section names, and the only
+difference between the two Sonnet runs that a probe can see. Both
+checklist runs also decided the internal error's exit status; the
+control used the same 3 without a word.
+
+Haiku, the small tier, built it as well as Sonnet and said first that
+it was smaller than the steps' medium. It decided more, five defaults
+to Sonnet's one, among them the order of one operator's own faults,
+open since main's step 3, as a flagged default rather than a silence;
+and it found a leak the others handled without naming: `1n == true` is
+`true` in JavaScript, so `==` must be `===`.
+
+### Round 2: what is particular to an interpreter
+
+Two steps built for these rounds, each decided as defaults written by
+the large model (D31 and on, on their own branches), each with a model
+and its tests written by Sonnet and the referee extended by Opus apart
+from it, neither reading the other's work. Both pairs agreed on all 20
+of their tests at the first run; both reports found holes in the
+decisions, which were closed before any builder saw them (white space,
+what ends a name, a byte order mark, C1 controls printing; what a name
+is, budgets across calls, the program's expression not a tail
+position, D30's reason overtaken).
+
+- **Functions, tail calls and depth** (`exp-interp-fn`, D31 to D34):
+  first-order functions; a call charged as an operation; tail calls in
+  constant space; and calls not in tail position 10,000 deep, the next
+  faulting `stack`. Node has no tail calls and its stack holds a few
+  thousand frames of a tree-walker, so the decisions can't be met by
+  recursing on the host: the interpreter has to keep its own stack.
+- **Strings** (`exp-interp-str`, D31 to D33): strings of code points,
+  printed with the language's own escapes, six operators, and a source
+  that must be valid UTF-8 whose columns count code points. Node's
+  strings are UTF-16, its `<` compares code units, `JSON.stringify` has
+  other escapes, its `TextDecoder` drops a byte order mark and is lax
+  unless told, and `\s` takes U+00A0 and U+2028: each a way to pass the
+  tests' neighbours and fail the language.
+
+| | Functions, Sonnet | Functions, Haiku | Strings, Sonnet | Strings, Haiku |
+|---|---|---|---|---|
+| Green: 66 tests under both Nodes, every check | yes | yes | yes | yes |
+| Probes of the step | 28 of 28 | 28 of 28 | 38 of 38 | 38 of 38 |
+| Random programs against the referee | 2,000, none differ | 2,000, none differ | 1,000 string programs and 2,000, none differ | the same |
+| The host's lines committed before the code | yes | yes | yes | yes |
+| Decisions added | 0 | 1, the wording of D31's errors | 0 | 1, the wording of literal errors |
+| How | an explicit stack of tasks and values; names in `Map`s | an explicit frame stack; names in `Map`s | code points throughout; strict UTF-8 that keeps a BOM | the same |
+| 10,000,000 tail calls | 10.6 s, flat at 78 MB | 6.2 s, flat at 79 MB | | |
+| Size line against tier | could not check (below) | mismatch, said first | could not check (below) | mismatch, said first |
+| `t/referee/` read | no | no | no | no |
+| Time, turns, output tokens, cost | 5.5 min, 26, 22K, $0.77 | 14.2 min, 56, 77K, $0.76 | 3.6 min, 26, 20K, $0.78 | 5.9 min, 66, 63K, $0.57 |
+
+The writers: the functions model 131K tokens and 4.9 minutes (Sonnet),
+its referee 155K and 5.1 (Opus); the strings model 159K and 4.0
+(Sonnet), its referee 136K and 3.9 (Opus).
+
+An error of the experimenter's: the step 6 briefs were made from one
+template by substitution, and `MODELS.md` in its size check came out
+`fn.pyS.md` and `strings.pyS.md`. Two builders said they couldn't find
+the file and so couldn't place their tier; both built, as the brief
+said to. The briefs on the bases keep the error; a brief made by
+substitution is checked for what else the substitution reached.
+
+### What this says
+
+- **The process carries to an interpreter.** Seven builds, two tiers,
+  two kinds of step: every one green, no golden test failing once its
+  step's code was written, every random program agreeing with the
+  referee, nothing under `t/` touched, the referee never read, and all
+  25 of round 1's probes passing on round 2's builds too. What carried
+  unchanged was what matters most: tests from an independent source,
+  the decisions, the checks.
+- **The checklist's worth is in what no test sees.** On the leaks a
+  test can catch, a capable model doesn't need it. On the ones it
+  can't, depth here, it turned a silent inheritance into a flagged
+  decision, which is what the section was for.
+- **The leaks can be made decisions on purpose.** Round 2's decisions
+  were written where the host differs, and every builder met them: an
+  explicit stack, code points, the language's escapes, a strict
+  decoder. A decision that names the place the host differs is
+  cheaper than a probe that finds it later.
+- **The proposer's holes were found before the build.** Both pairs of
+  writers found silences in the large model's decisions; closing them
+  before the bases were cut is why no builder had to invent white
+  space or what ends a name. Write the model and the referee first,
+  then the base.
+- **Haiku builds an interpreter.** More turns and tokens than Sonnet,
+  less money, the same result, and more of its silences written down as
+  defaults.
+
 ## What to expect, by tier, on this process
 
 - **Large**: the process as written. The person's time goes to

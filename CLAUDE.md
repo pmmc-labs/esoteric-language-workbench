@@ -27,7 +27,13 @@ keeps its own stack, the checker finds every error before running
 (D28), and the evaluator is a tree-walker over `bigint`s and booleans
 with the budget as `spent` and `limit` (D21 to D24, D27's shape). Where
 one operator could fault two ways it checks types, then the count or
-exponent, then the range. **Next:** nothing agreed; step 6 (local
+exponent, then the range. The experiments that built and judged it
+are in `exp/interp/` and `docs/MODELS.md`, "An interpreter, from the
+decisions": this branch's steps 0 to 5 are Sonnet's (`interp-sonnet`),
+beside Haiku's (`interp-haiku`) and a control's without the host
+checklist (`interp-control-sonnet`); step 6 as functions or as strings,
+decided as defaults (D31 on, on `prep-fn` and `prep-str`), is built on
+`interp-fn-*` and `interp-str-*`, not merged. **Next:** nothing agreed; step 6 (local
 bindings) is a stub in the plan. Not agreed, from main: which fault
 reports when one operator could fault two ways.
 
