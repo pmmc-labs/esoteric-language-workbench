@@ -274,14 +274,15 @@ and an error before running (2). Rejected: no limit, catching the host's
 would come mid-run, perhaps after a `within` had charged); a trampoline
 or an explicit evaluation stack (machinery for a depth no program has,
 though the calculator has no calls, so nesting is all the depth there
-is); exit 1 for an internal error (indistinguishable from a fault).
+is; overtaken by D34, which gives programs calls 10,000 deep); exit 1 for an internal error (indistinguishable from a fault).
 
 **D31. Functions: a program is any number of definitions, `(def (name
 param ...) body)`, and then one expression; a call is `(name arg
 ...)`.** *(Default, Claude's, written for the interpreter experiments
 the person asked for, to check what is particular to an interpreter;
 fair to revisit.)* A definition names a function, its parameters (none
-or more, each a name) and its body, one expression. The definitions
+or more, each a name: a symbol, never an integer or a boolean) and its
+body, one expression. The definitions
 come first and the expression last, and every definition sees every
 other whatever their order, so functions may call themselves and each
 other. A parameter is visible in its own function's body and nowhere
@@ -311,7 +312,8 @@ came, or a recursive program would run outside every budget: so `(within
 and the call being two. Charged after the arguments and before the
 body, as D22 charges an operator after its operands and before its own
 checks. The arguments' order is D25's: the first fault in it is the
-one reported. Rejected: calls free (D21's reason); charging when the
+one reported. A function's body runs under every budget in force where
+it's called (D23), whichever function's `within` set it. Rejected: calls free (D21's reason); charging when the
 call's form is entered, before the arguments (D22's reason); charging
 when the body returns (a call that never returns would never be
 charged).
@@ -320,13 +322,14 @@ charged).
 tail calls run in constant space.** *(Default, Claude's, as D31.)* A
 function's body is in tail position, and so are both branches of an
 `if` in tail position; nothing else is: not an operator's operand, an
-`if`'s test, a call's argument, nor a `within`'s budget or body (when
-the body ends the outer budget is put back, so the `within` is still in
-progress). The language has no loop but a function that calls itself,
+`if`'s test, a call's argument, a `within`'s budget or body (when the
+body ends the outer budget is put back, so the `within` is still in
+progress), nor the program's own expression (a call from it makes
+depth 1, D34). The language has no loop but a function that calls itself,
 so this is what makes a loop: `(def (count n acc) (if (== n 0) acc
 (count (- n 1) (+ acc 1))))` and `(count 1000000 0)` is `1000000`. A
-tail call is still charged (D32) and still checked for depth, but adds
-nothing to the depth. Rejected: no tail calls (every loop would be
+tail call is still charged (D32), and adds nothing to the depth, so it
+never faults `stack`. Rejected: no tail calls (every loop would be
 bounded by D34's depth); a `within`'s body in tail position (the budget
 is put back after it, which is work the caller still has to do).
 
@@ -344,8 +347,10 @@ refused by its budget never reaches the check. A fixed number, so a
 program behaves the same under every Node and on every machine, which
 the host's own stack doesn't (`make golden-node`), and one past what a
 tree-walker reaches if it recurses on the host's stack for every call,
-so the interpreter decides its depth and the host doesn't. D30's limit
-on nesting in the source is another thing and stays. Rejected: no limit
+so the interpreter decides its depth and the host doesn't. That
+overtakes D30's reason for keeping the evaluator on the host's stack
+(no program was deep enough to need a stack of its own): one now is.
+D30's limit on nesting in the source is another thing and stays. Rejected: no limit
 (the failure would come when memory ran out, in the host's words); the
 host's stack as the limit (it differs between Node versions and
 machines, and a golden test at the edge would pass on one and fail on

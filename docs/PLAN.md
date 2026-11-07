@@ -159,7 +159,7 @@ are traps a mirror of the interpreter would copy.
 - Tail calls (D33): a call in tail position runs in constant space.
 - Depth (D34): 10,000 calls in progress, the next faulting `stack`,
   the same under both Nodes.
-- Tests 070 and up, written already, from `t/models/fn.py` and by hand.
+- Tests 070 to 089, written already, from `t/models/fn.py`.
   The step is done when they and every earlier step's pass under both
   Nodes, no file under `t/` is changed, and the documents are moved.
 - Documents: `LANGUAGE.md` gains a section on functions (definitions,
