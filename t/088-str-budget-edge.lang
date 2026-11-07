@@ -1,0 +1,3 @@
+; D21, D22, D33: six string operators in a budget of six. test 088.
+; Expected output and this program from t/models/strings.py.
+(within 6 (if (str/lt (str/char (str/code (str/at "a😀" (str/len "a")))) (str/cat "😁" "")) "😀 before 😁" "no"))

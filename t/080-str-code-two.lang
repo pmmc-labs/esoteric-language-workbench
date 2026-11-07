@@ -1,0 +1,3 @@
+; D33: str/code of two characters is not a character. test 080.
+; Expected output and this program from t/models/strings.py.
+(str/cat "x" (str/char (str/code "e\u{301}")))

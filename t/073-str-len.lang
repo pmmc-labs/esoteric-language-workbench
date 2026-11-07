@@ -1,0 +1,3 @@
+; D31, D33: str/len counts code points. test 073.
+; Expected output and this program from t/models/strings.py.
+(+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 (+ (* 10 1) (str/len ""))) (str/len "abc"))) (str/len "😀"))) (str/len "e\u{0301}"))) (str/len "é"))) (str/len "\u{FFFF}\u{10000}"))) (str/len ""))) (str/len "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"))) (str/len "a😀b"))) (str/len "\u{0000}"))) (str/len "􏿿􏿿"))) (str/len "\u{1F600}\u{1F600}\u{1F600}"))) (str/len "퟿"))
