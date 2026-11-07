@@ -202,13 +202,13 @@ byte (UTF-8 text should print as itself).
 lines. Rejected: line-at-a-time input (a second builtin and an
 end-of-input value); command-line arguments (no example needs them).
 
-**D34. A call's arguments may end with a comma.** *(default)*
+**D34. A call's arguments may end with a comma.** *(default; designer, kept)*
 `LANGUAGE.md` allows it for lists and maps only and is silent on calls;
 Go and TypeScript allow it, and a call broken over several lines reads
 better with it. `print(,)` is still an error. Rejected: forbidding it
 (one more thing to trip over for the audience).
 
-**D35. Lexer details the spec left open.** *(default)* A bare `}` in a
+**D35. Lexer details the spec left open.** *(default; designer, kept)* A bare `}` in a
 string is an ordinary byte (only `{` starts interpolation). A backslash
 at the end of a line is `unterminated string`. A string that runs off
 the line inside an interpolation makes that interpolation
@@ -273,7 +273,7 @@ writes the C next to the executable as `EXE.c` and compiles it with
 compiler fails (always a compiler bug), otherwise `run` exits with the
 program's status.
 
-**D36. Parser errors at step 0.** *(default)* A statement that doesn't
+**D36. Parser errors at step 0.** *(default; designer, kept)* A statement that doesn't
 start with a name is `expected a statement, found Y`; a name must be
 followed by `(`, an argument by `,` or `)`, and a finished statement by a
 newline, `;` or the end of the file (`expected newline, found Y`). A
@@ -306,7 +306,7 @@ comments for stdin (escapes in a comment are harder to read than a
 file).
 
 **D37. The golden runs compile with `-Wall -Wextra -Werror` under `cc`
-and clang; `t/run.sh` fails loudly if it can't run.** *(default)* The
+and clang; `t/run.sh` fails loudly if it can't run.** *(default; designer, kept)* The
 generated C and the runtime are meant to be warning-free, and a warning
 under one compiler is a portability bug under the other. The runner
 treats anything but "some test failed" from `xargs` as a runner failure,
