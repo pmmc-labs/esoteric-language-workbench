@@ -69,6 +69,28 @@ static void print_top(strata_hist h, int line, int col) {
   else printf("%lld", (long long)a.v.n);
 }
 
+strata_hist strata_lay(strata_hist h, strata_hist e, int line, int col) {
+  return strata_push(h, strata_top(e, line, col));
+}
+
+strata_hist strata_depth(strata_hist h, int line, int col) {
+  (void)line; (void)col;
+  return strata_num(h ? h->depth : 0);
+}
+
+strata_hist strata_at(strata_hist h, strata_hist k, int line, int col) {
+  int64_t n = top_num(k, line, col);
+  int64_t depth = h ? h->depth : 0;
+  if (n < 0 || n > depth) {
+    char msg[96];
+    snprintf(msg, sizeof msg, "@ out of range (index %lld, depth %lld)",
+             (long long)n, (long long)depth);
+    strata_fault(line, col, msg);
+  }
+  for (int64_t i = 0; i < n; i++) h = h->below;
+  return h;
+}
+
 void strata_print(strata_hist h, int line, int col) {
   print_top(h, line, col);
   putchar('\n');

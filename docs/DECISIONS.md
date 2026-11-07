@@ -344,3 +344,34 @@ list says every parse error is `expected THING, found TOKEN`);
 versions); `__int128` for multiplication (also an extension); C's `&&`
 and `||` over temporaries (they would force the right side's temporaries
 to be computed first, breaking short-circuit).
+
+## Step 2 defaults
+
+**D37. Statement and name details D12 to D15 leave open.** *(default)*
+(1) Parse errors: after `let` the parser wants `name` (`expected name,
+found TOKEN`), then `'='`; a statement that starts with a name wants
+`'<-'`; a list wants `']'` (or `,`) after an element. All are D33's
+`expected THING, found TOKEN`; D33's THING list gains `name` and the
+punctuation marks `'='`, `'<-'` and `']'`, as D36 added `')'`. When
+step 4 adds calls, a name followed by `(` becomes a call statement.
+(2) `unknown variable x` is reported at the name's use; for `x <- e` that
+is the `x`, not the `<-`; `x is already declared` at the second name in
+`let x`. The check for a redeclaration comes before the initializer is
+resolved (source order), and the new name is visible only after the
+`let`, so `let x = x` is `unknown variable x`. (3) The resolver keeps a
+stack of scopes; a name is visible if any holds it, so step 3 pushes and
+pops one per block and step 4 starts a function from an empty stack. (4)
+A history literal evaluates all its elements in order, then lays them
+oldest first, so an empty element faults at the `[` after the later
+elements have been evaluated. (5) `e@k` faults at the `@`, also when `k`
+is empty or a string; `x@-1` is a parse error (`k` is a primary,
+`expected expression, found '-'`), and a negative index is written
+`x@(0 - 1)`. (6) Reading a name copies the history pointer into a fresh
+temporary, so a later write can't change an operand already read (D25).
+(7) Variables are C locals `v_NAME`; `let` declares one at the point of
+the statement, `<-` assigns `strata_lay(v_x, t, L, C)` over a temporary.
+Rejected: a distinct message for `x` alone as a statement (it is
+`expected '<-'`; calls arrive at step 4); reporting `unknown variable`
+at the `<-` (the name is what is unknown); laying each element as soon
+as it is evaluated (interleaves two kinds of fault); allowing `x@-1`
+(a second precedence rule for one token).

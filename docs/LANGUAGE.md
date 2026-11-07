@@ -201,7 +201,9 @@ has been written, counting its `let`'s layers.
 layers removed. `k` is a primary: a literal, a name, a call or a
 parenthesised expression (`x@(i + 1)`). `e@0` is `e`; `e@(#e)` is the
 empty history; any other `k` outside `0` to `#e` is a fault, `@ out of
-range (index K, depth D)`.
+range (index K, depth D)`, reported at the `@`. Since `k` is a primary,
+`x@-1` is a parse error; write `x@(0 - 1)`. The base is evaluated before
+the index.
 
 Because `e@k` is a history, it's both an old value and a list:
 
@@ -225,7 +227,8 @@ print sum([1, 2, 3, 4])    ; 10
 
 `[a, b, c]` is the history you'd get by writing `a`, then `b`, then `c`:
 `c` is the top and `a` the oldest. Each element contributes its top.
-`[]` is the empty history.
+`[]` is the empty history. All the elements are evaluated, in order,
+before any is laid; an element with an empty history faults at the `[`.
 
 ## Functions
 

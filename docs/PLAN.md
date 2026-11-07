@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Seven steps,
 inside the brief's budget of ten.
 
-**Progress:** design done; steps 0 (D33 to D35) and 1 (D36) built. Next: step 2.
+**Progress:** design done; steps 0 (D33 to D35), 1 (D36) and 2 (D37) built. Next: step 3.
 
 Read [`DESIGN.md`](DESIGN.md), [`LANGUAGE.md`](LANGUAGE.md) and the
 decisions each step cites first. Every step: write the model (if any)
@@ -95,7 +95,7 @@ Makefile
 - Leaves out: variables, strings.
 - **Size:** medium.
 
-### 2. Histories: let, write, @, #, history literals
+### 2. Histories: let, write, @, #, history literals (done)
 
 The core rule (D7, D11 to D15).
 
@@ -113,7 +113,11 @@ The core rule (D7, D11 to D15).
   `207-at-range` (fault, both sides: negative and beyond),
   `208-write-empty` (fault at `<-`), `209-unknown-variable`,
   `210-redeclare`, `211-long-history` (a 10000-write history, its depth
-  and its oldest layer: proves the arena chains chunks).
+  and its oldest layer: proves the arena chains chunks; its program and
+  output come from `t/models/long.py`). Added: `212-at-negative`,
+  `213-at-order` (the base faults before the index is evaluated),
+  `214-write-unknown`, `215-let-self`, `216-literal-empty-element`,
+  `217-at-index-empty`, `218-parse-at` (`x@-1`).
 - Leaves out: blocks (step 3), functions (step 4).
 - **Size:** medium.
 

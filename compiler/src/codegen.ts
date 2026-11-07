@@ -23,10 +23,33 @@ export function codegen(prog: Program): string {
       emit(`strata_hist ${t} = strata_num(INT64_C(${e.v}));`);
       return t;
     }
+    if (e.k === "name") {
+      // A copy of the pointer, so a later write to the variable can't
+      // change what this operand already read (D25).
+      const t = fresh();
+      emit(`strata_hist ${t} = v_${e.name};`);
+      return t;
+    }
+    if (e.k === "list") {
+      // Elements first, in source order; then they are laid oldest first.
+      const ts = e.elems.map(expr);
+      const t = fresh();
+      emit(`strata_hist ${t} = NULL;`);
+      for (const a of ts) emit(`${t} = strata_lay(${t}, ${a}, ${e.line}, ${e.col});`);
+      return t;
+    }
+    if (e.k === "at") {
+      const a = expr(e.e);
+      const i = expr(e.i);
+      const t = fresh();
+      emit(`strata_hist ${t} = strata_at(${a}, ${i}, ${e.line}, ${e.col});`);
+      return t;
+    }
     if (e.k === "un") {
       const a = expr(e.e);
       const t = fresh();
-      emit(`strata_hist ${t} = strata_${e.op === "-" ? "neg" : "not"}(${a}, ${e.line}, ${e.col});`);
+      const fn = { "-": "neg", "not": "not", "#": "depth" }[e.op];
+      emit(`strata_hist ${t} = strata_${fn}(${a}, ${e.line}, ${e.col});`);
       return t;
     }
     if (e.op === "and" || e.op === "or") return logic(e);
@@ -61,7 +84,9 @@ export function codegen(prog: Program): string {
 
   for (const s of prog.stmts) {
     const t = expr(s.e);
-    emit(`strata_${s.k}(${t}, ${s.line}, ${s.col});`);
+    if (s.k === "let") emit(`strata_hist v_${s.name} = ${t};`);
+    else if (s.k === "set") emit(`v_${s.name} = strata_lay(v_${s.name}, ${t}, ${s.line}, ${s.col});`);
+    else emit(`strata_${s.k}(${t}, ${s.line}, ${s.col});`);
   }
   return `#include "strata.h"\n\nint main(void) {\n${out.join("\n")}\n  return 0;\n}\n`;
 }

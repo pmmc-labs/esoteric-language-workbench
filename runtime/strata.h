@@ -25,6 +25,12 @@ void *strata_alloc(size_t n);
 strata_hist strata_push(strata_hist below, strata_atom a);
 strata_hist strata_num(int64_t n);               /* one-layer history */
 strata_atom strata_top(strata_hist h, int line, int col);
+/* Lay the top of `e` on `h` (D12); faults `empty history` if `e` is empty. */
+strata_hist strata_lay(strata_hist h, strata_hist e, int line, int col);
+/* `#h` as a one-layer history (D13). */
+strata_hist strata_depth(strata_hist h, int line, int col);
+/* `h@k`: h without its top k layers; k must be in 0..#h (D13). */
+strata_hist strata_at(strata_hist h, strata_hist k, int line, int col);
 void strata_print(strata_hist h, int line, int col);
 void strata_write(strata_hist h, int line, int col);
 

@@ -12,16 +12,20 @@ const err = (src: string) => {
 test("print INTEGER, any number of them", () => {
   assert.equal(parse(lex("")).stmts.length, 0);
   const p = parse(lex("print 1 print 2\nprint 3"));
-  assert.deepEqual(p.stmts.map((s) => [s.e.v, s.line, s.col]), [["1", 1, 1], ["2", 1, 9], ["3", 2, 1]]);
+  assert.deepEqual(p.stmts.map((s) => [(s.e as { v: string }).v, s.line, s.col]), [["1", 1, 1], ["2", 1, 9], ["3", 2, 1]]);
 });
 
 test("parse errors", () => {
   assert.deepEqual(err("print"), { line: 1, col: 6, msg: "expected expression, found end of file" });
   assert.equal(err("print print").msg, "expected expression, found 'print'");
-  assert.equal(err("print x").msg, "expected expression, found 'x'");
+  assert.equal(err("print )").msg, "expected expression, found ')'");
   assert.equal(err('print "s"').msg, "expected expression, found '\"s\"'");
   assert.deepEqual(err("5"), { line: 1, col: 1, msg: "expected statement, found '5'" });
-  assert.equal(err("let x = 1").msg, "expected statement, found 'let'");
+  assert.equal(err("let x = 1 )").msg, "expected statement, found ')'");
+  assert.equal(err("let 1").msg, "expected name, found '1'");
+  assert.equal(err("let x 1").msg, "expected '=', found '1'");
+  assert.equal(err("x 1").msg, "expected '<-', found '1'");
+  assert.equal(err("print [1, 2").msg, "expected ']', found end of file");
 });
 
 test("codegen: one temporary per literal, in source order", () => {
@@ -33,8 +37,13 @@ test("codegen: one temporary per literal, in source order", () => {
 // The expression as an s-expression, so precedence reads off the string.
 import type { Expr } from "../src/parser.ts";
 const show = (e: Expr): string =>
-  e.k === "int" ? e.v : e.k === "un" ? `(${e.op} ${show(e.e)})` : `(${e.op} ${show(e.l)} ${show(e.r)})`;
-const sx = (src: string) => show(parse(lex("print " + src)).stmts[0].e);
+  e.k === "int" ? e.v
+  : e.k === "name" ? e.name
+  : e.k === "list" ? `[${e.elems.map(show).join(" ")}]`
+  : e.k === "at" ? `(@ ${show(e.e)} ${show(e.i)})`
+  : e.k === "un" ? `(${e.op} ${show(e.e)})`
+  : `(${e.op} ${show(e.l)} ${show(e.r)})`;
+const sx = (src: string) => show((parse(lex("print " + src)).stmts[0] as { e: Expr }).e);
 
 test("precedence, loosest to tightest", () => {
   assert.equal(sx("1 or 2 and 3"), "(or 1 (and 2 3))");
@@ -92,4 +101,33 @@ test("codegen: operands in source order, right side of and/or under an if", () =
   const l = codegen(parse(lex("print 0 and 1 / 0")));
   assert.ok(l.indexOf("if (strata_truth(") < l.indexOf("strata_div"));
   assert.ok(codegen(parse(lex("print 1 or 2"))).includes("if (!strata_truth("));
+});
+
+test("@ and #: postfix binds tighter than prefix; @ chains left; k is a primary", () => {
+  assert.equal(sx("x@1"), "(@ x 1)");
+  assert.equal(sx("x@1@2"), "(@ (@ x 1) 2)");
+  assert.equal(sx("#x@1"), "(# (@ x 1))");
+  assert.equal(sx("-x@1"), "(- (@ x 1))");
+  assert.equal(sx("x@1 + 2"), "(+ (@ x 1) 2)");
+  assert.equal(sx("x@(i + 1)"), "(@ x (+ i 1))");
+  assert.equal(sx("x@y@z"), "(@ (@ x y) z)");
+  assert.equal(sx("[1, 2]@1"), "(@ [1 2] 1)");
+  assert.equal(sx("##x"), "(# (# x))");
+  assert.equal(sx("#x + 1"), "(+ (# x) 1)");
+  assert.equal(err("print x@-1").msg, "expected expression, found '-'");
+  assert.equal(err("print x@").msg, "expected expression, found end of file");
+});
+
+test("history literals, let and write", () => {
+  assert.equal(sx("[]"), "[]");
+  assert.equal(sx("[1, x + 1, [2]]"), "[1 (+ x 1) [2]]");
+  const p = parse(lex("let a = 1\n a <- 2"));
+  assert.deepEqual(p.stmts.map((s) => [s.k, s.line, s.col]), [["let", 1, 5], ["set", 2, 4]]);
+});
+
+test("codegen: @ evaluates its base before its index (D25)", () => {
+  const c = codegen(parse(lex("print x@(1 / 2)".replace("x", "[7]"))));
+  assert.ok(c.indexOf("INT64_C(7)") < c.indexOf("INT64_C(1)"));
+  assert.ok(c.indexOf("INT64_C(1)") < c.indexOf("strata_div"));
+  assert.ok(c.indexOf("strata_div") < c.indexOf("strata_at"));
 });
