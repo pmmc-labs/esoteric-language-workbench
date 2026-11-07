@@ -105,6 +105,33 @@ export function codegen(program: Program, path: string): string {
         emit(depth, `Value ${t} = dt_index(${e.pos.line}, ${e.pos.col}, ${c}, ${i});`);
         return t;
       }
+      case 'field': {
+        const c = expr(e.target, depth);
+        const k = literal(e.name, depth);
+        const t = `t${++temps}`;
+        // Like an index: dt_field is dt_try_field plus the fault for a miss.
+        emit(depth, `Value ${t} = dt_field(${e.pos.line}, ${e.pos.col}, ${c}, ${k});`);
+        return t;
+      }
+      case 'map': {
+        // Keys are literals; each key and value is computed in order, then the
+        // map is built once from the two arrays.
+        const keys: string[] = [];
+        const vals: string[] = [];
+        for (const en of e.entries) {
+          keys.push(expr(en.key, depth));
+          vals.push(expr(en.value, depth));
+        }
+        const t = `t${++temps}`;
+        if (keys.length === 0) {
+          emit(depth, `Value ${t} = dt_map_new(0, NULL, NULL);`);
+        } else {
+          emit(depth, `Value a${temps}[] = {${keys.join(', ')}};`);
+          emit(depth, `Value b${temps}[] = {${vals.join(', ')}};`);
+          emit(depth, `Value ${t} = dt_map_new(${keys.length}, a${temps}, b${temps});`);
+        }
+        return t;
+      }
       case 'logic': {
         // The result starts as the left operand and is replaced by the right
         // one only when the left doesn't decide (D30: `if`, not `&&`).
@@ -150,27 +177,26 @@ export function codegen(program: Program, path: string): string {
   // and its steps. `evalSteps` computes each step's key into a temporary;
   // `load` looks the whole path up as an expression would; `store` looks up
   // every step but the last, sets the last, and rebuilds the spine from the
-  // inside out (D7: nothing is written, each level is a new value). Step 6's
-  // `.name` is a second kind of step: a key that is a string, a lookup
-  // and a set that fault with their own messages.
+  // inside out (D7: nothing is written, each level is a new value). A `.name`
+  // step is a key that is a string literal, with its own lookup and set
+  // (they fault with their own messages, at the `.`).
   function evalSteps(t: Target, depth: number): string[] {
-    return t.steps.map((st) => {
-      if (st.kind === 'index') return expr(st.index, depth);
-      throw new Error('internal: a field step arrives in step 6');
-    });
+    return t.steps.map((st) => (st.kind === 'index' ? expr(st.index, depth) : literal(st.name, depth)));
   }
 
   // The value one step down from `c`, faulting at the step as an expression would.
   function lookup(st: Target['steps'][number], c: string, key: string, depth: number): string {
     const r = `t${++temps}`;
-    emit(depth, `Value ${r} = dt_index(${st.pos.line}, ${st.pos.col}, ${c}, ${key});`);
+    const fn = st.kind === 'index' ? 'dt_index' : 'dt_field';
+    emit(depth, `Value ${r} = ${fn}(${st.pos.line}, ${st.pos.col}, ${c}, ${key});`);
     return r;
   }
 
   // `c` with the step's key set to `v`: a new value.
   function setStep(st: Target['steps'][number], c: string, key: string, v: string, depth: number): string {
     const r = `t${++temps}`;
-    emit(depth, `Value ${r} = dt_set_index(${st.pos.line}, ${st.pos.col}, ${c}, ${key}, ${v});`);
+    const fn = st.kind === 'index' ? 'dt_set_index' : 'dt_set_field';
+    emit(depth, `Value ${r} = ${fn}(${st.pos.line}, ${st.pos.col}, ${c}, ${key}, ${v});`);
     return r;
   }
 

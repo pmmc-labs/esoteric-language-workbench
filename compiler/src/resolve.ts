@@ -3,7 +3,7 @@
 // changed.
 import { compileError } from './errors.ts';
 import type { Pos } from './errors.ts';
-import type { Expr, Iter, Program, Stmt, Target } from './parser.ts';
+import type { Expr, Iter, MapEntry, Program, Stmt, Target } from './parser.ts';
 
 type FnStmt = Extract<Stmt, { kind: 'fn' }>;
 
@@ -22,6 +22,8 @@ export const BUILTINS: Record<string, { arity: number | null }> = {
   split: { arity: 2 },
   join: { arity: 2 },
   words: { arity: 1 },
+  keys: { arity: 1 },
+  remove: { arity: 2 },
 };
 
 // A function body (and the top level) has a stack of block scopes and a count
@@ -81,6 +83,10 @@ function resolveExpr(ctx: Ctx, e: Expr): Expr {
       return { ...e, target: resolveExpr(ctx, e.target), index: resolveExpr(ctx, e.index) };
     case 'list':
       return { ...e, items: e.items.map((x) => resolveExpr(ctx, x)) };
+    case 'field':
+      return { ...e, target: resolveExpr(ctx, e.target) };
+    case 'map':
+      return { ...e, entries: resolveEntries(ctx, e.entries) };
     case 'unary':
       return { ...e, operand: resolveExpr(ctx, e.operand) };
     case 'binary':
@@ -101,6 +107,28 @@ function resolveExpr(ctx: Ctx, e: Expr): Expr {
       return { ...e, target: isBuiltin ? 'builtin' : 'fn', args: e.args.map((a) => resolveExpr(ctx, a)) };
     }
   }
+}
+
+// The printed form of a key, as in `missing key "qty"` (D24).
+function showKey(key: Expr): string {
+  if (key.kind === 'int') return String(key.value);
+  if (key.kind !== 'string') throw new Error('internal: a map key is a literal');
+  const text = key.parts.map((p) => (p.kind === 'text' ? p.value : '')).join('');
+  const esc: Record<string, string> = { '\\': '\\\\', '"': '\\"', '\n': '\\n', '\t': '\\t', '\r': '\\r' };
+  return '"' + text.replace(/[\\"\n\t\r]/g, (c) => esc[c]) + '"';
+}
+
+// Each key is checked against the ones before it, then its value resolved, so
+// the first problem in source order is the one reported.
+function resolveEntries(ctx: Ctx, entries: MapEntry[]): MapEntry[] {
+  const seen = new Set<string>();
+  return entries.map((en) => {
+    const shown = showKey(en.key);
+    // An int and a string never collide: a string's form starts with a quote.
+    if (seen.has(shown)) throw compileError(en.key.pos, `duplicate key ${shown}`);
+    seen.add(shown);
+    return { key: en.key, value: resolveExpr(ctx, en.value) };
+  });
 }
 
 function resolveBlock(ctx: Ctx, body: Stmt[], first?: string): Stmt[] {

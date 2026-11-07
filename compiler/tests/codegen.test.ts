@@ -180,7 +180,7 @@ test('a lookup on a list is the same runtime call as on a string, so step 7 can 
 test('a map literal computes its keys and values in order, then builds the map once', () => {
   const c = compile('print({a: f(1), "b": f(2), 3: 4})\nfn f(x) {\n}', 'a.ditto');
   const main = c.indexOf('int main');
-  assert.match(c, /Value a\d+\[\] = \{t\d+, t\d+, t\d+\};\n\s*Value a\d+\[\] = \{t\d+, t\d+, t\d+\};\n\s*Value t\d+ = dt_map_new\(3, a\d+, a\d+\);/);
+  assert.match(c, /Value a\d+\[\] = \{t\d+, t\d+, t\d+\};\n\s*Value b\d+\[\] = \{t\d+, t\d+, t\d+\};\n\s*Value t\d+ = dt_map_new\(3, a\d+, b\d+\);/);
   assert.match(compile('print({})', 'a.ditto'), /dt_map_new\(0, NULL, NULL\)/);
   const at = ['f_f(', 'f_f(', 'dt_map_new('].map((s, k) => c.indexOf(s, k === 1 ? c.indexOf('f_f(', main) + 1 : main));
   assert.ok(at.every((n) => n > 0) && at[0] < at[1] && at[1] < at[2], String(at));
@@ -192,7 +192,7 @@ test('a field is a runtime call at its dot, with the name as a string key', () =
   const c = compile('let m = {}\nprint(m.name, m["x"])', 'a.ditto');
   assert.match(c, /dt_str_new\("name", 4\)/);
   assert.match(c, /dt_field\(2, 8, t\d+, t\d+\)/);
-  assert.match(c, /dt_index\(2, 18, /);
+  assert.match(c, /dt_index\(2, 16, /);
 });
 
 test('a path of fields and indexes looks up each step at its own position, then sets from the inside out', () => {

@@ -456,7 +456,7 @@ test('an assignment target mixes index and field steps', () => {
   const b = ast('m.a = 1\nm.a[0].b["c"] += 2\ndb[i].x.y -= 3').body as any[];
   assert.deepEqual(b.map((s) => s.target.steps.map((st: any) => st.kind)), [['field'], ['field', 'index', 'field', 'index'], ['index', 'field', 'field']]);
   assert.deepEqual(b[0].target.steps[0], { kind: 'field', pos: at(1, 2), name: 'a' });
-  assert.deepEqual(b[1].target.steps.map((st: any) => st.pos), [at(2, 2), at(2, 4), at(2, 7), at(2, 8)]);
+  assert.deepEqual(b[1].target.steps.map((st: any) => st.pos), [at(2, 2), at(2, 4), at(2, 7), at(2, 9)]);
   assert.deepEqual(b[2].target.steps.map((st: any) => st.name), [undefined, 'x', 'y']);
 });
 
@@ -475,14 +475,14 @@ test('map literal and field errors', () => {
   parseError('print({"a{x}": 1})', key, 1, 8);
   parseError('print({-a: 1})', key, 1, 8);
   parseError('print({--1: 1})', key, 1, 8);
-  parseError('print({a: 1,, b: 2})', key, 1, 14);
+  parseError('print({a: 1,, b: 2})', key, 1, 13);
   parseError('print({, a: 1})', key, 1, 8);
-  parseError('print({1 + 2: 3})', "expected ':', found '+'", 1, 11);
+  parseError('print({1 + 2: 3})', "expected ':', found '+'", 1, 10);
   parseError('print({f(): 1})', "expected ':', found '('", 1, 9);
   parseError('print({a 1})', "expected ':', found '1'", 1, 10);
   parseError('print({a: })', "expected an expression, found '}'", 1, 11);
-  parseError('print({a: 1 b: 2})', "expected '}', found 'b'", 1, 14);
-  parseError('let m = {a: 1', "expected '}', found end of file", 2, 1);
+  parseError('print({a: 1 b: 2})', "expected '}', found 'b'", 1, 13);
+  parseError('let m = {a: 1\n', "expected '}', found end of file", 2, 1);
   parseError('print(m.)', "expected a name, found ')'", 1, 9);
   parseError('print(m.1)', "expected a name, found '1'", 1, 9);
   parseError('print(m.in)', "expected a name, found 'in'", 1, 9);

@@ -449,6 +449,45 @@ before `<` inside lists (a second rule); a store that mutates a list nobody
 else holds (D7 rejects it); evaluating a compound assignment's path once
 and keeping the containers (a second code path for the same result).
 
+**D44. Step 6 details the spec left open.** *(default; builder, awaiting review)*
+Parsing: a map key is judged by its first tokens: a name (the string it
+spells; a keyword is not a name), a string without interpolation, an int
+literal, or `-` followed by an int literal; anything else is `map key must
+be a name, a string or an int` at that token (so `{[1]: 2}`, `{(1): 2}`,
+`{-a: 1}`, `{, a: 1}` and the second comma of `{a: 1,, b: 2}`), and a good
+key not followed by `:` is the ordinary `expected ':', found '+'` (so
+`{1 + 2: 3}` and `{f(): 1}` point at the `+` and the `(`). Newlines are
+ignored anywhere between a map literal's braces, which the parser does since
+the lexer cannot tell a map's `{` from a block's. A `{` is a map literal
+wherever an expression starts, including after `if`, `while` and `in`, so
+`while {` is now a map as a condition (test 270 now uses `while )`); a `{`
+at the start of a statement is still `expected a statement, found '{'`,
+which is what a stray block gets. A `.` must follow its operand on the same
+line (`m` newline `.a` is `expected a statement, found '.'`), and a field
+name is a name, not a keyword (`expected a name, found 'in'`). Checks: a
+lookup or set checks the container's type first, then the key's
+(`map key must be an int or a string, got list`), then the miss; a literal's
+keys are compared in the resolver in source order, each key before its own
+value, so `{a: x, a: 1}` is `unknown variable x` and `{a: 1, a: x}` is
+`duplicate key "a"`; a duplicate key is shown as a key is printed (`"a"`,
+`3`, `-3`, quotes and escapes as D24), and `007` and `7` are the same key.
+Faults: the `.name` of `cannot use .name on list` is the field as written,
+so `xs.count` is `cannot use .count on list`; setting through a `.name` on a
+list says that too, and on any other non-map `cannot assign into T`, while
+`[` on a map accepts any int or string key. `keys` and `remove` expect `a map`
+for their first argument, and `remove(m, k)` with a `k` that cannot be a key
+(a list, say) is the same map, as `k in m` is false for it. Runtime: maps
+are immutable like lists (D7), `dt_set_index` and `dt_set_field` copy the
+two arrays and replace in place or append, `==` looks each key of one up in
+the other, `for` walks `keys` by index over the snapshot, and a map is
+`{"a": 1, 3: "x"}` with keys printed as values are (D24). The lookups keep
+the try shape of step 4: `dt_try_index` and `dt_try_field` report a miss,
+`dt_index` and `dt_field` fault on it. Rejected: key expressions in
+brackets, `{[k]: v}`, as in JavaScript (D16 keeps the literal to constants,
+and `m[k] = v` covers the rest); a hash index (D27); `.name` on a list as a
+miss (a wrong type is a fault `else` must not catch); a separate message for
+`m.name` on a missing key (`missing key "name"` is what `m["name"]` says).
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,

@@ -78,7 +78,20 @@ sorts, text builtins, path updates, the core rule's cases, two random
 programs against Python lists deep-copied at every store), faults 512 to
 559, semantics 560 to 574 and errors 575 to 597 are by hand; 399 golden
 tests and 149 unit tests, green under `cc`, clang and the sanitizers.
-Builder default awaiting review: D43. **Next:** step 6, maps.
+Builder default awaiting review: D43.
+Step 6 (maps) is done: map literals (a key is a name, a string without
+interpolation or an int with an optional `-`; `duplicate key` and the bad-key
+error; newlines ignored between the braces), indexing and `.name` (a miss is
+`missing key "qty"`), setting a key (in place if present, at the end if not),
+paths mixing index and field steps with compound assignment, `==` regardless
+of order, `in` on keys, `for` over keys, `len`, `keys`, `remove`, the printed
+form `{"a": 1, 3: "x"}`; the faults and errors of the plan; maps are immutable
+arrays of keys and values like lists (D7, D27) and every lookup keeps its try
+form for `else`; `t/models/maps.py` writes golden tests 600 to 611 (Python
+dicts deep-copied at every store, two random programs), faults 612 to 649,
+semantics 650 to 666 and errors 670 to 699 are by hand; 496 golden tests and
+169 unit tests, green under `cc`, clang and the sanitizers. Builder default
+awaiting review: D44. **Next:** step 7, `else`.
 
 ## Read first, in this order
 

@@ -10,7 +10,8 @@ tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
 62 unit tests); step 2 done (variables and control flow; 151 golden tests,
 88 unit tests); step 3 done (functions; 216 golden tests, 105 unit
 tests); step 4 done (strings; 301 golden tests, 128 unit tests); step 5 done
-(lists and the core rule; 399 golden tests, 149 unit tests); step 6 next.
+(lists and the core rule; 399 golden tests, 149 unit tests); step 6 done
+(maps; 496 golden tests, 169 unit tests); step 7 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -216,7 +217,19 @@ first, so step 6 fills in a map key and a `.name` step in `evalSteps`,
   core rule's cases above.
 - **Size:** large.
 
-### 6. Maps
+### 6. Maps **(done)**
+
+Landed as planned. Differences: tests 600 to 699 (the model writes 600 to
+611, including the word frequencies with a `.stdin` the model also writes,
+and two random programs of map, list-of-map and int-keyed-map operations
+run on Python dicts deep-copied at every store; faults 612 to 649,
+semantics 650 to 666 and compile errors 670 to 699 are by hand, positions
+marked in the source and counted by a script); test 270 now expects
+`expected an expression, found ')'` for `while )`, since `while {` starts a
+map literal; default D44. The runtime has `dt_map_new`, `dt_try_field`,
+`dt_field`, `dt_set_field` and the map cases of `dt_try_index`,
+`dt_index`, `dt_set_index`, `dt_in`, `dt_equal`, printing and iteration;
+lookups keep the try shape for step 7.
 
 - Map literals (key forms, `duplicate key`, the bad-key error), indexing,
   `.name`, setting a key (in place if present, at the end if not), path

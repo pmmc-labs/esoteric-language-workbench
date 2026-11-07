@@ -39,6 +39,7 @@ static inline Value dt_bool(bool b) { Value v; v.tag = T_BOOL; v.i = 0; v.b = b;
 static inline Value dt_int(int64_t i) { Value v; v.tag = T_INT; v.i = i; return v; }
 static inline Value dt_str(struct Str *s) { Value v; v.tag = T_STR; v.i = 0; v.s = s; return v; }
 static inline Value dt_list(struct List *l) { Value v; v.tag = T_LIST; v.i = 0; v.l = l; return v; }
+static inline Value dt_map(struct Map *m) { Value v; v.tag = T_MAP; v.i = 0; v.m = m; return v; }
 
 /* Bump allocator over large malloc'ed chunks kept on a global list, never
    freed (D26). Memory is 16-byte aligned; dt_alloc(0) is a valid pointer. */
@@ -63,22 +64,38 @@ Value dt_interp(int n, const Value *parts);
 Value dt_list_new(int64_t n, const Value *items);
 /* `c` with the item at key `i` replaced by `v`, as a new value: the set of an
    assignment's last step (LANGUAGE.md, Assignment). Faults, at the step's `[`,
-   `cannot assign into T` unless c is a list (checked first), then the key's type
-   and its range. */
+   `cannot assign into T` unless c is a list or a map (checked first), then the
+   key's type and, for a list, its range. A map key is replaced in place if
+   present and added at the end if not. */
 Value dt_set_index(int line, int col, Value c, Value i, Value v);
+/* The same for a `.name` step, at the `.`: a map is set like dt_set_index; a
+   list faults `cannot use .name on list`, anything else `cannot assign into T`. */
+Value dt_set_field(int line, int col, Value c, Value name, Value v);
+
+/* Maps are immutable once built, like lists (D7): keys and values in insertion
+   order, searched linearly (D27), and an update is a new map. */
+/* A new map of the n pairs (keys[k], vals[k]), copied; the keys must be ints
+   or strings and distinct (the compiler checks a literal's keys). */
+Value dt_map_new(int64_t n, const Value *keys, const Value *vals);
 
 /* Lookups (LANGUAGE.md, Indexing). The `try` forms store the value and return
-   true on a hit, return false on a miss (an index out of range) and fault, as
-   usual, on anything else (a wrong type); step 7's `else` branches on that.
-   `dt_index` is the lookup that faults on a miss too. They take the
-   position of the `[`. */
+   true on a hit, return false on a miss (an index out of range, a missing map
+   key) and fault, as usual, on anything else (a wrong type); step 7's `else`
+   branches on that. `dt_index` is the lookup that faults on a miss too. They
+   take the position of the `[`. `dt_try_field` and `dt_field` are `m.name`
+   (name is a string), at the position of the `.`: they fault
+   `cannot use .name on T` unless c is a map. */
 bool dt_try_index(int line, int col, Value c, Value i, Value *out);
 Value dt_index(int line, int col, Value c, Value i);
+bool dt_try_field(int line, int col, Value c, Value name, Value *out);
+Value dt_field(int line, int col, Value c, Value name);
 /* The builtin `int` the same way: faults `int: expected a string, got T`,
    returns false when the string isn't a number. Position of the name. */
 bool dt_try_int(int line, int col, Value s, Value *out);
 
-/* `x in c` (LANGUAGE.md, Comparison). Faults `cannot use in on T and U`. */
+/* `x in c` (LANGUAGE.md, Comparison): a key of a map (an x that cannot be a
+   key is not in it), an element of a list, a substring. Faults
+   `cannot use in on T and U`. */
 bool dt_in(int line, int col, Value x, Value c);
 
 /* Operators (LANGUAGE.md, Expressions). Each takes the position of its
@@ -105,9 +122,9 @@ void dt_need_bool(int line, int col, const char *op, Value v);
 void dt_need_cond(int line, int col, Value v);
 /* Faults `range bounds must be ints, got T` unless v is an int (for). */
 void dt_need_range_bound(int line, int col, Value v);
-/* The number of items a `for` over v walks, and item i (from 0). Anything but
-   a string, list or map faults `cannot iterate over T`; maps arrive with
-   step 6, so for now strings (their bytes) and lists (their items) do. */
+/* The number of items a `for` over v walks, and item i (from 0): the bytes of
+   a string, the items of a list, the keys of a map. Anything else faults
+   `cannot iterate over T`. */
 int64_t dt_iter_len(int line, int col, Value v);
 Value dt_iter_item(Value v, int64_t i);
 
@@ -131,6 +148,8 @@ Value dt_b_sort(int line, int col, int argc, const Value *argv);
 Value dt_b_split(int line, int col, int argc, const Value *argv);
 Value dt_b_join(int line, int col, int argc, const Value *argv);
 Value dt_b_words(int line, int col, int argc, const Value *argv);
+Value dt_b_keys(int line, int col, int argc, const Value *argv);
+Value dt_b_remove(int line, int col, int argc, const Value *argv);
 _Noreturn Value dt_b_fail(int line, int col, int argc, const Value *argv);
 
 #endif

@@ -122,6 +122,50 @@ Value dt_list_new(int64_t n, const Value *items) {
   return dt_list(l);
 }
 
+/* Maps --------------------------------------------------------------------- */
+
+/* A map of n pairs, not yet filled in: only the function that calls this
+   writes it, before anyone else can see it (D7). */
+static struct Map *map_alloc(int64_t n) {
+  struct Map *m = dt_alloc(sizeof(struct Map));
+  m->len = n;
+  m->keys = dt_alloc(sizeof(Value) * (size_t)n);
+  m->vals = dt_alloc(sizeof(Value) * (size_t)n);
+  return m;
+}
+
+Value dt_map_new(int64_t n, const Value *keys, const Value *vals) {
+  struct Map *m = map_alloc(n);
+  if (n > 0) {
+    memcpy(m->keys, keys, (size_t)n * sizeof(Value));
+    memcpy(m->vals, vals, (size_t)n * sizeof(Value));
+  }
+  return dt_map(m);
+}
+
+static bool is_key(Value k) { return k.tag == T_INT || k.tag == T_STR; }
+
+/* The position of key k in m, or -1. A key of another type is never found. */
+static int64_t map_find(const struct Map *m, Value k) {
+  for (int64_t at = 0; at < m->len; at++) {
+    if (dt_equal(m->keys[at], k)) return at;
+  }
+  return -1;
+}
+
+/* m with key k set to v: in place if present, at the end if not. */
+static Value map_set(const struct Map *m, Value k, Value v) {
+  int64_t at = map_find(m, k);
+  struct Map *r = map_alloc(at >= 0 ? m->len : m->len + 1);
+  if (m->len > 0) {
+    memcpy(r->keys, m->keys, (size_t)m->len * sizeof(Value));
+    memcpy(r->vals, m->vals, (size_t)m->len * sizeof(Value));
+  }
+  if (at < 0) { at = m->len; r->keys[at] = k; }
+  r->vals[at] = v;
+  return dt_map(r);
+}
+
 /* One-byte strings, built on first use: indexing and `for` make many. */
 static Value byte_str(unsigned char c) {
   static struct Str *cache[256];
@@ -247,8 +291,17 @@ bool dt_equal(Value a, Value b) {
         if (!dt_equal(a.l->items[k], b.l->items[k])) return false;
       }
       return true;
-    default: return false; /* maps arrive with step 6 */
+    case T_MAP:
+      /* Keys are distinct, so equal lengths and every key of a found in b
+         with an equal value make the maps equal whatever their order. */
+      if (a.m->len != b.m->len) return false;
+      for (int64_t k = 0; k < a.m->len; k++) {
+        int64_t at = map_find(b.m, a.m->keys[k]);
+        if (at < 0 || !dt_equal(a.m->vals[k], b.m->vals[at])) return false;
+      }
+      return true;
   }
+  return false;
 }
 
 /* Statements -------------------------------------------------------------- */
@@ -264,13 +317,15 @@ void dt_need_range_bound(int line, int col, Value v) {
 int64_t dt_iter_len(int line, int col, Value v) {
   if (v.tag == T_STR) return v.s->len;
   if (v.tag == T_LIST) return v.l->len;
+  if (v.tag == T_MAP) return v.m->len;
   dt_fault(line, col, "cannot iterate over %s", type_name(v));
 }
 
 Value dt_iter_item(Value v, int64_t i) {
   if (v.tag == T_STR) return byte_str((unsigned char)v.s->bytes[i]);
   if (v.tag == T_LIST) return v.l->items[i];
-  dt_fault(0, 0, "internal error: iteration over a map arrives with step 6");
+  if (v.tag == T_MAP) return v.m->keys[i];
+  dt_fault(0, 0, "internal error: iteration over a value that dt_iter_len refuses");
 }
 
 /* Calls ------------------------------------------------------------------- */
@@ -308,8 +363,8 @@ static void buf_str(Buf *b, const char *s) { buf_put(b, s, strlen(s)); }
 
 /* Appends the printed form of v (LANGUAGE.md, str). `quoted` is true inside a
    list or map, and in `not a number`, where strings get quotes with \\ \" \n
-   \t \r escaped and every other byte as it is (D24); maps arrive with
-   step 6. */
+   \t \r escaped and every other byte as it is (D24); a map's keys are printed
+   as values are. */
 static void put_value(Buf *b, Value v, bool quoted) {
   switch (v.tag) {
     case T_NIL: buf_str(b, "nil"); break;
@@ -343,6 +398,16 @@ static void put_value(Buf *b, Value v, bool quoted) {
         put_value(b, v.l->items[k], true);
       }
       buf_put(b, "]", 1);
+      break;
+    case T_MAP:
+      buf_put(b, "{", 1);
+      for (int64_t k = 0; k < v.m->len; k++) {
+        if (k > 0) buf_str(b, ", ");
+        put_value(b, v.m->keys[k], true);
+        buf_str(b, ": ");
+        put_value(b, v.m->vals[k], true);
+      }
+      buf_put(b, "}", 1);
       break;
     default: dt_fault(0, 0, "internal error: cannot print tag %d", v.tag);
   }
@@ -511,17 +576,51 @@ bool dt_try_index(int line, int col, Value c, Value i, Value *out) {
     *out = byte_str((unsigned char)c.s->bytes[i.i]);
     return true;
   }
+  if (c.tag == T_MAP) {
+    if (!is_key(i)) dt_fault(line, col, "map key must be an int or a string, got %s", type_name(i));
+    int64_t at = map_find(c.m, i);
+    if (at < 0) return false;
+    *out = c.m->vals[at];
+    return true;
+  }
   dt_fault(line, col, "cannot index %s", type_name(c));
+}
+
+/* `missing key "qty"` or `missing key 7`: the key printed as a value is. */
+static _Noreturn void missing_key(int line, int col, Value k) {
+  Buf b = {NULL, 0, 0};
+  buf_str(&b, "missing key ");
+  put_value(&b, k, true);
+  fault_bytes(line, col, b.p, b.len);
 }
 
 Value dt_index(int line, int col, Value c, Value i) {
   Value out;
   if (dt_try_index(line, col, c, i, &out)) return out;
+  if (c.tag == T_MAP) missing_key(line, col, i);
   dt_fault(line, col, "index %" PRId64 " out of range (length %" PRId64 ")", i.i,
            c.tag == T_LIST ? c.l->len : c.s->len);
 }
 
+bool dt_try_field(int line, int col, Value c, Value name, Value *out) {
+  if (c.tag != T_MAP) dt_fault(line, col, "cannot use .%.*s on %s", (int)name.s->len, name.s->bytes, type_name(c));
+  int64_t at = map_find(c.m, name);
+  if (at < 0) return false;
+  *out = c.m->vals[at];
+  return true;
+}
+
+Value dt_field(int line, int col, Value c, Value name) {
+  Value out;
+  if (dt_try_field(line, col, c, name, &out)) return out;
+  missing_key(line, col, name);
+}
+
 Value dt_set_index(int line, int col, Value c, Value i, Value v) {
+  if (c.tag == T_MAP) {
+    if (!is_key(i)) dt_fault(line, col, "map key must be an int or a string, got %s", type_name(i));
+    return map_set(c.m, i, v);
+  }
   if (c.tag != T_LIST) dt_fault(line, col, "cannot assign into %s", type_name(c));
   if (i.tag != T_INT) dt_fault(line, col, "list index must be an int, got %s", type_name(i));
   if (i.i < 0 || i.i >= c.l->len) {
@@ -531,6 +630,12 @@ Value dt_set_index(int line, int col, Value c, Value i, Value v) {
   memcpy(l->items, c.l->items, (size_t)c.l->len * sizeof(Value));
   l->items[i.i] = v;
   return dt_list(l);
+}
+
+Value dt_set_field(int line, int col, Value c, Value name, Value v) {
+  if (c.tag == T_MAP) return map_set(c.m, name, v);
+  if (c.tag == T_LIST) dt_fault(line, col, "cannot use .%.*s on list", (int)name.s->len, name.s->bytes);
+  dt_fault(line, col, "cannot assign into %s", type_name(c));
 }
 
 bool dt_in(int line, int col, Value x, Value c) {
@@ -547,6 +652,7 @@ bool dt_in(int line, int col, Value x, Value c) {
     }
     return false;
   }
+  if (c.tag == T_MAP) return is_key(x) && map_find(c.m, x) >= 0;
   type_fault2(line, col, "in", x, c);
 }
 
@@ -656,4 +762,32 @@ Value dt_b_join(int line, int col, int argc, const Value *argv) {
   }
   r->bytes[total] = '\0';
   return dt_str(r);
+}
+
+/* Builtins on maps --------------------------------------------------------- */
+
+Value dt_b_keys(int line, int col, int argc, const Value *argv) {
+  (void)argc;
+  if (argv[0].tag != T_MAP) expected_fault(line, col, "keys", "a map", argv[0]);
+  return dt_list_new(argv[0].m->len, argv[0].m->keys);
+}
+
+/* The same map if the key is not in it, which includes a value that cannot be
+   a key. */
+Value dt_b_remove(int line, int col, int argc, const Value *argv) {
+  (void)argc;
+  if (argv[0].tag != T_MAP) expected_fault(line, col, "remove", "a map", argv[0]);
+  const struct Map *m = argv[0].m;
+  int64_t at = map_find(m, argv[1]);
+  if (at < 0) return argv[0];
+  struct Map *r = map_alloc(m->len - 1);
+  if (at > 0) {
+    memcpy(r->keys, m->keys, (size_t)at * sizeof(Value));
+    memcpy(r->vals, m->vals, (size_t)at * sizeof(Value));
+  }
+  if (at < m->len - 1) {
+    memcpy(r->keys + at, m->keys + at + 1, (size_t)(m->len - 1 - at) * sizeof(Value));
+    memcpy(r->vals + at, m->vals + at + 1, (size_t)(m->len - 1 - at) * sizeof(Value));
+  }
+  return dt_map(r);
 }

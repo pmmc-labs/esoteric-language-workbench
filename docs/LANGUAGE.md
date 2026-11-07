@@ -182,7 +182,9 @@ the value inside the variable and stores the whole new value back:
 
 Setting a step on something that isn't a list or a map faults:
 `cannot assign into string` (or whichever type) at the step's `[` or
-`.`. The compound assignments `+= -= *= /= %=` do the same, except that
+`.`; a `.name` step on a list is `cannot use .name on list`, as in a
+lookup, and a map key that isn't an int or a string is
+`map key must be an int or a string, got list`. The compound assignments `+= -= *= /= %=` do the same, except that
 after step 1 the current value at the full path is read (faulting as a
 lookup would), then the right-hand side is evaluated, then the operator
 is applied as in an expression, with its faults pointing at the `+=`.
@@ -220,7 +222,14 @@ A map key is a name (meaning that string: `{qty: 3}` is
 literal, optionally with a leading `-`. Anything else is
 `map key must be a name, a string or an int`, at the key. The same key
 twice in one literal is `duplicate key "qty"` (or `duplicate key 3`), at
-the second. `{}` is the empty map.
+the second. `{}` is the empty map. A key is judged by its first tokens: a
+key that is a name or a literal but is not followed by `:` is the ordinary
+`expected ':', found '+'`, and a keyword is not a name. Newlines are ignored
+anywhere between the braces, and a `{` is a map wherever an expression
+begins, so `if m == {} {` and `for k in {a: 1} {` are a value and then the
+block; at the start of a statement it is `expected a statement, found '{'`.
+Keys are shown in `duplicate key` as they are printed (D24), and `007` and
+`7` are the same key. Values are evaluated in order. (Step 6, D44.)
 
 ### Arithmetic
 
@@ -283,7 +292,9 @@ at `i` of a string. `m[k]` is the value at key `k` of a map. `m.name` is
 - `list index must be an int, got string` (or string index);
 - `map key must be an int or a string, got list`;
 - `cannot index int` for `[` on anything else, and
-  `cannot use .name on list` for `.` on anything but a map.
+  `cannot use .count on list` (the field as written) for `.` on anything
+  but a map. A container's type is checked first, then the key's, then
+  whether it's there.
 
 The first two are **misses**, which `else` can catch.
 
@@ -459,7 +470,8 @@ Expects `a string`.
 **`keys(m)`**: the keys of a map, as a list, in order. Expects `a map`.
 
 **`remove(m, k)`**: the map `m` without the key `k`; the same map if
-`k` isn't in it. Expects `a map`.
+`k` isn't in it, which includes a `k` that couldn't be a key. Expects
+`a map` for `m`.
 
 **`sort(xs)`**: the elements of the list in ascending order, by `<`;
 equal elements keep their order. A pair that `<` can't compare faults
@@ -499,4 +511,4 @@ the printed form of anything else), at `fail`. Never returns.
 (Builtins arrive with the step for their types: `print` in step 0 and 1,
 `str`, `len`, `int`, `lower`, `upper`, `slice` on strings, `read` and
 `fail` in step 4 (done), `words`, `split`, `join`, `sort` and `slice` on
-lists in step 5 (done, D43), `keys` and `remove` in step 6.)
+lists in step 5 (done, D43), `keys` and `remove` in step 6 (done, D44).)

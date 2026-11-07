@@ -1,8 +1,9 @@
-// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 5
-// parses expressions on ints, bools, nil, strings and lists, names, calls and
-// indexing, and the statements `fn`, `return`, `let`, assignment to a path of
-// indexes, `if`, `while`, `for`, `break` and `continue`; each later step adds
-// members to Expr and Stmt and cases to the functions below.
+// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 6
+// parses expressions on ints, bools, nil, strings, lists and maps, names,
+// calls, indexing and fields, and the statements `fn`, `return`, `let`,
+// assignment to a path of index and field steps, `if`, `while`, `for`,
+// `break` and `continue`; each later step adds members to Expr and Stmt and
+// cases to the functions below.
 import { compileError } from './errors.ts';
 import type { Pos } from './errors.ts';
 import type { StringPart, Token } from './lexer.ts';
@@ -11,7 +12,8 @@ export type BinaryOp =
   | '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<' | '<=' | '>' | '>=' | 'in' | 'not in';
 
 // `pos` of a unary or binary node is its operator: where faults point (for
-// `not in`, the `not`). An index's is its `[`; a string's its opening quote.
+// `not in`, the `not`). An index's is its `[`, a field's its `.`; a string's
+// its opening quote.
 export type Expr =
   | { kind: 'int'; pos: Pos; value: bigint }
   | { kind: 'bool'; pos: Pos; value: boolean }
@@ -22,6 +24,10 @@ export type Expr =
   | { kind: 'index'; pos: Pos; target: Expr; index: Expr }
   // `pos` is the `[`.
   | { kind: 'list'; pos: Pos; items: Expr[] }
+  // `pos` is the `{`. A key is a literal node, a string (a name is the string
+  // it spells) or an int (a leading `-` folded in), at the key's first token.
+  | { kind: 'map'; pos: Pos; entries: MapEntry[] }
+  | { kind: 'field'; pos: Pos; target: Expr; name: string }
   // `cname` is filled in by the resolver: the C variable's name.
   | { kind: 'name'; pos: Pos; name: string; cname?: string }
   | { kind: 'unary'; pos: Pos; op: '-' | 'not'; operand: Expr }
@@ -31,15 +37,17 @@ export type Expr =
   // `target` is filled in by the resolver: 'builtin' or 'fn' (a user function).
   | { kind: 'call'; pos: Pos; name: string; args: Expr[]; target?: 'builtin' | 'fn' };
 
+export type MapEntry = { key: Expr; value: Expr };
+
 export type StringPartNode =
   | { kind: 'text'; value: string }
   | { kind: 'interp'; pos: Pos; expr: Expr };
 
 export type AssignOp = '=' | '+=' | '-=' | '*=' | '/=' | '%=';
 
-// What follows a variable in an assignment target: `[index]` (step 5) or
-// `.name` (step 6). `pos` is the `[` (or the `.`), where a fault in that step
-// points. A path is a variable and a list of steps.
+// What follows a variable in an assignment target: `[index]` or `.name`.
+// `pos` is the `[` (or the `.`), where a fault in that step points. A path is
+// a variable and a list of steps.
 export type Step =
   | { kind: 'index'; pos: Pos; index: Expr }
   | { kind: 'field'; pos: Pos; name: string };
@@ -175,17 +183,70 @@ export function parse(input: Token[]): Program {
     return { kind: 'unary', pos: t.pos, op: '-', operand: unary() };
   }
 
-  // Indexes bind tighter than prefix minus: `-s[0]` is `-(s[0])`. The lexer
-  // drops newlines inside `[ ]`.
+  // Indexes and fields bind tighter than prefix minus: `-s[0]` is `-(s[0])`.
+  // The lexer drops newlines inside `[ ]`. A `.` must be on the line of what
+  // it follows, since a newline ends the statement.
   function postfix(): Expr {
     let e = primary();
-    while (isOp(peek(), '[')) {
-      const bracket = next();
-      const index = expr();
-      expect(']');
-      e = { kind: 'index', pos: bracket.pos, target: e, index };
+    for (;;) {
+      if (isOp(peek(), '[')) {
+        const bracket = next();
+        const index = expr();
+        expect(']');
+        e = { kind: 'index', pos: bracket.pos, target: e, index };
+      } else if (isOp(peek(), '.')) {
+        const dot = next();
+        const name = peek();
+        if (name.kind !== 'name') return expected('a name');
+        next();
+        e = { kind: 'field', pos: dot.pos, target: e, name: name.text };
+      } else {
+        return e;
+      }
     }
-    return e;
+  }
+
+  // A key is a name (the string it spells), a string without interpolation,
+  // or an int literal with an optional `-`; judged by its first token(s).
+  function mapKey(): Expr {
+    const t = peek();
+    if (t.kind === 'name') {
+      next();
+      return { kind: 'string', pos: t.pos, parts: [{ kind: 'text', value: t.text }] };
+    }
+    if (t.kind === 'string' && t.parts.every((p) => p.kind === 'text')) {
+      next();
+      return { kind: 'string', pos: t.pos, parts: t.parts.map((p): StringPartNode => p as StringPartNode) };
+    }
+    if (t.kind === 'int') { next(); return { kind: 'int', pos: t.pos, value: t.value }; }
+    const after = tokens[i + 1];
+    if (isOp(t, '-') && after.kind === 'int') {
+      next();
+      next();
+      return { kind: 'int', pos: t.pos, value: -after.value };
+    }
+    throw compileError(t.pos, 'map key must be a name, a string or an int');
+  }
+
+  // Newlines are ignored anywhere inside the braces (LANGUAGE.md, Lexical).
+  function mapLiteral(): Expr {
+    const open = next();
+    const entries: MapEntry[] = [];
+    skipNewlines();
+    while (!isOp(peek(), '}')) {
+      const key = mapKey();
+      skipNewlines();
+      expect(':');
+      skipNewlines();
+      const value = expr();
+      entries.push({ key, value });
+      skipNewlines();
+      if (!isOp(peek(), ',')) break;
+      next();
+      skipNewlines();
+    }
+    expect('}');
+    return { kind: 'map', pos: open.pos, entries };
   }
 
   // The tokens of one `{expr}` are parsed on their own, closed by a `}` at
@@ -234,6 +295,7 @@ export function parse(input: Token[]): Program {
       expect(']');
       return { kind: 'list', pos: t.pos, items };
     }
+    if (isOp(t, '{')) return mapLiteral();
     if (t.kind === 'name') {
       if (isOp(tokens[i + 1], '(')) return call();
       next();
@@ -260,13 +322,15 @@ export function parse(input: Token[]): Program {
     isKw(t, 'true') || isKw(t, 'false') || isKw(t, 'nil') || isKw(t, 'not');
 
   // The target of an assignment is a name and any number of steps, which is
-  // an expression of names and indexes: anything else cannot be assigned to.
-  // Step 6 adds `.name`.
+  // an expression of names, indexes and fields: anything else cannot be
+  // assigned to.
   function targetOf(e: Expr, pos: Pos): Target | null {
     const steps: Step[] = [];
     let r = e;
-    while (r.kind === 'index') {
-      steps.unshift({ kind: 'index', pos: r.pos, index: r.index });
+    while (r.kind === 'index' || r.kind === 'field') {
+      steps.unshift(r.kind === 'index'
+        ? { kind: 'index', pos: r.pos, index: r.index }
+        : { kind: 'field', pos: r.pos, name: r.name });
       r = r.target;
     }
     if (r.kind !== 'name') return null;
