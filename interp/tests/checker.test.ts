@@ -39,3 +39,23 @@ test("a list whose head isn't an operator", () => {
 test("an error in a branch nothing evaluates is still found", () => {
   assert.equal(checked("(+ 1 (foo))"), "1:7 unknown name foo");
 });
+
+test("booleans, comparisons and if", () => {
+  assert.equal(checked("(if (< 1 2) #true #false)"), "ok");
+  assert.equal(checked("(== #true 1)"), "ok");
+  assert.equal(checked("#true"), "ok");
+});
+
+test("an if with other than three parts, even in a branch never taken (D13, D28)", () => {
+  assert.equal(checked("(if #true 1)"), "1:1 if takes 3 arguments, not 2");
+  assert.equal(checked("(if)"), "1:1 if takes 3 arguments, not 0");
+  assert.equal(checked("(if #true 1 2 3)"), "1:1 if takes 3 arguments, not 4");
+  assert.equal(checked("(if #false (+ 1 2 3) 0)"), "1:12 + takes 2 arguments, not 3");
+  assert.equal(checked("(if #true 0 (if 1 2))"), "1:15 if takes 3 arguments, not 2");
+});
+
+test("if on its own is an unknown name, and #true is no operator", () => {
+  assert.equal(checked("(+ 1 if)"), "1:6 unknown name if");
+  assert.equal(checked("(#true 1 2)"), "1:1 a list must start with an operator");
+  assert.equal(checked("#maybe"), "1:1 unknown name #maybe");
+});

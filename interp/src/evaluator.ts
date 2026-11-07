@@ -16,7 +16,7 @@ const fit = (x: bigint): bigint => {
 
 // Both operands must be integers (D11, D17); this is each operator's
 // first check, so a boolean is reported before any other fault.
-const ints = (f: (a: bigint, b: bigint) => bigint): Op => (a, b) => {
+const ints = (f: (a: bigint, b: bigint) => Value): Op => (a, b) => {
   if (typeof a !== "bigint" || typeof b !== "bigint") throw new Fault("not an integer");
   return f(a, b);
 };
@@ -27,6 +27,13 @@ export const OPERATORS: Map<string, Op> = new Map([
   ["*", ints((a, b) => fit(a * b))],
   // bigint / and % truncate toward zero, remainder with the dividend's
   // sign, which is D5; only the zero divisor is ours to catch.
+  ["<", ints((a, b) => a < b)],
+  ["<=", ints((a, b) => a <= b)],
+  [">", ints((a, b) => a > b)],
+  [">=", ints((a, b) => a >= b)],
+  // typeof first and === only: JS's == would coerce (D12).
+  ["==", (a, b) => a === b],
+  ["!=", (a, b) => a !== b],
   ["/", ints((a, b) => { if (b === 0n) throw new Fault("division by zero"); return fit(a / b); })],
   ["%", ints((a, b) => { if (b === 0n) throw new Fault("division by zero"); return a % b; })],
 ]);
@@ -34,9 +41,17 @@ export const OPERATORS: Map<string, Op> = new Map([
 export function evaluate(f: Form): Value {
   switch (f.t) {
     case "int":
+    case "bool":
       return f.v;
     case "list": {
-      const op = OPERATORS.get((f.items[0] as { name: string }).name)!;
+      const name = (f.items[0] as { name: string }).name;
+      if (name === "if") {
+        // Only the taken branch is evaluated (D13).
+        const test = evaluate(f.items[1]);
+        if (typeof test !== "boolean") throw new Fault("not a boolean");
+        return evaluate(f.items[test ? 2 : 3]);
+      }
+      const op = OPERATORS.get(name)!;
       // Left operand completely, then the right, then the operator (D25).
       const a = evaluate(f.items[1]);
       const b = evaluate(f.items[2]);
