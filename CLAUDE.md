@@ -20,21 +20,20 @@ interpreter in TypeScript on Node, steps 0 to 5 of
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). Step 0 is built:
-the host's answers are in `DESIGN.md` (committed before any code), and
-D30 to D34 are the interpreter's own defaults, written then because
-nothing could be asked. The reader, the checker and the evaluator
-exist, with `bin/lang.ts` on top, and only integers and booleans run:
-golden tests 000 to 001, 010 to 015, 020 to 024, 030 to 036 and 040 to 045
-pass on Node 22 and 24, and 30 unit tests in `interp/tests/`. Steps 1 to
-4 are built: `**`, with the guard against a huge exponent that the host
-can't take (D18, D19), and the earlier steps, which are: `+ - * / %` (D3 to D6), the booleans and the six comparisons (D11,
-D12), `if` (D13), and the five bit operations (D15 to D17), with the
-errors before running that D33 gives them. Step 3's open point, which
-fault reports for `(bit/shl #true 99)`, is settled by D32 as the
-interpreter's default. **Next:** step 5 (tests 050 to 069). Not agreed,
-from main: which fault reports when one operator could fault two ways.
-D32 is the interpreter's default for it, and step 3 is where it bites.
+interpreter reports before evaluating (D28, exit 2). The host's answers are in
+`DESIGN.md`, committed before any code, and D30 to D34 are the interpreter's own
+defaults, written by its builder because nothing could be asked. Steps 0 to 5 are
+built, one commit each, at the small tier where the steps say medium (see that
+session's report): integers and booleans; `+ - * / %` with D6's faults (tests 010
+to 015); the six comparisons and `if` (020 to 024); the five bit operations (030
+to 036); `**`, guarded against a huge exponent the host would build (040 to 045);
+and `within`, with D27's two counts (050 to 069). All 46 golden tests pass on Node
+22 and on Node 24 (`make test` and `make golden-node`), with 39 unit tests in
+`interp/tests/`. **Next:** the steps after 5 are still the template's placeholders
+in `PLAN.md`, so the next one starts with a proposal. Not agreed, from main: which
+fault reports when one operator could fault two ways. D32 is the interpreter's
+default: the operands' types first, then the count or divisor, then overflow. The
+golden tests fix only that a count comes before overflow (034).
 
 ## Read first, in this order
 

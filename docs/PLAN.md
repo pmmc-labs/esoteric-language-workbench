@@ -6,9 +6,9 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Steps 0 to 4 are built: integers, booleans, the five arithmetic
-operators, the comparisons, `if`, the bit operations and `**` (tests 000,
-001, 010 to 015, 020 to 024, 030 to 036 and 040 to 045). Next: step 5.
+Steps 0 to 5 are built: the calculator of main, all 46 golden tests
+passing on Node 22 and 24. Steps 6 onward are still placeholders, to be
+proposed first.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -126,7 +126,7 @@ Size: medium. Referee: none new.
   056, at step 5, raises 1 to 4611686018427387903.
 - Tests 040 to 045.
 
-### 5. A budget: `(within n expr)` (to build)
+### 5. A budget: `(within n expr)` (done)
 
 Size: medium. Referee: none new; it holds D21 to D25 as main's step 5
 proposed them.
