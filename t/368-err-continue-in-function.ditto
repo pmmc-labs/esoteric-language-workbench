@@ -1,0 +1,6 @@
+fn skip() {
+  continue
+}
+for i in 1..3 {
+  skip()
+}

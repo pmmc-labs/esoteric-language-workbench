@@ -1,0 +1,10 @@
+fn ping(n) {
+  if n == 0 { return 0 }
+  return pong(n - 1) + 1
+}
+fn pong(n) {
+  if n == 0 { return 0 }
+  return ping(n - 1) + 1
+}
+print(ping(999))
+print(ping(1000))

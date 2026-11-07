@@ -1,0 +1,2 @@
+t/376-err-fn-brace-next-line.ditto:1:7: error: expected '{', found newline
+exit: 2

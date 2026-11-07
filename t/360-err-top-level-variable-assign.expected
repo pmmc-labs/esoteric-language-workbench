@@ -1,0 +1,2 @@
+t/360-err-top-level-variable-assign.ditto:3:3: error: total is a top-level variable; functions see only their parameters and their own variables
+exit: 2

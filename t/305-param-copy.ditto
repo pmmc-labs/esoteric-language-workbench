@@ -1,0 +1,60 @@
+// A parameter is a variable of the function: assigning to it changes
+// nothing in the caller, even when the caller's variable has the same name.
+fn bump(n) {
+  n += 1
+  n = n * 2
+  return n
+}
+
+fn clobber(n) {
+  n = 0
+  return n
+}
+
+fn relay(n) {
+  let z = clobber(n)
+  return n * 10 + z
+}
+
+fn swap_score(a, b) {
+  let t = a
+  a = b
+  b = t
+  return a * 100 + b
+}
+
+fn count_down(n) {
+  let steps = 0
+  while n > 0 {
+    n -= 1
+    steps += 1
+  }
+  return steps
+}
+
+// Each recursive call has its own n: it is still the same n when the call
+// returns.
+fn rebuild(n) {
+  if n < 10 { return n }
+  let head = rebuild(n / 10)
+  return head * 10 + n % 10
+}
+
+let n = 5
+let m = bump(n)
+print(n, m)
+print(bump(n), bump(bump(n)), n)
+
+let a = 3
+let b = 4
+print(swap_score(a, b), a, b)
+print(swap_score(b, a), a, b)
+
+n = 7
+print(relay(n), n)
+print(count_down(n), n)
+print(count_down(0), count_down(-3))
+for i in 1..=3 {
+  print(i, bump(i), i)
+}
+print(rebuild(0), rebuild(7), rebuild(1234567), rebuild(9223372036854775807))

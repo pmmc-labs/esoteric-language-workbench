@@ -1,0 +1,3 @@
+nil
+t/319-fault-nil-result.ditto:3:9: fault: cannot use + on int and nil
+exit: 1

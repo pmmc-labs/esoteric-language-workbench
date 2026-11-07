@@ -90,6 +90,25 @@ test('integer operators: truncating division, checked arithmetic', () => {
   assert.equal(r.status, 0);
 });
 
+test('the call depth: 1000 nested calls are allowed, the 1001st faults at its call', () => {
+  const ok = cprog('depth-ok', `
+    dt_path = "x.ditto";
+    for (int i = 0; i < 1000; i++) dt_enter(1, 1);
+    for (int i = 0; i < 1000; i++) dt_leave();
+    for (int i = 0; i < 1000; i++) dt_enter(1, 1);
+    printf("deep\\n");
+    return 0;`);
+  assert.equal(ok.out, 'deep\n');
+  assert.equal(ok.status, 0);
+  const over = cprog('depth-over', `
+    dt_path = "x.ditto";
+    for (int i = 0; i < 1000; i++) dt_enter(1, 1);
+    dt_enter(5, 6);
+    return 0;`);
+  assert.equal(over.out, 'x.ditto:5:6: fault: stack overflow (more than 1000 nested calls)\n');
+  assert.equal(over.status, 1);
+});
+
 test('equality is structural across types and never faults', () => {
   const r = cprog('eq', `
     Value v[] = {dt_nil(), dt_bool(true), dt_bool(false), dt_int(0), dt_int(1)};

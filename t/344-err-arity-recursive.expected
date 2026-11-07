@@ -1,0 +1,2 @@
+t/344-err-arity-recursive.ditto:3:10: error: count takes 1 argument, got 2
+exit: 2

@@ -1,0 +1,2 @@
+t/366-err-function-not-value-assign.ditto:2:1: error: functions are not values
+exit: 2

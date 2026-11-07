@@ -25,6 +25,27 @@ test('statements come out in source order', () => {
   assert.ok(at[0] > 0 && at[0] < at[1] && at[1] < at[2], String(at));
 });
 
+test('functions are prototyped, defined before main, and called between enter and leave', () => {
+  const c = compile('print(f(1))\nfn f(a) {\n  return a\n}', 'a.ditto');
+  assert.match(c, /Value f_f\(Value v_a\);/);
+  const proto = c.indexOf('Value f_f(Value v_a);');
+  const def = c.indexOf('Value f_f(Value v_a) {');
+  const main = c.indexOf('int main(void)');
+  assert.ok(proto > 0 && proto < def && def < main, String([proto, def, main]));
+  // The body returns its value, and falls off the end with nil.
+  assert.match(c.slice(def, main), /return t\d+;/);
+  assert.match(c.slice(def, main), /return dt_nil\(\);\n}/);
+  // The call: arguments first, then enter (at the name), the call, leave.
+  const at = ['dt_int(', 'dt_enter(1, 7)', 'f_f(', 'dt_leave()', 'dt_b_print('].map((s) => c.indexOf(s, main));
+  assert.ok(at.every((n) => n > 0), String(at));
+  assert.deepEqual([...at].sort((a, b) => a - b), at);
+});
+
+test('a function called before its definition is prototyped first', () => {
+  const c = compile('fn a() { return b() }\nfn b() { return a() }', 'a.ditto');
+  assert.ok(c.indexOf('Value f_b(void);') < c.indexOf('Value f_a(void) {'));
+});
+
 test('compile errors carry position and message', () => {
   assert.throws(() => compile('foo(1)', 'a.ditto'), (e: any) => e.message === 'unknown function foo');
 });

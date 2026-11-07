@@ -1,0 +1,28 @@
+fn is_even(n) {
+  if n == 0 { return true }
+  return is_odd(n - 1)
+}
+
+fn is_odd(n) {
+  if n == 0 { return false }
+  return is_even(n - 1)
+}
+
+// Hofstadter's Female and Male sequences.
+fn female(n) {
+  if n == 0 { return 1 }
+  return n - male(female(n - 1))
+}
+
+fn male(n) {
+  if n == 0 { return 0 }
+  return n - female(male(n - 1))
+}
+
+for n in 0..=12 {
+  print(n, is_even(n), is_odd(n))
+}
+print(is_even(100), is_odd(101), is_even(555), is_odd(556))
+for n in 0..=40 {
+  print(n, female(n), male(n))
+}

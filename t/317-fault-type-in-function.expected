@@ -1,0 +1,3 @@
+3
+t/317-fault-type-in-function.ditto:2:12: fault: cannot use + on int and bool
+exit: 1

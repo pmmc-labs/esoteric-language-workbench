@@ -1,0 +1,2 @@
+t/348-err-duplicate-function.ditto:2:4: error: duplicate function twice
+exit: 2

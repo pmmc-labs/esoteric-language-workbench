@@ -1,0 +1,2 @@
+t/359-err-top-level-variable-read.ditto:3:14: error: limit is a top-level variable; functions see only their parameters and their own variables
+exit: 2

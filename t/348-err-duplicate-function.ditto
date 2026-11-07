@@ -1,0 +1,2 @@
+fn twice(n) { return 2 * n }
+fn twice(n) { return n + n }

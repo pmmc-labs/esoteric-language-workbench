@@ -1,0 +1,4 @@
+fn f(n) {
+  return g(n)
+}
+print(f(1))

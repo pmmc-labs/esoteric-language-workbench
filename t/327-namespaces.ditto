@@ -1,0 +1,23 @@
+// Variables and functions have separate names; a function sees none of the
+// top level's variables, so its own names are free.
+fn double(n) { return n * 2 }
+let double = double(4)
+print(double)
+print(double(double))
+
+fn k(k) { return k + 1 }
+print(k(k(1)))
+
+let print = 5
+print(print + 1)
+
+let x = 1
+fn f(x) {
+  let y = x + 1
+  return y
+}
+fn g() {
+  let x = 10
+  return x
+}
+print(f(x + 1), g(), x)

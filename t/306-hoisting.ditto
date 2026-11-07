@@ -1,0 +1,25 @@
+// Functions are defined before anything runs, so a call can be written
+// above the function, and a function can call one written below it.
+print(triple(4), add_all(1, 2, 3))
+print(from_below(5))
+
+fn from_below(n) {
+  return twice(n) + thrice(n)
+}
+
+fn twice(n) { return 2 * n }
+
+print(twice(thrice(2)))
+let result = triple(triple(2))
+print(result)
+
+fn triple(n) { return 3 * n }
+fn thrice(n) { return triple(n) }
+
+fn add_all(a, b, c) { return a + b + c }
+fn no_params() { return 42 }
+
+print(no_params(), no_params() + 1)
+for i in 1..=3 {
+  print(twice(i), thrice(i))
+}

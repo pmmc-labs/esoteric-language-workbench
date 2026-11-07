@@ -1,0 +1,43 @@
+fn noisy(n) {
+  print(n)
+  return n + 1
+}
+noisy(1)
+(noisy(2))
+let r = noisy(3)
+print(r)
+
+fn small(n) {
+  print(n)
+  return n < 3
+}
+let i = 0
+while small(i) {
+  i += 1
+}
+print(i)
+
+fn first_over(limit) {
+  for k in 1..100 {
+    if k * k > limit { return k }
+  }
+  return nil
+}
+for n in 1..10 {
+  if n == 3 { continue }
+  if n == 6 { break }
+  print(n, first_over(n * 10))
+}
+
+fn count_to_limit(limit) {
+  let c = 0
+  while true {
+    c += 1
+    if c >= limit { break }
+  }
+  return c
+}
+print(count_to_limit(5))
+
+fn bound(n) { print(n); return n * 2 }
+for j in bound(1)..bound(2) { print(j) }

@@ -1,0 +1,29 @@
+fn fib(n) {
+  if n < 2 { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+
+fn fib_iter(n) {
+  let a = 0
+  let b = 1
+  for i in 0..n {
+    let t = a + b
+    a = b
+    b = t
+  }
+  return a
+}
+
+// Carries the last two values along, so it is one call per step.
+fn fib_acc(n, a, b) {
+  if n == 0 { return a }
+  return fib_acc(n - 1, b, a + b)
+}
+
+for n in 0..=20 {
+  print(n, fib(n), fib_iter(n), fib_acc(n, 0, 1))
+}
+for n in 85..=91 {
+  print(n, fib_iter(n), fib_acc(n, 0, 1))
+}
+print(fib(24) == fib_iter(24), fib(10) + fib(11) == fib(12), fib(12) - fib(11) == fib(10))

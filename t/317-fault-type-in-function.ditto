@@ -1,0 +1,5 @@
+fn add_flag(n, flag) {
+  return n + flag
+}
+print(add_flag(1, 2))
+print(add_flag(1, true))

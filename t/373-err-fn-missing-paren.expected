@@ -1,0 +1,2 @@
+t/373-err-fn-missing-paren.ditto:1:6: error: expected '(', found '{'
+exit: 2

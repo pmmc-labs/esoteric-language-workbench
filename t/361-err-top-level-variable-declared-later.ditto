@@ -1,0 +1,5 @@
+fn show() {
+  return count
+}
+let count = 3
+print(show())

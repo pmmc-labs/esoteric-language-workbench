@@ -1,0 +1,19 @@
+fn add3(a, b, c,) {
+  return a + b + c
+}
+fn wide(
+  first,
+  second,
+) {
+  return first * second
+}
+print(add3(1, 2, 3,))
+print(wide(
+  6,
+  7,
+))
+print(add3(
+  1,
+  2,
+  3
+))

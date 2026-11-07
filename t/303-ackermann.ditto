@@ -1,0 +1,12 @@
+fn ack(m, n) {
+  if m == 0 { return n + 1 }
+  if n == 0 { return ack(m - 1, 1) }
+  return ack(m - 1, ack(m, n - 1))
+}
+
+for m in 0..=3 {
+  for n in 0..=5 {
+    print(m, n, ack(m, n))
+  }
+}
+print(ack(2, 20), ack(3, 6))

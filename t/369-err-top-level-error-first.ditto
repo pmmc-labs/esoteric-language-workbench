@@ -1,0 +1,2 @@
+print(missing)
+fn f() { return nothing_here }

@@ -1,0 +1,31 @@
+// 1000 nested calls is the most a program may make: depth(999) is the call
+// for 999, 998, ... 0.
+fn depth(n) {
+  if n == 0 { return 0 }
+  return 1 + depth(n - 1)
+}
+
+fn ping(n) {
+  if n == 0 { return 0 }
+  return pong(n - 1) + 1
+}
+
+fn pong(n) {
+  if n == 0 { return 0 }
+  return ping(n - 1) + 1
+}
+
+fn sum_to(n) {
+  if n == 0 { return 0 }
+  return n + sum_to(n - 1)
+}
+
+print(depth(999))
+print(depth(999), depth(998) + depth(1))
+for i in 1..=5 {
+  print(i, depth(999) - 999 + i)
+}
+print(ping(999), pong(999), ping(500) + pong(500))
+print(sum_to(999))
+print(depth(depth(500)))
+print(depth(10 + depth(200)))

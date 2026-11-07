@@ -1,0 +1,2 @@
+t/347-err-unknown-function-in-function.ditto:2:10: error: unknown function g
+exit: 2

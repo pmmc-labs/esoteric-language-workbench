@@ -1,0 +1,2 @@
+fn ten() { return 10 }
+print(ten(5))

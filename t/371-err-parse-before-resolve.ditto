@@ -1,0 +1,4 @@
+fn f() {
+  return nothing_here
+}
+print(1 +)

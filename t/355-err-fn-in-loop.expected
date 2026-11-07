@@ -1,0 +1,2 @@
+t/355-err-fn-in-loop.ditto:2:3: error: functions are defined at the top level
+exit: 2

@@ -1,0 +1,2 @@
+print(later(1, 2))
+fn later(a) { return a }

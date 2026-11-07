@@ -1,0 +1,2 @@
+t/341-err-arity-too-few.ditto:2:7: error: add takes 2 arguments, got 1
+exit: 2

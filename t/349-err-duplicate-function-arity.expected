@@ -1,0 +1,2 @@
+t/349-err-duplicate-function-arity.ditto:3:4: error: duplicate function f
+exit: 2

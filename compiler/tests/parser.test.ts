@@ -237,5 +237,58 @@ test('step 2 parse errors', () => {
   parseError('while {\n}', "expected an expression, found '{'", 1, 7);
   parseError('print(1..2)', "expected ')', found '..'", 1, 8);
   parseError('else {', "expected a statement, found 'else'", 1, 1);
-  parseError('fn', "expected a statement, found 'fn'", 1, 1);
+  parseError('fn', 'expected a name, found end of file', 1, 3);
+});
+
+// Step 3: functions.
+test('fn parses a name, parameters and a body; return is bare or has a value', () => {
+  const p = ast('fn gcd(a, b) {\n  return a\n}\nfn none() { return }').body as any[];
+  assert.equal(p[0].kind, 'fn');
+  assert.deepEqual(p[0].pos, at(1, 1));
+  assert.equal(p[0].name, 'gcd');
+  assert.deepEqual(p[0].namePos, at(1, 4));
+  assert.deepEqual(p[0].params.map((x: any) => [x.name, x.pos.col]), [['a', 8], ['b', 11]]);
+  assert.equal(p[0].body[0].kind, 'return');
+  assert.deepEqual(p[0].body[0].pos, at(2, 3));
+  assert.equal(sx(p[0].body[0].value), 'a');
+  assert.deepEqual(p[1].params, []);
+  assert.equal(p[1].body[0].value, null);
+});
+
+test('a bare return ends at a newline, a semicolon or a brace', () => {
+  for (const src of ['fn f() { return }', 'fn f() { return; }', 'fn f() {\n return\n}']) {
+    assert.equal((ast(src).body[0] as any).body[0].value, null, src);
+  }
+  assert.equal(sx((ast('fn f() { return 1 + 2 }').body[0] as any).body[0].value), '(+ 1 2)');
+});
+
+test('parameters and arguments may end with a comma and break across lines', () => {
+  const p = ast('fn f(\n a,\n b,\n) { }\nprint(f(\n1,\n2,\n))').body as any[];
+  assert.deepEqual(p[0].params.map((x: any) => x.name), ['a', 'b']);
+});
+
+test('a call to a user function parses like any call', () => {
+  const e = (ast('print(gcd(1, 2))').body[0] as any).expr.args[0];
+  assert.equal(sx(e), 'gcd(1 2)');
+});
+
+test('fn is a top-level statement only', () => {
+  parseError('fn f() {\n  fn g() { }\n}', 'functions are defined at the top level', 2, 3);
+  parseError('if true {\n  fn g() { }\n}', 'functions are defined at the top level', 2, 3);
+  parseError('while true { fn g() { } }', 'functions are defined at the top level', 1, 14);
+  // The error is the keyword's, before anything after it is read.
+  parseError('if true { fn }', 'functions are defined at the top level', 1, 11);
+});
+
+test('step 3 parse errors', () => {
+  parseError('fn 1() { }', "expected a name, found '1'", 1, 4);
+  parseError('fn if() { }', "expected a name, found 'if'", 1, 4);
+  parseError('fn f { }', "expected '(', found '{'", 1, 6);
+  parseError('fn f(1) { }', "expected a name, found '1'", 1, 6);
+  parseError('fn f(a b) { }', "expected ')', found 'b'", 1, 8);
+  parseError('fn f(a,,) { }', "expected a name, found ','", 1, 8);
+  parseError('fn f()\n{ }', "expected '{', found newline", 1, 7);
+  parseError('fn f() {\n return 1\n', "expected '}', found end of file", 3, 1);
+  parseError('fn f() { return ) }', "expected an expression, found ')'", 1, 17);
+  parseError('fn f() { } fn g() { }', "expected newline, found 'fn'", 1, 12);
 });

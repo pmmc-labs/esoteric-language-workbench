@@ -1,0 +1,3 @@
+999
+t/313-fault-stack-overflow-mutual.ditto:7:10: fault: stack overflow (more than 1000 nested calls)
+exit: 1

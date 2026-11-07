@@ -1,0 +1,2 @@
+t/375-err-fn-parameter-missing-comma.ditto:1:8: error: expected ')', found 'b'
+exit: 2

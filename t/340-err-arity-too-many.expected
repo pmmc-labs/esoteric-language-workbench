@@ -1,0 +1,2 @@
+t/340-err-arity-too-many.ditto:3:7: error: add takes 2 arguments, got 3
+exit: 2

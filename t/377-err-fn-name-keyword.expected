@@ -1,0 +1,2 @@
+t/377-err-fn-name-keyword.ditto:1:4: error: expected a name, found 'if'
+exit: 2

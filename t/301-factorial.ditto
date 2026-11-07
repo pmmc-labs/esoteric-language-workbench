@@ -1,0 +1,25 @@
+fn fact(n) {
+  if n == 0 { return 1 }
+  return n * fact(n - 1)
+}
+
+fn fact_loop(n) {
+  let r = 1
+  for i in 2..=n { r *= i }
+  return r
+}
+
+fn binomial(n, k) {
+  return fact(n) / (fact(k) * fact(n - k))
+}
+
+for n in 0..=20 {
+  print(n, fact(n), fact_loop(n))
+}
+
+for n in 0..=8 {
+  for k in 0..=n {
+    print(n, k, binomial(n, k))
+  }
+}
+print(binomial(20, 10), binomial(20, 1), binomial(15, 7))

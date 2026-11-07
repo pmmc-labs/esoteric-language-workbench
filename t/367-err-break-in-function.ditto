@@ -1,0 +1,6 @@
+fn stop() {
+  break
+}
+while true {
+  stop()
+}

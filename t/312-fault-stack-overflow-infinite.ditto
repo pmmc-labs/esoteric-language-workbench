@@ -1,0 +1,6 @@
+fn forever(n) {
+  return forever(n + 1)
+}
+print(1)
+forever(0)
+print(2)

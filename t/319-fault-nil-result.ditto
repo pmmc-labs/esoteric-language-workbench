@@ -1,0 +1,3 @@
+fn nothing() { }
+print(nothing())
+print(1 + nothing())

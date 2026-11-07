@@ -1,0 +1,7 @@
+fn show(n) {
+  print(n)
+  return n
+}
+show(1)
+show(2 / 0)
+show(3)

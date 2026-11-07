@@ -1,0 +1,15 @@
+fn say(n) {
+  print(n)
+  return n
+}
+fn pair(a, b) {
+  print(a, b)
+  return a - b
+}
+fn announce(n) { print(n * 100); return n }
+
+print(say(1) + say(2) * say(3))
+print(pair(say(10), pair(say(20), say(30))))
+print(announce(announce(1) + announce(2)))
+print(false and say(9) == 9, true or say(8) == 8)
+print(true and say(7) == 7)

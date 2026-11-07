@@ -1,0 +1,2 @@
+t/345-err-arity-before-arguments.ditto:2:7: error: f takes 2 arguments, got 3
+exit: 2

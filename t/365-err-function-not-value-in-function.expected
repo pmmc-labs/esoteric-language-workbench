@@ -1,0 +1,2 @@
+t/365-err-function-not-value-in-function.ditto:2:17: error: functions are not values
+exit: 2

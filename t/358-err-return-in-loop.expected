@@ -1,0 +1,2 @@
+t/358-err-return-in-loop.ditto:2:3: error: return outside a function
+exit: 2

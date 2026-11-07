@@ -1,0 +1,2 @@
+t/354-err-fn-in-if.ditto:2:3: error: functions are defined at the top level
+exit: 2

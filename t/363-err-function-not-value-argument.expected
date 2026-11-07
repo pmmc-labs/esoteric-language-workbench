@@ -1,0 +1,2 @@
+t/363-err-function-not-value-argument.ditto:2:7: error: functions are not values
+exit: 2

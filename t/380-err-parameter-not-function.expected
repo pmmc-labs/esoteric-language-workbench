@@ -1,0 +1,2 @@
+t/380-err-parameter-not-function.ditto:2:10: error: unknown function g
+exit: 2
