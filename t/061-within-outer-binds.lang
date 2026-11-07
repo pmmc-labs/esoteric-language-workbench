@@ -1,0 +1,2 @@
+; Budgets, D23: an inner budget does not give more than the outer has left. Expected output by hand from step 5.
+(within 1 (within 5 (+ (+ 1 2) 3)))

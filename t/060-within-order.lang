@@ -1,0 +1,2 @@
+; Budgets, D22 and D25: left to right, the multiplication takes the one operation and the division is refused. Expected output by hand from step 5.
+(within 1 (+ (* 2 3) (/ 1 0)))

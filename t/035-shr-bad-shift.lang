@@ -1,0 +1,3 @@
+; (bit/shr 7 -1) faults, after a value is computed: the fault
+; ends the program before anything prints. From t/models/bits.py.
+(+ (* 2 3) (bit/shr 7 -1))

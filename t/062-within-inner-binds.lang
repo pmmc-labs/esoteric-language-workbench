@@ -1,0 +1,2 @@
+; Budgets, D23: the outer budget does not widen the inner. Expected output by hand from step 5.
+(within 5 (within 1 (+ (+ 1 2) 3)))

@@ -1,0 +1,3 @@
+; D33: str/char past 10FFFF is not a character. test 083.
+; Expected output and this program from t/models/strings.py.
+(str/cat "x" (str/char 1114112))

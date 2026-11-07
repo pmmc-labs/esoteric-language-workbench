@@ -1,0 +1,3 @@
+; D33: operands are checked left to right, each for its type. test 084.
+; Expected output and this program from t/models/strings.py.
+(str/at 5 #true)
