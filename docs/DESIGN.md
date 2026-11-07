@@ -100,14 +100,37 @@ value adds its lines.
   `process.exitCode`, never `process.exit`, so a pipe isn't cut off.
   Nothing is written to stdout before the program ends, so a fault
   leaves stdout empty (D6).
-- **Depth**: Node's stack takes some thousands of recursive calls and
-  then throws `RangeError`, in a message of its own, at a depth that
-  differs between versions and machines. **Overrides** (D30): the
-  reader keeps its own stack and has no limit of its own, and a form
-  nested more than 1000 deep is an error before running, so the
-  evaluator's recursion is far inside the host's. Test 010 nests 147.
-- **Not in the language yet** (strings, floats, collections, tail
-  calls, time): answered when a step brings them.
+- **Depth of nesting in the source**: Node's stack takes some thousands
+  of recursive calls and then throws `RangeError`, in a message of its
+  own, at a depth that differs between versions and machines.
+  **Overrides** (D30): the reader keeps its own stack and has no limit
+  of its own, and a form nested more than 1000 deep is an error before
+  running, so the checker's recursion, which follows the source, is far
+  inside the host's. Test 010 nests 147. (Step 6 corrects D30's
+  evaluator line: the evaluator no longer recurses on the host at all,
+  see Calls below.)
+- **Calls and tail calls** (D31 to D33): Node has no tail calls, and a
+  function that calls itself in tail position would grow the host's
+  stack once per iteration. **Overrides**: the evaluator is a loop over
+  an explicit stack of frames the interpreter owns, so no program call
+  is a host call; a tail call replaces the caller's frame and adds
+  nothing (tests 074, 077, 088, 100,000 iterations past the host's
+  limit).
+- **Depth of calls** (D34): the host's stack gives out at a depth that
+  differs between versions and machines, which is the reason D34 gives
+  for a fixed number. **Overrides**: the evaluator counts the calls in
+  progress on its own stack and faults `stack` at 10,001 (tests 078,
+  079, 081, 086). The same under both Nodes is `make golden-node`.
+- **Names as keys** (D31): a parameter or a function's name is a key of
+  a `Map`, never a property of a plain object, so a name such as
+  `constructor` or `__proto__` is an ordinary name and not a property
+  the host already has. **Overrides** (unit tests in `interp/tests/`).
+- **Arguments' order** (D25, D32): JS evaluates an argument list left to
+  right, but the call is evaluated one argument at a time, with the
+  order written out, as an operator's operands are. **Inherits** the
+  order, written out (test 084).
+- **Not in the language yet** (strings, floats, collections, closures,
+  time): answered when a step brings them.
 
 ## Values and memory
 
