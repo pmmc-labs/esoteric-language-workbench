@@ -258,6 +258,24 @@ the C compiler (a program's output would differ between the cloud
 machine's gcc and the person's clang); right to left (nothing for it,
 and the referee and the models already read left to right).
 
+**D30. Nesting is limited to 1000 deep, an error before running; and a
+fault in the interpreter itself exits 3.** *(Default, written by the
+builder of the interpreter's step 0, which could not ask; fair to
+revisit.)* The evaluator recurses on Node's stack, which gives out at a
+depth that varies with the Node version and the machine, in words of its
+own. A fixed limit checked by the reader makes the same program behave
+the same under every Node (`make golden-node`) and keeps the evaluator
+far inside the stack: `FILE:LINE:COL: nested too deeply (limit 1000)` at
+the form that opens the 1001st level, exit 2. The golden tests nest at
+most 147. D28 names `lang: internal error: ...` for a fault in the
+interpreter but no status; 3 keeps it apart from a program's fault (1)
+and an error before running (2). Rejected: no limit, catching the host's
+`RangeError` (the depth would differ between Nodes and the failure
+would come mid-run, perhaps after a `within` had charged); a trampoline
+or an explicit evaluation stack (machinery for a depth no program has,
+though the calculator has no calls, so nesting is all the depth there
+is); exit 1 for an internal error (indistinguishable from a fault).
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
