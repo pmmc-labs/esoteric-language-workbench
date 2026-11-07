@@ -178,3 +178,17 @@ test("each run starts with a fresh budget", () => {
   assert.equal(run("(within 1 (+ 1 1))"), "2");
   assert.equal(run("(within 1 (+ 1 1))"), "2");
 });
+
+// Names are keys of a Map, never properties of a plain object (D31): a
+// parameter or function named as a host property is an ordinary name.
+test("names the host has as properties are ordinary names (D31)", () => {
+  assert.equal(run("(def (f constructor __proto__) (+ constructor __proto__)) (f 1 2)"), "3");
+  assert.equal(run("(def (toString) 7) (toString)"), "7");
+  assert.equal(run("(def (f hasOwnProperty) hasOwnProperty) (f 4)"), "4");
+});
+
+test("functions: a call is charged, its arguments first (D32, D25)", () => {
+  assert.equal(run("(def (f x) x) (within 1 (f (+ 1 2)))"), "fault: budget spent");
+  assert.equal(run("(def (f x y) x) (f 1 (/ 1 0))"), "fault: division by zero");
+  assert.equal(run("(def (f x y) x) (f (/ 1 0) (+ #true 1))"), "fault: division by zero");
+});

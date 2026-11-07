@@ -7,9 +7,7 @@ import { CheckError, Fault } from "../src/errors.ts";
 // `fault: NAME`, or `error L:C message`. Host exceptions pass through.
 export function run(src: string): string {
   try {
-    const f = read(src);
-    check(f);
-    return show(evaluate(f));
+    return show(evaluate(check(read(src))));
   } catch (e) {
     if (e instanceof Fault) return `fault: ${e.message}`;
     if (e instanceof CheckError) return `error ${e.line}:${e.col} ${e.message}`;

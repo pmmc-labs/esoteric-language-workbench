@@ -1,7 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { read, MAX_DEPTH } from "../src/reader.ts";
+import { read as readAll, MAX_DEPTH } from "../src/reader.ts";
 import { CheckError } from "../src/errors.ts";
+
+// One form, for the programs that are one (a program of more is the
+// checker's, D31).
+const read = (src: string) => {
+  const fs = readAll(src);
+  assert.equal(fs.length, 1);
+  return fs[0];
+};
 
 const err = (src: string) => {
   try { read(src); } catch (e) {
@@ -47,11 +55,14 @@ test("comments run to the end of the line", () => {
   assert.equal(read("(+ 1 ;)\n 2)").t, "list");
 });
 
-test("errors: nothing, two programs, unbalanced", () => {
+test("a program is a sequence of forms, read in order (D31)", () => {
+  assert.deepEqual(readAll("(def (f) 1) 2").map((f) => f.t), ["list", "int"]);
+  assert.deepEqual(readAll("1 2").map((f) => (f as { v: bigint }).v), [1n, 2n]);
+});
+
+test("errors: nothing, unbalanced", () => {
   assert.equal(err(""), "1:1 expected an expression");
   assert.equal(err("; only a comment\n"), "2:1 expected an expression");
-  assert.equal(err("1 2"), "1:3 unexpected form after the program");
-  assert.equal(err("(+ 1 2) (+ 3 4)"), "1:9 unexpected form after the program");
   assert.equal(err("(+ 1 2))"), "1:8 unmatched )");
   assert.equal(err("(+ 1\n  (* 2 3)"), "1:1 unclosed (");
 });
