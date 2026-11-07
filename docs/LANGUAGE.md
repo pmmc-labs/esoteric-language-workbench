@@ -186,6 +186,7 @@ Setting a step on something that isn't a list or a map faults:
 after step 1 the current value at the full path is read (faulting as a
 lookup would), then the right-hand side is evaluated, then the operator
 is applied as in an expression, with its faults pointing at the `+=`.
+(Step 5, D43.)
 
 ## Expressions
 
@@ -462,8 +463,9 @@ Expects `a string`.
 
 **`sort(xs)`**: the elements of the list in ascending order, by `<`;
 equal elements keep their order. A pair that `<` can't compare faults
-as `<` would, at `sort`: `cannot use < on int and string`. Expects
-`a list`.
+as `<` would, at `sort`: `cannot use < on int and string`, with the
+later element of the pair named first (`sort([1, "a"])` is `cannot use <
+on string and int`; D43). Expects `a list`.
 
 **`slice(x, from, to)`**: the elements (or bytes) of a list (or string)
 from index `from` up to but not including `to`. Unless
@@ -497,4 +499,4 @@ the printed form of anything else), at `fail`. Never returns.
 (Builtins arrive with the step for their types: `print` in step 0 and 1,
 `str`, `len`, `int`, `lower`, `upper`, `slice` on strings, `read` and
 `fail` in step 4 (done), `words`, `split`, `join`, `sort` and `slice` on
-lists in step 5, `keys` and `remove` in step 6.)
+lists in step 5 (done, D43), `keys` and `remove` in step 6.)

@@ -18,6 +18,10 @@ export const BUILTINS: Record<string, { arity: number | null }> = {
   slice: { arity: 3 },
   read: { arity: 0 },
   fail: { arity: 1 },
+  sort: { arity: 1 },
+  split: { arity: 2 },
+  join: { arity: 2 },
+  words: { arity: 1 },
 };
 
 // A function body (and the top level) has a stack of block scopes and a count
@@ -75,6 +79,8 @@ function resolveExpr(ctx: Ctx, e: Expr): Expr {
       return { ...e, parts: e.parts.map((p) => (p.kind === 'text' ? p : { ...p, expr: resolveExpr(ctx, p.expr) })) };
     case 'index':
       return { ...e, target: resolveExpr(ctx, e.target), index: resolveExpr(ctx, e.index) };
+    case 'list':
+      return { ...e, items: e.items.map((x) => resolveExpr(ctx, x)) };
     case 'unary':
       return { ...e, operand: resolveExpr(ctx, e.operand) };
     case 'binary':
@@ -107,8 +113,10 @@ function resolveBlock(ctx: Ctx, body: Stmt[], first?: string): Stmt[] {
 }
 
 function resolveTarget(ctx: Ctx, t: Target): Target {
-  // The index expressions of a path's steps are resolved here (step 5).
-  return { ...t, cname: useName(ctx, t.name, t.pos), steps: t.steps };
+  // The variable first, then each step's index, left to right.
+  const cn = useName(ctx, t.name, t.pos);
+  const steps = t.steps.map((st) => (st.kind === 'index' ? { ...st, index: resolveExpr(ctx, st.index) } : st));
+  return { ...t, cname: cn, steps };
 }
 
 function resolveIter(ctx: Ctx, it: Iter): Iter {

@@ -63,7 +63,22 @@ round trips, case and slice, two `read()` tests with `.stdin`, text
 algorithms, a random program), faults 411 to 455, semantics 460 to 470
 and errors 480 to 497 are by hand; 301 golden tests and 128 unit tests,
 green under `cc`, clang and the sanitizers. Builder default awaiting
-review: D42. **Next:** step 5, lists and the core rule.
+review: D42.
+Step 5 (lists and the core rule) is done: list literals (items any
+expressions, trailing comma, broken across lines), indexing, `+`, `==`
+and the orderings (lexicographic, item pairs faulting as `<` would), `in`,
+`for` over a list, assignment and compound assignment to a path of index
+steps (keys evaluated, then the current value for a compound one, then the
+right-hand side; the spine rebuilt from the inside out with `dt_set_index`,
+D7), and the builtins `sort split join words` and `slice` on lists; the
+printed form of lists with nested strings quoted (D24); the faults and
+errors of the plan; `t/models/lists.py` writes golden tests 500 to 511
+(literals, indexing, comparison pools, `in`, loops, `sort`, the DESIGN.md
+sorts, text builtins, path updates, the core rule's cases, two random
+programs against Python lists deep-copied at every store), faults 512 to
+559, semantics 560 to 574 and errors 575 to 597 are by hand; 399 golden
+tests and 149 unit tests, green under `cc`, clang and the sanitizers.
+Builder default awaiting review: D43. **Next:** step 6, maps.
 
 ## Read first, in this order
 

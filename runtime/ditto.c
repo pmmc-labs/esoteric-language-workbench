@@ -106,6 +106,22 @@ Value dt_str_new(const char *bytes, int64_t len) {
   return dt_str(s);
 }
 
+/* Lists -------------------------------------------------------------------- */
+
+/* A list of n items, not yet filled in: only the function that calls this
+   writes it, before anyone else can see it (D7). */
+static struct List *list_alloc(int64_t n) {
+  struct List *l = dt_alloc(sizeof(struct List) + (size_t)n * sizeof(Value));
+  l->len = n;
+  return l;
+}
+
+Value dt_list_new(int64_t n, const Value *items) {
+  struct List *l = list_alloc(n);
+  if (n > 0) memcpy(l->items, items, (size_t)n * sizeof(Value));
+  return dt_list(l);
+}
+
 /* One-byte strings, built on first use: indexing and `for` make many. */
 static Value byte_str(unsigned char c) {
   static struct Str *cache[256];
@@ -120,6 +136,12 @@ static _Noreturn void type_fault2(int line, int col, const char *op, Value a, Va
 /* The overflow checks are written out rather than using __builtin_*_overflow,
    which is a compiler extension. */
 Value dt_add(int line, int col, Value a, Value b) {
+  if (a.tag == T_LIST && b.tag == T_LIST) {
+    struct List *l = list_alloc(a.l->len + b.l->len);
+    if (a.l->len > 0) memcpy(l->items, a.l->items, (size_t)a.l->len * sizeof(Value));
+    if (b.l->len > 0) memcpy(l->items + a.l->len, b.l->items, (size_t)b.l->len * sizeof(Value));
+    return dt_list(l);
+  }
   if (a.tag == T_STR && b.tag == T_STR) {
     struct Str *s = dt_alloc(sizeof(struct Str) + (size_t)a.s->len + (size_t)b.s->len + 1);
     s->len = a.s->len + b.s->len;
@@ -183,8 +205,9 @@ void dt_need_bool(int line, int col, const char *op, Value v) {
   if (v.tag != T_BOOL) dt_fault(line, col, "cannot use %s on %s", op, type_name(v));
 }
 
-/* Ordering is for ints and strings now (bytes, unsigned, a prefix first);
-   lists join at step 5. */
+/* Ordering is for ints, strings (bytes, unsigned, a prefix first) and lists
+   (item by item with these same rules, a prefix first). An uncomparable pair,
+   met inside lists too, faults with the operator the program wrote. */
 static int compare_str(const struct Str *a, const struct Str *b) {
   int64_t n = a->len < b->len ? a->len : b->len;
   int c = n == 0 ? 0 : memcmp(a->bytes, b->bytes, (size_t)n);
@@ -194,6 +217,14 @@ static int compare_str(const struct Str *a, const struct Str *b) {
 
 static int compare(int line, int col, const char *op, Value a, Value b) {
   if (a.tag == T_STR && b.tag == T_STR) return compare_str(a.s, b.s);
+  if (a.tag == T_LIST && b.tag == T_LIST) {
+    int64_t n = a.l->len < b.l->len ? a.l->len : b.l->len;
+    for (int64_t k = 0; k < n; k++) {
+      int c = compare(line, col, op, a.l->items[k], b.l->items[k]);
+      if (c != 0) return c;
+    }
+    return a.l->len < b.l->len ? -1 : a.l->len > b.l->len ? 1 : 0;
+  }
   if (a.tag != T_INT || b.tag != T_INT) type_fault2(line, col, op, a, b);
   return a.i < b.i ? -1 : a.i > b.i ? 1 : 0;
 }
@@ -210,7 +241,13 @@ bool dt_equal(Value a, Value b) {
     case T_BOOL: return a.b == b.b;
     case T_INT: return a.i == b.i;
     case T_STR: return a.s->len == b.s->len && (a.s->len == 0 || memcmp(a.s->bytes, b.s->bytes, (size_t)a.s->len) == 0);
-    default: return false; /* lists and maps arrive with later steps */
+    case T_LIST:
+      if (a.l->len != b.l->len) return false;
+      for (int64_t k = 0; k < a.l->len; k++) {
+        if (!dt_equal(a.l->items[k], b.l->items[k])) return false;
+      }
+      return true;
+    default: return false; /* maps arrive with step 6 */
   }
 }
 
@@ -226,12 +263,14 @@ void dt_need_range_bound(int line, int col, Value v) {
 
 int64_t dt_iter_len(int line, int col, Value v) {
   if (v.tag == T_STR) return v.s->len;
+  if (v.tag == T_LIST) return v.l->len;
   dt_fault(line, col, "cannot iterate over %s", type_name(v));
 }
 
 Value dt_iter_item(Value v, int64_t i) {
   if (v.tag == T_STR) return byte_str((unsigned char)v.s->bytes[i]);
-  dt_fault(0, 0, "internal error: iteration over a list or map arrives with steps 5 and 6");
+  if (v.tag == T_LIST) return v.l->items[i];
+  dt_fault(0, 0, "internal error: iteration over a map arrives with step 6");
 }
 
 /* Calls ------------------------------------------------------------------- */
@@ -269,8 +308,8 @@ static void buf_str(Buf *b, const char *s) { buf_put(b, s, strlen(s)); }
 
 /* Appends the printed form of v (LANGUAGE.md, str). `quoted` is true inside a
    list or map, and in `not a number`, where strings get quotes with \\ \" \n
-   \t \r escaped and every other byte as it is (D24); lists and maps arrive
-   with steps 5 and 6. */
+   \t \r escaped and every other byte as it is (D24); maps arrive with
+   step 6. */
 static void put_value(Buf *b, Value v, bool quoted) {
   switch (v.tag) {
     case T_NIL: buf_str(b, "nil"); break;
@@ -296,6 +335,14 @@ static void put_value(Buf *b, Value v, bool quoted) {
         }
       }
       buf_put(b, "\"", 1);
+      break;
+    case T_LIST:
+      buf_put(b, "[", 1);
+      for (int64_t k = 0; k < v.l->len; k++) {
+        if (k > 0) buf_str(b, ", ");
+        put_value(b, v.l->items[k], true);
+      }
+      buf_put(b, "]", 1);
       break;
     default: dt_fault(0, 0, "internal error: cannot print tag %d", v.tag);
   }
@@ -421,13 +468,14 @@ Value dt_b_upper(int line, int col, int argc, const Value *argv) {
 Value dt_b_slice(int line, int col, int argc, const Value *argv) {
   (void)argc;
   Value x = argv[0];
-  if (x.tag != T_STR) expected_fault(line, col, "slice", "a list or string", x);
+  if (x.tag != T_STR && x.tag != T_LIST) expected_fault(line, col, "slice", "a list or string", x);
   if (argv[1].tag != T_INT) expected_fault(line, col, "slice", "an int", argv[1]);
   if (argv[2].tag != T_INT) expected_fault(line, col, "slice", "an int", argv[2]);
-  int64_t from = argv[1].i, to = argv[2].i, len = x.s->len;
+  int64_t from = argv[1].i, to = argv[2].i, len = x.tag == T_STR ? x.s->len : x.l->len;
   if (from < 0 || from > to || to > len) {
     dt_fault(line, col, "slice %" PRId64 "..%" PRId64 " out of range (length %" PRId64 ")", from, to, len);
   }
+  if (x.tag == T_LIST) return dt_list_new(to - from, x.l->items + from);
   return dt_str_new(x.s->bytes + from, to - from);
 }
 
@@ -451,6 +499,12 @@ Value dt_b_fail(int line, int col, int argc, const Value *argv) {
 /* Lookups and membership --------------------------------------------------- */
 
 bool dt_try_index(int line, int col, Value c, Value i, Value *out) {
+  if (c.tag == T_LIST) {
+    if (i.tag != T_INT) dt_fault(line, col, "list index must be an int, got %s", type_name(i));
+    if (i.i < 0 || i.i >= c.l->len) return false;
+    *out = c.l->items[i.i];
+    return true;
+  }
   if (c.tag == T_STR) {
     if (i.tag != T_INT) dt_fault(line, col, "string index must be an int, got %s", type_name(i));
     if (i.i < 0 || i.i >= c.s->len) return false;
@@ -463,7 +517,20 @@ bool dt_try_index(int line, int col, Value c, Value i, Value *out) {
 Value dt_index(int line, int col, Value c, Value i) {
   Value out;
   if (dt_try_index(line, col, c, i, &out)) return out;
-  dt_fault(line, col, "index %" PRId64 " out of range (length %" PRId64 ")", i.i, c.s->len);
+  dt_fault(line, col, "index %" PRId64 " out of range (length %" PRId64 ")", i.i,
+           c.tag == T_LIST ? c.l->len : c.s->len);
+}
+
+Value dt_set_index(int line, int col, Value c, Value i, Value v) {
+  if (c.tag != T_LIST) dt_fault(line, col, "cannot assign into %s", type_name(c));
+  if (i.tag != T_INT) dt_fault(line, col, "list index must be an int, got %s", type_name(i));
+  if (i.i < 0 || i.i >= c.l->len) {
+    dt_fault(line, col, "index %" PRId64 " out of range (length %" PRId64 ")", i.i, c.l->len);
+  }
+  struct List *l = list_alloc(c.l->len);
+  memcpy(l->items, c.l->items, (size_t)c.l->len * sizeof(Value));
+  l->items[i.i] = v;
+  return dt_list(l);
 }
 
 bool dt_in(int line, int col, Value x, Value c) {
@@ -474,5 +541,119 @@ bool dt_in(int line, int col, Value x, Value c) {
     }
     return false;
   }
+  if (c.tag == T_LIST) {
+    for (int64_t k = 0; k < c.l->len; k++) {
+      if (dt_equal(x, c.l->items[k])) return true;
+    }
+    return false;
+  }
   type_fault2(line, col, "in", x, c);
+}
+
+/* Builtins on lists -------------------------------------------------------- */
+
+/* A stable merge sort by `<`. The right item goes first only when it is
+   strictly less than the left one, so the pair compared is always (later,
+   earlier) and an uncomparable pair faults as `later < earlier` would. */
+static void merge_sort(int line, int col, Value *a, Value *tmp, int64_t n) {
+  if (n < 2) return;
+  int64_t mid = n / 2, i = 0, j = mid, k = 0;
+  merge_sort(line, col, a, tmp, mid);
+  merge_sort(line, col, a + mid, tmp, n - mid);
+  while (i < mid && j < n) {
+    if (compare(line, col, "<", a[j], a[i]) < 0) tmp[k++] = a[j++];
+    else tmp[k++] = a[i++];
+  }
+  while (i < mid) tmp[k++] = a[i++];
+  while (j < n) tmp[k++] = a[j++];
+  memcpy(a, tmp, (size_t)n * sizeof(Value));
+}
+
+Value dt_b_sort(int line, int col, int argc, const Value *argv) {
+  (void)argc;
+  Value x = argv[0];
+  if (x.tag != T_LIST) expected_fault(line, col, "sort", "a list", x);
+  Value r = dt_list_new(x.l->len, x.l->items);
+  Value *tmp = dt_alloc(sizeof(Value) * (size_t)(x.l->len > 0 ? x.l->len : 1));
+  merge_sort(line, col, r.l->items, tmp, r.l->len);
+  return r;
+}
+
+/* The list of the n strings made from the (start, length) pairs. */
+static Value pieces_list(const char *base, const int64_t *spans, int64_t n) {
+  struct List *l = list_alloc(n);
+  for (int64_t k = 0; k < n; k++) l->items[k] = dt_str_new(base + spans[2 * k], spans[2 * k + 1]);
+  return dt_list(l);
+}
+
+Value dt_b_split(int line, int col, int argc, const Value *argv) {
+  (void)argc;
+  if (argv[0].tag != T_STR) expected_fault(line, col, "split", "a string", argv[0]);
+  if (argv[1].tag != T_STR) expected_fault(line, col, "split", "a string", argv[1]);
+  if (argv[1].s->len == 0) dt_fault(line, col, "split: empty separator");
+  const char *s = argv[0].s->bytes, *sep = argv[1].s->bytes;
+  int64_t n = argv[0].s->len, m = argv[1].s->len, count = 1, k = 0, start = 0;
+  /* Occurrences are found left to right and do not overlap. */
+  for (k = 0; k + m <= n;) {
+    if (memcmp(s + k, sep, (size_t)m) == 0) { count++; k += m; } else k++;
+  }
+  int64_t *spans = dt_alloc(sizeof(int64_t) * 2 * (size_t)count);
+  int64_t at = 0;
+  for (k = 0; k + m <= n;) {
+    if (memcmp(s + k, sep, (size_t)m) == 0) {
+      spans[2 * at] = start; spans[2 * at + 1] = k - start; at++;
+      k += m; start = k;
+    } else k++;
+  }
+  spans[2 * at] = start; spans[2 * at + 1] = n - start;
+  return pieces_list(s, spans, count);
+}
+
+static bool is_space(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
+
+Value dt_b_words(int line, int col, int argc, const Value *argv) {
+  (void)argc;
+  if (argv[0].tag != T_STR) expected_fault(line, col, "words", "a string", argv[0]);
+  const char *s = argv[0].s->bytes;
+  int64_t n = argv[0].s->len, count = 0, k = 0;
+  for (k = 0; k < n;) {
+    while (k < n && is_space(s[k])) k++;
+    if (k == n) break;
+    while (k < n && !is_space(s[k])) k++;
+    count++;
+  }
+  int64_t *spans = dt_alloc(sizeof(int64_t) * 2 * (size_t)(count > 0 ? count : 1));
+  int64_t at = 0;
+  for (k = 0; k < n;) {
+    while (k < n && is_space(s[k])) k++;
+    if (k == n) break;
+    int64_t start = k;
+    while (k < n && !is_space(s[k])) k++;
+    spans[2 * at] = start; spans[2 * at + 1] = k - start; at++;
+  }
+  return pieces_list(s, spans, count);
+}
+
+Value dt_b_join(int line, int col, int argc, const Value *argv) {
+  (void)argc;
+  Value xs = argv[0];
+  if (xs.tag != T_LIST) expected_fault(line, col, "join", "a list of strings", xs);
+  for (int64_t k = 0; k < xs.l->len; k++) {
+    if (xs.l->items[k].tag != T_STR) expected_fault(line, col, "join", "a list of strings", xs.l->items[k]);
+  }
+  if (argv[1].tag != T_STR) expected_fault(line, col, "join", "a string", argv[1]);
+  const struct Str *sep = argv[1].s;
+  size_t total = 0;
+  for (int64_t k = 0; k < xs.l->len; k++) total += (size_t)xs.l->items[k].s->len;
+  if (xs.l->len > 1) total += (size_t)(xs.l->len - 1) * (size_t)sep->len;
+  struct Str *r = dt_alloc(sizeof(struct Str) + total + 1);
+  r->len = (int64_t)total;
+  size_t at = 0;
+  for (int64_t k = 0; k < xs.l->len; k++) {
+    if (k > 0) { memcpy(r->bytes + at, sep->bytes, (size_t)sep->len); at += (size_t)sep->len; }
+    memcpy(r->bytes + at, xs.l->items[k].s->bytes, (size_t)xs.l->items[k].s->len);
+    at += (size_t)xs.l->items[k].s->len;
+  }
+  r->bytes[total] = '\0';
+  return dt_str(r);
 }

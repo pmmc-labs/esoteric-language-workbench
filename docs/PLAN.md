@@ -9,7 +9,8 @@ planned and step 9 is held in reserve for friction the examples show.
 tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
 62 unit tests); step 2 done (variables and control flow; 151 golden tests,
 88 unit tests); step 3 done (functions; 216 golden tests, 105 unit
-tests); step 4 done (strings; 301 golden tests, 128 unit tests); step 5 next.
+tests); step 4 done (strings; 301 golden tests, 128 unit tests); step 5 done
+(lists and the core rule; 399 golden tests, 149 unit tests); step 6 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -183,7 +184,20 @@ Lookups are runtime functions that report a miss (`dt_try_index`,
   `upper`, `slice`; and a `.stdin` test for `read()`.
 - **Size:** large.
 
-### 5. Lists and the core rule
+### 5. Lists and the core rule **(done)**
+
+Landed as planned. Differences: tests 500 to 597 (the model writes 500 to
+511: ten fixed programs and two random ones, which run generated lets,
+copies, slices, path updates, appends, calls that change their parameter
+and loops that change what they iterate, against Python lists deep-copied
+at every store; faults 512 to 559, semantics 560 to 574 including two
+`.stdin` tests, and compile errors 575 to 597 are by hand, positions
+counted from markers in the source); default D43. The runtime has
+`dt_list_new` and `dt_set_index`; the lookups in codegen are `dt_index`,
+the set of a path is `dt_set_index` at each level of the spine, innermost
+first, so step 6 fills in a map key and a `.name` step in `evalSteps`,
+`lookup` and `setStep`. `==` on maps is still false (none can be made).
+`sort` compares (later, earlier) so the pair that faults is defined.
 
 - List literals, indexing, `+`, `==` and `<`, `in`, `for` over a list,
   assignment to a path of list indexes (D7) and compound assignment on

@@ -411,6 +411,44 @@ them with `dt_interp`. Rejected: parsing `.name` now to give
 `setjmp` for misses (D20 rejects it); building each literal on every
 evaluation (allocation per iteration for no gain).
 
+**D43. Step 5 details the spec left open.** *(default)* Sorting: `sort`
+is a stable merge sort that puts the right item first only when it is
+strictly less than the left one, so the pair it compares is always
+(later, earlier) and an uncomparable pair faults as `later < earlier`
+would: `sort([1, "a"])` is `cannot use < on string and int`, and a list
+of fewer than two elements never faults. Ordering a pair of lists compares
+the items one by one with `<`'s own rules, so `[nil] <= [nil]` is
+`cannot use <= on nil and nil` (an item pair is not tested for `==`
+first), with the operator the program wrote. Builtin checks go left to
+right, each argument whole before the next: `split` the string, then the
+separator, then `split: empty separator`; `join` the list and then every
+one of its items (the item's type is named), then the separator. `join`
+accepts an empty separator; `split` and `words` pieces are new strings.
+The set of an assignment checks the container's type first (`cannot assign
+into T`, so a string indexed by a bad key says that), then the key's type,
+then its range. Parsing: the target of an assignment is parsed as an
+expression and then read back as a name with index steps, so `(xs)[0] = 1`
+assigns (as `(x) = 1` does, D39) and a list literal, a call, a string or an
+operator at the root is `cannot assign to this` at the statement's first
+token; a `[` at the start of a line starts a statement, so `xs` newline
+`[0] = 1` is two statements. A list literal's items are any expressions;
+a missing comma is `expected ']', found '2'`. Codegen: an indexed
+assignment computes the keys, then (compound only) the current value by the
+lookups an expression would make, then the right-hand side and the
+operator; `store` then looks up every step but the last, sets the last with
+`dt_set_index` and sets each level back into the one above, innermost
+first; for a compound assignment the lookups run twice, which only costs
+time since they cannot fail the second time. Every update copies the list
+it changes and memory is never freed (D26), so the tests keep lists
+small (a swap in an insertion sort of 30 items is two 480-byte copies).
+`==` on two maps stays false until step 6, since no map can be made yet.
+Rejected: insertion sort or a different comparison order for `sort` (the
+(later, earlier) rule is what any stable algorithm that tests `later <
+earlier` does, and the model needs a pair it can state); testing `==`
+before `<` inside lists (a second rule); a store that mutates a list nobody
+else holds (D7 rejects it); evaluating a compound assignment's path once
+and keeping the containers (a second code path for the same result).
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,

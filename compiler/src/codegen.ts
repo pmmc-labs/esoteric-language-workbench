@@ -84,6 +84,18 @@ export function codegen(program: Program, path: string): string {
         emit(depth, `Value ${t} = dt_interp(${vals.length}, a${temps});`);
         return t;
       }
+      case 'list': {
+        // Every item is computed in order, then the list is built once.
+        const vals = e.items.map((x) => expr(x, depth));
+        const t = `t${++temps}`;
+        if (vals.length === 0) {
+          emit(depth, `Value ${t} = dt_list_new(0, NULL);`);
+        } else {
+          emit(depth, `Value a${temps}[] = {${vals.join(', ')}};`);
+          emit(depth, `Value ${t} = dt_list_new(${vals.length}, a${temps});`);
+        }
+        return t;
+      }
       case 'index': {
         const c = expr(e.target, depth);
         const i = expr(e.index, depth);
@@ -134,21 +146,59 @@ export function codegen(program: Program, path: string): string {
 
   // An assignment evaluates, in order: the target's index expressions, the
   // current value at the path (compound only), the right-hand side, the
-  // operator, then stores. A target is a variable and its steps (steps 5 and
-  // 6 add `[i]` and `.f`: index temporaries here, a rebuilt spine in
-  // `store`); until then a target is a variable.
+  // operator, then stores (LANGUAGE.md, Assignment). A target is a variable
+  // and its steps. `evalSteps` computes each step's key into a temporary;
+  // `load` looks the whole path up as an expression would; `store` looks up
+  // every step but the last, sets the last, and rebuilds the spine from the
+  // inside out (D7: nothing is written, each level is a new value). Step 6's
+  // `.name` is a second kind of step: a key that is a string, a lookup
+  // and a set that fault with their own messages.
   function evalSteps(t: Target, depth: number): string[] {
-    return t.steps.map(() => { throw new Error(`internal: path steps arrive in step 5 (${depth})`); });
+    return t.steps.map((st) => {
+      if (st.kind === 'index') return expr(st.index, depth);
+      throw new Error('internal: a field step arrives in step 6');
+    });
   }
 
-  function load(t: Target, _steps: string[], depth: number): string {
+  // The value one step down from `c`, faulting at the step as an expression would.
+  function lookup(st: Target['steps'][number], c: string, key: string, depth: number): string {
     const r = `t${++temps}`;
-    emit(depth, `Value ${r} = ${t.cname};`);
+    emit(depth, `Value ${r} = dt_index(${st.pos.line}, ${st.pos.col}, ${c}, ${key});`);
     return r;
   }
 
-  function store(t: Target, _steps: string[], value: string, depth: number) {
-    emit(depth, `${t.cname} = ${value};`);
+  // `c` with the step's key set to `v`: a new value.
+  function setStep(st: Target['steps'][number], c: string, key: string, v: string, depth: number): string {
+    const r = `t${++temps}`;
+    emit(depth, `Value ${r} = dt_set_index(${st.pos.line}, ${st.pos.col}, ${c}, ${key}, ${v});`);
+    return r;
+  }
+
+  function load(t: Target, steps: string[], depth: number): string {
+    let r = `t${++temps}`;
+    emit(depth, `Value ${r} = ${t.cname};`);
+    t.steps.forEach((st, k) => { r = lookup(st, r, steps[k], depth); });
+    return r;
+  }
+
+  function store(t: Target, steps: string[], value: string, depth: number) {
+    if (t.steps.length === 0) {
+      emit(depth, `${t.cname} = ${value};`);
+      return;
+    }
+    // containers[k] is the value the k-th step acts on.
+    let r = `t${++temps}`;
+    emit(depth, `Value ${r} = ${t.cname};`);
+    const containers = [r];
+    for (let k = 0; k < t.steps.length - 1; k++) {
+      r = lookup(t.steps[k], r, steps[k], depth);
+      containers.push(r);
+    }
+    let built = value;
+    for (let k = t.steps.length - 1; k >= 0; k--) {
+      built = setStep(t.steps[k], containers[k], steps[k], built, depth);
+    }
+    emit(depth, `${t.cname} = ${built};`);
   }
 
   // The statements of a Ditto block, in the C block the caller opened.

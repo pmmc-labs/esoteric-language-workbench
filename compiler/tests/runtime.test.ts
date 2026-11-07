@@ -323,7 +323,7 @@ test('lists: lookups report a miss, fault on a wrong type, and name the length',
     ['dt_index(2, 3, dt_nil(), dt_int(0));', 'x.ditto:2:3: fault: cannot index nil\n'],
   ];
   for (const [i, [call, out]] of bad.entries()) {
-    const c = cprog(`list-index-bad-${i}`, `dt_path = "x.ditto"; Value l = ${L(I(1))}, o; (void)l; ${call} return 0;`);
+    const c = cprog(`list-index-bad-${i}`, `dt_path = "x.ditto"; Value l = ${L(I(1))}, o; (void)l; (void)o; ${call} return 0;`);
     assert.equal(c.out, out);
     assert.equal(c.status, 1);
   }

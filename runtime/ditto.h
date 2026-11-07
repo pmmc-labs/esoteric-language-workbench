@@ -38,6 +38,7 @@ static inline Value dt_nil(void) { Value v; v.tag = T_NIL; v.i = 0; return v; }
 static inline Value dt_bool(bool b) { Value v; v.tag = T_BOOL; v.i = 0; v.b = b; return v; }
 static inline Value dt_int(int64_t i) { Value v; v.tag = T_INT; v.i = i; return v; }
 static inline Value dt_str(struct Str *s) { Value v; v.tag = T_STR; v.i = 0; v.s = s; return v; }
+static inline Value dt_list(struct List *l) { Value v; v.tag = T_LIST; v.i = 0; v.l = l; return v; }
 
 /* Bump allocator over large malloc'ed chunks kept on a global list, never
    freed (D26). Memory is 16-byte aligned; dt_alloc(0) is a valid pointer. */
@@ -54,6 +55,17 @@ _Noreturn void dt_fault(int line, int col, const char *fmt, ...);
 Value dt_str_new(const char *bytes, int64_t len);
 /* The string of `n` parts joined, each as `str` gives it (interpolation). */
 Value dt_interp(int n, const Value *parts);
+
+/* Lists are immutable once built (D7): an update is a new list that shares
+   the old one's items, and nothing here ever writes a List after it is
+   returned. */
+/* A new list holding a copy of the n items (n may be 0; items may then be NULL). */
+Value dt_list_new(int64_t n, const Value *items);
+/* `c` with the item at key `i` replaced by `v`, as a new value: the set of an
+   assignment's last step (LANGUAGE.md, Assignment). Faults, at the step's `[`,
+   `cannot assign into T` unless c is a list (checked first), then the key's type
+   and its range. */
+Value dt_set_index(int line, int col, Value c, Value i, Value v);
 
 /* Lookups (LANGUAGE.md, Indexing). The `try` forms store the value and return
    true on a hit, return false on a miss (an index out of range) and fault, as
@@ -94,8 +106,8 @@ void dt_need_cond(int line, int col, Value v);
 /* Faults `range bounds must be ints, got T` unless v is an int (for). */
 void dt_need_range_bound(int line, int col, Value v);
 /* The number of items a `for` over v walks, and item i (from 0). Anything but
-   a string, list or map faults `cannot iterate over T`; lists and maps arrive
-   with steps 5 and 6, so for now only strings (their bytes) do. */
+   a string, list or map faults `cannot iterate over T`; maps arrive with
+   step 6, so for now strings (their bytes) and lists (their items) do. */
 int64_t dt_iter_len(int line, int col, Value v);
 Value dt_iter_item(Value v, int64_t i);
 
@@ -115,6 +127,10 @@ Value dt_b_lower(int line, int col, int argc, const Value *argv);
 Value dt_b_upper(int line, int col, int argc, const Value *argv);
 Value dt_b_slice(int line, int col, int argc, const Value *argv);
 Value dt_b_read(int line, int col, int argc, const Value *argv);
+Value dt_b_sort(int line, int col, int argc, const Value *argv);
+Value dt_b_split(int line, int col, int argc, const Value *argv);
+Value dt_b_join(int line, int col, int argc, const Value *argv);
+Value dt_b_words(int line, int col, int argc, const Value *argv);
 _Noreturn Value dt_b_fail(int line, int col, int argc, const Value *argv);
 
 #endif

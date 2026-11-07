@@ -1,9 +1,8 @@
-// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 4
-// parses expressions on ints, bools, nil and strings, names, calls and
-// indexing, and the statements `fn`, `return`, `let`, assignment, `if`, `while`, `for`, `break`
-// and `continue`;
-// each later step adds members to Expr and Stmt and cases to the functions
-// below.
+// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 5
+// parses expressions on ints, bools, nil, strings and lists, names, calls and
+// indexing, and the statements `fn`, `return`, `let`, assignment to a path of
+// indexes, `if`, `while`, `for`, `break` and `continue`; each later step adds
+// members to Expr and Stmt and cases to the functions below.
 import { compileError } from './errors.ts';
 import type { Pos } from './errors.ts';
 import type { StringPart, Token } from './lexer.ts';
@@ -21,6 +20,8 @@ export type Expr =
   // is its `{`.
   | { kind: 'string'; pos: Pos; parts: StringPartNode[] }
   | { kind: 'index'; pos: Pos; target: Expr; index: Expr }
+  // `pos` is the `[`.
+  | { kind: 'list'; pos: Pos; items: Expr[] }
   // `cname` is filled in by the resolver: the C variable's name.
   | { kind: 'name'; pos: Pos; name: string; cname?: string }
   | { kind: 'unary'; pos: Pos; op: '-' | 'not'; operand: Expr }
@@ -36,9 +37,9 @@ export type StringPartNode =
 
 export type AssignOp = '=' | '+=' | '-=' | '*=' | '/=' | '%=';
 
-// What follows a variable in an assignment target: `[index]` or `.name`
-// (steps 5 and 6). Empty until then, but the shape is here so that a path
-// is a variable and a list of steps.
+// What follows a variable in an assignment target: `[index]` (step 5) or
+// `.name` (step 6). `pos` is the `[` (or the `.`), where a fault in that step
+// points. A path is a variable and a list of steps.
 export type Step =
   | { kind: 'index'; pos: Pos; index: Expr }
   | { kind: 'field'; pos: Pos; name: string };
@@ -220,6 +221,19 @@ export function parse(input: Token[]): Program {
       expect(')');
       return inner;
     }
+    if (isOp(t, '[')) {
+      // Items may end with a comma, like an argument list (LANGUAGE.md,
+      // Literals); the lexer drops the newlines inside the brackets.
+      next();
+      const items: Expr[] = [];
+      while (!isOp(peek(), ']')) {
+        items.push(expr());
+        if (!isOp(peek(), ',')) break;
+        next();
+      }
+      expect(']');
+      return { kind: 'list', pos: t.pos, items };
+    }
     if (t.kind === 'name') {
       if (isOp(tokens[i + 1], '(')) return call();
       next();
@@ -242,8 +256,22 @@ export function parse(input: Token[]): Program {
   }
 
   const startsExpression = (t: Token) =>
-    t.kind === 'int' || t.kind === 'string' || t.kind === 'name' || isOp(t, '(') || isOp(t, '-') ||
+    t.kind === 'int' || t.kind === 'string' || t.kind === 'name' || isOp(t, '(') || isOp(t, '[') || isOp(t, '-') ||
     isKw(t, 'true') || isKw(t, 'false') || isKw(t, 'nil') || isKw(t, 'not');
+
+  // The target of an assignment is a name and any number of steps, which is
+  // an expression of names and indexes: anything else cannot be assigned to.
+  // Step 6 adds `.name`.
+  function targetOf(e: Expr, pos: Pos): Target | null {
+    const steps: Step[] = [];
+    let r = e;
+    while (r.kind === 'index') {
+      steps.unshift({ kind: 'index', pos: r.pos, index: r.index });
+      r = r.target;
+    }
+    if (r.kind !== 'name') return null;
+    return { kind: 'target', pos, name: r.name, steps };
+  }
 
   const isSeparator = (t: Token) => t.kind === 'newline' || isOp(t, ';');
   const ASSIGN_OPS = ['=', '+=', '-=', '*=', '/=', '%='];
@@ -361,10 +389,9 @@ export function parse(input: Token[]): Program {
     // business: `42` parses, then is `expression statement must be a call`.
     const e = expr();
     if (peek().kind === 'op' && ASSIGN_OPS.includes(peek().text)) {
-      // The target is a variable and its steps (paths arrive in step 5).
-      if (e.kind !== 'name') throw compileError(t.pos, 'cannot assign to this');
+      const target = targetOf(e, t.pos);
+      if (target === null) throw compileError(t.pos, 'cannot assign to this');
       const op = operator();
-      const target: Target = { kind: 'target', pos: t.pos, name: e.name, steps: [] };
       return { kind: 'assign', pos: op.pos, op: op.text as AssignOp, target, value: expr() };
     }
     return { kind: 'exprStmt', pos: t.pos, expr: e };
