@@ -178,3 +178,52 @@ test("each run starts with a fresh budget", () => {
   assert.equal(run("(within 1 (+ 1 1))"), "2");
   assert.equal(run("(within 1 (+ 1 1))"), "2");
 });
+
+// Calls (D31 to D34).
+test("a call binds its parameters, and a function sees only its own", () => {
+  assert.equal(run("(def (sq x) (* x x)) (def (f a b) (- a b)) (f (sq 3) (sq 2))"), "5");
+  assert.equal(run("(def (f) 7) (f)"), "7");
+});
+
+test("arguments left to right, the charge, then the body (D25, D32)", () => {
+  assert.equal(run("(def (f a b) a) (f (/ 1 0) (+ #true 1))"), "fault: division by zero");
+  assert.equal(run("(def (f a b) a) (f 1 (+ #true 1))"), "fault: not an integer");
+  // The call is one operation and the + another.
+  assert.equal(run("(def (f x) x) (within 2 (f (+ 1 2)))"), "3");
+  assert.equal(run("(def (f x) x) (within 1 (f (+ 1 2)))"), "fault: budget spent");
+  assert.equal(run("(def (g) (/ 1 0)) (within 1 (g))"), "fault: budget spent");
+  assert.equal(run("(def (g) (/ 1 0)) (within 2 (g))"), "fault: division by zero");
+});
+
+test("a function's body runs under the budgets where it is called (D32)", () => {
+  assert.equal(run("(def (f) (+ 1 2)) (within 2 (f))"), "3");
+  assert.equal(run("(def (f) (within 1 (+ 1 2))) (within 5 (f))"), "3");
+  assert.equal(run("(def (f) (within 5 (+ (+ 1 2) 3))) (within 2 (f))"), "fault: budget spent");
+});
+
+test("depth: 10,000 calls in progress run, the next faults stack (D34)", () => {
+  const sum = "(def (sum n) (if (== n 0) 0 (+ n (sum (- n 1)))))";
+  assert.equal(run(`${sum} (sum 9999)`), "49995000");
+  assert.equal(run(`${sum} (sum 10000)`), "fault: stack");
+  // The charge comes first: 3 ops per level, so 30000 is spent at the call.
+  assert.equal(run(`${sum} (within 30000 (sum 10000))`), "fault: budget spent");
+  assert.equal(run(`${sum} (within 30001 (sum 10000))`), "fault: stack");
+});
+
+test("tail calls add no depth and run in constant space (D33)", () => {
+  const loop = "(def (loop n acc) (if (== n 0) acc (loop (- n 1) (+ acc 1))))";
+  assert.equal(run(`${loop} (loop 1000000 0)`), "1000000");
+  // Mutual tail calls, and the program's own expression is depth 1.
+  assert.equal(run("(def (e n) (if (== n 0) #true (o (- n 1)))) (def (o n) (if (== n 0) #false (e (- n 1)))) (e 100001)"), "#false");
+  // A tail call is still charged.
+  assert.equal(run(`${loop} (within 402 (loop 100 0))`), "100");
+  assert.equal(run(`${loop} (within 401 (loop 100 0))`), "fault: budget spent");
+});
+
+test("a within's body, an operand and a test are not tail calls (D33)", () => {
+  const w = "(def (loop n) (within 100000000 (if (== n 0) 0 (loop (- n 1)))))";
+  assert.equal(run(`${w} (loop 9999)`), "0");
+  assert.equal(run(`${w} (loop 10000)`), "fault: stack");
+  assert.equal(run("(def (f n) (if (f n) 1 2)) (f 0)"), "fault: stack");
+  assert.equal(run("(def (f n) (+ 1 (f n))) (f 0)"), "fault: stack");
+});

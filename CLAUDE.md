@@ -15,20 +15,24 @@ at the end, and what's a candidate but not agreed. The workbench's own:]
 **This is the `interpreter` branch** (D28, D29): the calculator of
 main after step 5, its decisions D3 to D27, its 46 golden tests, its
 models and its referee, built again as a tree-walking interpreter in
-TypeScript on Node, steps 0 to 5 of [`docs/PLAN.md`](docs/PLAN.md).
+TypeScript on Node, steps 0 to 6 of [`docs/PLAN.md`](docs/PLAN.md).
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). **Steps 0 to 5 are
-built; all 46 golden tests pass under both Nodes** (`make test`,
+interpreter reports before evaluating (D28, exit 2). **Steps 0 to 6 are
+built; all 66 golden tests pass under both Nodes** (`make test`,
 `make golden-node`). The host's answers and D30 (nesting limited to
 1000, exit 3 for an interpreter fault) are in `DESIGN.md`; the reader
 keeps its own stack, the checker finds every error before running
 (D28), and the evaluator is a tree-walker over `bigint`s and booleans
 with the budget as `spent` and `limit` (D21 to D24, D27's shape). Where
 one operator could fault two ways it checks types, then the count or
-exponent, then the range. **Next:** nothing agreed; step 6 (local
-bindings) is a stub in the plan. Not agreed, from main: which fault
+exponent, then the range. Step 6 (D31 to D34) adds functions: the reader gives every top-level
+form, the checker sorts definitions from the one expression and finds
+every D31 error, and the evaluator keeps its own stack of tasks and
+values, so 10,000 calls in progress never touch the host's stack; a
+call is a tail call when the task beneath it is the return to its
+caller. **Next:** nothing agreed; step 7 (heap values) is a stub in the plan. Not agreed, from main: which fault
 reports when one operator could fault two ways.
 
 ## Read first, in this order

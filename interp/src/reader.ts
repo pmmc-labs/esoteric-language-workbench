@@ -16,29 +16,25 @@ export const MAX_DEPTH = 1000;
 
 const DELIMS = new Set([" ", "\t", "\n", "\r", "(", ")", ";"]);
 
-export function read(src: string): Form {
+// The program's top-level forms in order (D31: the checker sorts out which
+// are definitions and which the expression).
+export function read(src: string): Form[] {
   let i = 0, line = 1, col = 1;
   const stack: { items: Form[]; line: number; col: number }[] = [];
-  let top: Form | undefined;
+  const top: Form[] = [];
 
   const adv = () => {
     if (src[i] === "\n") { line++; col = 1; } else col++;
     i++;
   };
-  // A finished form goes into the list being read, or is the program.
-  const put = (f: Form) => {
-    if (stack.length) stack[stack.length - 1].items.push(f);
-    else if (top === undefined) top = f;
-    else throw new CheckError("unexpected form after the program", f.line, f.col);
-  };
+  // A finished form goes into the list being read, or is a top-level form.
+  const put = (f: Form) => (stack.length ? stack[stack.length - 1].items : top).push(f);
 
   while (i < src.length) {
     const c = src[i];
     if (c === ";") { while (i < src.length && src[i] !== "\n") adv(); }
     else if (c === " " || c === "\t" || c === "\n" || c === "\r") adv();
     else if (c === "(") {
-      if (stack.length === 0 && top !== undefined)
-        throw new CheckError("unexpected form after the program", line, col);
       if (stack.length >= MAX_DEPTH)
         throw new CheckError(`nested too deeply (limit ${MAX_DEPTH})`, line, col);
       stack.push({ items: [], line, col });
@@ -66,6 +62,6 @@ export function read(src: string): Form {
     const l = stack[stack.length - 1];
     throw new CheckError("unclosed (", l.line, l.col);
   }
-  if (top === undefined) throw new CheckError("expected an expression", line, col);
+  if (top.length === 0) throw new CheckError("expected an expression", line, col);
   return top;
 }

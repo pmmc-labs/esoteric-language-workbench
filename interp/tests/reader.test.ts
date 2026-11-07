@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { read, MAX_DEPTH } from "../src/reader.ts";
 import { CheckError } from "../src/errors.ts";
 
+// The first top-level form: most tests read one.
+const one = (src: string) => read(src)[0];
 const err = (src: string) => {
   try { read(src); } catch (e) {
     assert.ok(e instanceof CheckError);
@@ -12,13 +14,13 @@ const err = (src: string) => {
 };
 
 test("an integer, with its position", () => {
-  assert.deepEqual(read("  42"), { t: "int", v: 42n, line: 1, col: 3 });
-  assert.deepEqual(read("-7"), { t: "int", v: -7n, line: 1, col: 1 });
+  assert.deepEqual(one("  42"), { t: "int", v: 42n, line: 1, col: 3 });
+  assert.deepEqual(one("-7"), { t: "int", v: -7n, line: 1, col: 1 });
 });
 
 test("the range's edges are accepted", () => {
-  assert.equal((read("4611686018427387903") as any).v, 4611686018427387903n);
-  assert.equal((read("-4611686018427387904") as any).v, -4611686018427387904n);
+  assert.equal((one("4611686018427387903") as any).v, 4611686018427387903n);
+  assert.equal((one("-4611686018427387904") as any).v, -4611686018427387904n);
 });
 
 test("a literal past the range is an error before running", () => {
@@ -27,7 +29,7 @@ test("a literal past the range is an error before running", () => {
 });
 
 test("lists and symbols, each with line and column", () => {
-  const f = read("(+ 1\n   (* 2 3))");
+  const f = one("(+ 1\n   (* 2 3))");
   assert.equal(f.t, "list");
   if (f.t !== "list") return;
   assert.deepEqual([f.line, f.col], [1, 1]);
@@ -37,28 +39,31 @@ test("lists and symbols, each with line and column", () => {
 });
 
 test("a symbol that starts like a number is a symbol", () => {
-  assert.equal(read("+5").t, "sym");
-  assert.equal(read("1a").t, "sym");
-  assert.equal(read("-").t, "sym");
+  assert.equal(one("+5").t, "sym");
+  assert.equal(one("1a").t, "sym");
+  assert.equal(one("-").t, "sym");
 });
 
 test("comments run to the end of the line", () => {
-  assert.equal((read("; one\n42 ; two\n; three") as any).v, 42n);
-  assert.equal(read("(+ 1 ;)\n 2)").t, "list");
+  assert.equal((one("; one\n42 ; two\n; three") as any).v, 42n);
+  assert.equal(one("(+ 1 ;)\n 2)").t, "list");
 });
 
 test("errors: nothing, two programs, unbalanced", () => {
   assert.equal(err(""), "1:1 expected an expression");
   assert.equal(err("; only a comment\n"), "2:1 expected an expression");
-  assert.equal(err("1 2"), "1:3 unexpected form after the program");
-  assert.equal(err("(+ 1 2) (+ 3 4)"), "1:9 unexpected form after the program");
   assert.equal(err("(+ 1 2))"), "1:8 unmatched )");
   assert.equal(err("(+ 1\n  (* 2 3)"), "1:1 unclosed (");
 });
 
 test("nesting is limited, and reads deep without the host's stack", () => {
   const ok = "(".repeat(MAX_DEPTH) + ")".repeat(MAX_DEPTH);
-  assert.equal(read(ok).t, "list");
+  assert.equal(one(ok).t, "list");
   assert.equal(err("(".repeat(MAX_DEPTH + 1) + ")".repeat(MAX_DEPTH + 1)),
     `1:${MAX_DEPTH + 1} nested too deeply (limit ${MAX_DEPTH})`);
+});
+
+test("a program is all its top-level forms, in order (D31)", () => {
+  const fs = read("(def (f) 1)\n(f) 2");
+  assert.deepEqual(fs.map((f) => [f.t, f.line, f.col]), [["list", 1, 1], ["list", 2, 1], ["int", 2, 5]]);
 });

@@ -26,9 +26,7 @@ function main(): number {
     return 2;
   }
   try {
-    const form = read(src);
-    check(form);
-    out(1, show(evaluate(form)) + "\n");
+    out(1, show(evaluate(check(read(src)))) + "\n");
     return 0;
   } catch (e) {
     if (e instanceof CheckError) {

@@ -90,11 +90,59 @@ negative, else `bad budget`, either before the body runs:
 ## Faults
 
 A result that doesn't fit 63 bits, a division by zero, a shift count
-out of range, a negative exponent, an operation past the budget, or a
-negative budget ends the program: `fault: overflow`, `fault: division
+out of range, a negative exponent, an operation past the budget, a
+negative budget, or a call past the depth ends the program: `fault: overflow`, `fault: division
 by zero`, `fault: bad shift`, `fault: bad exponent`, `fault: budget
-spent` or `fault: bad budget` on stderr, and exit 1. Nothing is printed
+spent`, `fault: bad budget` or `fault: stack` on stderr, and exit 1. Nothing is printed
 on stdout.
+
+## Functions
+
+A program may begin with definitions, `(def (name param ...) body)`,
+and ends with one expression. A function has none or more parameters
+and a body, one expression in which the parameters are values. A call
+is `(name arg ...)` with as many arguments as the function has
+parameters:
+
+    (def (sq x) (* x x))
+    (def (hyp2 a b) (+ (sq a) (sq b)))
+    (hyp2 3 4)                         ; 25
+
+Every definition sees every other whatever the order, so functions may
+call themselves and each other. A parameter is visible only in its own
+function. Functions aren't values: a function's name is only ever a
+call's head, and a parameter is only ever a value.
+
+A call evaluates its arguments left to right, is charged as one
+operation (a `within` counts it, with the operators), is checked for
+depth, then evaluates the body. `(within 1 (f (+ 1 2)))` faults
+`budget spent` whatever `f` is, the `+` and the call being two. A
+function's body runs under every budget in force where it is called.
+
+A call in tail position replaces its caller and runs in constant
+space: the body of a function, and both branches of an `if` in tail
+position. Nothing else is: not an operand, a test, an argument, a
+`within`'s budget or body, nor the program's own expression. So a loop
+is a function that ends by calling itself:
+
+    (def (count n acc) (if (== n 0) acc (count (- n 1) (+ acc 1))))
+    (count 1000000 0)                  ; 1000000
+
+A tail call is still charged. Calls that aren't tail calls may be
+10,000 deep, a call in the program's expression making depth 1; the
+call that would be the 10,001st faults `stack`, after its charge and
+before its body. `(sum 9999)` is `49995000` and `(sum 10000)` faults
+for `(def (sum n) (if (== n 0) 0 (+ n (sum (- n 1)))))`.
+
+These are errors before the program runs, found in every definition
+whether or not it is called: a definition after the expression or
+inside one; no expression after the definitions; two definitions of one
+name; a function named for an operator, `if`, `within` or `def`; a `def`
+that isn't a header `(name param ...)` of names and a body; a parameter
+repeated, or named for a function, an operator, `if`, `within` or `def`;
+a call with the wrong number of arguments (`f takes 2 arguments, not
+3`); a name that is neither a parameter in scope nor a call's head; a
+function's name used as a value; a parameter used as a call's head.
 
 ## Programs
 

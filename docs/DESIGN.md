@@ -30,7 +30,8 @@ on, but bring it up before baking it in further.
 Integers of 63 bits (D4) and booleans (D11); seventeen operators on two
 operands each (D3, D5, D12, D15 to D19); `if` (D13) and `within`, a
 budget of operations (D20 to D24); evaluation left to right (D25); a
-fault ends the program (D6). `LANGUAGE.md` has them in full.
+fault ends the program (D6); definitions and calls (D31, D32), tail
+calls (D33) and a depth of 10,000 (D34). `LANGUAGE.md` has them in full.
 
 ## The core rule
 
@@ -153,7 +154,12 @@ Passes, a file each in `interp/src/`: read (forms with their line and
 column), check (every error that D28 says comes before running), and
 evaluate (a tree-walker over the forms, D29). `bin/lang.ts` is the
 driver. The reader is a loop over characters with a stack of its own
-and enforces D30's depth; the checker and evaluator recurse. Errors are
+and enforces D30's depth, and gives every top-level form; the checker
+recurses, sorts the definitions from the expression and returns the
+program (D31); the evaluator keeps a stack of its own (D34): a stack of
+pending tasks, a stack of values, and a count of calls in progress, a
+call being a tail call when the task beneath it is the return to its
+caller (D33). Errors are
 two classes (`interp/src/errors.ts`): `CheckError` (a position, exit 2)
 and `Fault` (a name, exit 1); anything else is an internal error, exit 3
 (D30).

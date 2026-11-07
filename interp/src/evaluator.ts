@@ -76,49 +76,114 @@ export const OPERATORS: Map<string, Op> = new Map([
 type Budget = { spent: bigint; limit: bigint };
 const NO_LIMIT = 1n << 64n;
 
-export function evaluate(f: Form): Value {
-  return ev(f, { spent: 0n, limit: NO_LIMIT });
-}
+// D34: calls in progress, not counting tail calls (D33).
+export const MAX_CALLS = 10_000;
 
-function ev(f: Form, b: Budget): Value {
-  switch (f.t) {
-    case "int":
-    case "bool":
-      return f.v;
-    case "list": {
-      const name = (f.items[0] as { name: string }).name;
-      if (name === "if") {
-        // Only the taken branch is evaluated (D13). Not an operation.
-        const test = ev(f.items[1], b);
-        if (typeof test !== "boolean") throw new Fault("not a boolean");
-        return ev(f.items[test ? 2 : 3], b);
+export type Fn = { params: string[]; body: Form };
+export type Program = { fns: Map<string, Fn>; main: Form };
+
+type List = Extract<Form, { t: "list" }>;
+type Env = Map<string, Value>;
+// The work still to do, on a stack of the evaluator's own: nothing a
+// program does recurses on the host's stack (D34). `ret` marks a call in
+// progress; a call with `ret` on top of the stack has nothing left to do
+// after it, which is a tail call (D33). Anything else waiting (an
+// operator, an `if`'s test, a `within`'s restore) means it isn't one.
+type Task =
+  | { k: "ev"; f: Form; env: Env }
+  | { k: "op"; f: List }
+  | { k: "if"; f: List; env: Env }
+  | { k: "within"; f: List; env: Env }
+  | { k: "restore"; limit: bigint }
+  | { k: "call"; fn: Fn }
+  | { k: "ret" };
+const RET: Task = { k: "ret" };
+
+export function evaluate(p: Program): Value {
+  const b: Budget = { spent: 0n, limit: NO_LIMIT };
+  const tasks: Task[] = [{ k: "ev", f: p.main, env: new Map() }];
+  const vals: Value[] = [];
+  let depth = 0;
+  while (tasks.length) {
+    const t = tasks.pop()!;
+    switch (t.k) {
+      case "ev": {
+        const f = t.f;
+        if (f.t === "int" || f.t === "bool") vals.push(f.v);
+        else if (f.t === "sym") vals.push(t.env.get(f.name)!);
+        else if (f.t === "list") {
+          const name = (f.items[0] as { name: string }).name;
+          // The operands go on the stack last first, so the left comes off
+          // first (D25), written out rather than leaned on.
+          const operands = (from: number, task: Task) => {
+            tasks.push(task);
+            for (let i = f.items.length - 1; i >= from; i--) tasks.push({ k: "ev", f: f.items[i], env: t.env });
+          };
+          if (name === "if") {
+            // Only the taken branch is evaluated (D13). Not an operation.
+            tasks.push({ k: "if", f, env: t.env });
+            tasks.push({ k: "ev", f: f.items[1], env: t.env });
+          } else if (name === "within") {
+            // The budget first, under the budgets already in force (D24).
+            tasks.push({ k: "within", f, env: t.env });
+            tasks.push({ k: "ev", f: f.items[1], env: t.env });
+          } else if (OPERATORS.has(name)) operands(1, { k: "op", f });
+          else operands(1, { k: "call", fn: p.fns.get(name)! });
+        } else throw new Error("evaluate: unchecked form");
+        break;
       }
-      if (name === "within") {
-        // The budget is evaluated first, under the budgets already in
-        // force (D24), then checked, then the body runs under the new one.
-        const n = ev(f.items[1], b);
+      case "if": {
+        const test = vals.pop()!;
+        if (typeof test !== "boolean") throw new Fault("not a boolean");
+        // Pushed after the `if` is gone, so a call in a branch of an `if`
+        // in tail position finds `ret` on top (D33).
+        tasks.push({ k: "ev", f: t.f.items[test ? 2 : 3], env: t.env });
+        break;
+      }
+      case "within": {
+        const n = vals.pop()!;
         if (typeof n !== "bigint") throw new Fault("not an integer");
         if (n < 0n) throw new Fault("bad budget");
-        const saved = b.limit;
-        if (n < b.limit - b.spent) b.limit = b.spent + n;
-        const v = ev(f.items[2], b);
         // What the body didn't use is dropped; the outer has seen every
-        // operation through `spent`.
-        b.limit = saved;
-        return v;
+        // operation through `spent`. Not a tail position (D33): the
+        // restore is work left after the body.
+        tasks.push({ k: "restore", limit: b.limit });
+        if (n < b.limit - b.spent) b.limit = b.spent + n;
+        tasks.push({ k: "ev", f: t.f.items[2], env: t.env });
+        break;
       }
-      const op = OPERATORS.get(name)!;
-      // Left operand completely, then the right, then the charge, then
-      // the operator's own checks (D25, D22).
-      const x = ev(f.items[1], b);
-      const y = ev(f.items[2], b);
-      if (b.spent === b.limit) throw new Fault("budget spent");
-      b.spent++;
-      return op(x, y);
+      case "restore":
+        b.limit = t.limit;
+        break;
+      case "op": {
+        const y = vals.pop()!, x = vals.pop()!;
+        // Charged after the operands, before the operator's own checks (D22).
+        if (b.spent === b.limit) throw new Fault("budget spent");
+        b.spent++;
+        vals.push(OPERATORS.get((t.f.items[0] as { name: string }).name)!(x, y));
+        break;
+      }
+      case "call": {
+        const args = vals.splice(vals.length - t.fn.params.length);
+        // The charge (D32), then the depth (D34), then the body.
+        if (b.spent === b.limit) throw new Fault("budget spent");
+        b.spent++;
+        if (tasks[tasks.length - 1] !== RET) {
+          if (depth === MAX_CALLS) throw new Fault("stack");
+          depth++;
+          tasks.push(RET);
+        }
+        const env: Env = new Map();
+        t.fn.params.forEach((n, i) => env.set(n, args[i]));
+        tasks.push({ k: "ev", f: t.fn.body, env });
+        break;
+      }
+      case "ret":
+        depth--;
+        break;
     }
-    default:
-      throw new Error(`evaluate: unchecked form ${f.t}`);
   }
+  return vals.pop()!;
 }
 
 export function show(v: Value): string {

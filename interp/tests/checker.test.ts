@@ -79,3 +79,57 @@ test("within takes two parts, checked in an untaken branch too (D24, D28)", () =
   assert.equal(checked("(if #false (within 1) 0)"), "1:12 within takes 2 arguments, not 1");
   assert.equal(checked("(+ 1 within)"), "1:6 unknown name within");
 });
+
+// Definitions and calls (D31): each rule is an error before running.
+test("definitions and calls that are fine (D31)", () => {
+  assert.equal(checked("(def (f x) (+ x 1)) (f 2)"), "ok");
+  assert.equal(checked("(def (f) 1) (f)"), "ok");
+  // Every definition sees every other, whatever the order.
+  assert.equal(checked("(def (a) (b)) (def (b) (a)) (a)"), "ok");
+  // A parameter is visible only in its own function.
+  assert.equal(checked("(def (f x) x) (def (g y) y) (g 1)"), "ok");
+  // Names a JS object would answer for are just names (host: Map).
+  assert.equal(checked("(def (constructor toString) toString) (constructor 1)"), "ok");
+  assert.equal(checked("__proto__"), "1:1 unknown name __proto__");
+});
+
+test("definition order and count (D31)", () => {
+  assert.equal(checked("(def (f) 1)"), "1:1 a program needs an expression after its definitions");
+  assert.equal(checked("(def (f) 1) (f) (def (g) 2)"), "1:17 a definition must come before the expression");
+  assert.equal(checked("(def (f) 1) (f) (f)"), "1:17 unexpected form after the program");
+  assert.equal(checked("1 2"), "1:3 unexpected form after the program");
+  assert.equal(checked("(+ 1 (def (f) 1))"), "1:7 def only at the top of the program");
+});
+
+test("a malformed or clashing definition (D31)", () => {
+  assert.equal(checked("(def (f) 1 2) 3"), "1:1 def takes a header and a body, not 3 parts");
+  assert.equal(checked("(def (f)) 3"), "1:1 def takes a header and a body, not 1 parts");
+  assert.equal(checked("(def f 1) 3"), "1:6 def needs (name param ...), names only");
+  assert.equal(checked("(def () 1) 3"), "1:6 def needs (name param ...), names only");
+  assert.equal(checked("(def (1 x) 1) 3"), "1:6 def needs (name param ...), names only");
+  assert.equal(checked("(def (f 1) 1) 3"), "1:6 def needs (name param ...), names only");
+  assert.equal(checked("(def (f) 1) (def (f) 2) 3"), "1:19 f is already defined");
+  assert.equal(checked("(def (+ x) 1) 3"), "1:7 + is reserved");
+  assert.equal(checked("(def (if x) 1) 3"), "1:7 if is reserved");
+  assert.equal(checked("(def (within x) 1) 3"), "1:7 within is reserved");
+  assert.equal(checked("(def (def x) 1) 3"), "1:7 def is reserved");
+});
+
+test("parameters: repeated, or named as a function or an operator (D31)", () => {
+  assert.equal(checked("(def (f x x) 1) 3"), "1:11 parameter x is repeated");
+  assert.equal(checked("(def (f +) 1) 3"), "1:9 + is reserved");
+  assert.equal(checked("(def (f if) 1) 3"), "1:9 if is reserved");
+  assert.equal(checked("(def (f g) 1) (def (g) 2) 3"), "1:9 parameter g is the name of a function");
+});
+
+test("calls: arity, names, and functions are not values (D31)", () => {
+  assert.equal(checked("(def (f a b) a) (f 1 2 3)"), "1:17 f takes 2 arguments, not 3");
+  assert.equal(checked("(def (f a b) a) (f 1)"), "1:17 f takes 2 arguments, not 1");
+  assert.equal(checked("(def (f) 1) (g)"), "1:14 unknown name g");
+  assert.equal(checked("(def (f x) y) (f 1)"), "1:12 unknown name y");
+  assert.equal(checked("(def (f x) x) x"), "1:15 unknown name x");
+  assert.equal(checked("(def (f) 1) (+ f 1)"), "1:16 f is a function, not a value");
+  assert.equal(checked("(def (f x) (x 1)) (f 1)"), "1:13 x is a parameter, not a function");
+  // Found in a branch that is never taken, as every error is (D7).
+  assert.equal(checked("(def (f) (if #true 1 (g))) (f)"), "1:23 unknown name g");
+});
