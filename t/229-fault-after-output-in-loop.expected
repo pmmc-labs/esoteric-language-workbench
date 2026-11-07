@@ -1,0 +1,5 @@
+3
+5
+10
+t/229-fault-after-output-in-loop.ditto:3:12: fault: division by zero
+exit: 1

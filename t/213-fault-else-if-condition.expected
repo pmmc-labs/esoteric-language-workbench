@@ -1,0 +1,2 @@
+t/213-fault-else-if-condition.ditto:3:11: fault: condition must be a bool, got int
+exit: 1

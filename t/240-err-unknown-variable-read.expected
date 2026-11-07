@@ -1,0 +1,2 @@
+t/240-err-unknown-variable-read.ditto:2:7: error: unknown variable y
+exit: 2

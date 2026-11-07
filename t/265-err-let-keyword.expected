@@ -1,0 +1,2 @@
+t/265-err-let-keyword.ditto:1:5: error: expected a name, found 'while'
+exit: 2

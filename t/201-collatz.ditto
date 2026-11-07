@@ -1,0 +1,22 @@
+for n in 1..=60 {
+  let x = n
+  let steps = 0
+  let peak = x
+  while x != 1 {
+    if x % 2 == 0 {
+      x /= 2
+    } else {
+      x = 3 * x + 1
+    }
+    steps += 1
+    if x > peak { peak = x }
+  }
+  print(n, steps, peak)
+}
+let big = 837799
+let steps = 0
+while big != 1 {
+  if big % 2 == 0 { big = big / 2 } else { big = big * 3 + 1 }
+  steps += 1
+}
+print(steps)

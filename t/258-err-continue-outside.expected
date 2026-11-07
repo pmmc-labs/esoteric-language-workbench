@@ -1,0 +1,2 @@
+t/258-err-continue-outside.ditto:2:3: error: continue outside a loop
+exit: 2

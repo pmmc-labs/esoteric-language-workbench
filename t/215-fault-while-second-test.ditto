@@ -1,0 +1,7 @@
+let go = true
+let i = 0
+while go {
+  print(i)
+  i += 1
+  if i == 2 { go = 5 }
+}

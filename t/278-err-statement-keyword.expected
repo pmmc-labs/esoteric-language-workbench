@@ -1,0 +1,2 @@
+t/278-err-statement-keyword.ditto:1:1: error: expected a statement, found 'fn'
+exit: 2

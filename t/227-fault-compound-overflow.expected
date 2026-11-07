@@ -1,0 +1,2 @@
+t/227-fault-compound-overflow.ditto:2:3: fault: integer overflow
+exit: 1

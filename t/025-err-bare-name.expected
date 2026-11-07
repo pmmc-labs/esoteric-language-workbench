@@ -1,2 +1,2 @@
-t/025-err-bare-name.ditto:1:6: error: expected '(', found newline
+t/025-err-bare-name.ditto:1:1: error: expression statement must be a call
 exit: 2

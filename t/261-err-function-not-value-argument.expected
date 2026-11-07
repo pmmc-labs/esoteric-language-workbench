@@ -1,0 +1,2 @@
+t/261-err-function-not-value-argument.ditto:1:7: error: functions are not values
+exit: 2

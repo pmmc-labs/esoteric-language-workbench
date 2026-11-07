@@ -1,0 +1,26 @@
+let total = 0
+for i in 0..3 {
+  let sq = i * i
+  total += sq
+  i = i + 100
+  print(i, sq)
+}
+for i in 0..2 {
+  let sq = 7
+  print(i, sq)
+}
+for i in 1..=3 {
+  let acc = 0
+  acc += i
+  print(acc)
+}
+if true {
+  let t = 1
+  print(t)
+}
+if true {
+  let t = 2
+  print(t)
+}
+let t = 3
+print(t, total)

@@ -1,0 +1,2 @@
+t/246-err-loop-variable-after.ditto:3:7: error: unknown variable i
+exit: 2

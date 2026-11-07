@@ -1,0 +1,2 @@
+t/217-fault-range-hi-nil.ditto:1:13: fault: range bounds must be ints, got nil
+exit: 1

@@ -1,0 +1,401 @@
+let x = 1
+let y = -3
+print(x, y)
+x -= y
+print(x, y)
+y -= -2
+print(x, y)
+x *= -1
+print(x, y)
+x *= 10
+print(x, y)
+x /= 1
+print(x, y)
+x += 1000
+print(x, y)
+x += 2
+print(x, y)
+y -= -9
+print(x, y)
+y %= 3
+print(x, y)
+y *= 3
+print(x, y)
+x -= 1000
+print(x, y)
+y %= 3
+print(x, y)
+y %= 1
+print(x, y)
+x += 123456789
+print(x, y)
+y += 1000
+print(x, y)
+x /= 5
+print(x, y)
+y += x
+print(x, y)
+y += 1000
+print(x, y)
+y /= 1000
+print(x, y)
+y += x
+print(x, y)
+x /= y
+print(x, y)
+y -= 10
+print(x, y)
+x *= 123456789
+print(x, y)
+y /= -2
+print(x, y)
+x -= 123456789
+print(x, y)
+y %= -9
+print(x, y)
+x -= -1
+print(x, y)
+y %= x
+print(x, y)
+x -= -1
+print(x, y)
+x += 3
+print(x, y)
+y += 123456789
+print(x, y)
+x *= -1
+print(x, y)
+x *= 1
+print(x, y)
+x *= 10
+print(x, y)
+x /= 2
+print(x, y)
+x /= 123456789
+print(x, y)
+y += 1000
+print(x, y)
+y += 5
+print(x, y)
+x += y
+print(x, y)
+y /= 1
+print(x, y)
+x += y
+print(x, y)
+x += y
+print(x, y)
+x %= y
+print(x, y)
+x %= 2
+print(x, y)
+x %= y
+print(x, y)
+y *= 123456789
+print(x, y)
+y += x
+print(x, y)
+y += 5
+print(x, y)
+y *= 10
+print(x, y)
+y += 10
+print(x, y)
+x %= -1
+print(x, y)
+y -= 2
+print(x, y)
+x %= -9
+print(x, y)
+x /= -1
+print(x, y)
+x /= -1
+print(x, y)
+x %= y
+print(x, y)
+y *= -2
+print(x, y)
+x *= y
+print(x, y)
+y %= 1000
+print(x, y)
+y += 3
+print(x, y)
+y -= 3
+print(x, y)
+x *= y
+print(x, y)
+x *= 10
+print(x, y)
+y *= x
+print(x, y)
+y -= x
+print(x, y)
+x *= 3
+print(x, y)
+y /= 2
+print(x, y)
+y -= x
+print(x, y)
+x /= 3
+print(x, y)
+x -= -1
+print(x, y)
+y %= x
+print(x, y)
+y /= x
+print(x, y)
+y /= 1000
+print(x, y)
+x %= 5
+print(x, y)
+x += 2
+print(x, y)
+y += 3
+print(x, y)
+x += 3
+print(x, y)
+x *= 5
+print(x, y)
+y %= 2
+print(x, y)
+x += 1
+print(x, y)
+y -= 2
+print(x, y)
+x += 10
+print(x, y)
+y /= x
+print(x, y)
+y -= 10
+print(x, y)
+x *= 3
+print(x, y)
+y += 2
+print(x, y)
+x += y
+print(x, y)
+y *= 1000
+print(x, y)
+y *= 5
+print(x, y)
+x /= 5
+print(x, y)
+y /= x
+print(x, y)
+x *= y
+print(x, y)
+y *= x
+print(x, y)
+x += 5
+print(x, y)
+x *= 3
+print(x, y)
+x /= y
+print(x, y)
+x -= 1000
+print(x, y)
+x -= 5
+print(x, y)
+y %= x
+print(x, y)
+y += -9
+print(x, y)
+x += 123456789
+print(x, y)
+x -= 123456789
+print(x, y)
+x -= -2
+print(x, y)
+x += 1
+print(x, y)
+x += 1
+print(x, y)
+y *= 2
+print(x, y)
+y *= 5
+print(x, y)
+y /= x
+print(x, y)
+x *= 1000
+print(x, y)
+x += 2
+print(x, y)
+x %= 10
+print(x, y)
+y /= 3
+print(x, y)
+x += 3
+print(x, y)
+x += y
+print(x, y)
+y /= 1000
+print(x, y)
+x -= y
+print(x, y)
+y /= 10
+print(x, y)
+x -= 2
+print(x, y)
+x %= 3
+print(x, y)
+y /= 1
+print(x, y)
+x += 3
+print(x, y)
+y -= 3
+print(x, y)
+y += x
+print(x, y)
+x %= 10
+print(x, y)
+x *= -9
+print(x, y)
+y += x
+print(x, y)
+y /= 2
+print(x, y)
+y += 10
+print(x, y)
+y *= x
+print(x, y)
+x *= 1
+print(x, y)
+y += 123456789
+print(x, y)
+y /= -1
+print(x, y)
+x += y
+print(x, y)
+y *= 123456789
+print(x, y)
+x /= y
+print(x, y)
+y *= 2
+print(x, y)
+y += x
+print(x, y)
+x += y
+print(x, y)
+x %= 5
+print(x, y)
+y -= -9
+print(x, y)
+x %= y
+print(x, y)
+x /= -2
+print(x, y)
+y -= 1000
+print(x, y)
+x -= -9
+print(x, y)
+y -= x
+print(x, y)
+x += -1
+print(x, y)
+y += x
+print(x, y)
+y += 5
+print(x, y)
+x -= 1
+print(x, y)
+y %= 1
+print(x, y)
+y /= x
+print(x, y)
+y %= -2
+print(x, y)
+y += -9
+print(x, y)
+x %= -1
+print(x, y)
+x -= y
+print(x, y)
+x += -9
+print(x, y)
+x %= 1
+print(x, y)
+y *= 123456789
+print(x, y)
+x -= -1
+print(x, y)
+x += 2
+print(x, y)
+x -= -9
+print(x, y)
+y %= 5
+print(x, y)
+y += x
+print(x, y)
+y += 1
+print(x, y)
+y += 123456789
+print(x, y)
+y -= x
+print(x, y)
+y %= 1000
+print(x, y)
+x *= 123456789
+print(x, y)
+y %= 10
+print(x, y)
+x /= 3
+print(x, y)
+y += 3
+print(x, y)
+y %= -2
+print(x, y)
+y *= 1
+print(x, y)
+x += y
+print(x, y)
+x %= 10
+print(x, y)
+y *= x
+print(x, y)
+x /= 1
+print(x, y)
+x %= -1
+print(x, y)
+y %= -2
+print(x, y)
+y *= 10
+print(x, y)
+y *= -9
+print(x, y)
+x /= -2
+print(x, y)
+y %= 123456789
+print(x, y)
+x -= y
+print(x, y)
+y /= 5
+print(x, y)
+x %= -1
+print(x, y)
+x %= 5
+print(x, y)
+x *= y
+print(x, y)
+y += -2
+print(x, y)
+x -= y
+print(x, y)
+x *= -9
+print(x, y)
+y %= 1
+print(x, y)
+x /= 2
+print(x, y)
+y /= 5
+print(x, y)
+y *= x
+print(x, y)
+x /= 10
+print(x, y)
+x /= 3
+print(x, y)
+x += y
+print(x, y)
+y %= 2
+print(x, y)

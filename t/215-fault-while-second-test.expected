@@ -1,0 +1,4 @@
+0
+1
+t/215-fault-while-second-test.ditto:3:7: fault: condition must be a bool, got int
+exit: 1

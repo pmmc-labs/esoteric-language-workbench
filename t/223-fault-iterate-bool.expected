@@ -1,0 +1,2 @@
+t/223-fault-iterate-bool.ditto:2:10: fault: cannot iterate over bool
+exit: 1

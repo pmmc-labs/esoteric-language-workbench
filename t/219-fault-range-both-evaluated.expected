@@ -1,0 +1,2 @@
+t/219-fault-range-both-evaluated.ditto:1:17: fault: division by zero
+exit: 1

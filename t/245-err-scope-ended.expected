@@ -1,0 +1,2 @@
+t/245-err-scope-ended.ditto:4:7: error: unknown variable a
+exit: 2

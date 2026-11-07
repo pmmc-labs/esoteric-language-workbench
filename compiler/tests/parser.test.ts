@@ -51,18 +51,14 @@ test('a call may break across lines and end with a comma', () => {
 test('errors: expected X, found Y', () => {
   parseError('print(1 2)', "expected ')', found '2'", 1, 9);
   parseError('print(1) print(2)', "expected newline, found 'print'", 1, 10);
-  parseError('print\nx', "expected '(', found newline", 1, 6);
-  parseError('print', "expected '(', found end of file", 1, 6);
   parseError('print(1', "expected ')', found end of file", 1, 8);
   parseError('print(,)', "expected an expression, found ','", 1, 7);
   parseError('print(1,,)', "expected an expression, found ','", 1, 9);
   parseError('print("hi")', 'expected an expression, found string', 1, 7);
-  // Until variables (step 2) a name can only start a call.
-  parseError('print(print)', "expected '(', found ')'", 1, 12);
   parseError('print(\n\n', 'expected an expression, found end of file', 3, 1);
   parseError('else', "expected a statement, found 'else'", 1, 1);
   parseError('print(1)\n}', "expected a statement, found '}'", 2, 1);
-  parseError('foo bar', "expected '(', found 'bar'", 1, 5);
+  parseError('foo bar', 'expected newline, found \'bar\'', 1, 5);
   parseError('"s"', 'expected a statement, found string', 1, 1);
 });
 
@@ -74,6 +70,7 @@ function sx(e: any): string {
     case 'nil': return 'nil';
     case 'unary': return `(${e.op} ${sx(e.operand)})`;
     case 'binary': case 'logic': return `(${e.op} ${sx(e.left)} ${sx(e.right)})`;
+    case 'name': return e.name;
     case 'call': return `${e.name}(${e.args.map(sx).join(' ')})`;
   }
   throw new Error(e.kind);
@@ -135,4 +132,110 @@ test('a statement may be any expression; the resolver judges it', () => {
   const b = ast('42\n-1\ntrue\nnot nil\n(1)\n').body as any[];
   assert.deepEqual(b.map((s) => s.expr.kind), ['int', 'unary', 'bool', 'unary', 'int']);
   assert.deepEqual(b.map((s) => s.pos.line), [1, 2, 3, 4, 5]);
+});
+
+// Step 2: variables and control flow.
+
+test('a name in an expression is a name node; a call is still a call', () => {
+  assert.equal(shape('x + f(y)'), '(+ x f(y))');
+  const e = (ast('print(abc)').body[0] as any).expr.args[0];
+  assert.deepEqual(e, { kind: 'name', pos: at(1, 7), name: 'abc' });
+});
+
+test('let: the name, its position and the value', () => {
+  const s = ast('  let total = 1 +\n 2').body[0] as any;
+  assert.equal(s.kind, 'let');
+  assert.deepEqual(s.pos, at(1, 3));
+  assert.equal(s.name, 'total');
+  assert.deepEqual(s.namePos, at(1, 7));
+  assert.equal(sx(s.value), '(+ 1 2)');
+});
+
+test('assignment: target, operator position, value', () => {
+  const b = ast('x = 1\n  y += 2 * 3\nz %= 4').body as any[];
+  assert.deepEqual(b.map((s) => s.kind), ['assign', 'assign', 'assign']);
+  assert.deepEqual(b.map((s) => s.op), ['=', '+=', '%=']);
+  assert.deepEqual(b.map((s) => s.pos), [at(1, 3), at(2, 5), at(3, 3)]);
+  // The target is a variable and a list of steps (paths arrive in step 5).
+  assert.deepEqual(b[1].target, { kind: 'target', pos: at(2, 3), name: 'y', steps: [] });
+  assert.equal(sx(b[1].value), '(* 2 3)');
+  const t = ast('x =\n\n  5').body[0] as any;
+  assert.equal(t.value.value, 5n);
+});
+
+test('every compound operator parses', () => {
+  const ops = ['+=', '-=', '*=', '/=', '%='];
+  const b = ast(ops.map((o) => `x ${o} 1`).join('\n')).body as any[];
+  assert.deepEqual(b.map((s) => s.op), ops);
+});
+
+test('cannot assign to this, at the first token of the target', () => {
+  parseError('1 = 2', 'cannot assign to this', 1, 1);
+  parseError('print(1) = 2', 'cannot assign to this', 1, 1);
+  parseError('  x + 1 = 2', 'cannot assign to this', 1, 3);
+  parseError('-x += 2', 'cannot assign to this', 1, 1);
+  parseError('(x + 1) *= 2', 'cannot assign to this', 1, 1);
+  parseError('true = false', 'cannot assign to this', 1, 1);
+});
+
+test('if / else if / else, with else on the next line', () => {
+  const s = ast('if a {\n}\nelse if b {\n  print(1)\n}\n\nelse {\n}\nprint(2)').body as any[];
+  assert.equal(s.length, 2);
+  assert.equal(s[0].kind, 'if');
+  assert.deepEqual(s[0].condPos, at(1, 4));
+  assert.equal(s[0].else.length, 1);
+  assert.equal(s[0].else[0].kind, 'if');
+  assert.deepEqual(s[0].else[0].else, []);
+  assert.equal(s[0].else[0].then.length, 1);
+  assert.equal(s[1].kind, 'exprStmt');
+  const none = ast('if a { print(1) }').body[0] as any;
+  assert.equal(none.else, null);
+});
+
+test('the condition position is its first token, not its operator', () => {
+  const w = ast('while  1 + 2 < 3 {\n}').body[0] as any;
+  assert.equal(w.kind, 'while');
+  assert.deepEqual(w.condPos, at(1, 8));
+  assert.deepEqual(w.cond.pos, at(1, 14));
+});
+
+test('for over a range, half-open and inclusive, and over a value', () => {
+  const r = ast('for i in 0..n + 1 {\n}').body[0] as any;
+  assert.equal(r.kind, 'for');
+  assert.equal(r.name, 'i');
+  assert.deepEqual(r.namePos, at(1, 5));
+  assert.equal(r.iter.kind, 'range');
+  assert.equal(r.iter.inclusive, false);
+  assert.deepEqual([r.iter.loPos, r.iter.hiPos], [at(1, 10), at(1, 13)]);
+  assert.equal(sx(r.iter.hi), '(+ n 1)');
+  const q = ast('for i in 1..=5 { print(i) }').body[0] as any;
+  assert.equal(q.iter.inclusive, true);
+  assert.equal(q.body.length, 1);
+  const e = ast('for x in  y + 1 {\n}').body[0] as any;
+  assert.equal(e.iter.kind, 'each');
+  assert.deepEqual(e.iter.exprPos, at(1, 11));
+});
+
+test('break and continue; blocks hold statements separated by newlines or ;', () => {
+  const w = ast('while true { break; continue\n  print(1) }').body[0] as any;
+  assert.deepEqual(w.body.map((s: any) => s.kind), ['break', 'continue', 'exprStmt']);
+  assert.deepEqual(w.body[1].pos, at(1, 21));
+  assert.deepEqual((ast('while true {}').body[0] as any).body, []);
+});
+
+test('step 2 parse errors', () => {
+  parseError('let 5 = 1', "expected a name, found '5'", 1, 5);
+  parseError('let x 5', "expected '=', found '5'", 1, 7);
+  parseError('let x', "expected '=', found end of file", 1, 6);
+  parseError('let x =', 'expected an expression, found end of file', 1, 8);
+  parseError('if true\n{', "expected '{', found newline", 1, 8);
+  parseError('if true {\n  print(1)\n', "expected '}', found end of file", 3, 1);
+  parseError('if true { print(1) } print(2)', "expected newline, found 'print'", 1, 22);
+  parseError('if true {\n} else print(1)', "expected '{', found 'print'", 2, 8);
+  parseError('for i 0..3 {\n}', "expected 'in', found '0'", 1, 7);
+  parseError('for 1 in 2..3 {\n}', "expected a name, found '1'", 1, 5);
+  parseError('while {\n}', "expected an expression, found '{'", 1, 7);
+  parseError('print(1..2)', "expected ')', found '..'", 1, 8);
+  parseError('else {', "expected a statement, found 'else'", 1, 1);
+  parseError('fn', "expected a statement, found 'fn'", 1, 1);
 });

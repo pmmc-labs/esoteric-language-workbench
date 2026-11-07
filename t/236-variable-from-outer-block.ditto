@@ -1,0 +1,18 @@
+let n = 0
+let i = 0
+while i < 3 {
+  let j = 0
+  while j < 3 {
+    n += i * j
+    j += 1
+  }
+  i += 1
+}
+print(n, i)
+if n > 0 {
+  let m = n
+  if m > 2 {
+    n = m + 1
+  }
+}
+print(n)

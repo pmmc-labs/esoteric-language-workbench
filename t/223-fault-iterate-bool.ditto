@@ -1,0 +1,4 @@
+let flag = true
+for x in flag {
+  print(x)
+}

@@ -1,0 +1,4 @@
+print(1)
+for i in true..3 {
+  print(i)
+}

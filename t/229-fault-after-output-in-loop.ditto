@@ -1,0 +1,5 @@
+let d = 3
+while true {
+  print(10 / d)
+  d -= 1
+}

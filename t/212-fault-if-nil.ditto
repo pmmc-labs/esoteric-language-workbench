@@ -1,0 +1,2 @@
+let x = nil
+if x { print(1) }

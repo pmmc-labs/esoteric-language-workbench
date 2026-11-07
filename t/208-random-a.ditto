@@ -1,0 +1,64 @@
+print(0 / 5, 12 / 7, -4 + (11 / 4))
+print(4, (-5 + 4) % 1, 8 - (2 / -3)); print(12 - 4)
+let d = 11 % 7; let b = 0
+while b < 2 {
+  b += 1
+  d += (d / 4) % 7
+  d -= (5 + d) - b
+  let c = 7 - (d + -1)
+}
+for e in b + -2..d - d {
+  if (7 * 1) != (b / 1) {
+    e = e
+    let k = (e * 2) - -2
+    b = d
+  }
+}
+if (not ((7 + 4) >= (d * -3))) and (d >= (-2 / 7)) {
+  print(-2, b - (d + 9), b)
+  for a in b..=-2 / 2 {
+    print(6, b)
+    if ((5 * 2) != (-4 / -3)) or ((8 * 3) <= (-2 - 9)) {
+      a %= -3
+      print(b % 5, 10, b % 2)
+    }
+  }
+  d -= b
+} else {
+  for j in 1 % 1..=b {
+    for g in b + j..=d + -4 {
+      let f = (g / 3) + (1 + j)
+      let c = b
+    }
+    let a = j
+  }
+  for c in d + b..b - b {
+    print(d + 9)
+  }
+}
+let e = 6
+for g in d..e + e {
+  print(e, 10, (d - g) + b)
+  for f in b % 1..d - e {
+    if (-4 % 5) <= 9 {
+      break
+    } else {
+      if (b - g) >= b {
+        break
+        print(2)
+      }
+    }
+    if (not ((-5 - b) > (2 - -2))) or ((e + b) > (f - f)) {
+      print((f % 3) + g, (6 * -2) % -2, g)
+      f = e + (12 % -2)
+    }
+    if -4 > (-3 % 2) { break }
+  }
+  let i = 0
+  while i < 5 {
+    i += 1
+    print(e, d - (e * -3))
+  }
+}
+print(0 / -3)
+b -= 8; print(d, b, e)

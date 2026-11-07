@@ -1,0 +1,91 @@
+let count = 0
+count = 0
+for i in 9223372036854775805..=9223372036854775807 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in 9223372036854775805..9223372036854775807 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in 9223372036854775807..=9223372036854775807 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in 9223372036854775807..9223372036854775807 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in 9223372036854775806..=9223372036854775807 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in 9223372036854775807..=9223372036854775806 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in (-9223372036854775807 - 1)..-9223372036854775806 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in (-9223372036854775807 - 1)..=-9223372036854775806 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in (-9223372036854775807 - 1)..=(-9223372036854775807 - 1) {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in (-9223372036854775807 - 1)..(-9223372036854775807 - 1) {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in 9223372036854775807..=(-9223372036854775807 - 1) {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in 9223372036854775807..(-9223372036854775807 - 1) {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in -9223372036854775807..(-9223372036854775807 - 1) {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in -1..=1 {
+  print(i)
+  count += 1
+}
+print(count)
+count = 0
+for i in (-9223372036854775807 - 1)..=-9223372036854775807 {
+  print(i)
+  count += 1
+}
+print(count)

@@ -1,0 +1,2 @@
+t/271-err-after-block.ditto:1:22: error: expected newline, found 'print'
+exit: 2

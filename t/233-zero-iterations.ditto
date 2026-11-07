@@ -1,0 +1,8 @@
+let ran = false
+while false { ran = true }
+for i in 5..5 { ran = true }
+for i in 5..=4 { ran = true }
+for i in 3..0 { ran = true }
+for i in 0..=-1 { ran = true }
+print(ran)
+for i in 5..=5 { print(i) }

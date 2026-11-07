@@ -1,0 +1,30 @@
+let count = 0
+for n in 2..=200 {
+  let prime = true
+  let d = 2
+  while d * d <= n {
+    if n % d == 0 {
+      prime = false
+      break
+    }
+    d += 1
+  }
+  if prime {
+    count += 1
+    print(n)
+  }
+}
+print(count)
+let last = 0
+let gaps = 0
+for n in 3..=200 {
+  let prime = true
+  for d in 2..n {
+    if d * d > n { break }
+    if n % d == 0 { prime = false; break }
+  }
+  if not prime { continue }
+  if n - last == 2 { gaps += 1 }
+  last = n
+}
+print(gaps)

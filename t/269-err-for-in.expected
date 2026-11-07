@@ -1,0 +1,2 @@
+t/269-err-for-in.ditto:1:7: error: expected 'in', found '0'
+exit: 2

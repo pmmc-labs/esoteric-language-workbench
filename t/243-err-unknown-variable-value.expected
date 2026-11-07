@@ -1,0 +1,2 @@
+t/243-err-unknown-variable-value.ditto:2:5: error: unknown variable b
+exit: 2

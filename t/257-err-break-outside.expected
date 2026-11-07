@@ -1,0 +1,2 @@
+t/257-err-break-outside.ditto:2:1: error: break outside a loop
+exit: 2

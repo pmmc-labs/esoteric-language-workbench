@@ -1,0 +1,2 @@
+t/220-fault-range-lo-first.ditto:1:10: fault: range bounds must be ints, got nil
+exit: 1

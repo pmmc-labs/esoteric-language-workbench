@@ -97,3 +97,25 @@ test('equality is structural across types and never faults', () => {
     return 0;`);
   assert.equal(r.out, '10000\n01000\n00100\n00010\n00001\n');
 });
+
+test('conditions and range bounds must be what they are', () => {
+  const ok = cprog('cond-ok', `
+    dt_path = "x.ditto";
+    dt_need_cond(1, 1, dt_bool(false));
+    dt_need_range_bound(1, 1, dt_int(INT64_MIN));
+    dt_b_print(1, 1, 0, NULL);
+    return 0;`);
+  assert.equal(ok.out, '\n');
+  const cases: [string, string][] = [
+    ['dt_need_cond(4, 5, dt_int(1));', 'x.ditto:4:5: fault: condition must be a bool, got int\n'],
+    ['dt_need_cond(4, 5, dt_nil());', 'x.ditto:4:5: fault: condition must be a bool, got nil\n'],
+    ['dt_need_range_bound(2, 3, dt_bool(true));', 'x.ditto:2:3: fault: range bounds must be ints, got bool\n'],
+    ['dt_iter_len(7, 8, dt_int(5));', 'x.ditto:7:8: fault: cannot iterate over int\n'],
+    ['dt_iter_len(7, 8, dt_nil());', 'x.ditto:7:8: fault: cannot iterate over nil\n'],
+  ];
+  for (const [i, [call, out]] of cases.entries()) {
+    const r = cprog(`cond-${i}`, `dt_path = "x.ditto"; ${call} return 0;`);
+    assert.equal(r.out, out);
+    assert.equal(r.status, 1);
+  }
+});

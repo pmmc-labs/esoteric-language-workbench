@@ -1,0 +1,47 @@
+for a in 1..=12 {
+  for b in 1..=12 {
+    if b < a { continue }
+    if a * b > 40 { break }
+    if (a + b) % 2 == 1 { continue }
+    print(a, b)
+  }
+}
+let n = 0
+let total = 0
+while true {
+  n += 1
+  if n % 2 == 0 { continue }
+  if total > 100 { break }
+  total += n
+}
+print(n, total)
+let i = 0
+let skipped = 0
+while i < 20 {
+  i += 1
+  if i % 3 == 0 {
+    skipped += 1
+    continue
+  }
+  if i > 14 { break }
+  print(i)
+}
+print(i, skipped)
+let outer = 0
+let inner = 0
+for x in 0..5 {
+  outer += 1
+  for y in 0..5 {
+    if y == 3 { break }
+    inner += 1
+  }
+  if x == 3 { break }
+}
+print(outer, inner)
+for k in 1..=5 {
+  while true {
+    if k % 2 == 0 { break }
+    print(k)
+    break
+  }
+}

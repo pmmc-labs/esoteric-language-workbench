@@ -1,0 +1,12 @@
+let x = 5
+x = x + 1
+print(x)
+let y = x
+x = 0
+print(x, y)
+let n = nil
+print(n)
+n = true
+print(n)
+n = -x - 1
+print(n)

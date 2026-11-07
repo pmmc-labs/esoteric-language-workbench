@@ -1,0 +1,248 @@
+let lo = 0
+let hi = 0
+let s = 0
+let count = 0
+lo = 0
+hi = 0
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 0
+hi = 0
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 0
+hi = 1
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 0
+hi = 1
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 1
+hi = 10
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 1
+hi = 10
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 10
+hi = 1
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 10
+hi = 1
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -5
+hi = 5
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -5
+hi = 5
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 5
+hi = 5
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 5
+hi = 5
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -3
+hi = -1
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -3
+hi = -1
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -1
+hi = -3
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -1
+hi = -3
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 0
+hi = 100
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 0
+hi = 100
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 1
+hi = 1000
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 1
+hi = 1000
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -100
+hi = 100
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = -100
+hi = 100
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 7
+hi = 8
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 7
+hi = 8
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 3
+hi = 0
+s = 0
+count = 0
+for i in lo..hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+lo = 3
+hi = 0
+s = 0
+count = 0
+for i in lo..=hi {
+  s += i
+  count += 1
+}
+print(lo, hi, count, s)
+let n = 3
+s = 0
+for i in 0..n {
+  n += 1
+  s += i
+}
+print(n, s)
+for i in 2 * 3 - 5..(4 + 4) / 2 {
+  print(i)
+}

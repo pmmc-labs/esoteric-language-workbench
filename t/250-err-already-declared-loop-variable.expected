@@ -1,0 +1,2 @@
+t/250-err-already-declared-loop-variable.ditto:2:5: error: i is already declared
+exit: 2

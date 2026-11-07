@@ -1,0 +1,2 @@
+t/248-err-already-declared.ditto:2:5: error: x is already declared
+exit: 2

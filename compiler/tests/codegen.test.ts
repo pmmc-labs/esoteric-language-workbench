@@ -51,3 +51,44 @@ test('and / or evaluate the right operand only inside an if', () => {
   assert.match(compile('print(true or false)', 'a.ditto'), /if \(!t\d+\.b\)/);
   assert.match(c, /dt_need_bool\(1, 12, "and", /);
 });
+
+// Step 2.
+test('a variable is a C Value named v_NAME, declared where its let is', () => {
+  const c = compile('let x = 1\nx = x + 2\nprint(x)', 'a.ditto');
+  assert.match(c, /Value v_x = t\d+;/);
+  assert.match(c, /v_x = t\d+;/);
+  assert.ok(c.indexOf('Value v_x') < c.indexOf('dt_add'));
+});
+
+test('compound assignment reads the variable first, applies the operator at its own position', () => {
+  const c = compile('let x = 1\nx -= 2', 'a.ditto');
+  assert.match(c, /dt_sub\(2, 3, t\d+, t\d+\)/);
+  const read = c.search(/Value t\d+ = v_x;/);
+  assert.ok(read > 0 && read < c.indexOf('dt_sub'));
+});
+
+test('if tests its condition with the condition\'s first-token position', () => {
+  const c = compile('if 1 + 2 < 4 {\n}', 'a.ditto');
+  assert.match(c, /dt_need_cond\(1, 4, t\d+\);/);
+  assert.match(c, /if \(t\d+\.b\) \{/);
+});
+
+test('while is a C loop that tests at the top; break and continue are C ones', () => {
+  const c = compile('while true {\n  break\n  continue\n}', 'a.ditto');
+  assert.match(c, /for \(;;\) \{/);
+  assert.match(c, /dt_need_cond\(1, 7, /);
+  assert.match(c, /if \(!t\d+\.b\) break;/);
+  assert.match(c, /\n\s+break;\n\s+continue;/);
+});
+
+test('a range loop checks both bounds after evaluating both, and cannot overflow', () => {
+  const c = compile('for i in 1..=2 + 3 {\n}', 'a.ditto');
+  const at = ['dt_add(', 'dt_need_range_bound(1, 10, ', 'dt_need_range_bound(1, 15, '].map((s) => c.indexOf(s));
+  assert.ok(at.every((n) => n > 0) && at[0] < at[1] && at[1] < at[2], String(at));
+  assert.match(c, /Value v_i = dt_int\(/);
+  assert.doesNotMatch(c, /\+\+/);
+});
+
+test('a for over a value asks the runtime for its length, at the expression', () => {
+  assert.match(compile('for x in 5 {\n}', 'a.ditto'), /dt_iter_len\(1, 10, t\d+\)/);
+});
