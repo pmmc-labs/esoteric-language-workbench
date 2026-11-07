@@ -14,21 +14,22 @@ at the end, and what's a candidate but not agreed. The workbench's own:]
 
 **This is the `interpreter` branch** (D28, D29): the calculator of
 main after step 5, its decisions D3 to D27, its 46 golden tests, its
-models and its referee, to be built again as a tree-walking
-interpreter in TypeScript on Node, steps 0 to 5 of
-[`docs/PLAN.md`](docs/PLAN.md), every step's tests already written.
+models and its referee, built again as a tree-walking interpreter in
+TypeScript on Node, steps 0 to 5 of [`docs/PLAN.md`](docs/PLAN.md).
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). **Steps 0 to 4 are built:** the host's answers, D30, reader, driver,
-checker, the arithmetic (D3 to D5), booleans and comparisons (D11,
-D12), `if` (D13), the bit operations (D15, D16, with types checked
-before the count, then the range), `**` (D18, D19: the exponent
-checked first, 0, 1 and -1 answered by the exponent, any other base
-with an exponent past 62 overflows without a loop), tests 000 to 045
-green under both Nodes. **Next:** step 5, `within`.
- Not agreed, from main: which fault reports when one
-operator could fault two ways.
+interpreter reports before evaluating (D28, exit 2). **Steps 0 to 5 are
+built; all 46 golden tests pass under both Nodes** (`make test`,
+`make golden-node`). The host's answers and D30 (nesting limited to
+1000, exit 3 for an interpreter fault) are in `DESIGN.md`; the reader
+keeps its own stack, the checker finds every error before running
+(D28), and the evaluator is a tree-walker over `bigint`s and booleans
+with the budget as `spent` and `limit` (D21 to D24, D27's shape). Where
+one operator could fault two ways it checks types, then the count or
+exponent, then the range. **Next:** nothing agreed; step 6 (local
+bindings) is a stub in the plan. Not agreed, from main: which fault
+reports when one operator could fault two ways.
 
 ## Read first, in this order
 

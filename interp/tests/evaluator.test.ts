@@ -130,3 +130,51 @@ test("a boolean to ** faults not an integer (D19)", () => {
   assert.equal(run("(** #true 2)"), "fault: not an integer");
   assert.equal(run("(** 2 #false)"), "fault: not an integer");
 });
+
+test("within: n operations allowed, the next faults (D20 to D22)", () => {
+  assert.equal(run("(within 3 (+ (* 2 3) (- 10 4)))"), "12");
+  assert.equal(run("(within 2 (+ (* 2 3) (- 10 4)))"), "fault: budget spent");
+  assert.equal(run("(within 0 42)"), "42");
+  assert.equal(run("(within 1 (< 1 2))"), "#true");
+  assert.equal(run("(within 1 (** 1 4611686018427387903))"), "1");
+});
+
+test("the charge is after the operands and before the checks (D22)", () => {
+  assert.equal(run("(within 1 (+ (/ 1 0) 2))"), "fault: division by zero");
+  assert.equal(run("(within 0 (/ 1 0))"), "fault: budget spent");
+  assert.equal(run("(within 0 (+ #true 1))"), "fault: budget spent");
+  assert.equal(run("(within 0 (== 1 2))"), "fault: budget spent");
+});
+
+test("if and within are free, an untaken branch costs nothing (D21)", () => {
+  assert.equal(run("(within 0 (if #true (within 0 7) (/ 1 0)))"), "7");
+  assert.equal(run("(within 2 (if (< 1 2) (+ 40 2) (+ (+ 1 1) (+ 1 1))))"), "42");
+});
+
+test("budgets nest and every one applies (D23)", () => {
+  assert.equal(run("(within 1 (within 5 (+ (+ 1 2) 3)))"), "fault: budget spent");
+  assert.equal(run("(within 5 (within 1 (+ (+ 1 2) 3)))"), "fault: budget spent");
+  assert.equal(run("(within 3 (+ (within 5 (+ (+ 1 2) 3)) 4))"), "10");
+  assert.equal(run("(within 2 (+ (within 5 (+ (+ 1 2) 3)) 4))"), "fault: budget spent");
+  // After an inner within ends, the outer's limit is back in force.
+  assert.equal(run("(within 3 (+ (within 1 (+ 1 1)) (+ 1 1)))"), "4");
+  assert.equal(run("(within 2 (+ (within 1 (+ 1 1)) (+ 1 1)))"), "fault: budget spent");
+  assert.equal(run("(within 4611686018427387903 (within 4611686018427387903 (+ 1 1)))"), "2");
+});
+
+test("the budget is an expression, charged to the budgets around (D24)", () => {
+  assert.equal(run("(within 2 (within (+ 1 1) (* 3 4)))"), "12");
+  assert.equal(run("(within 1 (within (+ 1 1) (* 3 4)))"), "fault: budget spent");
+  assert.equal(run("(within #true 1)"), "fault: not an integer");
+  assert.equal(run("(within -1 (/ 1 0))"), "fault: bad budget");
+  assert.equal(run("(within (- 0 1) 1)"), "fault: bad budget");
+});
+
+test("a program outside every within counts nothing (D23)", () => {
+  assert.equal(run("(+ (+ (+ 1 1) (+ 1 1)) (+ (+ 1 1) (+ 1 1)))"), "8");
+});
+
+test("each run starts with a fresh budget", () => {
+  assert.equal(run("(within 1 (+ 1 1))"), "2");
+  assert.equal(run("(within 1 (+ 1 1))"), "2");
+});

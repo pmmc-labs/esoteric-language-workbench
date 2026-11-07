@@ -17,7 +17,7 @@ export function check(f: Form): void {
       const head = f.items[0];
       if (head === undefined || head.t !== "sym")
         throw new CheckError("a list must start with an operator", f.line, f.col);
-      const arity = OPERATORS.has(head.name) ? 2 : head.name === "if" ? 3 : undefined;
+      const arity = OPERATORS.has(head.name) ? 2 : head.name === "if" ? 3 : head.name === "within" ? 2 : undefined;
       if (arity === undefined) throw new CheckError(`unknown name ${head.name}`, head.line, head.col);
       const n = f.items.length - 1;
       if (n !== arity)

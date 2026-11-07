@@ -70,3 +70,12 @@ test("** takes two arguments", () => {
   assert.equal(checked("(** 2 3)"), "ok");
   assert.equal(checked("(** 2)"), "1:1 ** takes 2 arguments, not 1");
 });
+
+test("within takes two parts, checked in an untaken branch too (D24, D28)", () => {
+  assert.equal(checked("(within 1 2)"), "ok");
+  assert.equal(checked("(within)"), "1:1 within takes 2 arguments, not 0");
+  assert.equal(checked("(within 5)"), "1:1 within takes 2 arguments, not 1");
+  assert.equal(checked("(within 1 2 3)"), "1:1 within takes 2 arguments, not 3");
+  assert.equal(checked("(if #false (within 1) 0)"), "1:12 within takes 2 arguments, not 1");
+  assert.equal(checked("(+ 1 within)"), "1:6 unknown name within");
+});

@@ -69,7 +69,18 @@ export const OPERATORS: Map<string, Op> = new Map([
   ["%", ints((a, b) => { if (b === 0n) throw new Fault("division by zero"); return a % b; })],
 ]);
 
+// The budget (D21 to D24), as two counts: `spent`, the operations done
+// since the program started, and `limit`, the count at which the next is
+// refused. Every limit is a count from the start, so the innermost is
+// the lowest and checking one checks every budget in force (D23).
+type Budget = { spent: bigint; limit: bigint };
+const NO_LIMIT = 1n << 64n;
+
 export function evaluate(f: Form): Value {
+  return ev(f, { spent: 0n, limit: NO_LIMIT });
+}
+
+function ev(f: Form, b: Budget): Value {
   switch (f.t) {
     case "int":
     case "bool":
@@ -77,16 +88,33 @@ export function evaluate(f: Form): Value {
     case "list": {
       const name = (f.items[0] as { name: string }).name;
       if (name === "if") {
-        // Only the taken branch is evaluated (D13).
-        const test = evaluate(f.items[1]);
+        // Only the taken branch is evaluated (D13). Not an operation.
+        const test = ev(f.items[1], b);
         if (typeof test !== "boolean") throw new Fault("not a boolean");
-        return evaluate(f.items[test ? 2 : 3]);
+        return ev(f.items[test ? 2 : 3], b);
+      }
+      if (name === "within") {
+        // The budget is evaluated first, under the budgets already in
+        // force (D24), then checked, then the body runs under the new one.
+        const n = ev(f.items[1], b);
+        if (typeof n !== "bigint") throw new Fault("not an integer");
+        if (n < 0n) throw new Fault("bad budget");
+        const saved = b.limit;
+        if (n < b.limit - b.spent) b.limit = b.spent + n;
+        const v = ev(f.items[2], b);
+        // What the body didn't use is dropped; the outer has seen every
+        // operation through `spent`.
+        b.limit = saved;
+        return v;
       }
       const op = OPERATORS.get(name)!;
-      // Left operand completely, then the right, then the operator (D25).
-      const a = evaluate(f.items[1]);
-      const b = evaluate(f.items[2]);
-      return op(a, b);
+      // Left operand completely, then the right, then the charge, then
+      // the operator's own checks (D25, D22).
+      const x = ev(f.items[1], b);
+      const y = ev(f.items[2], b);
+      if (b.spent === b.limit) throw new Fault("budget spent");
+      b.spent++;
+      return op(x, y);
     }
     default:
       throw new Error(`evaluate: unchecked form ${f.t}`);
