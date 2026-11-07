@@ -12,45 +12,18 @@ per era, dense, with golden test numbers and `Dn` references, so a
 claim can be checked against a test and a decision. Say what's **Next**
 at the end, and what's a candidate but not agreed. The workbench's own:]
 
-**Steps 0 to 2 of [`docs/PLAN.md`](docs/PLAN.md) are done**: a reader
-with positions, a program of one expression compiled to C and linked
-with `runtime/rt.c` (D2), integers of 63 bits (D4), the five operators
-on two arguments each (D3), division C's way (D5), faults ending the
-program (D6; golden tests 000, 001, and 010 to 015 from
-`t/models/arith.py`), compile errors as unit tests (D7), and the
-mechanical checks, `t/checks.py` (D8, D10). Step 2 (D11 to D14):
-`#true` and `#false` as immediates tagged `11` (golden tests 021, 023,
-024), the six comparisons on integers, `==` and `!=` on any values
-(020, from `t/models/compare.py`), and `if`, the test checked to be a
-boolean, only the taken branch run (022); built by Haiku 5.5 on a step
-marked medium. Step 3 (D15 to D17): `bit/and`, `bit/or` and `bit/xor`,
-and the shifts `bit/shl` (checked as a multiplication, so `overflow`)
-and `bit/shr` (floor division), a count outside 0 to 62 faulting `bad
-shift`; golden tests 030 to 036 from `t/models/bits.py`, which Haiku 5.5
-wrote, the model being the step's large part, and committed red before
-the code (the model's fold is a balanced tree, for clang's bracket
-limit). Not agreed, and avoided by the tests: which fault reports when a
-call could fault two ways (a boolean value and a bad count, say; the
-runtime checks the boolean first). Step 4 (D18, D19): `(** a b)` on two
-integers, a negative exponent
-faulting `bad exponent` and `a ** 0` being 1 (D19, a default the builder
-had to add, since D18 gave only the operator); golden tests 040 to 045
-from `t/models/pow.py`, written and committed red before the code, by
-Sonnet 5.5. Step 5 (D20 to D27): `(within n expr)`, a budget of
-operator applications (all seventeen operators, one each; literals, `if`
-and `within` free), the charge after an operator's operands and before
-its checks, nesting with every budget in force, `n` any expression
-evaluated outside its own budget, `budget spent` and `bad budget` as
-faults (D21 to D24, accepted by the person from three proposals);
-evaluation left to right (D25), which gcc and clang had disagreed on;
-golden tests 050 to 069, written by hand from the step and committed red
-before the code. The runtime keeps `spent` and `limit` (D27), each
-operator function charging first; the generated C puts two list operands
-in temporaries and a `within` in a comma expression (D26). Proposed by
-Opus and built by Sonnet 5.5 on a step marked medium. **Next:** step 6 is
-still the template's placeholder; to be proposed. Not agreed: which
-fault reports when one operator could fault two ways, and the bracket
-limit.
+**This is the `interpreter` branch** (D28, D29): the calculator of
+main after step 5, its decisions D3 to D27, its 46 golden tests, its
+models and its referee, to be built again as a tree-walking
+interpreter in TypeScript on Node, steps 0 to 5 of
+[`docs/PLAN.md`](docs/PLAN.md), every step's tests already written.
+main's compiler and runtime aren't here, nor are the decisions about
+them binding (D2, D14's encoding, D26, D27): what a program prints is
+the same, and what the compiler reported before running the
+interpreter reports before evaluating (D28, exit 2). Nothing is built.
+**Next:** step 0, which starts by answering `DESIGN.md`'s "What the
+host gives". Not agreed, from main: which fault reports when one
+operator could fault two ways.
 
 ## Read first, in this order
 
@@ -76,10 +49,10 @@ limit.
   `docs/DESIGN.md`.
 - When a special form or builtin is added or changes, update
   `docs/LANGUAGE.md` (no tables there), and the guide where it shows it.
-- Keep a working compiler with passing tests at the end of every step
+- Keep a working interpreter with passing tests at the end of every step
   (Ghuloum). Each step adds golden tests.
 - **Examples bend to the language, not the other way round.** When an
-  example needs something the compiler or runtime doesn't do, change the
+  example needs something the interpreter doesn't do, change the
   example, or leave it out; don't add to the language to make it pass.
 - Verify a reported misbehavior against an independent implementation
   before calling it a bug.
@@ -108,7 +81,11 @@ limit.
   can be ported to the language itself line by line. Pick the shape that
   makes self-hosting a translation rather than a rewrite.]
 - [Constraints the host platforms impose, as you learn them. Name the
-  symptom and the fix, so the lesson isn't relearned.] C doesn't order
+  symptom and the fix, so the lesson isn't relearned.] The host is
+  Node (D29): its lessons go here as they're learned, and `DESIGN.md`'s
+  "What the host gives" holds what the language takes from it or
+  overrides. The rest of this item is main's, the compiler's lessons
+  in C, kept for the record and not binding here. C doesn't order
   a call's arguments: never pass a variable and a call that sets it in
   the same argument list (`runtime/rt.c`'s arithmetic read `r` before
   `__builtin_add_overflow` set it under clang, and gcc hid it), and
@@ -128,9 +105,12 @@ limit.
 
 ## Toolchain
 
-- Node 22.18 or later (it runs the compiler's TypeScript as it is, so
-  the compiler uses only erasable syntax: no parameter properties, no
-  enums) and a C compiler as `cc`.
+- Node 22.18 or later (it runs the interpreter's TypeScript as it is,
+  so the interpreter uses only erasable syntax: no parameter
+  properties, no enums); a second Node for `make golden-node`
+  (`/opt/node24/bin/node` on the cloud machine, `LANG_NODE_OTHER`
+  elsewhere); Python 3 for the models, the referee and the checks. No
+  C compiler.
 - [The machine cloud sessions develop on, and how a target that isn't
   native runs there (cross-compile and an emulator, say), once there is
   one.]
@@ -141,10 +121,9 @@ limit.
 
 | Path | |
 |---|---|
-| `bin/` | The driver |
-| `compiler/src/` | One file per pass: reader, expander, checker, codegen, targets, errors |
-| `compiler/tests/` | Unit tests, per pass |
-| `runtime/` | [C, assembly, whatever the language runs on] |
+| `bin/` | The driver: `bin/lang.ts FILE` runs a program |
+| `interp/src/` | One file per pass: reader, checker, evaluator, errors |
+| `interp/tests/` | Unit tests, per pass |
 | `lib/` | The prelude, compiled into every program, and the libraries a program asks for |
 | `examples/` | Example programs; each with a `.expected` is a golden test |
 | `docs/guide/` | The guide; its code blocks are golden tests too |
@@ -162,20 +141,21 @@ limit.
   files; `make commits` checks the subjects since origin/main; `make
   hooks` installs the commit-msg hook.
 - `make check`: `tsc --noEmit` (`npm install` once, for it).
-- `make sanitize`: the golden tests under UBSan and ASan, not part of
-  `make test` (it needs clang's sanitizer runtime).
-- `node bin/langc.ts -o out file.lang`: compile and link. It writes
-  `out.c` next to `out`. Exit codes: 0 ok, 1 compile error, 2 usage or
-  toolchain error, or a file it can't read or write; a fault in the
-  compiler itself is `langc: internal error: ...` with Node's stack.
-  `LANG_CC` overrides the C compiler.
+- `make golden-node`: the golden tests under a second Node, not part
+  of `make test`; run it at the end of every step.
+- `node bin/lang.ts file.lang`: run a program: its value and a newline
+  on stdout, exit 0; a fault, `fault: ...` on stderr, exit 1 (D6); an
+  error before running, `FILE:LINE:COL: message` on stderr, exit 2
+  (D28), as is a usage error or a file it can't read; a fault in the
+  interpreter itself is `lang: internal error: ...` with Node's stack.
+  `LANG_NODE` is the Node `t/run.sh` runs it under.
 - `make decisions`: `build/decisions-workbench.html` and
   `build/decisions-a64-slight.html` (`A64=path`, `../a64-slight` by
   default), a browser of each decision log, one file each.
-- [Environment variables a compiled program reads: the virtual clock,
+- [Environment variables a program reads: the virtual clock,
   the heap cap, record and replay, the scheduling seed, the GC stress
   and poison knobs. `t/run.sh` sets the ones the tests assume.]
 
-The runtime prints the program's value, then a newline, and exits 0. A
-fault is `fault: ...` on stderr and exit 1. The golden tests check
+The interpreter prints the program's value, then a newline, and exits
+0. A fault is `fault: ...` on stderr and exit 1. The golden tests check
 stdout and stderr together, plus `exit: N` when the status isn't 0.

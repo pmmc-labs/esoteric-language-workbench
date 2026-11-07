@@ -11,6 +11,13 @@ step.
 The process is the product here. Nothing in this repo is specific to
 Lisps, actors or native code.
 
+**This branch, `interpreter`,** is the workbench for an interpreter
+rather than a compiler (`docs/DECISIONS.md`, D28 and D29;
+`docs/PROCESS.md`, "An interpreter instead of a compiler"): the
+calculator's decisions, golden tests, models and referee, its compiler
+and runtime taken out, to be built again as a tree-walker in
+TypeScript on Node. main has the compiler.
+
 ## What's here
 
 | Path | |
@@ -30,7 +37,7 @@ Lisps, actors or native code.
 | `t/referee/` | The referee: a second implementation from the decisions, which a delegated model is judged against. |
 | `docs/MODELS.md` | Which tasks need which size of model, when to escalate, when a smaller one is safe. |
 | `exp/local/` | The same experiments on a local model through ollama: a plain agent loop, the briefs, the runs. |
-| `bin/`, `compiler/`, `runtime/`, `t/run.sh`, `Makefile` | Steps 0 and 1, worked: a calculator, the smallest end-to-end compiler, its runner and its tests. |
+| `t/run.sh`, `Makefile` | The runner, which runs each golden test through `bin/lang.ts`, and the targets. The interpreter itself is built from step 0 (`docs/PLAN.md`). |
 
 ## Using it
 
@@ -40,11 +47,10 @@ Lisps, actors or native code.
 3. Write `docs/DESIGN.md`'s goals and the first decisions in
    `docs/DECISIONS.md` (D1 to D10 or so are the scope: what it's for,
    what's cut, what's borrowed). These are the person's, not the agent's.
-4. Steps 0 and 1 are built: a TypeScript compiler that Node runs as it
-   is, integer arithmetic compiled to C and linked with a C runtime,
-   `t/run.sh`, a `Makefile`, golden tests from a model, and the checks.
-   `make test` should pass; `make hooks` installs the commit check.
-   Rename `lang`, `langc` and `.lang` to the language's own, keep or
-   replace the calculator's decisions (D1 to D7), keep D8 to D10.
+4. On this branch nothing is built: `docs/PLAN.md`'s steps 0 to 5
+   build the interpreter against golden tests that already exist, and
+   `make test` passes once step 5 is done. `make hooks` installs the
+   commit check. Rename `lang` and `.lang` to the language's own, keep
+   or replace the calculator's decisions, keep D8 to D10, D28 and D29.
 5. Propose the next step. From then on the loop in `docs/PROCESS.md`
    runs.

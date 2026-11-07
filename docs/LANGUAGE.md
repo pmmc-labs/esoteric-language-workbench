@@ -9,7 +9,7 @@ commit as the feature.)
 
 An integer: 63 bits, from -4611686018427387904 to 4611686018427387903.
 Written in decimal, with a `-` for a negative. A literal past the range
-is a compile error.
+is an error before the program runs.
 
 ## Forms
 

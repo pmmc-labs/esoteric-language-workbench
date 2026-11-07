@@ -77,8 +77,9 @@ interpreter, if it has one, for the surface that's kept.
 ### A working compiler at the end of every step
 
 Ghuloum's rule (*An Incremental Approach to Compiler Construction*): the
-first step compiles one integer literal to a binary that prints it, and
-every step after adds one feature, with the suite passing at the end. No
+first step compiles one integer literal to a binary that prints it (an
+interpreter's evaluates it and prints it), and every step after adds one
+feature, with the suite passing at the end. No
 step is "the parser" or "the backend"; every step goes end to end.
 
 What it buys: no long broken stretch. A session can end anywhere. A
@@ -165,6 +166,8 @@ last. Build what applies before the second step needs it.
 A referee is a second implementation of the language, small and slow,
 written from the decisions and not from the runtime: an evaluator in
 Python that takes any program and prints what the `.expected` must be.
+For an interpreter it's in a different host from the interpreter's
+(below, "An interpreter instead of a compiler").
 It lives in `t/referee/`, and `make checks` runs it over every golden
 test, so the suite and the referee are held to agree, and a test that
 isn't covered yet is skipped until the referee grows.
@@ -278,6 +281,71 @@ followed is the shape every such find should take:
    value, undefined C that every compiler happens to do right).
 5. Name the finder in the commit (D4's subject says "Found by Stevan's
    make test"), since who found what is part of the record.
+
+### An interpreter instead of a compiler
+
+Everything above was worked out on a compiler, and almost all of it is
+about the language, not the implementation, so it holds for an
+interpreter as written: the golden tests and their models, the log,
+proposing before building, examples bending, the Status, the checks.
+Ghuloum's rule holds with its first step reworded, and gets easier,
+with no code generator or linker in the way. What changes is where the
+independent checks come from. A compiler gets some independence for
+nothing: every operation is written out by hand in C or assembly, so
+every behaviour is a choice, and a Python referee is a different
+program in a different host. An interpreter has to arrange it.
+
+- **The host leaks into the language.** A tree-walker on Python or
+  Node inherits its host's integers, division, shifts, equality, number
+  printing, string encoding and indexing, dictionary order, stack depth
+  and tail calls, unless something stops it. Each of those is a
+  decision, not an inheritance. `DESIGN.md`'s "What the host gives"
+  lists them, and for each says what the host does, which decision
+  governs it, and whether the interpreter inherits it (with the test
+  that shows that's right), overrides it (and how), or has a question
+  for the person. It's answered at the first step, before the code, and
+  gains a line when a step brings a new kind of value.
+- **What was static stays static.** An error a compiler would give
+  before a program runs (a wrong arity, an unknown name, a malformed
+  form) an interpreter gives before it evaluates anything, unless the
+  person decides otherwise; if not, a program's errors depend on which
+  branches it takes. A check pass before evaluation, and its errors in
+  unit tests.
+- **The referee in another host.** Two implementations that share a
+  host share its blind spots, and two interpreters drift toward the
+  same shape. The referee is written in a different host from the
+  interpreter (a Python referee for a TypeScript interpreter, or the
+  other way round), stays naive on purpose (the host's widest integers
+  with the decided range applied, an explicit stack, nothing
+  optimised), and is never promoted into the product, however alike the
+  two come to look. A model needs the same care: one in the
+  interpreter's own host isn't independent of the host's floats or
+  strings.
+- **The second oracle is the host's versions.** A bytecode VM in C or
+  Rust is a compiler and a runtime in all but name, and the checks
+  above apply as they are: two C compilers, the sanitizers, collector
+  stress. A tree-walker on a host with a collector loses most of them
+  and gains the host's versions instead: the suite under a second
+  release of the host (`make golden-node`), since a host's behaviour
+  can move between releases and the language mustn't move with it. The
+  person's machine still runs the suite, and will find less.
+- **Depth.** A tree-walker that recurses on the host's stack goes as
+  deep as the host allows, and fails in the host's words past it. How
+  deep a program may nest, and what happens past that, is a decision,
+  not an accident; where the language promises tail calls and the host
+  has none, the interpreter needs a trampoline.
+- **Determinism is cheaper.** The interpreter owns the clock, the
+  scheduler and every input, so a virtual clock, a seeded scheduler and
+  record and replay are smaller jobs than in a runtime. Build them as
+  early as above.
+- **Adding is cheap, so simplicity is guarded harder.** `eval`, a REPL
+  and hot reload, which a compiled language turns down partly for their
+  machinery (a64-slight's D6), are nearly free in an interpreter, and a
+  builtin is a line. Proposing before building and examples bending
+  carry all the weight: expect more proposals, not fewer.
+- **Interpreter first, compiler later.** An interpreter built this way
+  is the "earlier interpreter" among the independent sources above, the
+  oracle for a compiler that follows, for the surface that's kept.
 
 ## What a session looks like
 
