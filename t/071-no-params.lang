@@ -1,0 +1,4 @@
+; A function of no parameters (D31).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (answer) (* 6 7))
+(+ (answer) (answer))

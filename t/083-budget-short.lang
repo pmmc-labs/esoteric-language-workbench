@@ -1,0 +1,4 @@
+; The same program with a budget of 5: the last + is refused (D22, D32).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (f x y) (+ x y))
+(within 5 (f (+ 1 2) (* 3 (f 1 1))))

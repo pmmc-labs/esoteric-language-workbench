@@ -1,0 +1,4 @@
+; An if test that is not a boolean, inside a function (D13).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (pick x) (if x 1 2))
+(+ (pick #true) (pick 5))

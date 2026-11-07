@@ -1,0 +1,6 @@
+; Every definition sees every other, whatever the order (D31).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (twice-inc x) (inc (inc x)))
+(def (top) (+ (twice-inc 10) (inc 0)))
+(def (inc x) (+ x 1))
+(top)

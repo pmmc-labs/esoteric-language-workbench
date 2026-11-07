@@ -1,0 +1,5 @@
+; Mutual recursion through tail calls (D31, D33): 100,001 calls, depth 1.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (even n) (if (== n 0) #true (odd (- n 1))))
+(def (odd n) (if (== n 0) #false (even (- n 1))))
+(even 100001)

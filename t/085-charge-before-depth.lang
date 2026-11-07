@@ -1,0 +1,6 @@
+; (sum 10000) is 30,000 operations before the call that is too deep (D34).
+; A budget of 30000 is spent at that call's charge, which comes first
+; (D32): budget spent, not stack.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (sum n) (if (== n 0) 0 (+ n (sum (- n 1)))))
+(within 30000 (sum 10000))

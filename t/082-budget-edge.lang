@@ -1,0 +1,6 @@
+; A call is one operation (D32). Operations here: + 1, (f 1 1) the call 1 and
+; its body's + 1, * 1, the outer call 1 and its body's + 1 = 6. A budget
+; of exactly 6 runs.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (f x y) (+ x y))
+(within 6 (f (+ 1 2) (* 3 (f 1 1))))
