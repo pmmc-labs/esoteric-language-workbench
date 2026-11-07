@@ -6,7 +6,7 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Step 0 is built. Next: step 1.
+Steps 0 and 1 are built. Next: step 2.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -67,7 +67,7 @@ Size: medium. The decisions are made. Referee: none new;
 - Documents: `DESIGN.md`'s Values and memory and The interpreter; this heading and the progress line; `CLAUDE.md`'s
   Status.
 
-### 1. Arithmetic (to build)
+### 1. Arithmetic (done)
 
 Size: medium. Referee: none new.
 

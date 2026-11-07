@@ -24,7 +24,11 @@ interpreter reports before evaluating (D28, exit 2). **Step 0 is built:** `bin/l
 reads, checks, evaluates and prints one literal (tests 000, 001); the
 reader keeps line and column and rejects a literal past 63 bits (D4,
 D28), with unit tests. A value is a `bigint` or a `boolean`.
-**Next:** step 1. Not agreed, from main: which fault reports when one
+**Step 1** adds `+ - * / %` (tests 010 to 015; D3, D4, D5): the
+operator table is a `Map` in `ops.ts` (a plain object would make
+`toString` an operator), the checker makes the tree and reports arity,
+unknown names and a non-operator head before anything runs (unit tests,
+D7, D28). **Next:** step 2. Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
 ## Read first, in this order
