@@ -1,0 +1,11 @@
+let x = 1
+print #x
+x <- 2
+print #x
+x <- x + 10
+print #x
+print x
+print #x + 1
+print #[]
+print #[7, 8, 9]
+print -#x

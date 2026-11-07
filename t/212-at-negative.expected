@@ -1,0 +1,3 @@
+3
+fault at 3:8: @ out of range (index -1, depth 3)
+exit: 1
