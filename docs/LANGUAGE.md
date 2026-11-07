@@ -281,6 +281,9 @@ I, length N)`.
 
 `str(n)` is the decimal string of the number `n`.
 
+A builtin is called like a function and is checked for its argument count
+(`len takes 1 argument, given 2`).
+
 `len` and `at`'s first argument must be strings (`expected a string, got
 a number`); `at`'s index and `str`'s argument must be numbers.
 

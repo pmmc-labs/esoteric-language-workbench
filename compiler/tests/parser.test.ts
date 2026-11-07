@@ -19,7 +19,7 @@ test("parse errors", () => {
   assert.deepEqual(err("print"), { line: 1, col: 6, msg: "expected expression, found end of file" });
   assert.equal(err("print print").msg, "expected expression, found 'print'");
   assert.equal(err("print )").msg, "expected expression, found ')'");
-  assert.equal(err('print "s"').msg, "expected expression, found '\"s\"'");
+  assert.equal(err('print "s" "t"').msg, "expected statement, found '\"t\"'");
   assert.deepEqual(err("5"), { line: 1, col: 1, msg: "expected statement, found '5'" });
   assert.equal(err("let x = 1 )").msg, "expected statement, found ')'");
   assert.equal(err("let 1").msg, "expected name, found '1'");
@@ -38,12 +38,17 @@ test("codegen: one temporary per literal, in source order", () => {
 import type { Expr, Stmt } from "../src/parser.ts";
 const show = (e: Expr): string =>
   e.k === "int" ? e.v
+  : e.k === "str" ? JSON.stringify(e.v)
   : e.k === "name" ? e.name
   : e.k === "list" ? `[${e.elems.map(show).join(" ")}]`
   : e.k === "at" ? `(@ ${show(e.e)} ${show(e.i)})`
   : e.k === "un" ? `(${e.op} ${show(e.e)})`
   : `(${e.op} ${show(e.l)} ${show(e.r)})`;
 const sx = (src: string) => show((parse(lex("print " + src)).stmts[0] as { e: Expr }).e);
+
+test("string literals are primaries, decoded", () => {
+  assert.equal(sx('"a\\nb" + "c"'), '(+ "a\\nb" "c")');
+});
 
 test("precedence, loosest to tightest", () => {
   assert.equal(sx("1 or 2 and 3"), "(or 1 (and 2 3))");

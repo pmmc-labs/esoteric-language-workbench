@@ -47,8 +47,13 @@ histories, the empty result, the depth limit 10000 (D18, D27, D39; C
 functions with prototypes, a depth counter bracketing each call in the
 caller); golden tests `400` to `414` (`408-depth-limit` passes under
 sanitized clang without a change to D27) pass under gcc, clang and
-sanitized clang (62 each), 35 unit tests. **Next:** step 5, strings
-(`len`, `at`, `str`, string `+` and comparison), tests `500` up.
+sanitized clang (62 each), 35 unit tests. **Step 5** (strings) is built:
+literals emitted as C byte arrays with explicit lengths, `+` concatenation,
+bytewise unsigned comparison (a prefix first), `len`, `at`, `str` as
+runtime builtins faulting at their name, every type fault of D21/D20,
+builtin arity checked at compile time (D40); golden tests `500` to `522`
+pass under gcc, clang and sanitized clang (85 each), 37 unit tests.
+**Next:** step 6, the examples.
 
 ## Read first, in this order
 

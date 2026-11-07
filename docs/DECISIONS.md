@@ -436,3 +436,22 @@ D23 puts call faults, one position to learn); a depth counter in each
 callee (every `return` would need to undo it); checking bodies and
 definitions in one source-order pass (a call to a later function would
 be unknown, which is not hoisting).
+
+**D40. String and builtin details D10, D21 and D23 leave open.** *(default)*
+(1) A builtin call is checked by arity like a function call, with the same
+words and position (`len takes 1 argument, given 2`, at the name, before
+the arguments are resolved); `len` and `str` take 1, `at` takes 2. (2)
+Operands are examined left to right and the first fault wins: for `+` and
+the comparisons both tops are read (an empty history faults `empty
+history`), then the kinds are compared (`mismatched types: A and B` in
+operand order); for `at(s, i)` the string is checked, then the index, then
+the range. (3) Comparison is `memcmp` on unsigned bytes, then length, so
+a byte over 127 sorts after ASCII. (4) A literal is emitted as a `static
+const char sN[] = {...}` of decimal byte values with its length passed
+separately (an empty one is `{0}` with length 0), and the runtime copies
+it into the arena on each evaluation; `+`, `at` and `str` always make a
+new string, and strings are never freed (D26). Rejected: sharing a
+literal's static bytes in the atom (the string header holds its length
+inline, so a static one can't be built without a compiler extension);
+checking arity in the runtime (a compile-time error is cheaper and
+matches D39); checking kinds before emptiness.

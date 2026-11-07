@@ -52,6 +52,13 @@ test("a condition is resolved outside its block; an else if has its own scope", 
   assert.deepEqual(err("if 0 { let a = 1 } else if a { }"), { line: 1, col: 28, msg: "unknown variable a" });
 });
 
+test("builtin arity is checked at the name, like a function's (D40)", () => {
+  assert.deepEqual(err('print len("a", "b")'), { line: 1, col: 7, msg: "len takes 1 argument, given 2" });
+  assert.deepEqual(err("print at(1)"), { line: 1, col: 7, msg: "at takes 2 arguments, given 1" });
+  assert.deepEqual(err("print str()"), { line: 1, col: 7, msg: "str takes 1 argument, given 0" });
+  resolve(parse(lex('print at(str(1), len("x"))')));
+});
+
 test("function errors, each at the name (D24, D39)", () => {
   assert.deepEqual(err("print f(1)"), { line: 1, col: 7, msg: "unknown function f" });
   assert.deepEqual(err("f(1)"), { line: 1, col: 1, msg: "unknown function f" });

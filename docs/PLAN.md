@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Seven steps,
 inside the brief's budget of ten.
 
-**Progress:** design done; steps 0 (D33 to D35), 1 (D36), 2 (D37), 3 (D38) and 4 (D39) built. Next: step 5.
+**Progress:** design done; steps 0 (D33 to D35), 1 (D36), 2 (D37), 3 (D38) and 4 (D39) built, and 5 (D40). Next: step 6.
 
 Read [`DESIGN.md`](DESIGN.md), [`LANGUAGE.md`](LANGUAGE.md) and the
 decisions each step cites first. Every step: write the model (if any)
@@ -157,7 +157,7 @@ The core rule (D7, D11 to D15).
 - Leaves out: strings, closures (never).
 - **Size:** medium.
 
-### 5. Strings
+### 5. Strings (done)
 
 - String literals and escapes in codegen, `+` concatenation, bytewise
   comparisons, `len`, `at`, `str`, printing strings, and every type
@@ -170,7 +170,11 @@ The core rule (D7, D11 to D15).
   `507-mismatch-compare`, `508-expected-number`,
   `509-expected-string`, `510-at-range`, `511-string-condition`,
   `512-unknown-escape` (compile error), `513-unterminated` (compile
-  error), `514-string-history` (a history of strings, read with `@`).
+  error), `514-string-history` (a history of strings, read with `@`). Added:
+  `515-at-negative`, `516-or-and-string`, `517-builtin-arity`,
+  `518-str-of-string`, `519-at-index-string`,
+  `520-mismatch-string-first`, `521-at-first-arg-number`,
+  `522-string-index`.
 - Leaves out: character codes, parsing numbers (D21).
 - **Size:** medium.
 

@@ -31,6 +31,12 @@ strata_hist strata_lay(strata_hist h, strata_hist e, int line, int col);
 strata_hist strata_depth(strata_hist h, int line, int col);
 /* `h@k`: h without its top k layers; k must be in 0..#h (D13). */
 strata_hist strata_at(strata_hist h, strata_hist k, int line, int col);
+/* A string literal: copies `len` bytes into a one-layer history. */
+strata_hist strata_lit(const char *bytes, int64_t len);
+/* The builtins (D21); a fault is at the builtin's name. */
+strata_hist strata_len(strata_hist s, int line, int col);
+strata_hist strata_char_at(strata_hist s, strata_hist i, int line, int col);
+strata_hist strata_to_str(strata_hist n, int line, int col);
 void strata_print(strata_hist h, int line, int col);
 void strata_write(strata_hist h, int line, int col);
 

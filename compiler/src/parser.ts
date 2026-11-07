@@ -5,6 +5,7 @@ import type { Token } from "./lexer.ts";
 // operator token for operators.
 export type Expr =
   | { k: "int"; v: string; line: number; col: number }
+  | { k: "str"; v: string; line: number; col: number }
   | { k: "name"; name: string; line: number; col: number }
   | { k: "call"; name: string; args: Expr[]; line: number; col: number }
   | { k: "list"; elems: Expr[]; line: number; col: number }
@@ -75,6 +76,10 @@ export function parse(toks: Token[]): Program {
     if (t.k === "int") {
       p++;
       return { k: "int", v: t.val, line: t.line, col: t.col };
+    }
+    if (t.k === "str") {
+      p++;
+      return { k: "str", v: t.val, line: t.line, col: t.col };
     }
     if (t.k === "name") {
       p++;

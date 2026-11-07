@@ -8,7 +8,7 @@ import type { Expr, Fn, Program, Stmt } from "./parser.ts";
 // from an empty stack, so it sees none of the main program's names (D18).
 // Function names are a separate namespace, collected before any body is
 // checked, which is what makes hoisting work (D39).
-const BUILTINS = new Set(["len", "at", "str"]);
+const BUILTINS = new Map([["len", 1], ["at", 2], ["str", 1]]);
 
 export function resolve(prog: Program): Program {
   let scopes: Set<string>[] = [new Set()];
@@ -23,15 +23,17 @@ export function resolve(prog: Program): Program {
 
   const expr = (e: Expr): void => {
     switch (e.k) {
-      case "int": return;
+      case "int": case "str": return;
       case "name":
         if (!visible(e.name)) fail(e.line, e.col, `unknown variable ${e.name}`);
         return;
       case "call": {
+        // Builtins are checked like functions, by arity (D40).
         const f = fns.get(e.name);
-        if (!f) fail(e.line, e.col, `unknown function ${e.name}`);
-        if (f.params.length !== e.args.length) {
-          const n = f.params.length;
+        const want = BUILTINS.get(e.name) ?? f?.params.length;
+        if (want === undefined) fail(e.line, e.col, `unknown function ${e.name}`);
+        if (want !== e.args.length) {
+          const n = want;
           fail(e.line, e.col,
             `${e.name} takes ${n} argument${n === 1 ? "" : "s"}, given ${e.args.length}`);
         }

@@ -5,6 +5,8 @@ const BIN: Record<string, string> = {
   "=": "eq", "!=": "ne", "<": "lt", "<=": "le", ">": "gt", ">=": "ge",
 };
 
+const BUILTIN: Record<string, string> = { len: "len", at: "char_at", str: "to_str" };
+
 // Every subexpression goes into a fresh temporary, in source order (D25).
 // Every value is a history (D11), so a literal is a one-layer history.
 // Runtime calls only ever see temporaries, so C's unspecified argument
@@ -14,6 +16,7 @@ const BIN: Record<string, string> = {
 export function codegen(prog: Program): string {
   const out: string[] = [];
   let tmp = 0;
+  let lits = 0;
   let depth = 1;
   const emit = (s: string) => out.push("  ".repeat(depth) + s);
   const fresh = () => `t${++tmp}`;
@@ -22,6 +25,16 @@ export function codegen(prog: Program): string {
     if (e.k === "int") {
       const t = fresh();
       emit(`strata_hist ${t} = strata_num(INT64_C(${e.v}));`);
+      return t;
+    }
+    if (e.k === "str") {
+      // Bytes as a C array with an explicit length, so any byte is safe
+      // (NUL, quotes, trigraphs); an empty string still needs one element.
+      const n = ++lits;
+      const bytes = [...e.v].map((c) => c.charCodeAt(0)).join(",") || "0";
+      emit(`static const char s${n}[] = {${bytes}};`);
+      const t = fresh();
+      emit(`strata_hist ${t} = strata_lit(s${n}, ${e.v.length});`);
       return t;
     }
     if (e.k === "name") {
@@ -45,6 +58,11 @@ export function codegen(prog: Program): string {
       // caller, so a `return` in the middle of the callee needs no cleanup.
       const ts = e.args.map(expr);
       const t = fresh();
+      if (Object.hasOwn(BUILTIN, e.name)) {
+        // Builtins are runtime functions that fault at the name (D21, D23).
+        emit(`strata_hist ${t} = strata_${BUILTIN[e.name]}(${ts.join(", ")}, ${e.line}, ${e.col});`);
+        return t;
+      }
       emit(`strata_enter(${e.line}, ${e.col});`);
       emit(`strata_hist ${t} = f_${e.name}(${ts.join(", ")});`);
       emit(`strata_leave();`);
