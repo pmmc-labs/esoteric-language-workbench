@@ -411,7 +411,7 @@ them with `dt_interp`. Rejected: parsing `.name` now to give
 `setjmp` for misses (D20 rejects it); building each literal on every
 evaluation (allocation per iteration for no gain).
 
-**D43. Step 5 details the spec left open.** *(default)* Sorting: `sort`
+**D43. Step 5 details the spec left open.** *(default; designer, kept)* Sorting: `sort`
 is a stable merge sort that puts the right item first only when it is
 strictly less than the left one, so the pair it compares is always
 (later, earlier) and an uncomparable pair faults as `later < earlier`
