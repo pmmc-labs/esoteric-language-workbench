@@ -25,6 +25,10 @@ const nonzero = (b: bigint): bigint => {
   return b;
 };
 
+// D12: an ordering on a non-integer faults; == and != take any two values,
+// and values of different types are unequal (=== on a bigint and a boolean).
+const ord = (f: (a: bigint, b: bigint) => boolean) => (a: Value, b: Value): Value => f(...ints(a, b));
+
 export type Op = (a: Value, b: Value) => Value;
 
 export const ops: Map<string, Op> = new Map<string, Op>([
@@ -33,4 +37,10 @@ export const ops: Map<string, Op> = new Map<string, Op>([
   ["*", int2((a, b) => a * b)],
   ["/", int2((a, b) => a / nonzero(b))],
   ["%", int2((a, b) => a % nonzero(b))],
+  ["<", ord((a, b) => a < b)],
+  ["<=", ord((a, b) => a <= b)],
+  [">", ord((a, b) => a > b)],
+  [">=", ord((a, b) => a >= b)],
+  ["==", (a, b) => a === b],
+  ["!=", (a, b) => a !== b],
 ]);

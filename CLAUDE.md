@@ -28,7 +28,11 @@ D28), with unit tests. A value is a `bigint` or a `boolean`.
 operator table is a `Map` in `ops.ts` (a plain object would make
 `toString` an operator), the checker makes the tree and reports arity,
 unknown names and a non-operator head before anything runs (unit tests,
-D7, D28). **Next:** step 2. Not agreed, from main: which fault reports when one
+D7, D28). **Step 2** adds `#true`
+and `#false` (the checker turns the symbols into JS booleans, D11), the
+six comparisons (D12; `==` is `===`, so unlike types are unequal) and
+`if` (D13) as a node of its own; its arity is checked in a branch never
+taken too (D28, unit test). Tests 020 to 024. **Next:** step 3. Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
 ## Read first, in this order

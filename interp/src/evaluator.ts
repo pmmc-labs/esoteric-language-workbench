@@ -3,6 +3,7 @@
 // Left to right (D25): an operator's left operand, then its right, then
 // the operator.
 import type { Node, Value } from "./checker.ts";
+import { Fault } from "./errors.ts";
 import { ops } from "./ops.ts";
 
 export function evaluate(n: Node): Value {
@@ -12,6 +13,12 @@ export function evaluate(n: Node): Value {
       const a = evaluate(n.a);
       const b = evaluate(n.b);
       return ops.get(n.name)!(a, b);
+    }
+    case "if": {
+      // D13: no truthiness, and only the taken branch is evaluated.
+      const t = evaluate(n.test);
+      if (typeof t !== "boolean") throw new Fault("not a boolean");
+      return evaluate(t ? n.then : n.else);
     }
   }
 }
