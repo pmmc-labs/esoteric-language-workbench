@@ -157,8 +157,7 @@ mirror of the interpreter would copy the host.
   test in `interp/tests/`, and a position's column counts code points.
 - Printing (D32).
 - The six operators (D33), their faults, and `==` and `!=` on strings.
-- Tests 070 and up, written already, from `t/models/strings.py` and by
-  hand. The step is done when they and every earlier step's pass under
+- Tests 070 to 089, written already, from `t/models/strings.py`. The step is done when they and every earlier step's pass under
   both Nodes, no file under `t/` is changed, and the documents are
   moved.
 - Documents: `LANGUAGE.md` gains a section on strings (literals and
