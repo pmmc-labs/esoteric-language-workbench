@@ -1,0 +1,2 @@
+t/778-err-default-at-end-of-file.ditto:2:20: error: expected an expression, found end of file
+exit: 2

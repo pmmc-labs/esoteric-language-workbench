@@ -1,0 +1,2 @@
+fn last(list) { return list[len(list) - 1] }
+print((last([]) + [1][0]) else 0)

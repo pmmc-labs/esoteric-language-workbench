@@ -1,0 +1,2 @@
+t/772-err-unknown-variable-before-else.ditto:1:7: error: unknown variable z
+exit: 2

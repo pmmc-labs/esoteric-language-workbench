@@ -1,0 +1,52 @@
+fn note(x) {
+  print("note", x)
+  return x
+}
+let xs = [10, 20, 30]
+let s = "abc"
+let m = {a: 1, b: 2, "two words": 3, 7: "seven", e: [], -1: "minus"}
+let deep = {list: [1, [2, 3]], rec: {k: "v"}, nothing: nil}
+let n1 = "42"
+let bad = "4x"
+let neg = "-17"
+let empty = ""
+let big = "9223372036854775808"
+let lo = "-9223372036854775808"
+let toolo = "-9223372036854775809"
+print(xs[0] else note("default"))
+print(xs[9] else note("default"))
+print(xs[0] else xs[99])
+print(xs[note(5)] else note(0))
+print(xs[note(1)] else note(0))
+print(note(xs[9]) else 7)
+print(note(xs[0]) else 7)
+print((note(1) + xs[note(9)]) else note(2))
+print((note(xs[9]) + note(1)) else note(2))
+print(xs[m["z"]] else -1)
+print(xs[m["b"]] else -1)
+print(xs[xs[xs[0]]] else -1)
+print(xs[xs[xs[7]]] else -1)
+print(s[int("2")] else "none")
+print(s[int("two")] else "none")
+print("\{{xs[9]}}" else "none")
+print("v={xs[0]}!" else "none")
+print("v={xs[9]}!" else "none")
+print("a{xs[0]}b{m["z"]}c" else "none")
+print("a{xs[0]}b{m["z"] else "q"}c" else "none")
+print("n={int("{xs[0]}")}." else "none")
+print("n={int("{m.a}x")}." else "none")
+print("{"{xs[5]}"}" else "outer")
+print([xs[0], xs[9]] else [])
+print([xs[0], xs[1]] else [])
+print({a: xs[0], b: m.z} else {})
+print({a: xs[0], b: m.b} else {})
+print([1, 2, 3][5] else 0)
+print({a: 1}.a else 0)
+print({a: 1}.b else 0)
+print((xs[9] else [4, 5])[1])
+print([4, 5, 6][xs[9] else 2])
+print([[1], [2, 3]][xs[7] else 1][m.q else 1] else -1)
+print(xs[m.q else 1] else 0)
+print(xs[m.q else 9] else 0)
+print(xs[0] else 0 + note(xs[9]) else 1)
+print((xs[0] else 0) + (note(xs[9]) else 1))

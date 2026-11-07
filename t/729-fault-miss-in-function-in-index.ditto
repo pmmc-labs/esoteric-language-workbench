@@ -1,0 +1,3 @@
+fn at(list, i) { return list[i] }
+let xs = [1, 2]
+print(xs[at(xs, 7)] else 0)

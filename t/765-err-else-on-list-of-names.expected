@@ -1,0 +1,2 @@
+t/765-err-else-on-list-of-names.ditto:2:11: error: else needs a lookup on its left: an index, a field or int()
+exit: 2

@@ -1,0 +1,2 @@
+t/721-fault-int-of-int-not-caught.ditto:1:7: fault: int: expected a string, got int
+exit: 1

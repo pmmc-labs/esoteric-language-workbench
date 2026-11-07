@@ -1,0 +1,2 @@
+t/780-err-else-as-name.ditto:1:5: error: expected a name, found 'else'
+exit: 2

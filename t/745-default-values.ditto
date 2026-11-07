@@ -1,0 +1,7 @@
+let xs = [10, 20, 30]
+let m = {a: 1, b: 2}
+print(m.z else {a: 1})
+print(m.z else nil)
+print(xs[7] else [])
+print(xs[7] else "s")
+print(m.z else m.a else 0)

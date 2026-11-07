@@ -1,0 +1,2 @@
+fn num(s) { return int(s) }
+print((num("x") + [1][0]) else 0)

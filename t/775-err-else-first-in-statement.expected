@@ -1,0 +1,2 @@
+t/775-err-else-first-in-statement.ditto:1:1: error: expected a statement, found 'else'
+exit: 2

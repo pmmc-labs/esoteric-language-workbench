@@ -1,0 +1,2 @@
+t/730-fault-condition-after-else.ditto:3:4: fault: condition must be a bool, got int
+exit: 1

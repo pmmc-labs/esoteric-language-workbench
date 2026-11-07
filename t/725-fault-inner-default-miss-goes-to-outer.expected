@@ -1,0 +1,2 @@
+t/725-fault-inner-default-miss-goes-to-outer.ditto:3:30: fault: missing key "y"
+exit: 1

@@ -1,0 +1,4 @@
+let xs = [10, 20, 30]
+let m = {a: 1, b: 2}
+print(m.b else 0)
+print(m.z else m.c)

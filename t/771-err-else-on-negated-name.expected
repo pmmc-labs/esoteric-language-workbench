@@ -1,0 +1,2 @@
+t/771-err-else-on-negated-name.ditto:2:10: error: else needs a lookup on its left: an index, a field or int()
+exit: 2

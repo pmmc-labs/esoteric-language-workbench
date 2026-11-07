@@ -1,0 +1,2 @@
+t/774-err-unknown-variable-on-right.ditto:2:18: error: unknown variable z
+exit: 2

@@ -1,0 +1,3 @@
+0
+t/728-fault-after-caught-miss.ditto:4:9: fault: index 9 out of range (length 3)
+exit: 1

@@ -1,0 +1,7 @@
+home station ["home", "bakery", "market", "station"]
+lake school ["lake", "park", "home", "bakery", "school"]
+home home ["home"]
+park market ["park", "home", "bakery", "market"]
+home nowhere nil
+nowhere home nil
+[] none 3

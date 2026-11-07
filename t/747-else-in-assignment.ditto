@@ -1,0 +1,8 @@
+let xs = [10, 20, 30]
+let m = {a: 1, b: 2}
+let x = 0
+x = xs[7] else 5
+x += xs[0] else 1
+print(x)
+x -= m.z else 100
+print(x)

@@ -1,0 +1,2 @@
+t/727-fault-miss-right-of-plus.ditto:3:24: fault: index 9 out of range (length 3)
+exit: 1

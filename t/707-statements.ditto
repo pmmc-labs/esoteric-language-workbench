@@ -1,0 +1,56 @@
+fn first_word(line) {
+  return words(line)[0] else ""
+}
+fn lookup(table, key) {
+  return table[key] else nil
+}
+fn digits(text) {
+  let n = int(text) else -1
+  return n
+}
+let table = {a: 1, b: 2, c: 3}
+print(lookup(table, "a"), lookup(table, "zz"), lookup(table, "c"))
+print("[" + first_word("hello world") + "]", "[" + first_word("   ") + "]")
+print(digits("12"), digits("x"), digits(""), digits("-5"))
+let total = 0
+for k in ["a", "x", "b", "q", "c"] {
+  total += table[k] else 100
+}
+print(total)
+let xs = [3, 2, 1]
+let i = 0
+let sum = 0
+while xs[i] else 0 > 0 {
+  sum += xs[i]
+  i += 1
+}
+print(i, sum)
+let flags = {on: true}
+if flags.on else false {
+  print("on")
+}
+if flags.off else false {
+  print("off")
+} else {
+  print("not off")
+}
+let pos = {at: 1}
+xs[pos.at else 0] = 99
+xs[pos.nowhere else 2] = 77
+print(xs)
+let grid = [[1, 2], [3, 4]]
+grid[grid[1][5] else 0][pos.at else 0] += 10
+print(grid)
+let words2 = {}
+for w in ["a", "b", "a"] {
+  words2[w] = (words2[w] else []) + [len(words2[w] else [])]
+}
+print(words2)
+let found = nil
+for k in keys(table) {
+  if table[k] else 0 >= 2 { found = k; break }
+}
+print(found)
+let lists = {a: [1, 2]}
+for x in lists.d else [7, 8] { print(x) }
+for x in lists.a else [0] { print(x) }

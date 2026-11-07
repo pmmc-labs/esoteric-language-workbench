@@ -1,0 +1,2 @@
+t/714-fault-chain-last-misses.ditto:3:31: fault: index 7 out of range (length 3)
+exit: 1

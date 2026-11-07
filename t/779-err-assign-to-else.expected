@@ -1,0 +1,2 @@
+t/779-err-assign-to-else.ditto:2:1: error: cannot assign to this
+exit: 2

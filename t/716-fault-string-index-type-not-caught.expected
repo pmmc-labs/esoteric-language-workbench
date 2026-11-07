@@ -1,0 +1,2 @@
+t/716-fault-string-index-type-not-caught.ditto:1:12: fault: string index must be an int, got string
+exit: 1

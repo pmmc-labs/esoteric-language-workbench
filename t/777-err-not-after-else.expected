@@ -1,0 +1,2 @@
+t/777-err-not-after-else.ditto:2:18: error: expected an expression, found 'not'
+exit: 2

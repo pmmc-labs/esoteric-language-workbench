@@ -1,0 +1,2 @@
+t/715-fault-else-binds-next-operand.ditto:3:9: fault: index 5 out of range (length 3)
+exit: 1

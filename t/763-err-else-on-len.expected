@@ -1,0 +1,2 @@
+t/763-err-else-on-len.ditto:2:15: error: else needs a lookup on its left: an index, a field or int()
+exit: 2

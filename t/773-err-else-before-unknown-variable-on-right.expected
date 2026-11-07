@@ -1,0 +1,2 @@
+t/773-err-else-before-unknown-variable-on-right.ditto:1:9: error: else needs a lookup on its left: an index, a field or int()
+exit: 2

@@ -1,0 +1,3 @@
+fn price(item) { return item.price }
+let cart = {name: "pen"}
+print((price(cart) + cart["name"]) else 0)

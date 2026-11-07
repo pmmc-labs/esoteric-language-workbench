@@ -1,0 +1,2 @@
+fn first(list) { return list[0] }
+print((first([]) + [5][0]) else 0)

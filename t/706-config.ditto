@@ -1,0 +1,18 @@
+let raw = {}
+let settings = {}
+let bare = []
+for line in split(read(), "\n") {
+  if line == "" { continue }
+  let parts = split(line, "=")
+  let value = parts[1] else ""
+  if len(parts) == 1 { bare += [parts[0]] }
+  raw[parts[0]] = value
+  settings[parts[0]] = int(value) else value
+}
+print(settings)
+print(bare)
+let port = int(raw.port else "") else 80
+let retries = int(raw.retries else "") else 3
+let workers = int(raw.workers else "") else 4
+print(port, retries, workers)
+print(settings.depth else 0, settings.nothing else 0, settings["host"] else "-")

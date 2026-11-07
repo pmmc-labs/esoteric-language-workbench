@@ -1,0 +1,32 @@
+fn route(roads, start, goal) {
+  let came_from = {}
+  came_from[start] = start
+  let queue = [start]
+  let next = 0
+  while next < len(queue) {
+    let here = queue[next]
+    next += 1
+    if here == goal {
+      let path = [goal]
+      while path[0] != start {
+        path = [came_from[path[0]]] + path
+      }
+      return path
+    }
+    for road in roads[here] else [] {
+      if road not in came_from {
+        came_from[road] = here
+        queue += [road]
+      }
+    }
+  }
+  return nil
+}
+let roads = {home: ["bakery", "park"], bakery: ["home", "market", "school"], park: ["home", "lake"], market: ["bakery", "station"], school: ["bakery", "station"], lake: ["park"], station: ["market", "school"], island: []}
+print("home", "station", route(roads, "home", "station"))
+print("lake", "school", route(roads, "lake", "school"))
+print("home", "home", route(roads, "home", "home"))
+print("park", "market", route(roads, "park", "market"))
+print("home", "nowhere", route(roads, "home", "nowhere"))
+print("nowhere", "home", route(roads, "nowhere", "home"))
+print(roads.island else "none", roads.sea else "none", len(roads["bakery"] else []))

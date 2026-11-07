@@ -1,0 +1,2 @@
+t/718-fault-map-key-type-not-caught.ditto:3:8: fault: map key must be an int or a string, got list
+exit: 1

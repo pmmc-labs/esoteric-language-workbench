@@ -1,0 +1,2 @@
+t/712-fault-int-in-called-function.ditto:1:20: fault: not a number: "x"
+exit: 1

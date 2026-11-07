@@ -1,0 +1,9 @@
+let counts = {}
+let order = []
+for w in words(lower(read())) {
+  counts[w] = counts[w] else 0 + 1
+  if counts[w] == 1 { order += [w] }
+}
+for w in order { print("{w}: {counts[w]}") }
+print(counts.the else 0, counts.zebra else 0, counts["fox"] else -1)
+print("{counts.dog else 0} dogs, {counts.cat else 0} cats")

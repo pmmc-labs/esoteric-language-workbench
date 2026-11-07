@@ -1,0 +1,4 @@
+fn get(list, i) { return list[i] else -1 }
+print(get([1, 2], 5), get([1, 2], 1))
+print((get([], 0) + [1][5]) else 9)
+print((get([], 0) + [1][0]) else 9)

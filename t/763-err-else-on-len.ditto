@@ -1,0 +1,2 @@
+let xs = [1]
+print(len(xs) else 2)

@@ -1,0 +1,2 @@
+t/713-fault-miss-in-default.ditto:4:17: fault: missing key "c"
+exit: 1

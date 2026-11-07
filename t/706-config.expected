@@ -1,0 +1,4 @@
+{"port": 8080, "host": "example.org", "retries": "x3", "depth": -12, "verbose": "", "name": "a", "timeout": "", "big": "99999999999999999999"}
+["verbose"]
+8080 3 4
+-12 0 example.org

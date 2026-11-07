@@ -1,0 +1,6 @@
+let xs = [10, 20, 30]
+let m = {a: 1, b: 2}
+xs[m.z else 1] = 99
+print(xs)
+xs[xs[7] else 0] += 1
+print(xs)

@@ -1,0 +1,2 @@
+t/720-fault-field-on-list-not-caught.ditto:3:9: fault: cannot use .count on list
+exit: 1

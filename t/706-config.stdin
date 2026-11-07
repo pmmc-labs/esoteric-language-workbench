@@ -1,0 +1,9 @@
+port=8080
+host=example.org
+retries=x3
+depth=-12
+verbose
+name=a=b
+
+timeout=
+big=99999999999999999999
