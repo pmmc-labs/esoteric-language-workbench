@@ -91,7 +91,22 @@ form for `else`; `t/models/maps.py` writes golden tests 600 to 611 (Python
 dicts deep-copied at every store, two random programs), faults 612 to 649,
 semantics 650 to 666 and errors 670 to 699 are by hand; 496 golden tests and
 169 unit tests, green under `cc`, clang and the sanitizers. Builder default
-awaiting review: D44. **Next:** step 7, `else`.
+awaiting review: D44.
+Step 7 (`else`) is done: `a else b` at its precedence (tighter than every
+binary operator, looser than prefix minus, left-associative), the resolver's
+`else needs a lookup on its left: an index, a field or int()` at the `else`,
+and codegen with a stack of `goto` labels: a lookup written in a left operand
+(index, field, `int`, including in index expressions, arguments, literals and
+interpolations there) calls its `dt_try_` form and jumps to the innermost
+`else`'s fallback on a miss, while a called function's body, compiled with no
+labels, never catches (D20, D30); no runtime change; `t/models/fallback.py`
+writes golden tests 700 to 709 (every lookup hitting and missing, chains,
+precedence minimal and parenthesised, laziness and order, word count, routes
+and config parsing with `.stdin`, `else` in every statement, two random
+programs against a Python evaluator), faults 710 to 731, semantics 740 to 749
+and errors 760 to 784 are by hand; 563 golden tests and 173 unit tests,
+green under `cc`, clang and the sanitizers. Builder default awaiting review:
+D46. **Next:** step 8, the examples.
 
 ## Read first, in this order
 

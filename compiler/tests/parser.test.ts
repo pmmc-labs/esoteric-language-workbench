@@ -67,7 +67,7 @@ function sx(e: any): string {
     case 'bool': return String(e.value);
     case 'nil': return 'nil';
     case 'unary': return `(${e.op} ${sx(e.operand)})`;
-    case 'binary': case 'logic': return `(${e.op} ${sx(e.left)} ${sx(e.right)})`;
+    case 'binary': case 'logic': case 'else': return `(${e.op ?? 'else'} ${sx(e.left)} ${sx(e.right)})`;
     case 'name': return e.name;
     case 'call': return `${e.name}(${e.args.map(sx).join(' ')})`;
     case 'index': return `${sx(e.target)}[${sx(e.index)}]`;
@@ -498,4 +498,27 @@ test('a map literal after a condition or a loop header is a value, and the block
   assert.equal(sx(b[0].cond), '(== m {})');
   assert.equal(sx(b[1].iter.expr), '{"a":1}');
   assert.equal(sx(b[2].cond), '(!= {} m)');
+});
+
+test('else binds tighter than every binary operator, looser than prefix minus, and associates left', () => {
+  assert.equal(shape('m[k] else 0 + 1'), '(+ (else m[k] 0) 1)');
+  assert.equal(shape('1 + m[k] else 0'), '(+ 1 (else m[k] 0))');
+  assert.equal(shape('2 * m[k] else 3 % 4'), '(% (* 2 (else m[k] 3)) 4)');
+  assert.equal(shape('a < m[k] else 0'), '(< a (else m[k] 0))');
+  assert.equal(shape('a and m[k] else b'), '(and a (else m[k] b))');
+  assert.equal(shape('-m[k] else 5'), '(else (- m[k]) 5)');
+  assert.equal(shape('m[k] else -5'), '(else m[k] (- 5))');
+  assert.equal(shape('a[0] else b[1] else c'), '(else (else a[0] b[1]) c)');
+  assert.equal(shape('a[0] else (b[1] else c)'), '(else a[0] (else b[1] c))');
+  assert.equal(shape('f(a[0] else 1) else 2'), '(else f((else a[0] 1)) 2)');
+  assert.equal(shape('a[b else 1] else 2'), '(else a[(else b 1)] 2)');
+  assert.equal(shape('"{a[0] else 1}x" else 2'), '(else "{(else a[0] 1)}x" 2)');
+  // A newline after `else` doesn't end the statement; before it, it does.
+  assert.equal(shape('a[0] else\n 1'), '(else a[0] 1)');
+  assert.equal(sx((ast('let x = a[0] else\n  1').body[0] as any).value), '(else a[0] 1)');
+  assert.deepEqual((ast('print(a[0] else 1)').body[0] as any).expr.args[0].pos, at(1, 12));
+  parseError('a[0]\nelse 1', "expected a statement, found 'else'", 2, 1);
+  parseError('print(a[0] else)', "expected an expression, found ')'", 1, 16);
+  parseError('print(a[0] else not b)', "expected an expression, found 'not'", 1, 17);
+  parseError('else 1', "expected a statement, found 'else'", 1, 1);
 });

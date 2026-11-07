@@ -30,6 +30,28 @@ export function codegen(program: Program, path: string): string {
     return t;
   }
 
+  // The `miss` labels of the `else`s whose left operand is being compiled,
+  // innermost last. A lookup written there branches to the innermost one when
+  // it finds nothing (D20): which misses are caught is where the code is
+  // written, so a called function's body, compiled apart, has no label.
+  const catchers: string[] = [];
+  // Labels some lookup jumps to: an unused label is a -Wunused-label error (D37),
+  // which happens when an inner `else` catches every lookup of a left operand.
+  const usedLabels = new Set<string>();
+
+  // `Value t = dt_try_X(...)`: with a catcher, a miss is a `goto`; without, the
+  // faulting form.
+  function lookupCall(depth: number, t: string, tryFn: string, faultFn: string, args: string) {
+    if (catchers.length === 0) {
+      emit(depth, `Value ${t} = ${faultFn}(${args});`);
+    } else {
+      emit(depth, `Value ${t} = dt_nil();`);
+      const label = catchers[catchers.length - 1];
+      usedLabels.add(label);
+      emit(depth, `if (!${tryFn}(${args}, &${t})) goto ${label};`);
+    }
+  }
+
   // Emits the code for `e` and returns the name of the temporary holding it.
   function expr(e: Expr, depth: number): string {
     switch (e.kind) {
@@ -100,9 +122,9 @@ export function codegen(program: Program, path: string): string {
         const c = expr(e.target, depth);
         const i = expr(e.index, depth);
         const t = `t${++temps}`;
-        // dt_index is dt_try_index plus the fault for a miss; step 7's `else`
-        // calls dt_try_index itself and branches on the result.
-        emit(depth, `Value ${t} = dt_index(${e.pos.line}, ${e.pos.col}, ${c}, ${i});`);
+        // dt_index is dt_try_index plus the fault for a miss; inside an `else`'s
+        // left operand the try form is called and a miss branches.
+        lookupCall(depth, t, 'dt_try_index', 'dt_index', `${e.pos.line}, ${e.pos.col}, ${c}, ${i}`);
         return t;
       }
       case 'field': {
@@ -110,7 +132,7 @@ export function codegen(program: Program, path: string): string {
         const k = literal(e.name, depth);
         const t = `t${++temps}`;
         // Like an index: dt_field is dt_try_field plus the fault for a miss.
-        emit(depth, `Value ${t} = dt_field(${e.pos.line}, ${e.pos.col}, ${c}, ${k});`);
+        lookupCall(depth, t, 'dt_try_field', 'dt_field', `${e.pos.line}, ${e.pos.col}, ${c}, ${k}`);
         return t;
       }
       case 'map': {
@@ -147,6 +169,29 @@ export function codegen(program: Program, path: string): string {
         emit(depth, '}');
         return t;
       }
+      case 'else': {
+        // The result is the left operand, computed in a block whose lookups
+        // `goto miss` when they find nothing; the right operand runs only from
+        // there, outside the catcher, so a miss in it belongs to an `else`
+        // further out (D30: `if` and `goto`, nothing nested).
+        const n = ++temps;
+        const t = `t${n}`;
+        emit(depth, `Value ${t} = dt_nil();`);
+        emit(depth, '{');
+        catchers.push(`miss${n}`);
+        const l = expr(e.left, depth + 1);
+        catchers.pop();
+        emit(depth + 1, `${t} = ${l};`);
+        emit(depth + 1, `goto done${n};`);
+        emit(depth, '}');
+        if (usedLabels.has(`miss${n}`)) emit(depth, `miss${n}: ;`);
+        emit(depth, '{');
+        const r = expr(e.right, depth + 1);
+        emit(depth + 1, `${t} = ${r};`);
+        emit(depth, '}');
+        emit(depth, `done${n}: ;`);
+        return t;
+      }
       case 'call': {
         const args = e.args.map((a) => expr(a, depth));
         const t = `t${++temps}`;
@@ -156,6 +201,11 @@ export function codegen(program: Program, path: string): string {
           emit(depth, `dt_enter(${line}, ${col});`);
           emit(depth, `Value ${t} = f_${e.name}(${args.join(', ')});`);
           emit(depth, 'dt_leave();');
+          return t;
+        }
+        if (e.name === 'int' && catchers.length > 0) {
+          // The one builtin that is a lookup: a string that isn't a number is a miss.
+          lookupCall(depth, t, 'dt_try_int', '', `${line}, ${col}, ${args[0]}`);
           return t;
         }
         let argv = 'NULL';

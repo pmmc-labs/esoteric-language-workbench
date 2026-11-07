@@ -219,3 +219,27 @@ test('the runtime header declares the map lookups in their try form, for step 7'
   assert.match(h, /Value dt_b_keys\(/);
   assert.match(h, /Value dt_b_remove\(/);
 });
+
+test('an else compiles to if and goto: the try form inside its left operand, the fault form elsewhere', () => {
+  const c = compile('let xs = [1]\nprint(xs[5] else 0, xs[0], int("x") else 1, xs.a else 2)', 'a.ditto');
+  assert.match(c, /if \(!dt_try_index\(2, 9, t\d+, t\d+, &t\d+\)\) goto miss\d+;/);
+  assert.match(c, /dt_index\(2, 23, t\d+, /);
+  assert.match(c, /if \(!dt_try_int\(2, 28, t\d+, &t\d+\)\) goto miss\d+;/);
+  assert.match(c, /if \(!dt_try_field\(2, 47, t\d+, t\d+, &t\d+\)\) goto miss\d+;/);
+  assert.doesNotMatch(c, /dt_b_int|dt_field\(|&&|\?/);
+  // The right operand sits after the label, outside the left operand's catcher.
+  const d = compile('let xs = [1]\nprint(xs[5] else xs[6])', 'a.ditto');
+  assert.ok(d.indexOf('miss') < d.indexOf('dt_index(2, 20, '), d);
+  assert.match(d, /dt_try_index\(2, 9, /);
+  // A function's body is compiled with no catcher, whatever calls it.
+  const e = compile('fn f(xs) { return xs[0] }\nprint((f([]) + [1][5]) else 0)', 'a.ditto');
+  assert.match(e, /return t\d+;/);
+  assert.match(e, /dt_index\(1, 21, t\d+, /);
+});
+
+test('a miss label is written only when a lookup jumps to it', () => {
+  // The inner else catches the only lookup, so the outer one has no label.
+  const c = compile('let xs = [1]\nprint((xs[5] else 0) else 1)', 'a.ditto');
+  assert.equal(c.match(/^\s*miss\d+: ;/gm)?.length, 1);
+  assert.equal(c.match(/^\s*done\d+: ;/gm)?.length, 2);
+});

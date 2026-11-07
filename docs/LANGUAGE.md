@@ -324,7 +324,9 @@ A left operand with no lookup written in it is
 `else` binds tighter than any binary operator and looser than prefix
 minus, so it attaches to the operand next to it, and associates to the
 left: `a else b else c` tries `a`, then `b`, then gives `c`.
-(Step 7, D20.)
+A lookup written in the right operand of an inner `else` belongs to the
+`else`s around it. A newline after `else` is ignored, as after any binary
+operator. (Step 7, D20, D46.)
 
 ### Calls
 

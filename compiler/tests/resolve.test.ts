@@ -300,3 +300,24 @@ test('names in a map literal, a field and the steps of an assignment target are 
 test('a map is not a statement', () => {
   fails('let m = {}\nm.a', 'expression statement must be a call', 2, 1);
 });
+
+test('else needs a lookup written in its left operand, checked at the else', () => {
+  const msg = 'else needs a lookup on its left: an index, a field or int()';
+  run('let m = {}\nprint(m.a else 0, m["a"] else 0, int("1") else 0)');
+  run('let m = {}\nprint((m.a else 0) else 1, len(m.a) else 1, [m.a] else 1, {k: m.a} else 1, -m.a else 1)');
+  run('let m = {}\nprint("{m.a}" else "", (1 + m.a) else 0, (true and m.a == 1) else 0)');
+  run('fn f(x) { return x }\nlet m = {}\nprint(f(m.a) else 1)');
+  fails('let x = 1\nprint(x else 2)', msg, 2, 9);
+  fails('print(1 else 2)', msg, 1, 9);
+  fails('fn f() { return [1][0] }\nprint(f() else 2)', msg, 2, 11);
+  fails('print(len("a") else 2)', msg, 1, 16);
+  fails('print(str(1) else 2)', msg, 1, 14);
+  fails('print("{1}" else 2)', msg, 1, 13);
+  fails('let m = {}\nprint(1 else m.a)', msg, 2, 9);
+  fails('let m = {}\nprint(m.a + 1 else 2 else 3)', msg, 2, 15);
+  // The left operand is resolved first, so its errors come first; the right one after.
+  fails('print(z else 1)', 'unknown variable z', 1, 7);
+  fails('print(1 else z)', msg, 1, 9);
+  fails('let m = {}\nprint(m.a else z)', 'unknown variable z', 2, 16);
+  fails('let m = {}\nm.a else 1', 'expression statement must be a call', 2, 1);
+});

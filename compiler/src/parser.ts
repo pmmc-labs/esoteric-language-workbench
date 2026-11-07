@@ -34,6 +34,8 @@ export type Expr =
   | { kind: 'binary'; pos: Pos; op: BinaryOp; left: Expr; right: Expr }
   // `and`/`or` short-circuit, so they are not `binary`.
   | { kind: 'logic'; pos: Pos; op: 'and' | 'or'; left: Expr; right: Expr }
+  // `a else b` (D20); `pos` is the `else`, where "needs a lookup" points.
+  | { kind: 'else'; pos: Pos; left: Expr; right: Expr }
   // `target` is filled in by the resolver: 'builtin' or 'fn' (a user function).
   | { kind: 'call'; pos: Pos; name: string; args: Expr[]; target?: 'builtin' | 'fn' };
 
@@ -111,8 +113,8 @@ export function parse(input: Token[]): Program {
   function operator(): Token { const t = next(); skipNewlines(); return t; }
 
   // Precedence, loosest first (LANGUAGE.md, Expressions): or, and, not,
-  // comparisons (`in` and `not in` among them), + -, * / %, prefix -, then
-  // calls, indexes and atoms. `else` (step 7) goes between * and prefix -.
+  // comparisons (`in` and `not in` among them), + -, * / %, `else`, prefix -,
+  // then calls, indexes and atoms.
   function expr(): Expr { return orExpr(); }
 
   function orExpr(): Expr {
@@ -168,10 +170,21 @@ export function parse(input: Token[]): Program {
   }
 
   function multiplicative(): Expr {
-    let left = unary();
+    let left = elseExpr();
     while (isOp(peek(), '*') || isOp(peek(), '/') || isOp(peek(), '%')) {
       const op = operator();
-      left = { kind: 'binary', pos: op.pos, op: op.text as BinaryOp, left, right: unary() };
+      left = { kind: 'binary', pos: op.pos, op: op.text as BinaryOp, left, right: elseExpr() };
+    }
+    return left;
+  }
+
+  // Left-associative and tighter than any binary operator (D20): `a else b else c`
+  // is `(a else b) else c`, and the right operand is a prefix-minus expression.
+  function elseExpr(): Expr {
+    let left = unary();
+    while (isKw(peek(), 'else')) {
+      const op = operator();
+      left = { kind: 'else', pos: op.pos, left, right: unary() };
     }
     return left;
   }

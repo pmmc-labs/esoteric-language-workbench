@@ -11,7 +11,8 @@ tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
 88 unit tests); step 3 done (functions; 216 golden tests, 105 unit
 tests); step 4 done (strings; 301 golden tests, 128 unit tests); step 5 done
 (lists and the core rule; 399 golden tests, 149 unit tests); step 6 done
-(maps; 496 golden tests, 169 unit tests); step 7 next.
+(maps; 496 golden tests, 169 unit tests); step 7 done (`else`; 563 golden
+tests, 173 unit tests); step 8 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -243,7 +244,19 @@ lookups keep the try shape for step 7.
   the core rule's cases for maps.
 - **Size:** medium.
 
-### 7. `else`
+### 7. `else` **(done)**
+
+Landed as planned. Differences: tests 700 to 784 (the model writes 700 to
+709: fixed expressions over every lookup, chains, precedence printed minimal
+and fully parenthesised, laziness and order with a printing `note`, word
+count and a config parser with `.stdin`, route finding, `else` in every
+statement position, and two random expression programs checked against a
+Python evaluator where `else` is a `try`; faults 710 to 731, semantics 740
+to 749 and compile errors 760 to 784 are by hand, positions marked in the
+source and counted by a script); default D46. The runtime needed no change:
+codegen calls the `dt_try_` forms inside a left operand and branches with
+`goto`. A catcher stack in codegen is how "lexical" is kept: a function's
+body is compiled with none.
 
 - The operator (D20): parsing at its precedence, the resolver's
   `else needs a lookup on its left`, codegen that gives each lookup

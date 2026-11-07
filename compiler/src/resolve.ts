@@ -69,6 +69,36 @@ function useName(ctx: Ctx, name: string, pos: Pos): string {
   throw compileError(pos, `unknown variable ${name}`);
 }
 
+// Whether a lookup is written anywhere in `e`: an index, a field or a call of
+// `int` (a user function cannot be named `int`). One inside a nested `else`'s
+// left operand counts, though that `else` is what catches it.
+function hasLookup(e: Expr): boolean {
+  switch (e.kind) {
+    case 'index':
+    case 'field':
+      return true;
+    case 'int':
+    case 'bool':
+    case 'nil':
+    case 'name':
+      return false;
+    case 'string':
+      return e.parts.some((p) => p.kind === 'interp' && hasLookup(p.expr));
+    case 'list':
+      return e.items.some(hasLookup);
+    case 'map':
+      return e.entries.some((en) => hasLookup(en.value));
+    case 'unary':
+      return hasLookup(e.operand);
+    case 'binary':
+    case 'logic':
+    case 'else':
+      return hasLookup(e.left) || hasLookup(e.right);
+    case 'call':
+      return e.name === 'int' || e.args.some(hasLookup);
+  }
+}
+
 function resolveExpr(ctx: Ctx, e: Expr): Expr {
   switch (e.kind) {
     case 'int':
@@ -92,6 +122,15 @@ function resolveExpr(ctx: Ctx, e: Expr): Expr {
     case 'binary':
     case 'logic':
       return { ...e, left: resolveExpr(ctx, e.left), right: resolveExpr(ctx, e.right) };
+    case 'else': {
+      // The left operand is resolved first, then checked, then the right one:
+      // the error is at `else`, between the two (leftmost first).
+      const left = resolveExpr(ctx, e.left);
+      if (!hasLookup(left)) {
+        throw compileError(e.pos, 'else needs a lookup on its left: an index, a field or int()');
+      }
+      return { ...e, left, right: resolveExpr(ctx, e.right) };
+    }
     case 'call': {
       // The name and its arity come before the arguments: leftmost first.
       const isBuiltin = Object.hasOwn(BUILTINS, e.name);

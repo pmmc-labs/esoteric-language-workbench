@@ -488,6 +488,33 @@ and `m[k] = v` covers the rest); a hash index (D27); `.name` on a list as a
 miss (a wrong type is a fault `else` must not catch); a separate message for
 `m.name` on a missing key (`missing key "name"` is what `m["name"]` says).
 
+**D46. Step 7 details the spec left open.** *(default)* Which lookups make
+a left operand acceptable: any index, field or call of `int` written
+anywhere in it counts, including one inside a nested `else`'s left operand
+(which catches it itself), so `(xs[i] else 0) else 1` compiles, pointless as
+the outer `else` is; a user function's call does not count, whatever its
+body holds. Order of errors: the left operand is resolved first, then
+`else needs a lookup...` is checked (at the `else`), then the right operand
+is resolved, so `z else 1` is `unknown variable z` and `1 else z` is the
+`else` error. Which `else` catches a miss: the innermost one whose *left*
+operand it is written in; a lookup in an `else`'s right operand belongs to
+the `else`s around it, so `(a[0] else b[1]) else 2` catches the miss of
+`b[1]` with the outer one. Parsing: the right operand is a prefix-minus
+expression (`xs[9] else -1` works, `xs[9] else not b` is `expected an
+expression, found 'not'`); a newline after `else` is skipped like one after
+any binary operator, and one before it ends the statement (`else` there is
+`expected a statement, found 'else'`); a statement that is an `else`
+expression is `expression statement must be a call`, and one as an
+assignment's target is `cannot assign to this`. Code: a lookup in a left
+operand is the `dt_try_` form with `goto missN` on a false return, `missN:`
+starts the right operand, `doneN:` follows it (labels numbered with the
+temporaries; D30), and a function body is compiled with no labels, so
+nothing in it is caught; the `missN:` label is written only if some lookup
+jumps to it, since an unused label is a warning and D37 makes warnings
+errors. The runtime needed no change. Rejected: counting
+only lookups no inner `else` catches (a second kind of lookup to track, for
+a case no one writes).
+
 ## Project
 
 **D45. The runtime is compiled once per C compiler, flags and source,
