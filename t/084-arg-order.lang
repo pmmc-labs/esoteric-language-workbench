@@ -1,0 +1,5 @@
+; Arguments left to right (D25, D32): both faults are possible, the first is
+; reported.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (f a b) (+ a b))
+(f (/ 1 0) (+ #true 1))

@@ -1,0 +1,4 @@
+; The same loop one iteration shorter is 10,000 deep: it runs (D33, D34).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (loop n) (within 100000000 (if (== n 0) 0 (loop (- n 1)))))
+(loop 9999)

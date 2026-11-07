@@ -1,0 +1,4 @@
+; Non-tail recursion with a value (D34): 20! fits 63 bits (D4).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (fact n) (if (== n 0) 1 (* n (fact (- n 1)))))
+(fact 20)

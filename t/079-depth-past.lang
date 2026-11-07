@@ -1,0 +1,4 @@
+; (sum 10000) needs a 10,001st call in progress: fault stack (D34).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (sum n) (if (== n 0) 0 (+ n (sum (- n 1)))))
+(sum 10000)

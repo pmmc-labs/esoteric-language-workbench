@@ -1,0 +1,5 @@
+; A within's body is not tail position (D33): the loop below is 10,001 deep
+; at n=10000, and faults stack where a plain tail loop would not.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (loop n) (within 100000000 (if (== n 0) 0 (loop (- n 1)))))
+(loop 10000)

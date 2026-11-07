@@ -1,0 +1,5 @@
+; The call spends the one operation (D32), then the body's / is refused,
+; before its own check (D22): budget spent, not division by zero.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (g) (/ 1 0))
+(within 1 (g))

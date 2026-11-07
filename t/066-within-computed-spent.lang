@@ -1,0 +1,2 @@
+; Budgets, D24: the budget's own operations are charged to the budget around it. Expected output by hand from step 5.
+(within 1 (within (+ 1 1) (* 3 4)))
