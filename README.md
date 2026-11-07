@@ -24,6 +24,16 @@ Lisps, actors or native code.
 | `t/README.md` | The golden-test discipline: expected output from an independent source, never from the implementation. |
 | `t/models/README.md` | Models: small programs in another language that write expected outputs, rerun and never patched. |
 
+## Ditto
+
+The first language built with it is Ditto, a small dynamically typed
+imperative language where every value is a value (lists and maps are
+copied, never shared) and `a else b` gives `b` when a lookup in `a` finds
+nothing. Its compiler is TypeScript, run by Node 22, and it compiles to C.
+`examples/` has six programs, each with its expected output;
+`docs/LANGUAGE.md` is the language, and `bin/ditto run examples/ledger.ditto`
+runs one.
+
 ## Using it
 
 1. Copy the tree into a new repo (or use it as a GitHub template).

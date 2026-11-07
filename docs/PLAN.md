@@ -12,7 +12,8 @@ tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
 tests); step 4 done (strings; 301 golden tests, 128 unit tests); step 5 done
 (lists and the core rule; 399 golden tests, 149 unit tests); step 6 done
 (maps; 496 golden tests, 169 unit tests); step 7 done (`else`; 563 golden
-tests, 173 unit tests); step 8 next.
+tests, 173 unit tests); step 8 done (the examples; 569 golden tests, 173 unit
+tests); step 9 held in reserve.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -268,7 +269,16 @@ body is compiled with none.
   are themselves lookups.
 - **Size:** medium.
 
-### 8. Examples
+### 8. Examples **(done)**
+
+Landed as planned. Differences: the six programs ran correctly on the first
+try, so the commit is not red (`Step 8: examples (they already pass)`); no
+compiler or runtime change, no new golden test in `t/`. The programs are
+DESIGN.md's verbatim, each with one leading comment; `routes` is the file
+for route finding. The model `t/models/examples.py` is a hand transcription
+of each program into Python with a deep copy at every store, and also holds
+the word count's passage (303 words, 300 after `clean`), which `--stdin`
+writes to `examples/wordcount.stdin`. Nothing read awkwardly; default D47.
 
 - `examples/` holds the six programs in `DESIGN.md` (FizzBuzz,
   recursion, sorting, word count with a `.stdin`, route finding, the
@@ -290,9 +300,9 @@ decision. Unused if there's none.
 
 | Example | Needs | Status |
 |---|---|---|
-| fizzbuzz | steps 1, 2 | waits on step 8 |
-| recursion | steps 3, 4 (interpolation) | waits on step 8 |
-| sorting | step 5 | waits on step 8 |
-| word count | steps 6, 7 | waits on step 8 |
-| route finding | steps 6, 7 | waits on step 8 |
-| ledger | step 6 | waits on step 8 |
+| fizzbuzz | steps 1, 2 | ported, step 8 |
+| recursion | steps 3, 4 (interpolation) | ported, step 8 |
+| sorting | step 5 | ported, step 8 |
+| word count | steps 6, 7 | ported, step 8 |
+| route finding | steps 6, 7 | ported, step 8 |
+| ledger | step 6 | ported, step 8 |

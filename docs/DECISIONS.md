@@ -517,6 +517,19 @@ a case no one writes).
 
 ## Project
 
+**D47. Step 8 details the spec left open.** *(default)* The examples are
+DESIGN.md's six programs unchanged, each with one leading `//` comment of
+what it shows, named `fizzbuzz`, `recursion`, `sorting`, `wordcount`,
+`routes` and `ledger`. The word count's standard input is a passage of 303
+words of plain prose written for it (apostrophes, a capital at the start of
+sentences, `--` and quotation marks, so `clean` drops, lowercases and
+sometimes empties a word); the model holds the passage and writes the
+`.stdin` file, so the program and the model read the same text. The model's
+`print` of an interpolated list or map uses the same printed form as `str`
+(D24). No example needed a change to the language (D9). Rejected: a model
+that reads `wordcount.stdin` back (the file would then be the only
+definition of the input, with nothing for `checks.py` to regenerate).
+
 **D45. The runtime is compiled once per C compiler, flags and source,
 and cached as `build/rt/HASH.o`.** *(designer, at step 6's review)*
 `make test` had grown past six minutes, a third of it compiling

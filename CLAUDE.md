@@ -106,7 +106,16 @@ and config parsing with `.stdin`, `else` in every statement, two random
 programs against a Python evaluator), faults 710 to 731, semantics 740 to 749
 and errors 760 to 784 are by hand; 563 golden tests and 173 unit tests,
 green under `cc`, clang and the sanitizers. Builder default awaiting review:
-D46. **Next:** step 8, the examples.
+D46.
+Step 8 (the examples) is done: `examples/` holds the six programs of
+`docs/DESIGN.md` unchanged but for a leading comment each (`fizzbuzz`,
+`recursion`, `sorting`, `wordcount` with its `.stdin`, `routes`, `ledger`),
+each a golden test whose `.expected` comes from `t/models/examples.py`, a
+Python transcription of each program with a deep copy at every store; they
+passed on the first run, so there was no compiler change and no new test in
+`t/`; 569 golden tests and 173 unit tests, green under `cc`, clang and the
+sanitizers. Builder default awaiting review: D47. **Next:** review; step 9
+is held in reserve, and unused unless review shows friction.
 
 ## Read first, in this order
 
