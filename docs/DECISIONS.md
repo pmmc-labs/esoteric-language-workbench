@@ -342,7 +342,7 @@ faults). Rejected: checking each bound as it is evaluated (the order
 would depend on which is bad); `k <= hi` with `k++` (undefined behaviour
 at the largest int).
 
-**D41. Step 3 details the spec left open.** *(default)* Parsing: a
+**D41. Step 3 details the spec left open.** *(default; designer, kept)* Parsing: a
 parameter list is like an argument list (D34): it may break across
 lines and end with a comma, and the body's `{` must be on the line of the
 `)`. `fn` met anywhere but the program's own statements is
