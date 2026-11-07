@@ -1,0 +1,2 @@
+t/629-fault-set-field-on-list.ditto:2:3: fault: cannot use .f on list
+exit: 1

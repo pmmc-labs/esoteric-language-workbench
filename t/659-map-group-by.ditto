@@ -1,0 +1,12 @@
+let groups = {}
+for w in ["apple", "avocado", "banana", "blueberry", "cherry", "apricot"] {
+  let initial = slice(w, 0, 1)
+  if initial not in groups {
+    groups[initial] = []
+  }
+  groups[initial] += [w]
+}
+print(groups)
+for k in keys(groups) {
+  print(k, len(groups[k]), groups[k])
+}

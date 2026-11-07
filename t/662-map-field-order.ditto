@@ -1,0 +1,7 @@
+fn make(n) {
+  print("make", n)
+  return {v: n, next: {v: n * 10}}
+}
+print(make(1).v, make(2).next.v, make(3).next["v"])
+let m = {a: make(4), b: make(5)}
+print(m.a.v + m.b.next.v)

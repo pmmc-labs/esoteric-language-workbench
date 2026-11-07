@@ -1,0 +1,2 @@
+t/694-err-assign-to-field-of-call.ditto:1:1: error: cannot assign to this
+exit: 2

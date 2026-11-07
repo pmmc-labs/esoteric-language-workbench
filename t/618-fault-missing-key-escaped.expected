@@ -1,0 +1,2 @@
+t/618-fault-missing-key-escaped.ditto:2:8: fault: missing key "a\"b\n\t\\"
+exit: 1

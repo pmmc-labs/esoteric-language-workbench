@@ -1,0 +1,2 @@
+let m = {name: "pen"}
+print(m.qty)

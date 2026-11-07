@@ -1,0 +1,2 @@
+t/695-err-map-statement.ditto:1:1: error: expected a statement, found '{'
+exit: 2

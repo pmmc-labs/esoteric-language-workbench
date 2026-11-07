@@ -1,0 +1,2 @@
+t/621-fault-map-key-bool.ditto:2:8: fault: map key must be an int or a string, got bool
+exit: 1

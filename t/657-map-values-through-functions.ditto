@@ -1,0 +1,21 @@
+fn with_id(m, id) {
+  m.id = id
+  return m
+}
+fn count(m) {
+  let n = 0
+  for k in m { n += 1 }
+  return n
+}
+fn add_all(a, b) {
+  for k in b { a[k] = b[k] }
+  return a
+}
+let base = {name: "n"}
+let one = with_id(base, 1)
+let two = with_id(base, 2)
+print(base, one, two)
+print(count(base), count(one), count({}))
+let merged = add_all(one, {name: "other", extra: true})
+print(merged, one)
+print(with_id(with_id({}, 1), 2))

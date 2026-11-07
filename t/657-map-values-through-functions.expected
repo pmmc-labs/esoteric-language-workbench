@@ -1,0 +1,4 @@
+{"name": "n"} {"name": "n", "id": 1} {"name": "n", "id": 2}
+1 2 0
+{"name": "other", "id": 1, "extra": true} {"name": "n", "id": 1}
+{"id": 2}

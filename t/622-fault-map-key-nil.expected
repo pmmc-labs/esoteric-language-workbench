@@ -1,0 +1,2 @@
+t/622-fault-map-key-nil.ditto:2:8: fault: map key must be an int or a string, got nil
+exit: 1

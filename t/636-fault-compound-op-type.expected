@@ -1,0 +1,2 @@
+t/636-fault-compound-op-type.ditto:2:5: fault: cannot use + on string and int
+exit: 1

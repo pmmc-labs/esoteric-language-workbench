@@ -1,0 +1,28 @@
+19 distinct words in order: ["the", "quick", "brown", "fox", "jumps", "over", "lazy", "dog", "barks;", "runs", "away", "a", "and", "it", "all", "end", "of", "story", "is"]
+the: 7
+dog: 3
+fox: 3
+a: 2
+brown: 2
+end: 2
+jumps: 2
+lazy: 2
+over: 2
+quick: 2
+all: 1
+and: 1
+away: 1
+barks;: 1
+is: 1
+it: 1
+of: 1
+runs: 1
+story: 1
+most common: the 7
+1 ["a"]
+2 ["it", "of", "is"]
+3 ["the", "fox", "dog", "and", "all", "end"]
+4 ["over", "lazy", "runs", "away"]
+5 ["quick", "brown", "jumps", "story"]
+6 ["barks;"]
+true 7 true false

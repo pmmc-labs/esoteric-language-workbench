@@ -1,0 +1,2 @@
+t/679-err-map-missing-comma.ditto:1:15: error: expected '}', found 'b'
+exit: 2

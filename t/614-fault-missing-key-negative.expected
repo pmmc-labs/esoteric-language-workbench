@@ -1,0 +1,2 @@
+t/614-fault-missing-key-negative.ditto:3:8: fault: missing key -3
+exit: 1

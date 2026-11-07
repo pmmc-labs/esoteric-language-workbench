@@ -1,0 +1,22 @@
+let m = {
+  // a comment, then a key broken from its value
+  a
+    : 1
+
+  ,
+  b :
+    2 +
+    3, c: [
+      1,
+      2
+    ],
+  "d": {
+    e: 4
+  }
+  ,
+}
+print(m)
+print({x: 1,
+  y: 2})
+print(len({
+}))

@@ -1,0 +1,156 @@
+fn touch_m(m) {
+  m.touched = len(m)
+  if "a" in m { m.a += 1 }
+  return m
+}
+fn touch_n(n) {
+  if "t" in n { n.t += [7] } else { n.t = [7] }
+  for k in keys(n) {
+    if k != "t" and len(n[k]) < 4 { n[k] += [1] }
+  }
+  return n
+}
+fn total(m) {
+  let s = 0
+  for k in m { s += m[k] }
+  return s
+}
+let v1 = 2
+let v2 = {2: "", -3: "q"}
+let v3 = [{d: 9}, {b: 3}, {id: 0}]
+let v4 = {qty: -2, x: -3, c: -9, a: -2}
+let v5 = {b: [9, 6], c: [8], x: []}
+v4["c"] *= 4
+v1 += 2
+let v6 = v5
+v4["y"] = 3
+v5.c[0] = 7
+let v7 = v4
+v3[0] = v7
+print(total(v7), len(v7), keys(v7))
+v7 = remove(v7, "zz")
+print(v2 == v2, 2 in v2, len(v2))
+let v8 = {id: 2, c: -5, qty: 6, a: -5}
+print(v4)
+v3[0] = v4
+v4 = v8
+v8["e"] = -4
+v3[2].e = 2
+v3[1].b += 2
+print(v2 == v2, 1 in v2, len(v2))
+let v9 = v6.b
+v9 += [0]
+print(v6, v9)
+print(v3)
+let v10 = touch_n(v6)
+let v11 = v2
+let v12 = v3
+print(touch_m(v7), v7)
+v3 += [v8]
+v10["id"] = [3]
+print(touch_n(v6), v6)
+let v13 = 0
+for k in v7 {
+  v13 += v7[k] * 2
+  v7[k] = 0
+}
+print(v13, v7)
+v3[2].id = 7
+print(v10)
+v8.c = 8
+v6["c"] = [5, 3]
+v3[1].d = 6
+v7["qty"] = 5
+v8["a"] = 5
+v3[2].id += 4
+let v14 = v10.b
+v14 += [0]
+print(v10, v14)
+v3[2].id += 2
+print(total(v7), len(v7), keys(v7))
+print(total(v7), len(v7), keys(v7))
+v8 = remove(v8, "c")
+v4["id"] -= 3
+print(touch_n(v6), v6)
+v2[-2] = "rr"
+print(v6 == v10, "d" in v6, len(v6))
+print(v6 == v6, "x" in v6, len(v6))
+print(touch_n(v6), v6)
+v5["c"] = [3]
+print(v7)
+let v15 = v8
+print(total(v7), len(v7), keys(v7))
+v10.x[0] += 9
+v8 = remove(v8, "qty")
+let v16 = v10.id
+v16 += [0]
+print(v10, v16)
+for v17 in v8 {
+  v8[v17 + "!"] = len(v8)
+  v8.a = 1
+}
+print(v12)
+v10.id += [6]
+v10["name"] = [7]
+print(touch_n(v10), v10)
+print(touch_n(v5), v5)
+let v18 = v6.x
+v18 += [0]
+print(v6, v18)
+print(touch_n(v10), v10)
+print(total(v15), len(v15), keys(v15))
+v8 = v4
+print(v6)
+v7.c = -1
+v12 += [v7]
+let v19 = v4
+v7.qty = 2
+print(v8)
+v2[-3] = "rr"
+print(v2 == v11, 3 in v2, len(v2))
+v8["b"] = 4
+v3[0].x += 4
+v2[0] = "p"
+let v20 = v2
+v12[2].id += 4
+let v21 = 0
+for k in v4 {
+  v21 += v4[k] * 2
+  v4[k] = 0
+}
+print(v21, v4)
+let v22 = 0
+for k in v19 {
+  v22 += v19[k] * 2
+  v19[k] = 0
+}
+print(v22, v19)
+v3 += [v19]
+print(v15 == v4, "id" in v15, len(v15))
+let v23 = v6
+print(touch_n(v23), v23)
+print(touch_n(v23), v23)
+v7 = v15
+v12[2].e = 2
+let v24 = v6
+v7["qty"] += 3
+print(v1)
+print(v2)
+print(v3)
+print(v4)
+print(v5)
+print(v6)
+print(v7)
+print(v8)
+print(v9)
+print(v10)
+print(v11)
+print(v12)
+print(v14)
+print(v15)
+print(v16)
+print(v18)
+print(v19)
+print(v20)
+print(v23)
+print(v24)

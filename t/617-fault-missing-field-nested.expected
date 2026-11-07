@@ -1,0 +1,2 @@
+t/617-fault-missing-field-nested.ditto:2:12: fault: missing key "c"
+exit: 1

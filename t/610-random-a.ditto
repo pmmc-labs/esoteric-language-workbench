@@ -1,0 +1,132 @@
+fn touch_m(m) {
+  m.touched = len(m)
+  if "a" in m { m.a += 1 }
+  return m
+}
+fn touch_n(n) {
+  if "t" in n { n.t += [7] } else { n.t = [7] }
+  for k in keys(n) {
+    if k != "t" and len(n[k]) < 4 { n[k] += [1] }
+  }
+  return n
+}
+fn total(m) {
+  let s = 0
+  for k in m { s += m[k] }
+  return s
+}
+let v1 = [{e: 5, x: 3}, {id: 2, a: 0}]
+let v2 = {name: 0, e: -8, c: -6}
+let v3 = {d: [], e: []}
+let v4 = {1: "q", -2: "p", 0: "", -1: "q"}
+let v5 = {c: 7}
+v2.d = 6
+print(v5 == v5, "y" in v5, len(v5))
+print(touch_m(v5), v5)
+let v6 = [{x: 4, a: 7}, {qty: 1}, {c: 1}]
+let v7 = v5
+print(v7 == v5, "y" in v7, len(v7))
+let v8 = v3.d
+v8 += [0]
+print(v3, v8)
+print(v1)
+v4[5] = "z"
+v4 = v4
+let v9 = v6
+print(v5 == v5, "e" in v5, len(v5))
+v5.a = -9
+v6[1] = v5
+v5["c"] *= 3
+v6 += [v2]
+let v10 = v4
+v9[0].a += 4
+v5["b"] = -6
+for v11 in v5 {
+  v5[v11 + "!"] = len(v5)
+  v5.a = 1
+}
+v3 = v3
+print(v4 == v4, 0 in v4, len(v4))
+v1 += [v7]
+v1 += [v7]
+v5["c"] += 3
+print(total(v5), len(v5), keys(v5))
+print(touch_m(v5), v5)
+v5.y = -3
+v7["id"] = 7
+v9[2].id = 4
+let v12 = v7
+v3.e += [0]
+v12 = remove(v12, "zz")
+print(v7)
+v3["qty"] = [8, 7]
+for v13 in v12 {
+  v12[v13 + "!"] = len(v12)
+  v12.a = 1
+}
+print(touch_m(v12), v12)
+let v14 = {c: -7, a: 2, qty: 8}
+v6[3] = v7
+v4[4] = "q"
+let v15 = v3.e
+v15 += [0]
+print(v3, v15)
+print(v4)
+v6 += [v7]
+print(touch_n(v3), v3)
+v5["x"] = -4
+v2.x = 9
+print(v3 == v3, "x" in v3, len(v3))
+v1[3].name = 9
+let v16 = v3
+v2 = v12
+let v17 = v10
+v5["a!"] *= 2
+v16.qty += [3]
+let v18 = v4
+let v19 = v9
+let v20 = 0
+for k in v12 {
+  v20 += v12[k] * 2
+  v12[k] = 0
+}
+print(v20, v12)
+v14.b = 2
+v3.d += [7]
+v3["e"] = []
+v18 = v18
+print(v3 == v3, "qty" in v3, len(v3))
+let v21 = 0
+for k in v7 {
+  v21 += v7[k] * 2
+  v7[k] = 0
+}
+print(v21, v7)
+let v22 = 0
+for k in v12 {
+  v22 += v12[k] * 2
+  v12[k] = 0
+}
+print(v22, v12)
+v14.a -= 1
+v16 = v16
+print(v17)
+v5["b"] -= 2
+v16["b"] = [5]
+print(v1)
+print(v2)
+print(v3)
+print(v4)
+print(v5)
+print(v6)
+print(v7)
+print(v8)
+print(v9)
+print(v10)
+print(v12)
+print(v14)
+print(v15)
+print(v16)
+print(v17)
+print(v18)
+print(v19)

@@ -1,0 +1,72 @@
+print({})
+print({a: 1})
+print({a: 1, b: 2})
+print({b: 2, a: 1})
+print({name: "pen", qty: 3})
+print({1: "x"})
+print({1: "x", 2: "y"})
+print({2: "y", 1: "x"})
+print({-1: "neg", 0: "zero", 1: "one"})
+print({7: 7})
+print({9223372036854775807: 1, 5: 2})
+print({a: nil, b: true, c: false})
+print({k: []})
+print({k: {}})
+print({k: [{}]})
+print({a: {b: {c: {d: 1}}}})
+print({xs: [1, 2, 3], m: {y: "z"}})
+print({"a b": 1, "": 2, "with\"quote": 3, "back\\slash": 4, "nl\nx": 5, "tab\tx": 6, "cr\rx": 7})
+print({"in": 1, "nil": 2, "if": 3})
+print({"3": "string three", 3: "int three"})
+print({s: "a\"b", t: "c\\d", u: "e\nf", v: "k\{l}m"})
+print({a: 1, b: {a: 2}, c: [{a: 3}, {a: 4}]})
+print({1: {2: {3: "deep"}}})
+print({only: {one: {}}})
+print({z: 1, y: 2, x: 3, w: 4, v: 5, u: 6})
+print({})
+print({"a": 1})
+print({"a": 1, "b": 2})
+print({"b": 2, "a": 1})
+print({"name": "pen", "qty": 3})
+print({1: "x"})
+print({"a": nil, "b": true, "c": false})
+print({"k": []})
+print({"a": {"b": {"c": {"d": 1}}}})
+print({"xs": [1, 2, 3], "m": {"y": "z"}})
+print({a: "x"}, "x", ["x"], {})
+print({1_000: "a", 007: "b", -0012: "c", 0: "d"})
+print({a: 1, b: 2,}, {a: 1,}, {x: [1, 2,],})
+let layout = {
+  first: 1,
+  "second": 2,
+  3: "third",
+
+  fourth: {
+    inner: [
+      1,
+      2,
+    ],
+  },
+}
+print(layout)
+print({
+  a:
+    1 +
+    2
+  ,
+  b : 4 }
+)
+fn tick(n) {
+  print("tick", n)
+  return n * 10
+}
+let ordered = {c: tick(1), a: tick(2), b: tick(3)}
+print(ordered)
+print({n: 1 + 2 * 3, s: "a" + "b", l: [1] + [2], b: 1 < 2, m: {x: 1}})
+let m = {"a": "x", b: [1, "y"], c: nil}
+print(str(m))
+print(str(m) + "!", len(str(m)))
+print("m = {m}, a = {m.a}, b = {m.b}, c = {m.c}")
+print("{{}}{{a: 1}}{{1: "one"}}")
+print(len(m), len({}), len({a: {b: 1, c: 2}}), len({1: 1, 2: 2, 3: 3}))
+print({} == {}, {a: 1} != {a: 2}, {} != [], {} != nil)

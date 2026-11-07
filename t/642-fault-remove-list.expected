@@ -1,0 +1,2 @@
+t/642-fault-remove-list.ditto:1:7: fault: remove: expected a map, got list
+exit: 1

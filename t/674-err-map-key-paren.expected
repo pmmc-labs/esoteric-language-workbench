@@ -1,0 +1,2 @@
+t/674-err-map-key-paren.ditto:1:8: error: map key must be a name, a string or an int
+exit: 2

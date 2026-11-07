@@ -235,8 +235,6 @@ test('a function cannot take the name of sort, split, join or words, now that th
     fails(`fn ${name}() { }`, `${name} is a builtin`, 1, 4);
   }
   run('let sort = [2, 1]\nprint(sort(sort))');
-  // keys and remove arrive with maps (step 6).
-  run('fn keys() { }\nfn remove() { }');
 });
 
 test('names in a list literal and in the steps of an assignment target are resolved, in source order', () => {
@@ -257,4 +255,48 @@ test('a list is not a statement; assigning through a path needs the variable to 
   fails('[1, 2]', 'expression statement must be a call', 1, 1);
   fails('xs[0] = 1', 'unknown variable xs', 1, 1);
   fails('fn f() {\n  xs[0] = 1\n}\nlet xs = [1]', 'xs is a top-level variable; functions see only their parameters and their own variables', 2, 3);
+});
+
+test('keys and remove are builtins with their arities; no function can take their names', () => {
+  run('print(keys({a: 1}), remove({a: 1}, "a"))');
+  fails('print(keys())', 'keys takes 1 argument, got 0', 1, 7);
+  fails('print(keys({}, 1))', 'keys takes 1 argument, got 2', 1, 7);
+  fails('print(remove({}))', 'remove takes 2 arguments, got 1', 1, 7);
+  fails('fn keys() { }', 'keys is a builtin', 1, 4);
+  fails('fn remove(m, k) { }', 'remove is a builtin', 1, 4);
+  run('let keys = {a: 1}\nlet remove = keys\nprint(keys(remove))');
+});
+
+test('map literals: duplicate keys are found at the second, values resolved in source order', () => {
+  run('print({a: 1, b: 2, 3: 4, "c": 5, -3: 6})');
+  fails('print({a: 1, a: 2})', 'duplicate key "a"', 1, 14);
+  fails('print({a: 1, "a": 2})', 'duplicate key "a"', 1, 14);
+  fails('print({"a": 1,\n  a: 2})', 'duplicate key "a"', 2, 3);
+  fails('print({3: 1, 3: 2})', 'duplicate key 3', 1, 14);
+  fails('print({7: 1, 0_07: 2})', 'duplicate key 7', 1, 14);
+  fails('print({-3: 1, -3: 2})', 'duplicate key -3', 1, 15);
+  fails('print({0: 1, -0: 2})', 'duplicate key 0', 1, 14);
+  fails('print({"q\\"": 1, "q\\"": 2})', 'duplicate key "q\\""', 1, 18);
+  fails('print({a: {b: 1, b: 2}})', 'duplicate key "b"', 1, 18);
+  fails('print({a: x, a: 1})', 'unknown variable x', 1, 11);
+  fails('print({a: 1, a: x})', 'duplicate key "a"', 1, 14);
+  run('print({3: 1, "3": 2, a: 3, "a b": 4})');
+});
+
+test('names in a map literal, a field and the steps of an assignment target are resolved', () => {
+  const p = run('let m = {a: 1}\nlet i = 0\nm.a = [m.a, i]\nm["b"] = {c: m}') as any;
+  const a = p.body[2];
+  assert.equal(a.target.cname, 'v_m');
+  assert.deepEqual(a.value.items[0].target.cname, 'v_m');
+  assert.equal(a.value.items[1].cname, 'v_i');
+  assert.equal(p.body[3].value.entries[0].value.cname, 'v_m');
+  fails('print({a: z})', 'unknown variable z', 1, 11);
+  fails('print(zz.a)', 'unknown variable zz', 1, 7);
+  fails('zz.a = 1', 'unknown variable zz', 1, 1);
+  fails('let m = {}\nm[k].a = 1', 'unknown variable k', 2, 3);
+  fails('fn f() {\n  return m.a\n}\nlet m = {a: 1}', 'm is a top-level variable; functions see only their parameters and their own variables', 2, 10);
+});
+
+test('a map is not a statement', () => {
+  fails('let m = {}\nm.a', 'expression statement must be a call', 2, 1);
 });

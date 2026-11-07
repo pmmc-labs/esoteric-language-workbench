@@ -1,0 +1,73 @@
+let db = {users: [{name: "ann", tags: ["a"], stats: {n: 1}}, {name: "bob", tags: [], stats: {n: 2}}], count: 2}
+print(db)
+db.users[0].name = "Ann"
+db["users"][1]["name"] += "Bob"
+db.users[0].tags += ["b"]
+db.users[1].tags += ["x", "y"]
+db.users[1].tags[1] = "z"
+db.users[0].stats.n += 5
+db.users[1].stats["n"] *= 3
+db.users[0].stats.extra = true
+db.count += 1
+db.users += [{name: "cy"}]
+db.users[2].tags = []
+db.meta = {v: 1}
+db.meta.w = {v: 2}
+db.meta.w.v *= 2
+print(db)
+print(db.users[1].tags, db.users[0].stats, db.meta.w.v, len(db.users), db["users"][2]["name"])
+let g = {}
+for i in 0..3 {
+  g[i] = []
+  for j in 0..3 {
+    g[i] += [{pos: i * 3 + j, v: 0}]
+  }
+}
+for i in 0..3 {
+  for j in 0..3 {
+    g[i][j].v += i * j + g[i][j].pos
+  }
+}
+print(g)
+g[1][2] = g[2][1]
+g[2][1].v = -1
+g[0][0] = {pos: -1}
+g[3] = [g[1][2], g[0][0]]
+print(g)
+g[3][1].pos *= 10
+print(g)
+let c = {n: 100, s: "ab", l: [1], k: {n: 7}}
+c.n += 5
+c.n -= 3
+c.n *= 4
+c.n /= 7
+c.n %= 5
+c.n /= -2
+c.n *= -3
+c.n %= 4
+c.s += "cd"
+c.l += [2]
+c.k.n -= 3
+print(c)
+fn say(n) {
+  print("say", n)
+  return n
+}
+fn key(s) {
+  print("key", s)
+  return s
+}
+let o = {a: {b: 1}, c: 2}
+o[key("a")][key("b")] += say(10)
+print(o)
+o[key("c")] = say(5) + o.c
+print(o)
+fn bump(r) {
+  r.n += 1
+  r.log = [r.n]
+  r.sub.deep = "d"
+  return r
+}
+let rec = {n: 0, sub: {}}
+let bumped = bump(rec)
+print(rec, bumped)

@@ -1,0 +1,8 @@
+let m = {}
+print(m, len(m), keys(m), m == {}, m != {}, "a" in m, 1 in m)
+for k in m { print("never", k) }
+m.a = 1
+print(m, len(m), keys(m), m == {})
+m = remove(m, "a")
+print(m, len(m), m == {})
+print(remove({}, "x"), remove({}, 1))

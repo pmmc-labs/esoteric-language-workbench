@@ -1,0 +1,119 @@
+let a = {x: 1, y: 2}
+let b = a
+b.x = 99
+print(a, b)
+a.y = -2
+a.z = 3
+print(a, b)
+b["new"] = "n"
+print(a, b)
+b = a
+a.x += 5
+print(a, b)
+print(a == b, a != b)
+fn bump(m) {
+  m.x = 100
+  m.added = true
+  m = remove(m, "y")
+  return m
+}
+fn scratch(m) {
+  m.x += 1
+}
+let c = {x: 1, y: 2}
+let d = bump(c)
+print(c, d)
+scratch(c)
+print(c)
+print(bump(c), c)
+fn same(m) {
+  return m
+}
+let e = same(c)
+e.x = -1
+print(c, e)
+let inner = {n: 1}
+let outer = {one: inner, two: inner, three: [inner]}
+inner.n = 50
+print(inner, outer)
+outer.one.n = 60
+outer.three[0].n = 70
+print(inner, outer)
+outer.two = inner
+inner.n = 0
+print(inner, outer)
+let row = outer.one
+row.n = -60
+print(row, outer)
+let ms = [{k: 1}, {k: 2}]
+let ms2 = ms
+ms2[0].k = 10
+ms[1].k = 20
+print(ms, ms2)
+let both = ms + ms2
+both[0].k = 0
+both[2].k = 0
+print(ms, ms2, both)
+fn wrap(m) {
+  let box = {first: m}
+  m.v = 0
+  box.second = m
+  return box
+}
+let w = {v: 5}
+let boxed = wrap(w)
+print(w, boxed)
+let items = {a: 1, b: 2, c: 3}
+let visits = []
+for k in items {
+  items[k + "!"] = items[k] * 10
+  items.a += 1
+  visits += [k]
+}
+print(items, visits)
+for k in items { items = {} }
+print(items)
+let acc = {}
+let snaps = []
+for i in 0..4 {
+  acc[i] = i * i
+  snaps += [acc]
+}
+print(acc)
+print(snaps)
+snaps[1][0] = 99
+print(snaps[1], snaps[2], acc)
+let src = {p: 1, q: 2}
+let ks = keys(src)
+ks += ["r"]
+ks[0] = "changed"
+let rm = remove(src, "p")
+rm.s = 3
+print(src, ks, rm)
+let me = {n: 1}
+me.me = me
+me.me.me = me
+me.n = 2
+print(me)
+let t = {n: 1}
+t.again = t
+t = {outer: t}
+t.outer.n = 9
+print(t)
+let n1 = {a: {b: [{c: 1}]}}
+let n2 = n1
+n2.a.b[0].c = 20
+print(n1, n2)
+print(n1 == n2, n1.a.b == n2.a.b, n1.a == {b: [{c: 1}]})
+fn outerfn(m) {
+  m.who = "outer"
+  return [innerfn(m), m]
+}
+fn innerfn(m) {
+  m.who = "inner"
+  m.extra = 1
+  return m
+}
+let base = {v: 0}
+let res = outerfn(base)
+print(base, res)

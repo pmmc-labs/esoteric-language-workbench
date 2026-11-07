@@ -176,3 +176,46 @@ test('a lookup on a list is the same runtime call as on a string, so step 7 can 
   assert.match(h, /Value dt_list_new\(int64_t n, const Value \*items\);/);
   assert.match(h, /Value dt_b_sort\(/);
 });
+
+test('a map literal computes its keys and values in order, then builds the map once', () => {
+  const c = compile('print({a: f(1), "b": f(2), 3: 4})\nfn f(x) {\n}', 'a.ditto');
+  const main = c.indexOf('int main');
+  assert.match(c, /Value a\d+\[\] = \{t\d+, t\d+, t\d+\};\n\s*Value a\d+\[\] = \{t\d+, t\d+, t\d+\};\n\s*Value t\d+ = dt_map_new\(3, a\d+, a\d+\);/);
+  assert.match(compile('print({})', 'a.ditto'), /dt_map_new\(0, NULL, NULL\)/);
+  const at = ['f_f(', 'f_f(', 'dt_map_new('].map((s, k) => c.indexOf(s, k === 1 ? c.indexOf('f_f(', main) + 1 : main));
+  assert.ok(at.every((n) => n > 0) && at[0] < at[1] && at[1] < at[2], String(at));
+  assert.match(c, /dt_str_new\("a", 1\)/);
+  assert.match(c, /dt_int\(INT64_C\(3\)\)/);
+});
+
+test('a field is a runtime call at its dot, with the name as a string key', () => {
+  const c = compile('let m = {}\nprint(m.name, m["x"])', 'a.ditto');
+  assert.match(c, /dt_str_new\("name", 4\)/);
+  assert.match(c, /dt_field\(2, 8, t\d+, t\d+\)/);
+  assert.match(c, /dt_index\(2, 18, /);
+});
+
+test('a path of fields and indexes looks up each step at its own position, then sets from the inside out', () => {
+  const c = compile('let m = {a: [{b: 1}]}\nm.a[0].b = 5', 'a.ditto');
+  const rhs = c.indexOf('INT64_C(5)');
+  const look1 = c.indexOf('dt_field(2, 2, ');
+  const look2 = c.indexOf('dt_index(2, 4, ');
+  const set1 = c.indexOf('dt_set_field(2, 7, ');
+  const set2 = c.indexOf('dt_set_index(2, 4, ');
+  const set3 = c.indexOf('dt_set_field(2, 2, ');
+  assert.ok(rhs > 0 && look1 > rhs && look2 > look1 && set1 > look2 && set2 > set1 && set3 > set2, [rhs, look1, look2, set1, set2, set3].join(' '));
+  assert.doesNotMatch(c, /dt_field\(2, 7, /);
+  // The compound form reads the whole path first, with the last step's own lookup.
+  const d = compile('let m = {a: {b: 1}}\nm.a.b += 2', 'a.ditto');
+  assert.ok(d.indexOf('dt_field(2, 4, ') < d.indexOf('INT64_C(2)') && d.indexOf('INT64_C(2)') < d.indexOf('dt_add(2, 7, '));
+});
+
+test('the runtime header declares the map lookups in their try form, for step 7', () => {
+  const h = readFileSync(new URL('../../runtime/ditto.h', import.meta.url), 'utf8');
+  assert.match(h, /bool dt_try_field\(int line, int col, Value c, Value name, Value \*out\);/);
+  assert.match(h, /Value dt_field\(int line, int col, Value c, Value name\);/);
+  assert.match(h, /Value dt_set_field\(int line, int col, Value c, Value name, Value v\);/);
+  assert.match(h, /Value dt_map_new\(int64_t n, const Value \*keys, const Value \*vals\);/);
+  assert.match(h, /Value dt_b_keys\(/);
+  assert.match(h, /Value dt_b_remove\(/);
+});

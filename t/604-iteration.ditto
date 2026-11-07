@@ -1,0 +1,67 @@
+let m = {one: 1, two: 2, three: 3, 4: "four", -5: "minus five"}
+print(len(m), keys(m), len(keys(m)), keys({}), keys({a: 1}))
+for k in m {
+  print(k, m[k])
+}
+let ks = []
+for k in m { ks += [k] }
+print(ks == keys(m), ks)
+let seen = []
+for k in m {
+  seen += [k]
+  m["extra"] = 0
+  m.one += 1
+}
+print(seen)
+print(m)
+for k in m {
+  m = {}
+}
+print(m, len(m))
+for k in {} { print("never") }
+for k in {a: 1} { print("once", k) }
+for k in {x: 1, y: 2} {
+  for j in {p: 1, q: 2} { print(k, j) }
+}
+let n = 0
+for k in {a: 1, b: 2, c: 3} {
+  if k == "b" { continue }
+  n += 1
+}
+print(n)
+for k in {a: 1, b: 2, c: 3} {
+  if k == "b" { break }
+  print(k)
+}
+for k in {a: 1} { k = k + "!"
+  print(k) }
+let src = {k1: [1], k2: [2]}
+let total = 0
+for k in src {
+  for x in src[k] { total += x }
+}
+print(total)
+let inv = {a: 1, b: 2, c: 3, d: 4}
+print(remove(inv, "b"), inv, remove(inv, "z"), remove(inv, 1), remove(inv, "a") == remove(inv, "a"))
+print(remove(remove(inv, "a"), "d"), remove(remove(remove(remove(inv, "a"), "b"), "c"), "d"), remove({}, "x"), len(remove(inv, "c")))
+print(remove(inv, [1]), remove(inv, {}), remove(inv, nil), remove(inv, true))
+let gone = remove(inv, "a")
+gone.a = 100
+print(gone, inv)
+let ks2 = keys(inv)
+ks2 += ["z"]
+print(ks2, inv)
+inv = remove(inv, "c")
+inv.c = 33
+print(inv)
+let all = {a: 1, b: 2, c: 3, d: 4, e: 5}
+for k in keys(all) {
+  if all[k] % 2 == 0 { all = remove(all, k) }
+}
+print(all)
+let sq = {}
+for i in 0..8 {
+  sq[(i * 5) % 8] = i * i
+}
+print(keys(sq), sort(keys(sq)))
+for k in sort(keys(sq)) { print(k, sq[k]) }

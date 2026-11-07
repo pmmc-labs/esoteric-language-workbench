@@ -72,6 +72,8 @@ function sx(e: any): string {
     case 'call': return `${e.name}(${e.args.map(sx).join(' ')})`;
     case 'index': return `${sx(e.target)}[${sx(e.index)}]`;
     case 'list': return `[${e.items.map(sx).join(' ')}]`;
+    case 'map': return `{${e.entries.map((x: any) => `${sx(x.key)}:${sx(x.value)}`).join(' ')}}`;
+    case 'field': return `${sx(e.target)}.${e.name}`;
     case 'string':
       return '"' + e.parts.map((q: any) => (q.kind === 'text' ? q.value : `{${sx(q.expr)}}`)).join('') + '"';
   }
@@ -236,7 +238,7 @@ test('step 2 parse errors', () => {
   parseError('if true {\n} else print(1)', "expected '{', found 'print'", 2, 8);
   parseError('for i 0..3 {\n}', "expected 'in', found '0'", 1, 7);
   parseError('for 1 in 2..3 {\n}', "expected a name, found '1'", 1, 5);
-  parseError('while {\n}', "expected an expression, found '{'", 1, 7);
+  parseError('while ) {\n}', "expected an expression, found ')'", 1, 7);
   parseError('print(1..2)', "expected ')', found '..'", 1, 8);
   parseError('else {', "expected a statement, found 'else'", 1, 1);
   parseError('fn', 'expected a name, found end of file', 1, 3);
@@ -403,4 +405,97 @@ test('list literal errors', () => {
   parseError('print([1,', 'expected an expression, found end of file', 1, 10);
   parseError('let xs = [1, 2\nprint(xs)', "expected ']', found 'print'", 2, 1);
   parseError('print(1])', "expected ')', found ']'", 1, 8);
+});
+
+// Step 6: maps.
+const mapOf = (src: string) => (ast(`print(${src})`).body[0] as any).expr.args[0];
+
+test('a map literal: key forms, trailing comma, nesting, any layout, the position of its {', () => {
+  assert.equal(sx(mapOf('{}')), '{}');
+  assert.equal(sx(mapOf('{a: 1, "b": 2, 3: 4, -5: 6}')), '{"a":1 "b":2 3:4 -5:6}');
+  assert.equal(sx(mapOf('{a: 1,}')), '{"a":1}');
+  assert.equal(sx(mapOf('{a: {b: [1, {c: 2}]}}')), '{"a":{"b":[1 {"c":2}]}}');
+  assert.equal(sx(mapOf('{1_0: 1, 007: 2}')), '{10:1 7:2}');
+  assert.equal(sx(mapOf('{x: 1 + 2 * 3, y: not true, z: f(1)}')), '{"x":(+ 1 (* 2 3)) "y":(not true) "z":f(1)}');
+  assert.equal(sx(mapOf('{in2: 1, len: 2, print: 3}')), '{"in2":1 "len":2 "print":3}');
+  assert.deepEqual(mapOf('  {a: 1}').pos, at(1, 9));
+  // A key is its own literal node at its own first token: a name is a string.
+  const e = mapOf('{a: 1, "b": 2, -3: 4}');
+  assert.deepEqual(e.entries.map((x: any) => [x.key.kind, x.key.pos]), [['string', at(1, 8)], ['string', at(1, 14)], ['int', at(1, 22)]]);
+  assert.deepEqual(e.entries[0].key.parts, [{ kind: 'text', value: 'a' }]);
+  assert.equal(e.entries[2].key.value, -3n);
+});
+
+test('newlines are ignored anywhere inside a map literal', () => {
+  const src = 'let m = {\n  a\n  :\n  1\n\n  ,\n  b: 2 +\n  3\n  ,\n}\nprint(m)';
+  const b = ast(src).body as any[];
+  assert.equal(b.length, 2);
+  assert.equal(sx(b[0].value), '{"a":1 "b":(+ 2 3)}');
+  assert.equal(sx(mapOf('{\n}')), '{}');
+  assert.equal(sx(mapOf('{a: {\n b: 1\n }\n, c: 2}')), '{"a":{"b":1} "c":2}');
+});
+
+test('a field: .name after any postfix, binding tighter than prefix minus', () => {
+  const sh = (src: string) => sx(mapOf(src));
+  assert.equal(sh('m.a'), 'm.a');
+  assert.equal(sh('m.a.b.c'), 'm.a.b.c');
+  assert.equal(sh('m.a[1].b'), 'm.a[1].b');
+  assert.equal(sh('-m.a * 2'), '(* (- m.a) 2)');
+  assert.equal(sh('f(1).x'), 'f(1).x');
+  assert.equal(sh('(m).x'), 'm.x');
+  assert.equal(sh('{a: 1}.a'), '{"a":1}.a');
+  assert.equal(sh('[{a: 1}][0].a'), '[{"a":1}][0].a');
+  assert.equal(sh('"s".len'), '"s".len');
+  assert.equal(sh('m.if2'), 'm.if2');
+  // A field's position is its `.`; a statement may start with a name and a field step.
+  assert.deepEqual(mapOf('m.a').pos, at(1, 8));
+  assert.equal(mapOf('m.a').name, 'a');
+});
+
+test('an assignment target mixes index and field steps', () => {
+  const b = ast('m.a = 1\nm.a[0].b["c"] += 2\ndb[i].x.y -= 3').body as any[];
+  assert.deepEqual(b.map((s) => s.target.steps.map((st: any) => st.kind)), [['field'], ['field', 'index', 'field', 'index'], ['index', 'field', 'field']]);
+  assert.deepEqual(b[0].target.steps[0], { kind: 'field', pos: at(1, 2), name: 'a' });
+  assert.deepEqual(b[1].target.steps.map((st: any) => st.pos), [at(2, 2), at(2, 4), at(2, 7), at(2, 8)]);
+  assert.deepEqual(b[2].target.steps.map((st: any) => st.name), [undefined, 'x', 'y']);
+});
+
+test('cannot assign to this: a field of a call or a literal', () => {
+  parseError('f().x = 1', 'cannot assign to this', 1, 1);
+  parseError('(m.a + 1).b = 1', 'cannot assign to this', 1, 1);
+  parseError('m.a().b = 1', 'expected newline, found \'(\'', 1, 4);
+});
+
+test('map literal and field errors', () => {
+  const key = 'map key must be a name, a string or an int';
+  parseError('print({[1]: 2})', key, 1, 8);
+  parseError('print({true: 1})', key, 1, 8);
+  parseError('print({a: 1, nil: 2})', key, 1, 14);
+  parseError('print({(1): 2})', key, 1, 8);
+  parseError('print({"a{x}": 1})', key, 1, 8);
+  parseError('print({-a: 1})', key, 1, 8);
+  parseError('print({--1: 1})', key, 1, 8);
+  parseError('print({a: 1,, b: 2})', key, 1, 14);
+  parseError('print({, a: 1})', key, 1, 8);
+  parseError('print({1 + 2: 3})', "expected ':', found '+'", 1, 11);
+  parseError('print({f(): 1})', "expected ':', found '('", 1, 9);
+  parseError('print({a 1})', "expected ':', found '1'", 1, 10);
+  parseError('print({a: })', "expected an expression, found '}'", 1, 11);
+  parseError('print({a: 1 b: 2})', "expected '}', found 'b'", 1, 14);
+  parseError('let m = {a: 1', "expected '}', found end of file", 2, 1);
+  parseError('print(m.)', "expected a name, found ')'", 1, 9);
+  parseError('print(m.1)', "expected a name, found '1'", 1, 9);
+  parseError('print(m.in)', "expected a name, found 'in'", 1, 9);
+  parseError('m.\nprint(1)', 'expected a name, found newline', 1, 3);
+  // A map or a block is not a statement; a `.` does not continue the line before.
+  parseError('{a: 1}', "expected a statement, found '{'", 1, 1);
+  parseError('{ let x = 1 }', "expected a statement, found '{'", 1, 1);
+  parseError('m\n.a = 1', "expected a statement, found '.'", 2, 1);
+});
+
+test('a map literal after a condition or a loop header is a value, and the block follows', () => {
+  const b = ast('if m == {} {\n}\nfor k in {a: 1} {\n}\nwhile {} != m {\n}').body as any[];
+  assert.equal(sx(b[0].cond), '(== m {})');
+  assert.equal(sx(b[1].iter.expr), '{"a":1}');
+  assert.equal(sx(b[2].cond), '(!= {} m)');
 });

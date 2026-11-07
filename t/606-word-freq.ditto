@@ -1,0 +1,28 @@
+let counts = {}
+let order = []
+for w in words(lower(read())) {
+  if w in counts {
+    counts[w] += 1
+  } else {
+    counts[w] = 1
+    order += [w]
+  }
+}
+print(len(counts), "distinct words in order:", order)
+let pairs = []
+for w in counts { pairs += [[-counts[w], w]] }
+for pair in sort(pairs) {
+  print("{pair[1]}: {-pair[0]}")
+}
+let best = sort(pairs)[0]
+print("most common:", best[1], -best[0])
+let by_len = {}
+for w in order {
+  if len(w) in by_len {
+    by_len[len(w)] += [w]
+  } else {
+    by_len[len(w)] = [w]
+  }
+}
+for n in sort(keys(by_len)) { print(n, by_len[n]) }
+print(counts == counts, counts.the, "dog" in counts, "cat" in counts)

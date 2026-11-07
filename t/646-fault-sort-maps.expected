@@ -1,0 +1,2 @@
+t/646-fault-sort-maps.ditto:1:7: fault: cannot use < on map and map
+exit: 1

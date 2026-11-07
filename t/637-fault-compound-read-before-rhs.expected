@@ -1,0 +1,2 @@
+t/637-fault-compound-read-before-rhs.ditto:6:2: fault: missing key "zz"
+exit: 1

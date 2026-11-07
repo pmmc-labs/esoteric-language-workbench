@@ -1,0 +1,2 @@
+t/613-fault-missing-key-int.ditto:2:8: fault: missing key 7
+exit: 1

@@ -1,0 +1,17 @@
+let stock = {}
+for line in split(read(), "\n") {
+  let parts = words(line)
+  if len(parts) == 2 {
+    let name = parts[0]
+    let qty = int(parts[1])
+    if name in stock {
+      stock[name] += qty
+    } else {
+      stock[name] = qty
+    }
+  }
+}
+print(stock)
+for name in sort(keys(stock)) {
+  print(name, stock[name])
+}

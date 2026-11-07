@@ -1,0 +1,10 @@
+let counts = {}
+for c in "mississippi" {
+  if c in counts { counts[c] += 1 } else { counts[c] = 1 }
+}
+print(counts)
+let best = ""
+for c in counts {
+  if best == "" or counts[c] > counts[best] { best = c }
+}
+print(best, counts[best])

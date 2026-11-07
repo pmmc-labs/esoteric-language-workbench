@@ -1,0 +1,2 @@
+t/696-err-fn-named-keys.ditto:1:4: error: keys is a builtin
+exit: 2

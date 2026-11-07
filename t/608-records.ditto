@@ -1,0 +1,52 @@
+let company = {name: "Acme", staff: [{name: "Ann", role: "dev", langs: ["c", "py"], addr: {city: "Oslo", zip: 150}}, {name: "Bob", role: "ops", langs: [], addr: {city: "Rome", zip: 100}}, {name: "Cy", role: "dev", langs: ["ts"], addr: {city: "Oslo", zip: 151}}], depts: {dev: {head: "Ann", size: 2}, ops: {head: "Bob", size: 1}}}
+print(company)
+for s in company.staff {
+  print(s.name, s.role, len(s.langs), s.addr.city, s.addr.zip)
+}
+let cities = {}
+for s in company.staff {
+  if s.addr.city in cities {
+    cities[s.addr.city] += [s.name]
+  } else {
+    cities[s.addr.city] = [s.name]
+  }
+}
+print(cities)
+for d in company.depts {
+  print(d, company.depts[d].head, company.depts[d].size)
+}
+company.staff[1].role = "dev"
+company.depts["dev"].size += 1
+company.depts["ops"].size -= 1
+company.staff[1].langs += ["sh"]
+company.staff[2].addr.city = "Bergen"
+company.staff[0].addr.zip += 1
+company.depts["hr"] = {head: "Dee", size: 0}
+print(company)
+let first = company.staff[0]
+company.staff[0].name = "Anna"
+print(first.name, company.staff[0].name)
+let swap = company.staff[1]
+company.staff[1] = company.staff[2]
+company.staff[2] = swap
+print(company.staff[1].name, company.staff[2].name)
+fn person(name, role) {
+  return {name: name, role: role, langs: []}
+}
+fn learn(p, lang) {
+  p.langs += [lang]
+  return p
+}
+let dee = learn(learn(person("Dee", "hr"), "go"), "rs")
+print(dee)
+let team = [person("x", "a"), person("y", "b")]
+team[1] = learn(team[1], "ml")
+print(team)
+print(company.staff[1].addr == {zip: 151, city: "Bergen"}, company.staff[1].addr == {zip: 151}, company.staff[1].addr == {city: "Bergen", zip: 151})
+print(company.staff[2].addr == {zip: 100, city: "Rome"}, company.staff[2].addr == {zip: 100}, company.staff[2].addr == {city: "Rome", zip: 100})
+let byid = {}
+for i in 0..4 {
+  byid[100 + i] = {id: 100 + i, sq: i * i}
+}
+byid[102].sq += 1
+print(byid)

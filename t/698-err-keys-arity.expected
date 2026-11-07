@@ -1,0 +1,2 @@
+t/698-err-keys-arity.ditto:1:7: error: keys takes 1 argument, got 0
+exit: 2

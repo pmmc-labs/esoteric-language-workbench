@@ -1,0 +1,2 @@
+t/634-fault-compound-missing-key.ditto:2:7: fault: missing key "x"
+exit: 1

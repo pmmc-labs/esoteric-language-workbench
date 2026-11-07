@@ -1,0 +1,2 @@
+t/628-fault-set-map-key-list.ditto:2:2: fault: map key must be an int or a string, got list
+exit: 1

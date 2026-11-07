@@ -1,0 +1,4 @@
+let keys = {a: 1, b: 2}
+let remove = keys
+print(keys(keys), len(remove))
+print({keys: 5}.keys, remove({keys: 5, x: 1}, "keys"))

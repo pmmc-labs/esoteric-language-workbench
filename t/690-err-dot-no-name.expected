@@ -1,0 +1,2 @@
+t/690-err-dot-no-name.ditto:2:9: error: expected a name, found ')'
+exit: 2

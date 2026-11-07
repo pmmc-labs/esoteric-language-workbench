@@ -1,0 +1,3 @@
+a=1
+t/649-fault-interpolation-missing-key.ditto:3:12: fault: missing key "b"
+exit: 1

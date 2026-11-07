@@ -1,0 +1,5 @@
+let m = {a: "x", b: {c: [1, 2]}}
+print("m={m}")
+print("a={m.a} c1={m.b.c[1]} lit={ {z: 1} } n={len({})}")
+print("{ {k: "v"}.k }{ {1: 2}[1] }")
+print("{m["a"]}{m.b["c"][0]}")

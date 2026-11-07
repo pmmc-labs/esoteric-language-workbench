@@ -1,0 +1,2 @@
+t/693-err-dot-next-line.ditto:3:1: error: expected a statement, found '.'
+exit: 2

@@ -1,0 +1,2 @@
+let m = {a: {b: {}}}
+print(m.a.b.c)

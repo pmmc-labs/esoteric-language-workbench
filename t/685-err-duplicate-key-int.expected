@@ -1,0 +1,2 @@
+t/685-err-duplicate-key-int.ditto:3:3: error: duplicate key 3
+exit: 2

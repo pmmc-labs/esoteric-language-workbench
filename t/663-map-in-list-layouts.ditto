@@ -1,0 +1,15 @@
+let people = [
+  {name: "ann", age: 31},
+  {
+    name: "bob",
+    age: 27,
+  },
+  {name: "cy", age: 45},
+]
+let total = 0
+for p in people { total += p.age }
+print(total, len(people))
+print(people[1])
+print([{a: 1}, {b: 2}] == [{a: 1}, {b: 2}], [{a: 1, b: 2}] == [{b: 2, a: 1}])
+let by = {ann: people[0], bob: people[1]}
+print(by.bob.age, by["ann"].name)

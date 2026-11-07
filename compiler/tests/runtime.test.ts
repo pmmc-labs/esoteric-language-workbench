@@ -464,3 +464,154 @@ test('lists: builtin faults', () => {
     assert.equal(c.status, 1);
   }
 });
+
+// Maps (step 6). A map is built once and never written (D7), keys in
+// insertion order, searched linearly (D27). `Mp` builds one in C source from
+// [key, value] pairs of C source.
+const Mp = (...pairs: [string, string][]) =>
+  pairs.length === 0
+    ? 'dt_map_new(0, NULL, NULL)'
+    : `dt_map_new(${pairs.length}, (Value[]){${pairs.map((p) => p[0]).join(', ')}}, (Value[]){${pairs.map((p) => p[1]).join(', ')}})`;
+
+test('maps: construction copies the arrays, printing quotes strings and keys, nesting, len', () => {
+  const r = cprog('map-basic', `
+    Value ks[] = {${S('a')}, dt_int(3), ${S('q"\n')}};
+    Value vs[] = {dt_int(1), ${S('x')}, ${Mp()}};
+    Value m = dt_map_new(3, ks, vs);
+    ks[0] = dt_int(99);
+    vs[0] = dt_int(99);
+    Value e = ${Mp()};
+    Value n = ${Mp([S('k'), L(Mp([I(1), 'dt_bool(true)']), 'dt_nil()')])};
+    Value a[] = {m, e, n, ${S('top')}};
+    dt_b_print(1, 1, 4, a);
+    Value s = dt_b_str(1, 1, 1, &n);
+    Value len = dt_b_len(1, 1, 1, &m), len0 = dt_b_len(1, 1, 1, &e);
+    printf("%s %lld %lld %d\\n", s.s->bytes, (long long)len.i, (long long)len0.i, (int)m.tag);
+    Value parts[] = {${S('<')}, e, ${S('>')}};
+    printf("%s\\n", dt_interp(3, parts).s->bytes);
+    return 0;`);
+  assert.equal(r.out, '{"a": 1, 3: "x", "q\\"\\n": {}} {} {"k": [{1: true}, nil]} top\n{"k": [{1: true}, nil]} 3 0 5\n<{}>\n');
+});
+
+test('maps: lookups report a miss, fault on a wrong key type, name the missing key', () => {
+  const r = cprog('map-index', `
+    dt_path = "x.ditto";
+    Value m = ${Mp([S('a'), I(10)], [I(7), I(20)], [I(-3), Mp([S('b'), I(30)])], [S('7'), I(40)])}, out = dt_nil();
+    bool h1 = dt_try_index(1, 1, m, ${S('a')}, &out);
+    printf("%d %lld\\n", h1, (long long)out.i);
+    bool h2 = dt_try_index(1, 1, m, dt_int(7), &out);
+    printf("%d %lld\\n", h2, (long long)out.i);
+    bool h3 = dt_try_index(1, 1, m, ${S('7')}, &out);
+    printf("%d %lld\\n", h3, (long long)out.i);
+    bool m1 = dt_try_index(1, 1, m, ${S('zz')}, &out), m2 = dt_try_index(1, 1, m, dt_int(8), &out), m3 = dt_try_index(1, 1, m, ${S('')}, &out);
+    printf("%d %d %d\\n", m1, m2, m3);
+    Value in = dt_index(1, 1, dt_index(1, 1, m, dt_int(-3)), ${S('b')});
+    printf("%lld\\n", (long long)in.i);
+    bool f = dt_try_field(1, 1, m, ${S('a')}, &out);
+    printf("%d %lld %lld\\n", f, (long long)out.i, (long long)dt_field(1, 1, m, ${S('a')}).i);
+    printf("%d\\n", dt_try_field(1, 1, m, ${S('b')}, &out));
+    dt_index(4, 5, m, ${S('qty')});
+    return 0;`);
+  assert.equal(r.out, '1 10\n1 20\n1 40\n0 0 0\n30\n1 10 10\n0\nx.ditto:4:5: fault: missing key "qty"\n');
+  assert.equal(r.status, 1);
+  const bad: [string, string][] = [
+    ['dt_index(2, 3, m, dt_int(5));', 'x.ditto:2:3: fault: missing key 5\n'],
+    ['dt_index(2, 3, m, dt_int(-5));', 'x.ditto:2:3: fault: missing key -5\n'],
+    ['dt_index(2, 3, m, dt_str_new("a\\"b\\n", 4));', 'x.ditto:2:3: fault: missing key "a\\"b\\n"\n'],
+    ['dt_field(2, 3, m, dt_str_new("name", 4));', 'x.ditto:2:3: fault: missing key "name"\n'],
+    [`dt_try_index(2, 3, m, ${L()}, &o);`, 'x.ditto:2:3: fault: map key must be an int or a string, got list\n'],
+    [`dt_try_index(2, 3, m, ${Mp()}, &o);`, 'x.ditto:2:3: fault: map key must be an int or a string, got map\n'],
+    ['dt_try_index(2, 3, m, dt_bool(false), &o);', 'x.ditto:2:3: fault: map key must be an int or a string, got bool\n'],
+    ['dt_try_index(2, 3, m, dt_nil(), &o);', 'x.ditto:2:3: fault: map key must be an int or a string, got nil\n'],
+    ['dt_try_field(2, 3, dt_int(1), dt_str_new("x", 1), &o);', 'x.ditto:2:3: fault: cannot use .x on int\n'],
+    ['dt_try_field(2, 3, dt_str_new("s", 1), dt_str_new("len", 3), &o);', 'x.ditto:2:3: fault: cannot use .len on string\n'],
+    [`dt_field(2, 3, ${L()}, dt_str_new("count", 5));`, 'x.ditto:2:3: fault: cannot use .count on list\n'],
+    ['dt_field(2, 3, dt_nil(), dt_str_new("x", 1));', 'x.ditto:2:3: fault: cannot use .x on nil\n'],
+  ];
+  for (const [i, [call, out]] of bad.entries()) {
+    const c = cprog(`map-index-bad-${i}`, `dt_path = "x.ditto"; Value m = ${Mp([S('a'), I(1)])}, o; (void)m; (void)o; ${call} return 0;`);
+    assert.equal(c.out, out);
+    assert.equal(c.status, 1);
+  }
+});
+
+test('maps: setting a key replaces in place or appends, in a new map; the old one is as it was', () => {
+  const r = cprog('map-set', `
+    dt_path = "x.ditto";
+    Value inner = ${Mp([S('n'), I(1)])};
+    Value m = ${Mp([S('a'), 'inner'], [I(5), I(7)])};
+    Value rep = dt_set_index(1, 1, m, dt_int(5), dt_int(8));
+    Value add = dt_set_index(1, 1, m, ${S('z')}, dt_int(9));
+    Value f = dt_set_field(1, 1, m, ${S('a')}, dt_nil());
+    Value g = dt_set_field(1, 1, m, ${S('b')}, dt_nil());
+    Value deep = dt_set_field(1, 1, m, ${S('a')}, dt_set_field(1, 1, inner, ${S('n')}, dt_int(2)));
+    Value two = dt_set_index(1, 1, dt_set_index(1, 1, ${Mp()}, ${S('k')}, dt_int(1)), ${S('k')}, dt_int(2));
+    Value a[] = {m, rep, add, f, g, deep, two, inner};
+    dt_b_print(1, 1, 8, a);
+    printf("%d %d %d\\n", rep.m != m.m, rep.m->vals[0].m == inner.m, deep.m->vals[1].i == 7);
+    dt_set_index(5, 6, m, ${L()}, dt_int(0));
+    return 0;`);
+  assert.equal(r.out,
+    '{"a": {"n": 1}, 5: 7} {"a": {"n": 1}, 5: 8} {"a": {"n": 1}, 5: 7, "z": 9} {"a": nil, 5: 7} ' +
+    '{"a": {"n": 1}, 5: 7, "b": nil} {"a": {"n": 2}, 5: 7} {"k": 2} {"n": 1}\n1 1 1\n' +
+    'x.ditto:5:6: fault: map key must be an int or a string, got list\n');
+  assert.equal(r.status, 1);
+  const bad: [string, string][] = [
+    ['dt_set_field(2, 3, dt_str_new("abc", 3), dt_str_new("f", 1), dt_int(0));', 'x.ditto:2:3: fault: cannot assign into string\n'],
+    ['dt_set_field(2, 3, dt_int(5), dt_str_new("f", 1), dt_int(0));', 'x.ditto:2:3: fault: cannot assign into int\n'],
+    ['dt_set_field(2, 3, dt_nil(), dt_str_new("f", 1), dt_int(0));', 'x.ditto:2:3: fault: cannot assign into nil\n'],
+    [`dt_set_field(2, 3, ${L(I(1))}, dt_str_new("f", 1), dt_int(0));`, 'x.ditto:2:3: fault: cannot use .f on list\n'],
+    ['dt_set_index(2, 3, dt_str_new("abc", 3), dt_str_new("f", 1), dt_int(0));', 'x.ditto:2:3: fault: cannot assign into string\n'],
+    ['dt_set_index(2, 3, m, dt_bool(true), dt_int(0));', 'x.ditto:2:3: fault: map key must be an int or a string, got bool\n'],
+    ['dt_set_index(2, 3, m, dt_nil(), dt_int(0));', 'x.ditto:2:3: fault: map key must be an int or a string, got nil\n'],
+  ];
+  for (const [i, [call, out]] of bad.entries()) {
+    const c = cprog(`map-set-bad-${i}`, `dt_path = "x.ditto"; Value m = ${Mp([S('a'), I(1)])}; (void)m; ${call} return 0;`);
+    assert.equal(c.out, out);
+    assert.equal(c.status, 1);
+  }
+});
+
+test('maps: == ignores order and compares values; in looks at keys; no other ordering', () => {
+  const r = cprog('map-ops', `
+    dt_path = "x.ditto";
+    Value a = ${Mp([S('x'), I(1)], [I(2), L(I(3))])}, b = ${Mp([I(2), L(I(3))], [S('x'), I(1)])};
+    Value c = ${Mp([S('x'), I(1)], [I(2), L(I(4))])}, d = ${Mp([S('x'), I(1)])}, e = ${Mp()};
+    Value s = ${Mp([S('1'), I(1)])}, i = ${Mp([I(1), I(1)])};
+    printf("%d %d %d %d %d %d\\n", dt_equal(a, b), dt_equal(a, c), dt_equal(a, d), dt_equal(e, e), dt_equal(s, i), dt_equal(e, ${L()}));
+    printf("%d %d %d %d %d %d\\n", dt_in(1, 1, ${S('x')}, a), dt_in(1, 1, dt_int(2), a), dt_in(1, 1, ${S('2')}, a), dt_in(1, 1, dt_int(3), a),
+           dt_in(1, 1, ${L()}, a), dt_in(1, 1, dt_nil(), e));
+    dt_lt(2, 3, a, b);
+    return 0;`);
+  assert.equal(r.out, '1 0 0 1 0 0\n1 1 0 0 0 0\nx.ditto:2:3: fault: cannot use < on map and map\n');
+  assert.equal(r.status, 1);
+});
+
+test('maps: a for walks the keys by index; keys and remove make new values', () => {
+  const r = cprog('map-builtins', `
+    dt_path = "x.ditto";
+    Value m = ${Mp([S('b'), I(1)], [I(5), I(2)], [S('a'), I(3)])};
+    int64_t n = dt_iter_len(1, 1, m);
+    for (int64_t k = 0; k < n; k++) { Value it = dt_iter_item(m, k); dt_b_print(1, 1, 1, &it); }
+    Value ks = dt_b_keys(1, 1, 1, &m);
+    Value r1[] = {m, ${S('a')}}, r2[] = {m, dt_int(5)}, r3[] = {m, ${S('zz')}}, r4[] = {m, ${L()}}, r5[] = {${Mp()}, ${S('a')}};
+    Value x1 = dt_b_remove(1, 1, 2, r1), x2 = dt_b_remove(1, 1, 2, r2), x3 = dt_b_remove(1, 1, 2, r3), x4 = dt_b_remove(1, 1, 2, r4), x5 = dt_b_remove(1, 1, 2, r5);
+    Value a[] = {ks, x1, x2, x3, x4, x5, m};
+    dt_b_print(1, 1, 7, a);
+    printf("%d %d\\n", x3.m == m.m || dt_equal(x3, m), dt_equal(dt_b_keys(1, 1, 1, &x5), ${L()}));
+    Value bad[] = {${L()}, ${S('a')}};
+    dt_b_remove(3, 4, 2, bad);
+    return 0;`);
+  assert.equal(r.out, 'b\n5\na\n["b", 5, "a"] {"b": 1, 5: 2} {"b": 1, "a": 3} {"b": 1, 5: 2, "a": 3} {"b": 1, 5: 2, "a": 3} {} {"b": 1, 5: 2, "a": 3}\n1 1\nx.ditto:3:4: fault: remove: expected a map, got list\n');
+  assert.equal(r.status, 1);
+  const cases: [string, string][] = [
+    ['Value a[] = {dt_int(1)}; dt_b_keys(2, 3, 1, a);', 'x.ditto:2:3: fault: keys: expected a map, got int\n'],
+    [`Value a[] = {${L()}}; dt_b_keys(2, 3, 1, a);`, 'x.ditto:2:3: fault: keys: expected a map, got list\n'],
+    ['Value a[] = {dt_str_new("m", 1), dt_int(1)}; dt_b_remove(2, 3, 2, a);', 'x.ditto:2:3: fault: remove: expected a map, got string\n'],
+  ];
+  for (const [i, [code, out]] of cases.entries()) {
+    const c = cprog(`map-fault-${i}`, `dt_path = "x.ditto"; ${code} return 0;`);
+    assert.equal(c.out, out);
+    assert.equal(c.status, 1);
+  }
+});

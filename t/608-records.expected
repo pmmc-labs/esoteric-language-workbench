@@ -1,0 +1,15 @@
+{"name": "Acme", "staff": [{"name": "Ann", "role": "dev", "langs": ["c", "py"], "addr": {"city": "Oslo", "zip": 150}}, {"name": "Bob", "role": "ops", "langs": [], "addr": {"city": "Rome", "zip": 100}}, {"name": "Cy", "role": "dev", "langs": ["ts"], "addr": {"city": "Oslo", "zip": 151}}], "depts": {"dev": {"head": "Ann", "size": 2}, "ops": {"head": "Bob", "size": 1}}}
+Ann dev 2 Oslo 150
+Bob ops 0 Rome 100
+Cy dev 1 Oslo 151
+{"Oslo": ["Ann", "Cy"], "Rome": ["Bob"]}
+dev Ann 2
+ops Bob 1
+{"name": "Acme", "staff": [{"name": "Ann", "role": "dev", "langs": ["c", "py"], "addr": {"city": "Oslo", "zip": 151}}, {"name": "Bob", "role": "dev", "langs": ["sh"], "addr": {"city": "Rome", "zip": 100}}, {"name": "Cy", "role": "dev", "langs": ["ts"], "addr": {"city": "Bergen", "zip": 151}}], "depts": {"dev": {"head": "Ann", "size": 3}, "ops": {"head": "Bob", "size": 0}, "hr": {"head": "Dee", "size": 0}}}
+Ann Anna
+Cy Bob
+{"name": "Dee", "role": "hr", "langs": ["go", "rs"]}
+[{"name": "x", "role": "a", "langs": []}, {"name": "y", "role": "b", "langs": ["ml"]}]
+true false true
+true false true
+{100: {"id": 100, "sq": 0}, 101: {"id": 101, "sq": 1}, 102: {"id": 102, "sq": 5}, 103: {"id": 103, "sq": 9}}

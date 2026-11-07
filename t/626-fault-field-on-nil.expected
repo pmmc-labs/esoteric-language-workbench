@@ -1,0 +1,2 @@
+t/626-fault-field-on-nil.ditto:2:10: fault: cannot use .x on nil
+exit: 1

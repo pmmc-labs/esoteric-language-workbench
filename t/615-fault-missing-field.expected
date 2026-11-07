@@ -1,0 +1,2 @@
+t/615-fault-missing-field.ditto:2:8: fault: missing key "qty"
+exit: 1

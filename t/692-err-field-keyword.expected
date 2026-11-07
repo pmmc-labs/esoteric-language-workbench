@@ -1,0 +1,2 @@
+t/692-err-field-keyword.ditto:2:9: error: expected a name, found 'in'
+exit: 2

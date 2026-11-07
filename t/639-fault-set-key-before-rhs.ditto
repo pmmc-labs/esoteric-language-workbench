@@ -1,0 +1,10 @@
+fn k() {
+  print("k")
+  return [1]
+}
+fn f() {
+  print("f")
+  return 1
+}
+let m = {}
+m[k()] = f()

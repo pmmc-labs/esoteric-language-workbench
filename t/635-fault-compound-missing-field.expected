@@ -1,0 +1,2 @@
+t/635-fault-compound-missing-field.ditto:2:2: fault: missing key "n"
+exit: 1

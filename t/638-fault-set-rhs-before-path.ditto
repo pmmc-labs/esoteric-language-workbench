@@ -1,0 +1,6 @@
+fn f() {
+  print("f")
+  return 1
+}
+let m = {}
+m.a.b = f()

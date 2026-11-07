@@ -1,0 +1,4 @@
+{"a": ["apple", "avocado", "apricot"], "b": ["banana", "blueberry"], "c": ["cherry"]}
+a 3 ["apple", "avocado", "apricot"]
+b 2 ["banana", "blueberry"]
+c 1 ["cherry"]

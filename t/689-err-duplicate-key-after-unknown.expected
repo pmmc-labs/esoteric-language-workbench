@@ -1,0 +1,2 @@
+t/689-err-duplicate-key-after-unknown.ditto:1:13: error: unknown variable x
+exit: 2

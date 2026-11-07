@@ -1,0 +1,2 @@
+t/640-fault-keys-list.ditto:1:7: fault: keys: expected a map, got list
+exit: 1

@@ -1,0 +1,55 @@
+fn add_item(inv, name, qty, price) {
+  if name in inv {
+    inv[name].qty += qty
+    inv[name].price = price
+  } else {
+    inv[name] = {qty: qty, price: price}
+  }
+  return inv
+}
+fn take(inv, name, qty) {
+  if name not in inv { return inv }
+  inv[name].qty -= qty
+  if inv[name].qty <= 0 { inv = remove(inv, name) }
+  return inv
+}
+fn value(inv) {
+  let total = 0
+  for name in inv { total += inv[name].qty * inv[name].price }
+  return total
+}
+let inv = {}
+inv = add_item(inv, "pen", 10, 2)
+print(inv, value(inv), len(inv))
+inv = add_item(inv, "ink", 3, 15)
+print(inv, value(inv), len(inv))
+inv = add_item(inv, "pad", 5, 4)
+print(inv, value(inv), len(inv))
+inv = take(inv, "pen", 4)
+print(inv, value(inv), len(inv))
+inv = add_item(inv, "pen", 6, 3)
+print(inv, value(inv), len(inv))
+inv = take(inv, "ink", 5)
+print(inv, value(inv), len(inv))
+inv = take(inv, "cap", 1)
+print(inv, value(inv), len(inv))
+inv = add_item(inv, "cap", 1, 9)
+print(inv, value(inv), len(inv))
+inv = take(inv, "pad", 2)
+print(inv, value(inv), len(inv))
+inv = add_item(inv, "ink", 7, 14)
+print(inv, value(inv), len(inv))
+inv = take(inv, "cap", 1)
+print(inv, value(inv), len(inv))
+inv = take(inv, "pad", 3)
+print(inv, value(inv), len(inv))
+inv = add_item(inv, "pad", 1, 5)
+print(inv, value(inv), len(inv))
+let before = inv
+let after = take(add_item(inv, "pen", 100, 1), "ink", 1)
+print(before == inv, after == inv, value(before), value(after))
+print(inv)
+for name in sort(keys(inv)) {
+  let r = inv[name]
+  print("{name}: {r.qty} at {r.price} = {r.qty * r.price}")
+}

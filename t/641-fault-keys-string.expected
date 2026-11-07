@@ -1,0 +1,2 @@
+t/641-fault-keys-string.ditto:1:7: fault: keys: expected a map, got string
+exit: 1

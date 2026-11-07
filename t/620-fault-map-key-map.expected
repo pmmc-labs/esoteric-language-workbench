@@ -1,0 +1,2 @@
+t/620-fault-map-key-map.ditto:2:8: fault: map key must be an int or a string, got map
+exit: 1

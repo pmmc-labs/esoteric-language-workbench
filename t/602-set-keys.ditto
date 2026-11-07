@@ -1,0 +1,87 @@
+let m = {}
+print(m)
+m["b"] = 1
+m["a"] = 2
+print(m)
+m["b"] = 10
+print(m)
+m["c"] = 3
+m.d = 4
+m.a = 20
+print(m)
+print(keys(m), len(m))
+m[5] = "five"
+m[-5] = "minus"
+m[0] = "zero"
+m[5] = "FIVE"
+m["5"] = "str five"
+print(m)
+print(m[5], m["5"], m[-5], m[0])
+fn k(s) {
+  print("key", s)
+  return s
+}
+fn v(n) {
+  print("value", n)
+  return n
+}
+let o = {}
+o[k("x")] = v(1)
+o[k("y")] = v(2)
+o[k("x")] = v(3)
+print(o)
+let counts = {}
+for w in ["b", "a", "b", "c", "a", "b"] {
+  if w in counts {
+    counts[w] += 1
+  } else {
+    counts[w] = 1
+  }
+}
+print(counts)
+let t = {v: 1}
+t["v"] = "text"
+print(t)
+t["v"] = nil
+print(t)
+t["v"] = true
+print(t)
+t["v"] = false
+print(t)
+t["v"] = [1, 2]
+print(t)
+t["v"] = {n: {}}
+print(t)
+t["v"] = -7
+print(t)
+t["v"] = ""
+print(t)
+t["v"] = []
+print(t)
+t["w"] = 0
+t["w"] += 5
+t["w"] *= 2
+t["w"] -= 3
+t["w"] /= 4
+t["w"] %= 2
+print(t)
+t["s"] = "ab"
+t["s"] += "cd"
+t["l"] = [1]
+t["l"] += [2, 3]
+print(t)
+let wide = {}
+for i in 0..20 {
+  wide[i * 7 % 20] = i
+}
+print(wide)
+for i in 0..20 {
+  wide[19 - i] = wide[i * 7 % 20] + 100
+}
+print(wide)
+let a = {x: 1}
+let b = {}
+b["first"] = a
+a.x = 2
+b["second"] = a
+print(a, b)

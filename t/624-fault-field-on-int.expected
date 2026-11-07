@@ -1,0 +1,2 @@
+t/624-fault-field-on-int.ditto:2:8: fault: cannot use .x on int
+exit: 1

@@ -1,0 +1,2 @@
+t/631-fault-set-field-on-int.ditto:2:2: fault: cannot assign into int
+exit: 1

@@ -1,0 +1,4 @@
+k
+f
+t/639-fault-set-key-before-rhs.ditto:10:2: fault: map key must be an int or a string, got list
+exit: 1

@@ -1,0 +1,2 @@
+t/632-fault-set-mid-missing-key.ditto:2:2: fault: missing key "a"
+exit: 1

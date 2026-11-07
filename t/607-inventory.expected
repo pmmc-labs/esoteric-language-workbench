@@ -1,0 +1,18 @@
+{"pen": {"qty": 10, "price": 2}} 20 1
+{"pen": {"qty": 10, "price": 2}, "ink": {"qty": 3, "price": 15}} 65 2
+{"pen": {"qty": 10, "price": 2}, "ink": {"qty": 3, "price": 15}, "pad": {"qty": 5, "price": 4}} 85 3
+{"pen": {"qty": 6, "price": 2}, "ink": {"qty": 3, "price": 15}, "pad": {"qty": 5, "price": 4}} 77 3
+{"pen": {"qty": 12, "price": 3}, "ink": {"qty": 3, "price": 15}, "pad": {"qty": 5, "price": 4}} 101 3
+{"pen": {"qty": 12, "price": 3}, "pad": {"qty": 5, "price": 4}} 56 2
+{"pen": {"qty": 12, "price": 3}, "pad": {"qty": 5, "price": 4}} 56 2
+{"pen": {"qty": 12, "price": 3}, "pad": {"qty": 5, "price": 4}, "cap": {"qty": 1, "price": 9}} 65 3
+{"pen": {"qty": 12, "price": 3}, "pad": {"qty": 3, "price": 4}, "cap": {"qty": 1, "price": 9}} 57 3
+{"pen": {"qty": 12, "price": 3}, "pad": {"qty": 3, "price": 4}, "cap": {"qty": 1, "price": 9}, "ink": {"qty": 7, "price": 14}} 155 4
+{"pen": {"qty": 12, "price": 3}, "pad": {"qty": 3, "price": 4}, "ink": {"qty": 7, "price": 14}} 146 3
+{"pen": {"qty": 12, "price": 3}, "ink": {"qty": 7, "price": 14}} 134 2
+{"pen": {"qty": 12, "price": 3}, "ink": {"qty": 7, "price": 14}, "pad": {"qty": 1, "price": 5}} 139 3
+true false 139 201
+{"pen": {"qty": 12, "price": 3}, "ink": {"qty": 7, "price": 14}, "pad": {"qty": 1, "price": 5}}
+ink: 7 at 14 = 98
+pad: 1 at 5 = 5
+pen: 12 at 3 = 36

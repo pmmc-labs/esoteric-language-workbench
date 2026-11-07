@@ -1,0 +1,2 @@
+t/687-err-duplicate-key-negative.ditto:1:17: error: duplicate key -3
+exit: 2

@@ -1,0 +1,2 @@
+t/630-fault-set-field-on-string.ditto:2:2: fault: cannot assign into string
+exit: 1

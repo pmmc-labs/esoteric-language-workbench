@@ -1,0 +1,2 @@
+let counts = {}
+counts["x"] += 1

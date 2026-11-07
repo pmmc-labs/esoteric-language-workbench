@@ -1,0 +1,2 @@
+t/683-err-duplicate-key-name.ditto:1:22: error: duplicate key "a"
+exit: 2

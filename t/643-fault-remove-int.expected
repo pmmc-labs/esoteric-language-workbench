@@ -1,0 +1,2 @@
+t/643-fault-remove-int.ditto:1:7: fault: remove: expected a map, got int
+exit: 1

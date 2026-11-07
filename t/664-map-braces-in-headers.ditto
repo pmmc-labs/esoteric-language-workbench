@@ -1,0 +1,15 @@
+let m = {a: 1}
+if m == {a: 1} {
+  print("equal")
+}
+if {} == {} { print("empty equal") }
+for k in {x: 1, y: 2} { print(k) }
+while m != {} {
+  m = remove(m, "a")
+}
+print(m)
+let n = 0
+if {a: 1}.a == 1 and n == 0 { print("field of literal") }
+fn pick() { return {k: "v"} }
+for c in pick() { print(c) }
+print(len({a: 1}) + len({}))

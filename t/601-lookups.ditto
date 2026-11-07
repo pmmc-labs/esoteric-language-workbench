@@ -1,0 +1,36 @@
+let m = {name: "pen", qty: 3, tags: ["red", "blue"], dims: {w: 4, h: 9}, 1: "one", -2: "minus two", "": "empty"}
+print(m["name"], m.name, m["qty"], m.qty, m[1], m[-2], m[""])
+print(m.tags, m.tags[1], m.dims, m.dims.w, m["dims"]["h"], m.dims["w"] * m.dims.h, len(m.tags))
+let k = "qty"
+let n = 1
+print(m[k], m["q" + "ty"], m[n], m[n - 3], m[len("ab") - 4], m[slice("x", 0, 0)])
+let both = {1: "int one", "1": "string one", 2: "int two"}
+print(both[1], both["1"], both[2], both[str(1)], both[int("2")])
+let rows = [{id: 1, tags: ["a"]}, {id: 2, tags: ["b", "c"]}, {id: 3, tags: []}]
+print(rows[0].id, rows[1].tags[1], rows[2].tags, rows[len(rows) - 1].id, rows[rows[0].id].id)
+let total = 0
+for r in rows {
+  total += r.id * len(r.tags)
+}
+print(total)
+fn point(x, y) {
+  return {x: x, y: y}
+}
+fn pick(r, k) {
+  return r[k]
+}
+fn getx(r) {
+  return r.x
+}
+print(point(3, 4).x, point(3, 4).y + 1, pick(point(5, 6), "y"), getx({x: "ex", y: 0}), (point(1, 2)).x, {a: {b: 7}}.a.b, {a: [10, 20]}.a[1], {1: "i"}[1], {x: 1}["x"] + {x: 2}.x)
+let d = {a: 5, b: {c: [{e: 2}]}}
+print(-d.a, -d.a * 2, d.b.c[0].e, d["b"].c[0]["e"], -d.b.c[0].e + d.a)
+let inner = d.b
+inner.c = []
+print(d, inner)
+let len2 = {len: 1, print: 2, str: 3, keys: 4, remove: 5, in2: 6}
+print(len2.len, len2.print, len2.str, len2.keys, len2.remove)
+let name = "name"
+let rec = {name: "the name key", other: name}
+print(rec.name, rec.other, rec[name])
+print("{rows[1].id}:{rows[1].tags[0]}:{point(1, 2).y}:{d.b.c[0].e}")

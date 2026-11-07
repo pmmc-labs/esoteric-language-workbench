@@ -1,0 +1,2 @@
+t/616-fault-missing-key-empty-map.ditto:1:9: fault: missing key "x"
+exit: 1
