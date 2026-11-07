@@ -1,0 +1,23 @@
+let x = 2
+if x = 1 {
+  print 10
+} else if x = 2 {
+  print 20
+} else if x = 3 {
+  print 30
+} else {
+  print 40
+}
+let y = 9
+if y = 1 { print 10 } else if y = 2 { print 20 } else if y = 3 { print 30 } else { print 40 }
+if x = 2 {
+  print 50
+} else if 1 / 0 = 0 {
+  print 60
+}
+if x = 1 {
+  print 70
+} else if x = 3 {
+  print 80
+}
+print 90

@@ -1,0 +1,7 @@
+let a = 1
+if a = 1 {
+  let b = 2
+  print b
+}
+print a
+print b
