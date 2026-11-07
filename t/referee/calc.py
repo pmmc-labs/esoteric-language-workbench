@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """The referee: an evaluator of the calculator from its decisions (D3 to
-D7, D11 to D25), on Python's unbounded integers, with the 63-bit range
-and the division and shift rules applied as the decisions say. Written
-from DECISIONS.md and not from the runtime, so that it is a second
-implementation, and `make checks` runs it over every golden test and
-fails where the two disagree. A program it doesn't cover (an operator
-it has no entry for) is reported as such, exit 3, and the check skips
-it; the large model extends it when a step's proposal says a referee
-is wanted (docs/PROCESS.md, "The referee").
+D7, D11 to D25, D31 to D34), on Python's unbounded integers, with the
+63-bit range and the division and shift rules applied as the decisions
+say. Written from DECISIONS.md and not from the runtime, so that it is
+a second implementation, and `make checks` runs it over every golden
+test and fails where the two disagree. A program it doesn't cover, or
+one with an error before running (D28, D31), which no golden test is
+(D7), is reported as such, exit 3, and the check skips it; the large
+model extends it when a step's proposal says a referee is wanted
+(docs/PROCESS.md, "The referee").
 
 The builder of a step does not read this file: that's what makes the
 referee's agreement with the builder's model worth something. The
@@ -24,6 +25,13 @@ has left, every operation charged to all of them, and refused when any
 is at 0 (D23). That costs the depth of `within`s per operation, which
 a referee can afford, and it makes the runtime's single limit a second
 derivation rather than a copy.
+
+Functions (D31 to D34) are frames on the same stack: a call waits on
+its body as an operator waits on its operands, and the depth is a count
+of the calls waiting. A tail call (D33) drops its caller's frames
+before its body starts, so a loop of tail calls runs in the stack it
+started with, and a call 10,000 deep is 10,000 frames of a Python list,
+not of Python's own stack.
 
     python3 t/referee/calc.py t/010-arith.lang
 """
@@ -129,10 +137,9 @@ def read(src):
 # in force pays (D23), and the operation is refused if any has nothing
 # left. Outside every `within` the list is empty and nothing is refused.
 def charge(budgets):
-    if any(b == 0 for b in budgets):
+    if 0 in budgets:
         raise Fault('budget spent')
-    for k in range(len(budgets)):
-        budgets[k] -= 1
+    budgets[:] = [b - 1 for b in budgets]
 
 # D24: the budget is an integer and not negative, checked before the
 # body is evaluated.
@@ -143,37 +150,55 @@ def budget_of(n):
         raise Fault('bad budget')
     return n
 
-def atom_value(f):
+# A parameter's value comes from the call's environment, a dict of the
+# function's own parameters (D31): nothing else is in scope, and the
+# program's expression has none.
+def atom_value(f, env):
     if isinstance(f, int):
         return f
     if f == '#true':
         return True
     if f == '#false':
         return False
-    raise KeyError(f)
+    return env[f]
 
-# Evaluation as a loop: a frame is a list form, how far along it is, and
-# the values so far. An `if` evaluates its test, then only the taken
-# branch (D13); an operator evaluates both arguments left to right, then
-# is charged (D22), then applies (D25); a `within` evaluates its budget
+# D34: the number of calls in progress, the program's expression at 0.
+DEPTH = 10000
+
+# Evaluation as a loop: a frame is a list form, how far along it is, the
+# values so far, the parameters in scope, whether the form is in tail
+# position (D33), and for a call the function. An `if` evaluates its
+# test, then only the taken branch (D13), in tail position if the `if`
+# is; an operator evaluates both arguments left to right, then is
+# charged (D22), then applies (D25); a `within` evaluates its budget
 # under the budgets already in force, checks it, puts it in force for
-# its body, and takes it away after (D23, D24).
-def ev(form):
+# its body, and takes it away after (D23, D24), neither part in tail
+# position. A call (D32) evaluates its arguments left to right, is
+# charged, is checked for depth (D34), and then waits on its body, which
+# is in tail position; a call that is itself in tail position doesn't
+# wait (D33): the frames between it and its caller's call, which can
+# only be `if`s whose branch is the tail call, are dropped, and its body
+# takes the place of its caller's, at the same depth. So a tail loop
+# keeps the stack as it was, and the depth counts the calls that wait.
+def ev(defs, form):
     if not isinstance(form, list):
-        return atom_value(form)
+        return atom_value(form, {})
     budgets = []
-    stack = [[form, 0, []]]
+    depth = 0
+    stack = [[form, 0, [], {}, False, defs.get(form[0])]]
     result = None
     while stack:
-        f, i, vals = stack[-1]
+        fr = stack[-1]
+        f, i, vals, env, tail, fn = fr
         head, args = f[0], f[1:]
+        ntail, nenv = False, env
         if head == 'within':
             if i == 0:
-                stack[-1][1] = 1
+                fr[1] = 1
                 nxt = args[0]
             elif i == 1:
                 budgets.append(budget_of(vals[0]))
-                stack[-1][1] = 2
+                fr[1] = 2
                 nxt = args[1]
             else:
                 budgets.pop()
@@ -184,27 +209,52 @@ def ev(form):
                 continue
         elif head == 'if':
             if i == 0:
-                stack[-1][1] = 1
+                fr[1] = 1
                 nxt = args[0]
             elif i == 1:
                 t = vals[0]
                 if not isinstance(t, bool):
                     raise Fault('not a boolean')
-                stack[-1][1] = 2
+                fr[1] = 2
                 nxt = args[1] if t else args[2]
+                ntail = tail
             else:
                 result = vals[1]
                 stack.pop()
                 if stack:
                     stack[-1][2].append(result)
                 continue
+        elif fn is not None:
+            params, body = fn
+            if i < len(args):
+                fr[1] = i + 1
+                nxt = args[i]
+            elif i == len(args):
+                charge(budgets)
+                if (depth if tail else depth + 1) > DEPTH:
+                    raise Fault('stack')
+                nenv = dict(zip(params, vals))
+                nxt, ntail = body, True
+                if tail:
+                    stack.pop()
+                    while stack[-1][5] is None or stack[-1][1] <= len(stack[-1][0]) - 1:
+                        assert stack[-1][0][0] == 'if', stack[-1][0]
+                        stack.pop()
+                else:
+                    depth += 1
+                    fr[1] = i + 1
+            else:
+                depth -= 1
+                result = vals[-1]
+                stack.pop()
+                if stack:
+                    stack[-1][2].append(result)
+                continue
         else:
             if i < 2:
-                stack[-1][1] = i + 1
+                fr[1] = i + 1
                 nxt = args[i]
             else:
-                if head not in BIN:
-                    raise KeyError(head)
                 charge(budgets)
                 result = BIN[head](vals[0], vals[1])
                 stack.pop()
@@ -212,23 +262,91 @@ def ev(form):
                     stack[-1][2].append(result)
                 continue
         if isinstance(nxt, list):
-            stack.append([nxt, 0, []])
+            stack.append([nxt, 0, [], nenv, ntail, defs.get(nxt[0])])
         else:
-            stack[-1][2].append(atom_value(nxt))
+            stack[-1][2].append(atom_value(nxt, nenv))
     return result
+
+class Early(Exception):
+    pass
+
+KEYWORDS = set(BIN) | {'if', 'within', 'def'}
+
+def is_name(x):
+    return isinstance(x, str) and x not in ('#true', '#false')
+
+# D31 and D28: a program is definitions and then one expression, and
+# everything wrong with its shape or its names is an error before it
+# runs. Such a program is never a golden test (D7), so the referee
+# reports the error and exits 3, as for a program it doesn't cover. The
+# walk is a loop over a list of forms to look at, as the evaluator is.
+def check(forms):
+    if not forms:
+        raise Early('no expression')
+    *ds, expr = forms
+    if isinstance(expr, list) and expr and expr[0] == 'def':
+        raise Early('definitions and no expression after them')
+    defs = {}
+    for d in ds:
+        if not (isinstance(d, list) and d and d[0] == 'def'):
+            raise Early('an expression before a definition, or two expressions')
+        if len(d) != 3:
+            raise Early(f'def takes 2 arguments, not {len(d) - 1}')
+        sig = d[1]
+        if not (isinstance(sig, list) and sig and all(is_name(x) for x in sig)):
+            raise Early("a def's first part isn't a list of names")
+        name, params = sig[0], sig[1:]
+        if name in KEYWORDS:
+            raise Early(f'{name} is not a name a function can have')
+        if name in defs:
+            raise Early(f'{name} is defined twice')
+        if len(set(params)) != len(params):
+            raise Early(f'{name} has two parameters with one name')
+        defs[name] = (params, d[2])
+    for name, (params, _) in defs.items():
+        for p in params:
+            if p in KEYWORDS or p in defs:
+                raise Early(f'{p} is not a name a parameter can have')
+    todo = [(body, set(params)) for params, body in defs.values()]
+    todo.append((expr, set()))
+    while todo:
+        f, scope = todo.pop()
+        if isinstance(f, int) or f in ('#true', '#false'):
+            continue
+        if not isinstance(f, list):
+            if f in defs:
+                raise Early(f'{f} is a function, used as a value')
+            if f not in scope:
+                raise Early(f'unknown name {f}')
+            continue
+        if not f or not isinstance(f[0], str) or f[0] in ('#true', '#false'):
+            raise Early("a list whose head isn't an operator or a function")
+        head, args = f[0], f[1:]
+        if head == 'def':
+            raise Early('a definition that is not at the top')
+        if head in scope:
+            raise Early(f'{head} is a parameter, used as a function')
+        want = 3 if head == 'if' else 2 if head in BIN or head == 'within' else \
+            len(defs[head][0]) if head in defs else None
+        if want is None:
+            raise Early(f'unknown name {head}')
+        if len(args) != want:
+            raise Early(f'{head} takes {want} arguments, not {len(args)}')
+        todo.extend((a, scope) for a in args)
+    return defs, expr
 
 def show(v):
     return '#true' if v is True else '#false' if v is False else str(v)
 
 if __name__ == '__main__':
     src = open(sys.argv[1]).read()
-    forms = read(src)
-    assert len(forms) == 1
     try:
-        print(show(ev(forms[0])))
+        defs, expr = check(read(src))
+    except Early as e:
+        print(f'referee: an error before running ({e}), not covered', file=sys.stderr)
+        sys.exit(3)
+    try:
+        print(show(ev(defs, expr)))
     except Fault as e:
         print(f'fault: {e}')
         print('exit: 1')
-    except KeyError as e:
-        print(f'referee: no entry for {e}', file=sys.stderr)
-        sys.exit(3)
