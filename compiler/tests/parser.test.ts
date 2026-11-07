@@ -175,3 +175,20 @@ test("codegen: a while condition sits inside the loop; an else if inside the els
   const i = codegen(parse(lex("if 1 { print 2 } else if 3 { print 4 }")));
   assert.ok(i.indexOf("} else {") < i.indexOf("INT64_C(3)"));
 });
+
+test("fn only at top level; calls as statements and expressions", () => {
+  const msg = (src: string) => {
+    try { parse(lex(src)); } catch (e) { return (e as { msg: string }).msg; }
+    assert.fail("expected a parse error");
+  };
+  const p = parse(lex("fn f(a, b) { return a }\nf(1, 2)\nprint f(3, 4) + 1"));
+  assert.equal(p.fns.length, 1);
+  assert.equal(p.fns[0].params.length, 2);
+  assert.equal(p.stmts[0].k, "exec");
+  assert.equal(msg("if 1 { fn f() { } }"), "expected statement, found 'fn'");
+  assert.equal(msg("fn f( { }"), "expected name, found '{'");
+  assert.equal(msg("fn f(a b) { }"), "expected ')', found 'b'");
+  assert.equal(msg("fn f(a) print 1"), "expected '{', found 'print'");
+  assert.equal(msg("f(1) + 1"), "expected statement, found '+'");
+  assert.equal(msg("print f(1"), "expected ')', found end of file");
+});

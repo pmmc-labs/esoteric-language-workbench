@@ -1,4 +1,4 @@
-import type { Expr, Program, Stmt } from "./parser.ts";
+import type { Expr, Fn, Program, Stmt } from "./parser.ts";
 
 const BIN: Record<string, string> = {
   "+": "add", "-": "sub", "*": "mul", "/": "div", "%": "mod",
@@ -37,6 +37,17 @@ export function codegen(prog: Program): string {
       const t = fresh();
       emit(`strata_hist ${t} = NULL;`);
       for (const a of ts) emit(`${t} = strata_lay(${t}, ${a}, ${e.line}, ${e.col});`);
+      return t;
+    }
+    if (e.k === "call") {
+      // Arguments into temporaries first, left to right (D25); the call
+      // itself takes only temporaries. The depth counter brackets it in the
+      // caller, so a `return` in the middle of the callee needs no cleanup.
+      const ts = e.args.map(expr);
+      const t = fresh();
+      emit(`strata_enter(${e.line}, ${e.col});`);
+      emit(`strata_hist ${t} = f_${e.name}(${ts.join(", ")});`);
+      emit(`strata_leave();`);
       return t;
     }
     if (e.k === "at") {
@@ -109,6 +120,10 @@ export function codegen(prog: Program): string {
       depth--;
       block(s.body);
       emit("}");
+    } else if (s.k === "return") {
+      emit(`return ${expr(s.e)};`);
+    } else if (s.k === "exec") {
+      expr(s.e);
     } else {
       const t = expr(s.e);
       if (s.k === "let") emit(`strata_hist v_${s.name} = ${t};`);
@@ -117,6 +132,19 @@ export function codegen(prog: Program): string {
     }
   };
 
+  // Each function is a static C function of its parameters, which are the
+  // callers' histories; a write to one lays a new layer on the callee's own
+  // pointer (D18). Prototypes come first, so order and recursion don't matter.
+  const sig = (f: Fn) =>
+    `static strata_hist f_${f.name}(${f.params.map((a) => `strata_hist v_${a.name}`).join(", ") || "void"})`;
+  const defs: string[] = [];
+  for (const f of prog.fns) {
+    out.length = 0;
+    f.body.forEach(stmt);
+    defs.push(`${sig(f)} {\n${out.join("\n")}\n  return NULL;\n}\n`);
+  }
+  out.length = 0;
   prog.stmts.forEach(stmt);
-  return `#include "strata.h"\n\nint main(void) {\n${out.join("\n")}\n  return 0;\n}\n`;
+  const protos = prog.fns.map((f) => `${sig(f)};\n`).join("");
+  return `#include "strata.h"\n\n${protos}\n${defs.join("\n")}\nint main(void) {\n${out.join("\n")}\n  return 0;\n}\n`;
 }

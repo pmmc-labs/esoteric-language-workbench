@@ -54,6 +54,12 @@ strata_hist strata_not(strata_hist a, int line, int col);
    generated code short-circuits itself. */
 int strata_truth(strata_hist a, int line, int col);
 
+/* Call depth (D27): `strata_enter` is called before each call and faults
+   `recursion too deep` at the call's name if 10000 are already active;
+   `strata_leave` after it returns. */
+void strata_enter(int line, int col);
+void strata_leave(void);
+
 /* D23: flush stdout, print "fault at L:C: msg" to stderr, exit 1. */
 void strata_fault(int line, int col, const char *msg);
 

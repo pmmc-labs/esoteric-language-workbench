@@ -6,6 +6,7 @@ import type { Token } from "./lexer.ts";
 export type Expr =
   | { k: "int"; v: string; line: number; col: number }
   | { k: "name"; name: string; line: number; col: number }
+  | { k: "call"; name: string; args: Expr[]; line: number; col: number }
   | { k: "list"; elems: Expr[]; line: number; col: number }
   | { k: "at"; e: Expr; i: Expr; line: number; col: number }
   | { k: "bin"; op: string; l: Expr; r: Expr; line: number; col: number }
@@ -20,8 +21,14 @@ export type Stmt =
   | { k: "let"; name: string; e: Expr; line: number; col: number }
   | { k: "set"; name: string; e: Expr; line: number; col: number; nline: number; ncol: number }
   | { k: "if"; cond: Expr; then: Stmt[]; els: Stmt[] | null; line: number; col: number }
-  | { k: "while"; cond: Expr; body: Stmt[]; line: number; col: number };
-export type Program = { k: "program"; stmts: Stmt[] };
+  | { k: "while"; cond: Expr; body: Stmt[]; line: number; col: number }
+  | { k: "return"; e: Expr; line: number; col: number }
+  // A call as a statement: its result is discarded (D18, D39).
+  | { k: "exec"; e: Extract<Expr, { k: "call" }>; line: number; col: number };
+// A function definition: line, col is the name's, where its errors point.
+export type Param = { name: string; line: number; col: number };
+export type Fn = { name: string; params: Param[]; body: Stmt[]; line: number; col: number };
+export type Program = { k: "program"; fns: Fn[]; stmts: Stmt[] };
 
 // What a token is called in "expected THING, found TOKEN" (D33).
 const describe = (t: Token) => (t.k === "eof" ? "end of file" : `'${t.text}'`);
@@ -49,6 +56,20 @@ export function parse(toks: Token[]): Program {
     return l;
   };
 
+  // `t` is the function's name, already consumed; the `(` is next.
+  const callRest = (t: Token): Extract<Expr, { k: "call" }> => {
+    p++;
+    const args: Expr[] = [];
+    if (!isOp(toks[p], ")")) {
+      args.push(or());
+      while (isOp(toks[p], ",")) { p++; args.push(or()); }
+    }
+    const c = toks[p];
+    if (!isOp(c, ")")) fail(c.line, c.col, `expected ')', found ${describe(c)}`);
+    p++;
+    return { k: "call", name: t.text, args, line: t.line, col: t.col };
+  };
+
   const primary = (): Expr => {
     const t = toks[p];
     if (t.k === "int") {
@@ -57,6 +78,7 @@ export function parse(toks: Token[]): Program {
     }
     if (t.k === "name") {
       p++;
+      if (isOp(toks[p], "(")) return callRest(t);
       return { k: "name", name: t.text, line: t.line, col: t.col };
     }
     if (isOp(t, "[")) {
@@ -176,9 +198,14 @@ export function parse(toks: Token[]): Program {
     }
     if (t.k === "name") {
       p++;
+      if (isOp(toks[p], "(")) return { k: "exec", e: callRest(t), line: t.line, col: t.col };
       const arrow = expect("'<-'", (x) => isOp(x, "<-"));
       return { k: "set", name: t.text, e: or(), line: arrow.line, col: arrow.col,
         nline: t.line, ncol: t.col };
+    }
+    if (isKw(t, "return")) {
+      p++;
+      return { k: "return", e: or(), line: t.line, col: t.col };
     }
     if (isKw(t, "if")) return ifRest(t);
     if (isKw(t, "while")) {
@@ -189,7 +216,30 @@ export function parse(toks: Token[]): Program {
     return fail(t.line, t.col, `expected statement, found ${describe(t)}`);
   };
 
+  // `fn name(params) { ... }`, at top level only: inside a block `fn` is
+  // `expected statement, found 'fn'` (D39).
+  const fndef = (): Fn => {
+    p++;
+    const n = expect("name", (x) => x.k === "name");
+    expect("'('", (x) => isOp(x, "("));
+    const params: Param[] = [];
+    if (!isOp(toks[p], ")")) {
+      for (;;) {
+        const a = expect("name", (x) => x.k === "name");
+        params.push({ name: a.text, line: a.line, col: a.col });
+        if (!isOp(toks[p], ",")) break;
+        p++;
+      }
+    }
+    expect("')'", (x) => isOp(x, ")"));
+    return { name: n.text, params, body: block(), line: n.line, col: n.col };
+  };
+
+  const fns: Fn[] = [];
   const stmts: Stmt[] = [];
-  while (toks[p].k !== "eof") stmts.push(stmt());
-  return { k: "program", stmts };
+  while (toks[p].k !== "eof") {
+    if (isKw(toks[p], "fn")) fns.push(fndef());
+    else stmts.push(stmt());
+  }
+  return { k: "program", fns, stmts };
 }

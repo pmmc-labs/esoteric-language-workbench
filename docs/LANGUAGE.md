@@ -265,9 +265,11 @@ print b@1    ; 5, b's history is a's, plus one layer
 ```
 
 Calls nest at most 10000 deep; the call beyond that is a fault,
-`recursion too deep`. Errors: `unknown function f`, `f is already
+`recursion too deep`. Errors, each at the function's name: `unknown function f`, `f is already
 defined`, `f is a builtin` (defining `len`, `at` or `str`), `f takes N
-arguments, given M`.
+arguments, given M`. A parameter can't be declared twice or redeclared
+by a `let` (`x is already declared`). `print f()` where `f` returned
+nothing is the fault `empty history`.
 
 ## Builtins
 

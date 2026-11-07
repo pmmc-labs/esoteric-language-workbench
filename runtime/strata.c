@@ -52,6 +52,15 @@ void strata_fault(int line, int col, const char *msg) {
   exit(1);
 }
 
+static int depth;
+
+void strata_enter(int line, int col) {
+  if (depth >= 10000) strata_fault(line, col, "recursion too deep");
+  depth++;
+}
+
+void strata_leave(void) { depth--; }
+
 strata_atom strata_top(strata_hist h, int line, int col) {
   if (h == NULL) strata_fault(line, col, "empty history");
   return h->atom;

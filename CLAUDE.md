@@ -41,8 +41,14 @@ names live to their closing brace and whose `while` condition is
 re-evaluated each round (D14, D17, D38; the resolver pops a scope per
 block, the code generator nests a C block per Strata block); golden tests
 `300` to `307` pass under gcc, clang and sanitized clang (47 each), 30
-unit tests. **Next:** step 4, functions (`fn`, calls, `return`, hoisting;
-D18, D27), tests `400` up.
+unit tests. **Step 4** (functions) is built: `fn` at top level, hoisted, calls as
+expressions and statements, `return`, parameters bound to whole
+histories, the empty result, the depth limit 10000 (D18, D27, D39; C
+functions with prototypes, a depth counter bracketing each call in the
+caller); golden tests `400` to `414` (`408-depth-limit` passes under
+sanitized clang without a change to D27) pass under gcc, clang and
+sanitized clang (62 each), 35 unit tests. **Next:** step 5, strings
+(`len`, `at`, `str`, string `+` and comparison), tests `500` up.
 
 ## Read first, in this order
 

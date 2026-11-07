@@ -404,3 +404,35 @@ names reserved for the rest of the function (then `if c { let a = 1 }`
 would forbid a later `let a`, a rule D14 doesn't state); `expected
 statement, found end of file` inside an unclosed block (it names the
 wrong missing thing: the `}`, not a statement).
+
+## Step 4 defaults
+
+**D39. Function details D18, D24 and D27 leave open.** *(default)* (1)
+`fn name(a, b) { ... }` is a top-level item only; inside a block `fn` is
+`expected statement, found 'fn'`. A parameter list is `(`, names separated
+by commas, `)`; the parser's words are D33's (`expected name, found
+TOKEN`, `expected ')', found TOKEN`). (2) A statement that starts with a
+name followed by `(` is a call statement; it is a call and nothing more,
+so `f(1) + 1` as a statement is `expected statement, found '+'`. (3)
+Definition errors are found before any body is checked, in source order
+of the definitions: `f is a builtin` or `f is already defined`, at the
+second definition's name. This is also what hoists. Then the bodies, then
+the main program. (4) `unknown function f` and `f takes N arguments,
+given M` are reported at the call's name, before the arguments are
+resolved; N reads `1 argument` for one and `N arguments` otherwise (so
+`0 arguments`). (5) Two parameters of one name, or a `let` of a
+parameter's name, is `x is already declared`, at the second name. (6)
+`return outside a function` is at the `return` keyword, also when
+nested in an `if` or `while` of the main program. (7) `return` may stand
+anywhere in a function's blocks, and a function that falls off its end
+returns the empty history, so `print f()` faults `empty history` at the
+`print`. (8) In C a function is `static strata_hist f_NAME(strata_hist
+v_P, ...)` with prototypes first; the caller brackets the call with
+`strata_enter(L, C)` / `strata_leave()`, a global counter in the runtime,
+so `return` needs no cleanup. The main program is not a call: it
+counts 0, the first call 1. Rejected: a `fn` inside blocks (D18 says top
+level); reporting an arity error at the closing `)` (the name is where
+D23 puts call faults, one position to learn); a depth counter in each
+callee (every `return` would need to undo it); checking bodies and
+definitions in one source-order pass (a call to a later function would
+be unknown, which is not hoisting).

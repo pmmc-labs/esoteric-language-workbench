@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Seven steps,
 inside the brief's budget of ten.
 
-**Progress:** design done; steps 0 (D33 to D35), 1 (D36), 2 (D37) and 3 (D38) built. Next: step 4.
+**Progress:** design done; steps 0 (D33 to D35), 1 (D36), 2 (D37), 3 (D38) and 4 (D39) built. Next: step 5.
 
 Read [`DESIGN.md`](DESIGN.md), [`LANGUAGE.md`](LANGUAGE.md) and the
 decisions each step cites first. Every step: write the model (if any)
@@ -135,7 +135,7 @@ The core rule (D7, D11 to D15).
 - Leaves out: functions, strings.
 - **Size:** small.
 
-### 4. Functions
+### 4. Functions (done)
 
 - `fn`, calls as expressions and as statements, `return`, hoisting,
   parameters as whole histories (D18), the empty result, the depth
@@ -152,7 +152,8 @@ The core rule (D7, D11 to D15).
   `407-arg-order` (arguments evaluated left to right, shown by a fault
   in the first of two faulting arguments), `408-depth-limit` (10000
   nested calls succeed, 10001 fault), `409-arity`, `410-unknown-fn`,
-  `411-return-outside`, `412-no-globals`, `413-builtin-name`.
+  `411-return-outside`, `412-no-globals`, `413-builtin-name`, and `414-empty-result-fault` (added: `print f()` of a
+  function with no `return`).
 - Leaves out: strings, closures (never).
 - **Size:** medium.
 
