@@ -15,6 +15,9 @@
 #               apt-get install libclang-rt-18-dev). Run it after any
 #               change to the runtime
 # make check    type-check the compiler (needs `npm install` first)
+# make decisions  the decision-log browser (tools/decisions/) for this
+#               log and a64-slight's (A64=path, ../a64-slight by default),
+#               as build/decisions-*.html
 # make clean    remove build/
 #
 # Step 0 compiles to C and links with cc, so a binary runs on the machine
@@ -57,7 +60,21 @@ hooks:
 check:
 	npx tsc --noEmit
 
+A64 ?= ../a64-slight
+DEC = tools/decisions
+
+decisions:
+	@mkdir -p build
+	@python3 $(DEC)/extract.py docs/DECISIONS.md -o build/decisions-workbench.json
+	@python3 $(DEC)/page.py build/decisions-workbench.json -o build/decisions-workbench.html --name workbench \
+		--base https://github.com/pmmc-labs/esoteric-language-workbench/blob/main/docs/
+	@if [ -f $(A64)/docs/DECISIONS.md ]; then \
+		python3 $(DEC)/extract.py $(A64)/docs/DECISIONS.md -o build/decisions-a64-slight.json && \
+		python3 $(DEC)/page.py build/decisions-a64-slight.json -o build/decisions-a64-slight.html --name a64-slight \
+			--base https://github.com/pmmc-labs/a64-slight/blob/main/docs/; \
+	else echo "no $(A64)/docs/DECISIONS.md: set A64 to a64-slight's checkout"; fi
+
 clean:
 	rm -rf build
 
-.PHONY: test unit golden golden-clang sanitize checks models commits hooks check clean
+.PHONY: test unit golden golden-clang sanitize checks models commits hooks check decisions clean

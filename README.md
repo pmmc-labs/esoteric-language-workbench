@@ -18,7 +18,8 @@ Lisps, actors or native code.
 | `CLAUDE.md` | The agent's standing instructions, as a template. Fill the brackets, keep the rules. |
 | `docs/PROCESS.md` | The method: the rules, why each one is there, what a session looks like, and what each party does. Read this first. |
 | `docs/REPORT.md` | What the workbench found: the process, who can do which part of it, and the limits, on one page. |
-| `docs/briefs/decisions-browser.md` | The brief for the next piece of work: a hyperlinked, graphed browser for a decision log, a64-slight's first. |
+| `docs/briefs/decisions-browser.md` | The brief for a hyperlinked, graphed browser for a decision log, a64-slight's first. |
+| `tools/decisions/` | That browser: a log read into JSON, and one HTML page of it, hyperlinked, graphed and as an arc map. `make decisions` builds this log's and a64-slight's. |
 | `docs/DESIGN.md` | Skeleton: the language and implementation as agreed, with **(open)** marking what isn't. |
 | `docs/DECISIONS.md` | Skeleton: numbered decisions, who made each, why, and what was turned down. |
 | `docs/PLAN.md` | Skeleton: numbered steps, each one feature, each ending green with tests added. |

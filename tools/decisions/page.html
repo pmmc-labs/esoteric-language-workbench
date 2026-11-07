@@ -1,0 +1,818 @@
+<title>/*NAME*/ decisions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a sticky bar with three views (the log as a ledger, number in the
+   gutter; a force graph; an arc map), the log scrolling as a document so
+   anchors and Back work as they do on any page. */
+:root {
+    --bg: #fafbf9;
+    --panel: #f0f2ef;
+    --fg: #1c2220;
+    --muted: #5b6662;
+    --rule: #dbe0dc;
+    --accent: #2a5ca8;
+    --user: #0d7a68;
+    --default: #a9700f;
+    --other: #7a55c4;
+    --retire: #c23a26;
+    --edge: #8a948f;
+    --hit: #fff2a8;
+    --sec-s: 52%;
+    --sec-l: 44%;
+    --read: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, serif;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --bar: 52px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #131716; --panel: #1b201e; --fg: #e2e7e4; --muted: #94a09b; --rule: #2b3330;
+    --accent: #79a6ee; --user: #3cc0a6; --default: #e0a743; --other: #a98aed; --retire: #f06a53;
+    --edge: #6c7773; --hit: #4a4316; --sec-s: 55%; --sec-l: 64%; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+    --bg: #131716; --panel: #1b201e; --fg: #e2e7e4; --muted: #94a09b; --rule: #2b3330;
+    --accent: #79a6ee; --user: #3cc0a6; --default: #e0a743; --other: #a98aed; --retire: #f06a53;
+    --edge: #6c7773; --hit: #4a4316; --sec-s: 55%; --sec-l: 64%; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 var(--ui); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+a { color: var(--accent); }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#bar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+    min-height: var(--bar); padding-block: 8px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--panel); border-bottom: 1px solid var(--rule);
+}
+#bar h1 { margin: 0; font: 600 15px/1.2 var(--ui); white-space: nowrap; }
+#bar h1 small { font-weight: 400; color: var(--muted); }
+#tabs { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--rule); border-radius: 7px; padding: 2px; }
+#tabs button { border: 0; background: none; padding: 4px 12px; border-radius: 5px; cursor: pointer; color: var(--muted); }
+#tabs button[aria-selected="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 0 0 1px var(--rule); }
+#search { flex: 1 1 220px; min-width: 0; max-width: 460px; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 7px; background: var(--bg); }
+#count { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#theme { margin-left: auto; border: 1px solid var(--rule); background: var(--bg); border-radius: 7px; padding: 4px 10px; cursor: pointer; }
+
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* The log */
+#log { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 32px; padding-block: 20px 60vh; }
+#side { position: sticky; top: calc(var(--bar) + 16px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - var(--bar) - 32px); overflow: auto; font-size: 13px; }
+#side h2 { font: 600 11px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 16px 0 6px; }
+#side h2:first-child { margin-top: 0; }
+#sections { list-style: none; margin: 0; padding: 0; }
+#sections a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px 3px 8px; border-left: 3px solid var(--c); color: var(--fg); text-decoration: none; border-radius: 0 4px 4px 0; }
+#sections a:hover { background: var(--panel); }
+#sections a.empty { opacity: .35; }
+#sections .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { border: 1px solid var(--rule); background: var(--bg); border-radius: 99px; padding: 2px 9px; cursor: pointer; font-size: 12px; }
+.chip[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+.chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+
+#entries { max-width: 50rem; }
+#preamble, .intro { font: 16px/1.55 var(--read); color: var(--muted); }
+.sechead { margin: 40px 0 8px; padding-top: 8px; border-top: 3px solid var(--c); font: 600 20px/1.25 var(--ui); text-wrap: balance; scroll-margin-top: calc(var(--bar) + 16px); }
+.sechead:first-child { margin-top: 0; }
+.entry { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); gap: 0 14px; padding: 18px 0; border-bottom: 1px solid var(--rule); scroll-margin-top: calc(var(--bar) + 12px); }
+.entry.flash { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: var(--hit); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .entry.flash { animation: none; outline: 2px solid var(--accent); } }
+.gut { text-align: right; }
+.gut a { font: 600 17px/1.35 var(--mono); color: var(--fg); text-decoration: none; font-variant-numeric: tabular-nums; }
+.gut a:hover { color: var(--accent); }
+.entry h3 { margin: 0; font: 600 17px/1.35 var(--read); text-wrap: balance; }
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 6px 0 2px; font-size: 13px; }
+.mark { font: 700 10px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; padding: 3px 6px; border-radius: 3px; border: 1.5px solid currentColor; }
+.mark.user { color: var(--user); } .mark.default { color: var(--default); } .mark.other, .mark.none { color: var(--other); }
+.attr { font: italic 15px/1.45 var(--read); color: var(--muted); }
+.seclabel { font-size: 12px; color: var(--muted); border-left: 3px solid var(--c); padding-left: 6px; }
+.retired { margin: 8px 0 0; padding: 6px 10px; border-left: 3px solid var(--retire); background: var(--panel); font-size: 13px; }
+.retired b { color: var(--retire); }
+.body { font: 16px/1.55 var(--read); }
+.body p { margin: .6em 0; }
+.body ul, .body ol { margin: .5em 0; padding-left: 1.4em; }
+.body li { margin: .25em 0; }
+.body li > p:first-child { margin-top: 0; }
+code { font: .86em/1 var(--mono); background: var(--panel); padding: .1em .3em; border-radius: 3px; overflow-wrap: anywhere; }
+pre { overflow-x: auto; background: var(--panel); padding: 10px; border-radius: 4px; }
+pre code { background: none; padding: 0; line-height: 1.4; }
+a.d { text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); font-variant-numeric: tabular-nums; }
+a.d:hover { border-bottom-color: var(--accent); }
+.links { grid-column: 2; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule); font-size: 13px; }
+.links:empty { display: none; }
+.links dt { color: var(--muted); }
+.links dd { margin: 0; display: flex; flex-wrap: wrap; gap: 2px 8px; font-variant-numeric: tabular-nums; }
+.links dd a { font-family: var(--mono); font-size: 12.5px; }
+.links .rt { color: var(--retire); }
+.goto { grid-column: 2; display: flex; gap: 14px; margin-top: 6px; font-size: 12.5px; }
+#nomatch { color: var(--muted); font: 16px var(--read); padding: 40px 0; }
+
+/* Graph and arcs */
+.view { padding-block: 12px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-bottom: 10px; font-size: 13px; }
+.controls label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.controls select, .controls input[type="text"] { padding: 3px 6px; border: 1px solid var(--rule); border-radius: 5px; background: var(--bg); color: var(--fg); }
+.controls input[type="text"] { width: 5.5em; font-family: var(--mono); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.legend i.line { width: 18px; height: 0; border-top: 2px solid; border-radius: 0; }
+.stage { position: relative; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); overflow: hidden; }
+#gstage { height: calc(100vh - var(--bar) - 130px); min-height: 360px; touch-action: none; }
+#gstage svg { width: 100%; height: 100%; display: block; cursor: grab; }
+#gstage svg.panning { cursor: grabbing; }
+#astage { overflow-x: auto; }
+#astage svg { display: block; }
+.tip { position: absolute; pointer-events: none; max-width: 340px; padding: 6px 9px; background: var(--panel); border: 1px solid var(--rule); border-radius: 5px; font-size: 12.5px; box-shadow: 0 2px 8px rgb(0 0 0 / .15); z-index: 3; }
+.tip b { font-family: var(--mono); }
+.tip .s { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+svg text { font-family: var(--mono); fill: var(--fg); }
+.gn { cursor: pointer; }
+.gn text { font-size: 9px; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+
+@media (max-width: 760px) {
+    #log { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    #side { position: static; max-height: none; }
+    #sections { columns: 2; column-gap: 12px; }
+    .entry { grid-template-columns: minmax(0, 1fr); }
+    .gut { text-align: left; }
+    .links, .goto { grid-column: 1; }
+    #theme { margin-left: 0; }
+}
+</style>
+
+<header id="bar">
+    <h1>/*NAME*/ <small>decisions</small></h1>
+    <nav id="tabs" role="tablist">
+        <button id="tab-log" role="tab" data-view="log">Log</button>
+        <button id="tab-graph" role="tab" data-view="graph">Graph</button>
+        <button id="tab-arcs" role="tab" data-view="arcs">Arcs</button>
+    </nav>
+    <input id="search" type="search" placeholder="Search: D158, words…  ( / )" autocomplete="off" spellcheck="false">
+    <span id="count"></span>
+    <button id="theme" title="Theme: system, light, dark">Theme: system</button>
+</header>
+
+<main>
+    <section id="log" class="wrap">
+        <aside id="side">
+            <h2>Who decided</h2>
+            <div class="chips" id="attrs"></div>
+            <h2>Order</h2>
+            <div class="chips" id="order">
+                <button class="chip" id="order-file" aria-pressed="true">As filed</button>
+                <button class="chip" id="order-num" aria-pressed="false">By number</button>
+            </div>
+            <h2>Sections</h2>
+            <ul id="sections"></ul>
+        </aside>
+        <div id="entries"></div>
+    </section>
+
+    <section id="graph" class="view wrap" hidden>
+        <div class="controls">
+            <label>Show <select id="g-scope">
+                <option value="around">Around an entry</option>
+                <option value="section">One section</option>
+                <option value="all">Everything</option>
+            </select></label>
+            <label id="g-around">D<input id="g-centre" type="text" inputmode="numeric" value="">
+                depth <select id="g-depth"><option selected>1</option><option>2</option><option>3</option></select></label>
+            <label id="g-sec" hidden>section <select id="g-section"></select></label>
+            <label>Colour by <select id="g-colour">
+                <option value="attr">who decided</option>
+                <option value="section">section</option>
+            </select></label>
+            <label><input id="g-retire" type="checkbox" checked> retirements</label>
+            <span id="g-stats" class="legend"></span>
+        </div>
+        <div id="gstage" class="stage"><div class="tip" id="gtip" hidden></div></div>
+        <div class="legend" id="g-legend" style="margin-top:8px"></div>
+        <div class="hint">Click an entry to read it. Shift-click to centre on it. Drag to move, scroll to zoom. Size is how often it's cited; the ring is the other colouring.</div>
+    </section>
+
+    <section id="arcs" class="view wrap" hidden>
+        <div class="controls">
+            <label>Axis <select id="a-axis">
+                <option value="number">by number (time)</option>
+                <option value="file">as filed (sections)</option>
+            </select></label>
+            <label>Colour by <select id="a-colour">
+                <option value="section">citing entry's section</option>
+                <option value="distance">distance</option>
+                <option value="attr">who decided the citing entry</option>
+            </select></label>
+            <label><input id="a-retire" type="checkbox" checked> retirements</label>
+            <span id="a-pin" class="legend" hidden></span>
+        </div>
+        <div id="astage" class="stage"><div class="tip" id="atip" hidden></div></div>
+        <div class="legend" id="a-legend" style="margin-top:8px"></div>
+        <div class="hint">Above the line, an entry citing an earlier one; below, one pointing forward to a later one. Hover an entry to see its arcs, click to read it.</div>
+    </section>
+</main>
+
+<script id="data" type="application/json">/*DATA*/</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById('data').textContent);
+const BASE = /*BASE*/;
+const E = new Map(D.entries.map(e => [e.n, e]));
+const byNum = [...D.entries].sort((a, b) => a.n - b.n);
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const hue = i => (i * 137.508 + 200) % 360;
+const secColour = i => `hsl(${hue(i).toFixed(1)} var(--sec-s) var(--sec-l))`;
+const ATTR = { user: 'User', default: 'Default', other: 'Other', none: 'None' };
+const attrColour = c => `var(--${c === 'none' ? 'other' : c})`;
+const plain = s => s.replace(/`([^`]*)`/g, '$1').replace(/\*\*?/g, '');
+const adj = new Map(D.entries.map(e => [e.n, new Set([...e.mentions, ...e.mentioned_by])]));
+const retirePairs = [];   // [retirer, retired]
+for (const e of D.entries) for (const r of e.retires) retirePairs.push([e.n, r.n]);
+const isRetire = new Set(retirePairs.map(([a, b]) => a < b ? a + '-' + b : b + '-' + a));
+let store = {};
+try { store = JSON.parse(localStorage.getItem('decisions') || '{}'); } catch (_) {}
+const save = () => { try { localStorage.setItem('decisions', JSON.stringify(store)); } catch (_) {} };
+
+/* ---- Markdown, as much of it as the log uses ---- */
+function inline(s) {
+    // A link first, since its text can hold a code span: [`DESIGN.md`](DESIGN.md).
+    const lm = [...s.matchAll(/\[((?:`[^`]*`|[^\]`])+)\]\(([^)\s]+)\)/g)].find(m => s.slice(0, m.index).split('`').length % 2);
+    if (lm) {
+        const u = lm[2], url = /^[a-z]+:/i.test(u) ? u : BASE ? BASE + u : null;
+        const t = inline(lm[1]);
+        return inline(s.slice(0, lm.index)) + (url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${t}</a>` : `<span title="${esc(u)}">${t}</span>`) + inline(s.slice(lm.index + lm[0].length));
+    }
+    const out = [];
+    const re = /(`+)([\s\S]*?)\1/g;
+    let last = 0, m;
+    while ((m = re.exec(s))) {
+        out.push(text(s.slice(last, m.index)));
+        out.push('<code>' + esc(m[2].replace(/^ (.*) $/s, '$1')) + '</code>');
+        last = re.lastIndex;
+    }
+    out.push(text(s.slice(last)));
+    return out.join('');
+}
+function text(s) {
+    const refs = [];
+    s = esc(s).replace(/\bD(\d+)\b/g, (w, n) => E.has(+n) ? (refs.push(+n), `\u0001${refs.length - 1}\u0001`) : w);
+    s = s.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^\w*])\*(?=[^\s*])([^*]*?[^\s*])\*(?![\w*])/g, '$1<em>$2</em>');
+    return s.replace(/\u0001(\d+)\u0001/g, (w, i) => dref(refs[+i]));
+}
+const dref = n => `<a class="d" href="#D${n}" title="${esc(plain(E.get(n).title))}">D${n}</a>`;
+
+const LIST = /^( *)([-*+]|\d+[.)]) +/;
+function blocks(lines) {
+    let html = '', i = 0;
+    const indent = l => l.match(/^ */)[0].length;
+    while (i < lines.length) {
+        const l = lines[i];
+        if (!l.trim()) { i++; continue; }
+        if (/^ *```/.test(l)) {
+            const body = [];
+            for (i++; i < lines.length && !/^ *```/.test(lines[i]); i++) body.push(lines[i]);
+            i++;
+            html += '<pre><code>' + esc(body.join('\n')) + '</code></pre>';
+            continue;
+        }
+        const lm = l.match(LIST);
+        if (lm) {
+            const k = lm[1].length, ordered = /\d/.test(lm[2]);
+            const items = [];
+            while (i < lines.length) {
+                const x = lines[i], xm = x.match(LIST);
+                if (xm && xm[1].length === k && /\d/.test(xm[2]) === ordered) {
+                    items.push({ start: parseInt(xm[2]), w: xm[0].length, lines: [x.slice(xm[0].length)] });
+                    i++;
+                } else if (!x.trim()) {
+                    let j = i; while (j < lines.length && !lines[j].trim()) j++;
+                    if (j < lines.length && indent(lines[j]) > k) { items[items.length - 1].lines.push(''); i++; }
+                    else if (j < lines.length && (lines[j].match(LIST) || [])[1]?.length === k) i = j;
+                    else break;
+                } else if (indent(x) > k || !xm) {
+                    if (!xm && indent(x) <= k && items[items.length - 1].lines.at(-1) === '') break;
+                    const it = items[items.length - 1];
+                    it.lines.push(x.slice(Math.min(indent(x), it.w + k)));
+                    i++;
+                } else break;
+            }
+            const tag = ordered ? 'ol' : 'ul';
+            const start = ordered && items[0].start !== 1 ? ` start="${items[0].start}"` : '';
+            html += `<${tag}${start}>` + items.map(it => {
+                const inner = blocks(it.lines);
+                const one = inner.match(/^<p>([\s\S]*)<\/p>$/);
+                return '<li>' + (one && !one[1].includes('<p>') ? one[1] : inner) + '</li>';
+            }).join('') + `</${tag}>`;
+            continue;
+        }
+        const para = [];
+        while (i < lines.length && lines[i].trim() && !/^ *```/.test(lines[i])) {
+            const pm = lines[i].match(LIST);
+            if (para.length && pm && (!/\d/.test(pm[2]) || /^1[.)]$/.test(pm[2]))) break;
+            para.push(lines[i].trim()); i++;
+        }
+        html += '<p>' + inline(para.join('\n')) + '</p>';
+    }
+    return html;
+}
+const md = s => blocks(s.split('\n'));
+
+/* ---- The log ---- */
+const arts = new Map(), heads = [];
+const hay = new Map();
+function renderLog() {
+    const root = $('entries');
+    if (D.preamble) {
+        const p = document.createElement('div');
+        p.id = 'preamble'; p.innerHTML = md(D.preamble);
+        root.append(p);
+    }
+    D.sections.forEach((s, si) => {
+        const h = document.createElement('div');
+        h.style.setProperty('--c', secColour(si));
+        h.innerHTML = `<h2 class="sechead" id="s${si}" style="--c:${secColour(si)}">${inline(s.title || '(no section)')}</h2>` +
+            (s.intro ? `<div class="intro">${md(s.intro)}</div>` : '');
+        h.dataset.sec = si;
+        heads.push(h);
+        for (const n of s.entries) arts.set(n, entry(E.get(n)));
+    });
+    $('sections').innerHTML = D.sections.map((s, si) =>
+        `<li><a href="#s${si}" data-sec="${si}" style="--c:${secColour(si)}"><span>${esc(plain(s.title))}</span><span class="n">${s.entries.length}</span></a></li>`).join('');
+    $('sections').addEventListener('click', ev => {
+        const a = ev.target.closest('a'); if (!a) return;
+        ev.preventDefault();
+        if (order === 'num') setOrder('file');
+        $('s' + a.dataset.sec).scrollIntoView();
+        history.replaceState(null, '', '#log');
+    });
+    const counts = {};
+    for (const e of D.entries) counts[e.attribution.class] = (counts[e.attribution.class] || 0) + 1;
+    $('attrs').innerHTML = Object.keys(ATTR).filter(c => counts[c]).map(c =>
+        `<button class="chip" data-attr="${c}" aria-pressed="true"><span class="dot" style="background:${attrColour(c)}"></span>${ATTR[c]} ${counts[c]}</button>`).join('');
+    $('attrs').addEventListener('click', ev => {
+        const b = ev.target.closest('button'); if (!b) return;
+        b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+        filter();
+    });
+    const nm = document.createElement('div');
+    nm.id = 'nomatch'; nm.hidden = true; nm.textContent = 'Nothing matches.';
+    root.append(nm);
+    setOrder(store.order || 'file');
+}
+function entry(e) {
+    const a = document.createElement('article');
+    a.className = 'entry'; a.id = 'D' + e.n; a.dataset.n = e.n;
+    const s = D.sections[e.section], c = e.attribution.class;
+    const ret = e.retired_by.length ? `<div class="retired"><b>Retired or changed</b> by ${e.retired_by.map(r =>
+        `${dref(r.n)}: <span title="${esc(r.phrase)}">“${inline(clip(r.phrase, 140))}”</span>`).join('; ')}</div>` : '';
+    const row = (k, ns, cls) => ns.length ? `<dt>${k}</dt><dd${cls ? ` class="${cls}"` : ''}>${ns.map(dref).join(' ')}</dd>` : '';
+    a.innerHTML = `<div class="gut"><a href="#D${e.n}">D${e.n}</a></div>
+<div>
+    <h3>${inline(e.title)}</h3>
+    <div class="meta"><span class="mark ${c}">${ATTR[c]}</span>${e.attribution.text ? `<span class="attr">${inline(e.attribution.text)}</span>` : ''}</div>
+    <div class="meta"><span class="seclabel" style="--c:${secColour(e.section)}">${esc(plain(s.title))}</span></div>
+    ${ret}
+    <div class="body">${md(e.body)}</div>
+</div>
+<dl class="links">${row('Cites', e.mentions.filter(m => m < e.n))}${row('Points to', e.mentions.filter(m => m > e.n))}${row('Cited by', e.mentioned_by)}${row('Retires', e.retires.map(r => r.n), 'rt')}${e.tests.length ? `<dt>Tests</dt><dd>${e.tests.join(', ')}</dd>` : ''}</dl>
+<div class="goto"><a href="#graph-D${e.n}">Graph around D${e.n}</a><a href="#arcs-D${e.n}">On the arc map</a></div>`;
+    hay.set(e.n, (e.title + ' ' + e.attribution.text + ' ' + e.body).toLowerCase());
+    return a;
+}
+const clip = (s, n) => s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + ' …' : s;
+
+let order = 'file';
+function setOrder(o) {
+    order = o; store.order = o; save();
+    $('order-file').setAttribute('aria-pressed', o === 'file');
+    $('order-num').setAttribute('aria-pressed', o === 'num');
+    const root = $('entries'), nm = $('nomatch');
+    if (o === 'file') D.sections.forEach((s, si) => { root.insertBefore(heads[si], nm); for (const n of s.entries) root.insertBefore(arts.get(n), nm); });
+    else { heads.forEach(h => h.remove()); for (const e of byNum) root.insertBefore(arts.get(e.n), nm); }
+    filter();
+}
+$('order').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) setOrder(b.id === 'order-num' ? 'num' : 'file'); });
+
+let matched = null;   // a Set of numbers, or null for no query
+function query() {
+    const q = $('search').value.trim().toLowerCase();
+    if (!q) return null;
+    const toks = q.split(/\s+/);
+    return new Set(D.entries.filter(e => toks.every(t => {
+        let m;
+        if ((m = t.match(/^d(\d+)$/))) return e.n === +m[1];
+        if (/^\d+$/.test(t)) return e.n === +t || new RegExp('\\b' + t + '\\b').test(hay.get(e.n));
+        return hay.get(e.n).includes(t);
+    })).map(e => e.n));
+}
+function filter() {
+    matched = query();
+    const on = new Set([...document.querySelectorAll('#attrs button[aria-pressed="true"]')].map(b => b.dataset.attr));
+    let shown = 0;
+    const per = D.sections.map(() => 0);
+    for (const e of D.entries) {
+        const vis = on.has(e.attribution.class) && (!matched || matched.has(e.n));
+        arts.get(e.n).hidden = !vis;
+        if (vis) { shown++; per[e.section]++; }
+    }
+    heads.forEach((h, si) => h.hidden = !per[si]);
+    document.querySelectorAll('#sections a').forEach(a => a.classList.toggle('empty', !per[a.dataset.sec]));
+    $('nomatch').hidden = shown > 0;
+    $('count').textContent = shown === D.entries.length ? `${shown} entries` : `${shown} of ${D.entries.length}`;
+    if (view === 'graph') gDim();
+    if (view === 'arcs') aDim();
+}
+$('search').addEventListener('input', filter);
+$('search').addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') { $('search').value = ''; filter(); }
+    if (ev.key === 'Enter') {
+        const vis = D.entries.filter(e => !arts.get(e.n).hidden);
+        const m = $('search').value.trim().match(/^d?(\d+)$/i);
+        const n = m && E.has(+m[1]) ? +m[1] : vis.length === 1 ? vis[0].n : null;
+        if (n != null) go('D' + n);
+    }
+});
+document.addEventListener('keydown', ev => {
+    if (ev.key === '/' && document.activeElement !== $('search') && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); $('search').focus(); $('search').select(); }
+});
+
+/* ---- Views and the hash ---- */
+let view = 'log';
+let logY = 0;
+function show(v) {
+    if (view === 'log' && v !== 'log') logY = window.scrollY;
+    const back = view !== 'log' && v === 'log';
+    view = v;
+    for (const x of ['log', 'graph', 'arcs']) { $(x).hidden = x !== v; $('tab-' + x).setAttribute('aria-selected', x === v); }
+    $('count').hidden = false;
+    if (v !== 'log') window.scrollTo(0, 0);
+    else if (back) window.scrollTo(0, logY);
+    if (v === 'graph') gShow();
+    if (v === 'arcs') aShow();
+}
+const go = h => { if (location.hash === '#' + h) route(); else location.hash = h; };
+function route() {
+    const h = decodeURIComponent(location.hash.slice(1));
+    let m;
+    if ((m = h.match(/^D(\d+)$/)) && E.has(+m[1])) {
+        show('log');
+        const a = arts.get(+m[1]);
+        if (a.hidden) { $('search').value = ''; document.querySelectorAll('#attrs button').forEach(b => b.setAttribute('aria-pressed', 'true')); filter(); }
+        a.scrollIntoView();
+        a.classList.remove('flash'); void a.offsetWidth; a.classList.add('flash');
+    } else if ((m = h.match(/^graph(?:-D(\d+))?$/))) {
+        if (m[1] && E.has(+m[1])) { g.scope = 'around'; g.centre = +m[1]; g.dirty = true; }
+        show('graph');
+    } else if ((m = h.match(/^arcs(?:-D(\d+))?$/))) {
+        if (m[1] && E.has(+m[1])) am.pin = +m[1];
+        show('arcs');
+    } else if ((m = h.match(/^s(\d+)$/)) && D.sections[+m[1]]) {
+        show('log'); if (order === 'num') setOrder('file'); $(h).scrollIntoView();
+    } else show('log');
+}
+$('tabs').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) go(b.dataset.view); });
+window.addEventListener('hashchange', route);
+
+const THEMES = ['system', 'light', 'dark'];
+function theme(t) {
+    store.theme = t; save();
+    if (t === 'system') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+    $('theme').textContent = 'Theme: ' + t;
+}
+$('theme').addEventListener('click', () => theme(THEMES[(THEMES.indexOf(store.theme || 'system') + 1) % 3]));
+
+/* ---- SVG helpers ---- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+    const x = document.createElementNS(NS, tag);
+    for (const k in attrs) x.setAttribute(k, attrs[k]);
+    if (parent) parent.append(x);
+    return x;
+}
+function tip(box, html, x, y) {
+    box.innerHTML = html; box.hidden = false;
+    const W = box.parentElement.clientWidth, w = box.offsetWidth;
+    box.style.left = Math.max(4, Math.min(x + 14, W - w - 4)) + 'px';
+    box.style.top = (y + 16) + 'px';
+}
+const tipHtml = e => `<b>D${e.n}</b> ${inline(e.title)}<div class="s">${ATTR[e.attribution.class]} · ${esc(plain(D.sections[e.section].title))} · cites ${e.mentions.length}, cited by ${e.mentioned_by.length}</div>`;
+
+/* ---- The graph: a force layout, by hand, since 300 nodes don't need a library ---- */
+const g = { scope: 'around', centre: null, depth: 1, section: 0, colour: 'attr', retire: true, dirty: true,
+    pos: new Map(), nodes: [], edges: [], alpha: 0, fit: true, k: 1, tx: 0, ty: 0, raf: 0 };
+let seed = 1;
+const rand = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const radius = n => 3 + 2 * Math.sqrt(E.get(n).mentioned_by.length);
+let gsvg, gview, gedges, gnodes;
+
+function gInit() {
+    gsvg = el('svg', {}, $('gstage'));
+    const defs = el('defs', {}, gsvg);
+    for (const [id, col] of [['arr', 'var(--edge)'], ['arr-r', 'var(--retire)']]) {
+        const mk = el('marker', { id, viewBox: '0 0 10 10', refX: 10, refY: 5, markerWidth: 8, markerHeight: 8, markerUnits: 'userSpaceOnUse', orient: 'auto-start-reverse' }, defs);
+        el('path', { d: 'M0,1 L10,5 L0,9 z', style: `fill:${col}` }, mk);
+    }
+    gview = el('g', {}, gsvg); gedges = el('g', {}, gview); gnodes = el('g', {}, gview);
+    $('g-section').innerHTML = D.sections.map((s, i) => `<option value="${i}">${esc(plain(s.title))} (${s.entries.length})</option>`).join('');
+    const top = [...D.entries].sort((a, b) => b.mentioned_by.length - a.mentioned_by.length)[0];
+    if (g.centre == null) g.centre = top ? top.n : null;
+    const set = () => {
+        g.scope = $('g-scope').value; g.depth = +$('g-depth').value; g.section = +$('g-section').value;
+        const n = parseInt($('g-centre').value.replace(/\D/g, ''));
+        if (E.has(n)) g.centre = n;
+        g.colour = $('g-colour').value; g.retire = $('g-retire').checked;
+        g.dirty = true; gShow();
+    };
+    for (const id of ['g-scope', 'g-depth', 'g-section', 'g-colour', 'g-retire']) $(id).addEventListener('change', set);
+    $('g-centre').addEventListener('change', set);
+    $('g-centre').addEventListener('keydown', ev => { if (ev.key === 'Enter') set(); });
+
+    // Pan, zoom, drag, click.
+    let drag = null;
+    gsvg.addEventListener('pointerdown', ev => {
+        const node = ev.target.closest('.gn');
+        drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, moved: 0, n: node ? +node.dataset.n : null, tx: g.tx, ty: g.ty };
+        gsvg.setPointerCapture(ev.pointerId);
+        if (!node) gsvg.classList.add('panning');
+    });
+    gsvg.addEventListener('pointermove', ev => {
+        if (!drag || drag.id !== ev.pointerId) return;
+        const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+        drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
+        if (drag.moved < 3) return;
+        g.fit = false;
+        if (drag.n != null) {
+            const p = g.pos.get(drag.n), r = gsvg.getBoundingClientRect();
+            p.x = (ev.clientX - r.left - g.tx) / g.k; p.y = (ev.clientY - r.top - g.ty) / g.k; p.fixed = true;
+            g.alpha = Math.max(g.alpha, 0.15); gRun();
+        } else { g.tx = drag.tx + dx; g.ty = drag.ty + dy; gDraw(); }
+    });
+    const up = ev => {
+        if (!drag || drag.id !== ev.pointerId) return;
+        gsvg.classList.remove('panning');
+        if (drag.n != null) {
+            const p = g.pos.get(drag.n);
+            if (p) p.fixed = drag.n === g.centre && g.scope === 'around';
+            if (drag.moved < 3 && ev.type === 'pointerup') {
+                if (ev.shiftKey) go('graph-D' + drag.n); else go('D' + drag.n);
+            }
+        }
+        drag = null;
+    };
+    gsvg.addEventListener('pointerup', up);
+    gsvg.addEventListener('pointercancel', up);
+    gsvg.addEventListener('wheel', ev => {
+        ev.preventDefault();
+        const r = gsvg.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+        const f = Math.exp(-ev.deltaY * (ev.deltaMode ? 0.05 : 0.0015));
+        const k = Math.min(8, Math.max(0.1, g.k * f));
+        g.tx = mx - (mx - g.tx) * k / g.k; g.ty = my - (my - g.ty) * k / g.k; g.k = k;
+        g.fit = false; gDraw();
+    }, { passive: false });
+    gsvg.addEventListener('pointerover', ev => {
+        const node = ev.target.closest('.gn'); if (!node) return;
+        const n = +node.dataset.n, r = $('gstage').getBoundingClientRect();
+        tip($('gtip'), tipHtml(E.get(n)), ev.clientX - r.left, ev.clientY - r.top);
+        gHover(n);
+    });
+    gsvg.addEventListener('pointerout', ev => { if (ev.target.closest('.gn')) { $('gtip').hidden = true; gHover(null); } });
+}
+
+function gBuild() {
+    let core;
+    if (g.scope === 'all') core = new Set(D.entries.map(e => e.n));
+    else if (g.scope === 'section') core = new Set(D.sections[g.section].entries);
+    else {
+        core = new Set([g.centre]);
+        let front = [g.centre];
+        for (let d = 0; d < g.depth; d++) {
+            const next = [];
+            for (const n of front) for (const m of adj.get(n)) if (!core.has(m)) { core.add(m); next.push(m); }
+            front = next;
+        }
+    }
+    const nodes = new Set(core);
+    if (g.scope === 'section') for (const n of core) for (const m of adj.get(n)) nodes.add(m);
+    const seen = new Set(), edges = [];
+    for (const n of nodes) for (const m of E.get(n).mentions) {
+        if (!nodes.has(m)) continue;
+        const key = n < m ? n + '-' + m : m + '-' + n;
+        if (seen.has(key)) { edges.find(x => x.key === key).both = true; continue; }
+        if (g.scope === 'section' && !core.has(n) && !core.has(m)) continue;
+        seen.add(key);
+        edges.push({ key, s: n, t: m, both: false, retire: isRetire.has(key) });
+    }
+    // Retirements point from the retirer to the retired, whichever cites whom.
+    for (const x of edges) if (x.retire) { const r = retirePairs.find(([a, b]) => (a === x.s && b === x.t) || (a === x.t && b === x.s)); x.s = r[0]; x.t = r[1]; }
+    // Place new nodes beside a placed neighbour, so a re-centring moves little.
+    seed = 1;
+    for (const n of nodes) if (!g.pos.has(n)) {
+        const nb = [...adj.get(n)].find(m => g.pos.has(m) && nodes.has(m));
+        const p = nb ? g.pos.get(nb) : { x: 0, y: 0 }, a = rand() * 6.283, d = nb ? 30 : 60 + rand() * 200;
+        g.pos.set(n, { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, vx: 0, vy: 0, fixed: false });
+    }
+    for (const p of g.pos.values()) p.fixed = false;
+    if (g.scope === 'around') g.pos.get(g.centre).fixed = true;
+    g.nodes = [...nodes].sort((a, b) => a - b); g.core = core; g.edges = edges;
+    g.alpha = 1; g.fit = true; g.dirty = false;
+
+    gedges.replaceChildren(); gnodes.replaceChildren();
+    const arrows = g.scope !== 'all';
+    for (const x of edges) {
+        x.el = el('line', { class: 'ge' }, gedges);
+        const st = x.retire && g.retire ? 'stroke:var(--retire);stroke-width:2;opacity:.9' : 'stroke:var(--edge);stroke-width:1;opacity:' + (g.scope === 'all' ? .35 : .6);
+        x.el.setAttribute('style', st);
+        if (arrows) {
+            x.el.setAttribute('marker-end', `url(#${x.retire && g.retire ? 'arr-r' : 'arr'})`);
+            if (x.both && !(x.retire && g.retire)) x.el.setAttribute('marker-start', 'url(#arr)');
+        }
+    }
+    for (const n of g.nodes) {
+        const e = E.get(n), grp = el('g', { class: 'gn', 'data-n': n }, gnodes);
+        const fill = g.colour === 'attr' ? attrColour(e.attribution.class) : secColour(e.section);
+        const ring = g.colour === 'attr' ? secColour(e.section) : attrColour(e.attribution.class);
+        const out = !core.has(n);
+        el('circle', { r: radius(n), style: `fill:${fill};stroke:${ring};stroke-width:${n === g.centre && g.scope === 'around' ? 4 : 2};opacity:${out ? .35 : 1}` }, grp);
+        if (g.scope !== 'all' || e.mentioned_by.length >= 5)
+            el('text', { x: radius(n) + 2, y: 3, style: out ? 'opacity:.5' : '' }, grp).textContent = 'D' + n;
+        g.pos.get(n).el = grp;
+    }
+    $('g-stats').innerHTML = '<span>' + (g.scope === 'around' ? `${dref(g.centre)}&nbsp;${inline(E.get(g.centre).title)} · ` : '') + `${core.size} entries, ${edges.length} links` + (g.scope === 'section' ? ` (and ${nodes.size - core.size} neighbours, faded)` : '') + '</span>';
+    $('g-centre').value = g.centre;
+    gDim();
+}
+
+function gTick() {
+    const ns = g.nodes.map(n => g.pos.get(n)), N = ns.length;
+    const rep = g.scope === 'all' ? 260 : 600, len = g.scope === 'all' ? 34 : 70, a = g.alpha;
+    for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+        const p = ns[i], q = ns[j];
+        let dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy;
+        if (d2 < 1) { dx = rand() - .5; dy = rand() - .5; d2 = 1; }
+        if (d2 > 250000) continue;
+        const f = rep * a / d2, d = Math.sqrt(d2);
+        p.vx -= dx / d * f; p.vy -= dy / d * f; q.vx += dx / d * f; q.vy += dy / d * f;
+    }
+    for (const x of g.edges) {
+        const p = g.pos.get(x.s), q = g.pos.get(x.t);
+        const dx = q.x - p.x, dy = q.y - p.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+        const f = (d - len) * 0.06 * a / d;
+        p.vx += dx * f; p.vy += dy * f; q.vx -= dx * f; q.vy -= dy * f;
+    }
+    let cx = 0, cy = 0;
+    if (g.scope === 'around') { const c = g.pos.get(g.centre); cx = c.x; cy = c.y; }
+    for (const p of ns) {
+        p.vx += (cx - p.x) * 0.012 * a; p.vy += (cy - p.y) * 0.012 * a;
+        if (p.fixed) { p.vx = p.vy = 0; continue; }
+        p.vx *= 0.6; p.vy *= 0.6;
+        p.x += Math.max(-30, Math.min(30, p.vx)); p.y += Math.max(-30, Math.min(30, p.vy));
+    }
+    g.alpha *= 0.982;
+}
+function gRun() {
+    if (g.raf) return;
+    const step = () => {
+        g.raf = 0;
+        for (let i = 0; i < 3 && g.alpha > 0.01; i++) gTick();
+        gDraw();
+        if (g.alpha > 0.01 && view === 'graph') g.raf = requestAnimationFrame(step);
+    };
+    g.raf = requestAnimationFrame(step);
+}
+function gDraw() {
+    const W = gsvg.clientWidth, H = gsvg.clientHeight;
+    if (g.fit && g.nodes.length) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const n of g.nodes) { const p = g.pos.get(n); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+        const k = Math.min(2, (W - 110) / Math.max(1, x1 - x0), (H - 40) / Math.max(1, y1 - y0));
+        g.k = k; g.tx = W / 2 - 20 - k * (x0 + x1) / 2; g.ty = H / 2 - k * (y0 + y1) / 2;
+    }
+    gview.setAttribute('transform', `translate(${g.tx.toFixed(1)},${g.ty.toFixed(1)}) scale(${g.k.toFixed(4)})`);
+    for (const x of g.edges) {
+        const p = g.pos.get(x.s), q = g.pos.get(x.t);
+        const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 1;
+        const rs = x.both ? radius(x.s) + 1 : 0, rt = radius(x.t) + 1;
+        x.el.setAttribute('x1', (p.x + dx / d * rs).toFixed(1)); x.el.setAttribute('y1', (p.y + dy / d * rs).toFixed(1));
+        x.el.setAttribute('x2', (q.x - dx / d * rt).toFixed(1)); x.el.setAttribute('y2', (q.y - dy / d * rt).toFixed(1));
+    }
+    for (const n of g.nodes) { const p = g.pos.get(n); p.el.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`); }
+}
+function gDim() {
+    if (!gsvg) return;
+    for (const n of g.nodes) g.pos.get(n).el.style.opacity = !matched || matched.has(n) ? '' : .15;
+}
+function gHover(n) {
+    for (const x of g.edges) x.el.style.strokeOpacity = n == null || x.s === n || x.t === n ? '' : .15;
+}
+function gShow() {
+    if (!gsvg) gInit();
+    $('g-scope').value = g.scope; $('g-depth').value = g.depth; $('g-section').value = g.section;
+    $('g-around').hidden = g.scope !== 'around'; $('g-sec').hidden = g.scope !== 'section';
+    $('g-legend').innerHTML = (g.colour === 'attr'
+        ? Object.keys(ATTR).filter(c => D.counts.attribution[c]).map(c => `<span><i style="background:${attrColour(c)}"></i>${ATTR[c]}</span>`).join('') + '<span>ring: section</span>'
+        : '<span>fill: section (hover for its name)</span><span>ring: who decided</span>')
+        + `<span><i class="line" style="color:var(--retire)"></i>retires</span><span><i class="line" style="color:var(--edge)"></i>cites (arrow toward the cited)</span>`;
+    if (g.dirty) gBuild();
+    gRun();
+}
+
+/* ---- The arc map ---- */
+const am = { pin: null, axis: 'number', colour: 'section', retire: true, svg: null, arcs: [], xs: new Map() };
+function aShow() {
+    am.axis = $('a-axis').value; am.colour = $('a-colour').value; am.retire = $('a-retire').checked;
+    const list = am.axis === 'number' ? byNum : [...D.entries].sort((x, y) => x.order - y.order);
+    const N = list.length, M = 34;
+    const W = Math.max(900, $('astage').clientWidth - 2), step = (W - 2 * M) / Math.max(1, N - 1);
+    list.forEach((e, i) => am.xs.set(e.n, M + i * step));
+    let maxUp = 1, maxDown = 1;
+    const arcs = [];
+    for (const e of list) for (const m of e.mentions) {
+        const span = Math.abs(am.xs.get(e.n) - am.xs.get(m));
+        const fwd = m > e.n;
+        if (fwd) maxDown = Math.max(maxDown, span); else maxUp = Math.max(maxUp, span);
+        arcs.push({ s: e.n, t: m, fwd, span });
+    }
+    const UP = Math.min(380, maxUp / 2), DOWN = Math.min(150, maxDown / 2), ky = UP / (maxUp / 2), kd = DOWN / (maxDown / 2);
+    const Y = UP + 24, H = Y + 34 + DOWN + 12;
+    $('astage').querySelector('svg')?.remove();
+    const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+    $('astage').prepend(svg);
+    am.svg = svg;
+    const garcs = el('g', {}, svg), gret = el('g', {}, svg);
+    const maxSpan = Math.max(maxUp, maxDown);
+    for (const x of arcs) {
+        const x1 = am.xs.get(x.s), x2 = am.xs.get(x.t), rx = x.span / 2;
+        const ry = rx * (x.fwd ? kd : ky), y0 = x.fwd ? Y + 26 : Y;
+        const sweep = (x2 > x1) !== x.fwd ? 1 : 0;
+        const ret = isRetire.has(x.s < x.t ? x.s + '-' + x.t : x.t + '-' + x.s) && am.retire;
+        const se = E.get(x.s);
+        const col = ret ? 'var(--retire)' : am.colour === 'section' ? secColour(se.section)
+            : am.colour === 'attr' ? attrColour(se.attribution.class)
+            : `hsl(${(205 - 190 * Math.sqrt(x.span / maxSpan)).toFixed(0)} 70% var(--sec-l))`;
+        x.el = el('path', { d: `M${x1.toFixed(1)},${y0} A${rx.toFixed(1)},${ry.toFixed(1)} 0 0 ${sweep} ${x2.toFixed(1)},${y0}`,
+            style: `fill:none;stroke:${col};stroke-width:${ret ? 1.6 : 1};opacity:${ret ? .8 : .45}` }, ret ? gret : garcs);
+    }
+    am.arcs = arcs;
+    // The axis: a strip of section colours, ticks, and a hit column per entry.
+    el('line', { x1: M, x2: W - M, y1: Y + 13, y2: Y + 13, style: 'stroke:var(--rule)' }, svg);
+    const strip = el('g', {}, svg);
+    for (const e of list) el('rect', { x: am.xs.get(e.n) - step / 2, y: Y + 4, width: Math.max(step, 1), height: 6, style: `fill:${secColour(e.section)}` }, strip);
+    for (const e of list) {
+        const x = am.xs.get(e.n);
+        const tick = am.axis === 'number' ? e.n % 10 === 0 : D.sections[e.section].entries[0] === e.n;
+        if (!tick) continue;
+        el('line', { x1: x, x2: x, y1: Y + 10, y2: Y + 17, style: 'stroke:var(--muted)' }, svg);
+        if (am.axis === 'number' ? e.n % 50 === 0 : false) el('text', { x, y: Y + 19 + 8, 'text-anchor': 'middle', style: 'font-size:10px;fill:var(--muted)' }, svg).textContent = 'D' + e.n;
+    }
+    am.mark = el('rect', { x: 0, y: 0, width: Math.max(step, 2), height: H, style: 'fill:var(--accent);opacity:.12', visibility: 'hidden' }, svg);
+    const hit = el('g', { style: 'cursor:pointer' }, svg);
+    for (const e of list) el('rect', { x: am.xs.get(e.n) - step / 2, y: 0, width: step, height: H, 'data-n': e.n, style: 'fill:transparent' }, hit);
+    hit.addEventListener('pointermove', ev => {
+        const n = +ev.target.dataset.n; if (!n) return;
+        const r = $('astage').getBoundingClientRect();
+        tip($('atip'), tipHtml(E.get(n)), ev.clientX - r.left + $('astage').scrollLeft, ev.clientY - r.top);
+        aFocus(n);
+    });
+    hit.addEventListener('pointerleave', () => { $('atip').hidden = true; aFocus(am.pin); });
+    hit.addEventListener('click', ev => { const n = +ev.target.dataset.n; if (n) go('D' + n); });
+    $('a-legend').innerHTML = (am.colour === 'section' ? '<span>arcs and strip: section (hover for its name)</span>'
+        : am.colour === 'attr' ? Object.keys(ATTR).filter(c => D.counts.attribution[c]).map(c => `<span><i style="background:${attrColour(c)}"></i>${ATTR[c]}</span>`).join('')
+        : '<span><i style="background:hsl(205 70% var(--sec-l))"></i>near</span><span><i style="background:hsl(15 70% var(--sec-l))"></i>far</span>')
+        + '<span><i class="line" style="color:var(--retire)"></i>retires</span>'
+        + `<span>${N} entries, ${arcs.length} arcs</span>`;
+    aPin();
+    aFocus(am.pin);
+    aDim();
+    if (am.pin != null) { const x = am.xs.get(am.pin); $('astage').scrollLeft = Math.max(0, x - $('astage').clientWidth / 2); }
+}
+function aPin() {
+    $('a-pin').hidden = am.pin == null;
+    if (am.pin != null) $('a-pin').innerHTML = `<span>Showing ${dref(am.pin)} ${inline(E.get(am.pin).title)}</span><button class="chip" id="a-unpin">Show all</button>`;
+}
+$('a-pin').addEventListener('click', ev => { if (ev.target.id === 'a-unpin') { am.pin = null; history.replaceState(null, '', '#arcs'); aPin(); aFocus(null); aDim(); } });
+function aFocus(n) {
+    for (const x of am.arcs) x.el.style.strokeOpacity = n == null ? '' : x.s === n || x.t === n ? 1 : .08;
+    if (n == null) am.mark.setAttribute('visibility', 'hidden');
+    else { am.mark.setAttribute('x', am.xs.get(n) - +am.mark.getAttribute('width') / 2); am.mark.setAttribute('visibility', 'visible'); }
+}
+function aDim() {
+    if (!am.svg || am.pin != null) return;
+    for (const x of am.arcs) x.el.style.strokeOpacity = !matched || matched.has(x.s) || matched.has(x.t) ? '' : .06;
+}
+for (const id of ['a-axis', 'a-colour', 'a-retire']) $(id).addEventListener('change', aShow);
+let resize = 0;
+window.addEventListener('resize', () => { clearTimeout(resize); resize = setTimeout(() => { if (view === 'arcs') aShow(); if (view === 'graph') { g.fit = true; gDraw(); } }, 150); });
+
+theme(store.theme || 'system');
+renderLog();
+route();
+</script>
