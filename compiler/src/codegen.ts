@@ -52,6 +52,16 @@ export function codegen(program: Program, path: string): string {
     }
   }
 
+  // A variable read by an operation that only looks into it and keeps
+  // nothing of the container itself (an index, a field, `len`, the right of
+  // `in`) leaves the variable owning its value (D48).
+  function borrow(e: Expr, depth: number): string {
+    if (e.kind !== 'name') return expr(e, depth);
+    const t = `t${++temps}`;
+    emit(depth, `Value ${t} = ${e.cname};`);
+    return t;
+  }
+
   // Emits the code for `e` and returns the name of the temporary holding it.
   function expr(e: Expr, depth: number): string {
     switch (e.kind) {
@@ -79,7 +89,7 @@ export function codegen(program: Program, path: string): string {
       }
       case 'binary': {
         const l = expr(e.left, depth);
-        const r = expr(e.right, depth);
+        const r = e.op === 'in' || e.op === 'not in' ? borrow(e.right, depth) : expr(e.right, depth);
         const t = `t${++temps}`;
         const { line, col } = e.pos;
         // == and != never fault, so they take no position.
@@ -91,8 +101,11 @@ export function codegen(program: Program, path: string): string {
         return t;
       }
       case 'name': {
+        // Reading a variable could keep its value, so the variable stops
+        // owning it (D48); borrow() is the exception, for pure lookups.
         const t = `t${++temps}`;
         emit(depth, `Value ${t} = ${e.cname};`);
+        emit(depth, `dt_share(${t});`);
         return t;
       }
       case 'string': {
@@ -119,7 +132,7 @@ export function codegen(program: Program, path: string): string {
         return t;
       }
       case 'index': {
-        const c = expr(e.target, depth);
+        const c = borrow(e.target, depth);
         const i = expr(e.index, depth);
         const t = `t${++temps}`;
         // dt_index is dt_try_index plus the fault for a miss; inside an `else`'s
@@ -128,7 +141,7 @@ export function codegen(program: Program, path: string): string {
         return t;
       }
       case 'field': {
-        const c = expr(e.target, depth);
+        const c = borrow(e.target, depth);
         const k = literal(e.name, depth);
         const t = `t${++temps}`;
         // Like an index: dt_field is dt_try_field plus the fault for a miss.
@@ -193,7 +206,7 @@ export function codegen(program: Program, path: string): string {
         return t;
       }
       case 'call': {
-        const args = e.args.map((a) => expr(a, depth));
+        const args = e.args.map((a) => (e.target !== 'fn' && e.name === 'len' ? borrow(a, depth) : expr(a, depth)));
         const t = `t${++temps}`;
         const { line, col } = e.pos;
         if (e.target === 'fn') {
@@ -243,10 +256,14 @@ export function codegen(program: Program, path: string): string {
   }
 
   // `c` with the step's key set to `v`: a new value.
-  function setStep(st: Target['steps'][number], c: string, key: string, v: string, depth: number): string {
+  // With `slot` (the variable's own step), the set may write in place (D48).
+  function setStep(st: Target['steps'][number], c: string, key: string, v: string, depth: number,
+    slot?: string): string {
     const r = `t${++temps}`;
     const fn = st.kind === 'index' ? 'dt_set_index' : 'dt_set_field';
-    emit(depth, `Value ${r} = ${fn}(${st.pos.line}, ${st.pos.col}, ${c}, ${key}, ${v});`);
+    const own = slot === undefined ? '' : `_own`;
+    const extra = slot === undefined ? '' : `, &${slot}`;
+    emit(depth, `Value ${r} = ${fn}${own}(${st.pos.line}, ${st.pos.col}, ${c}, ${key}, ${v}${extra});`);
     return r;
   }
 
@@ -272,7 +289,7 @@ export function codegen(program: Program, path: string): string {
     }
     let built = value;
     for (let k = t.steps.length - 1; k >= 0; k--) {
-      built = setStep(t.steps[k], containers[k], steps[k], built, depth);
+      built = setStep(t.steps[k], containers[k], steps[k], built, depth, k === 0 ? t.cname : undefined);
     }
     emit(depth, `${t.cname} = ${built};`);
   }
@@ -349,7 +366,12 @@ export function codegen(program: Program, path: string): string {
         if (cur !== null) {
           value = `t${++temps}`;
           const { line, col } = s.pos;
-          emit(depth + 1, `Value ${value} = ${ARITH[COMPOUND[s.op]]}(${line}, ${col}, ${cur}, ${rhs});`);
+          // `x += list` on a variable appends in place when x owns its list (D48).
+          if (s.op === '+=' && s.target.steps.length === 0) {
+            emit(depth + 1, `Value ${value} = dt_add_own(${line}, ${col}, ${cur}, ${rhs}, &${s.target.cname});`);
+          } else {
+            emit(depth + 1, `Value ${value} = ${ARITH[COMPOUND[s.op]]}(${line}, ${col}, ${cur}, ${rhs});`);
+          }
         }
         store(s.target, steps, value, depth + 1);
         emit(depth, '}');

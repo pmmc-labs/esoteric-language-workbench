@@ -49,10 +49,12 @@ read fail`. Full text in `LANGUAGE.md`.
 **Every value is a value (D7).** Lists and maps have the semantics ints
 have: assignment, argument passing and storing give the receiver its
 own value, and nothing anyone else does changes it. The implementation
-gets this without copying on assignment by making every heap object
-immutable once built; `xs[i] = v` builds a new list and stores it in
-`xs`. Updating a path `a[i].f[j] = v` rebuilds the spine from the
-variable down, sharing every other part.
+gets this without copying on assignment: a heap object is never written
+while more than one place can see it. `xs[i] = v` writes in place when
+the variable `xs` is the only holder of its list (D48), and otherwise
+builds a new list, which `xs` then holds alone. Updating a path
+`a[i].f[j] = v` rebuilds the inner levels and sets the outermost through
+the variable, in place when it can.
 
 What it removes: aliasing bugs (the defensive copy, the default-argument
 list, the loop that mutates what it iterates), cycles (so printing,
@@ -63,10 +65,22 @@ if one were ever added). It also decides that functions can't see
 top-level variables (D13): with no globals, a function's only effect on
 the world is its return value and its output.
 
-What it costs: an update copies the list or map it touches, O(n), so a
-loop that builds a list with `xs += [x]` is O(n²). At the scale in D4
-(thousands of elements) that is milliseconds. Functions that "change"
-something return it: `accounts = deposit(accounts, 5)`.
+What it costs: an update of a shared value copies it, O(n), once; after
+that the variable owns the copy and updates are O(1), and appends are
+amortized O(1) (D48). Nested levels below a variable are copied on each
+update, O(their size). Functions that "change" something return it:
+`accounts = deposit(accounts, 5)`; the parameter's first update copies.
+
+How D48 knows a variable is the only holder: each list and map has an
+`owner`, the address of the C variable holding it alone, set when an
+update through that variable makes or reuses it. Every read of a
+variable that could keep the value (assigning it, passing it, storing
+it, returning it, iterating it, printing it) clears the owner first
+(`dt_share`); only lookups that keep nothing of the container (`x[i]`,
+`x.f`, `len(x)`, the right of `in`) read without clearing. An element of
+a container is never owned, since whatever was stored was read that
+way. So `owner == &slot` implies nothing but `slot` refers to the
+object, and writing it in place can't be seen.
 
 A proposal that touches this rule (an in-place optimization, a
 reference type, a global) is recognised by it, and needs a decision.
@@ -92,8 +106,9 @@ typedef struct Value { uint8_t tag; union { int64_t i; bool b;
 
 `Str` is a length and bytes; `List` a length and an array of `Value`;
 `Map` a length and arrays of keys and values in insertion order, looked
-up by linear search with `==` on keys (D27). All three are immutable
-after construction. Memory comes from a bump allocator over large
+up by linear search with `==` on keys (D27). Strings are immutable; lists
+and maps carry a capacity and an `owner` (D48) and are written only by
+an update through their owning variable. Memory comes from a bump allocator over large
 `malloc`ed chunks kept on a global list, and is never freed (D26); the
 chunks stay reachable, so LeakSanitizer stays quiet.
 

@@ -35,11 +35,10 @@ stop coming up.
   capture by value, which is simple, but they need a function value
   type and indirect calls, a step of their own. `sort` by key, `map`
   and `filter` would follow.
-- **In-place updates when a value isn't shared.** Reference counts would
-  let `xs[i] = v` write in place when `xs` holds the only reference,
-  turning O(n) updates into O(1). The semantics wouldn't change, so it
-  can be added without a language decision, but it touches D7's
-  implementation and D26.
+- **In-place updates below the outermost level, and for strings.** D48
+  writes in place only through the variable itself; `g[r][c] = v` still
+  copies row `r`, and `s += c` copies `s`. Owning nested levels would
+  need an element to know its container is owned.
 - **A collector.** Programs at D4's scale end before memory matters.
 - **Static types.** A checker over this language would be ordinary
   (records as maps make it structural); the budget had no room.

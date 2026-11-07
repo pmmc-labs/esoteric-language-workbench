@@ -155,7 +155,8 @@ test('an indexed assignment evaluates its indexes, then the value, then rebuilds
   const look = c.indexOf('dt_index(3, 2, ');
   const rhs = c.indexOf('INT64_C(5)');
   const inner = c.indexOf('dt_set_index(3, 5, ');
-  const outer = c.indexOf('dt_set_index(3, 2, ');
+  // The outermost set goes through the variable, which may own its value (D48).
+  const outer = c.indexOf('dt_set_index_own(3, 2, ');
   assert.ok(rhs > 0 && look > rhs && inner > look && outer > inner, `${rhs} ${look} ${inner} ${outer}`);
   assert.match(c, /v_g = t\d+;/);
   assert.doesNotMatch(c, /dt_index\(3, 5, /);
@@ -202,7 +203,7 @@ test('a path of fields and indexes looks up each step at its own position, then 
   const look2 = c.indexOf('dt_index(2, 4, ');
   const set1 = c.indexOf('dt_set_field(2, 7, ');
   const set2 = c.indexOf('dt_set_index(2, 4, ');
-  const set3 = c.indexOf('dt_set_field(2, 2, ');
+  const set3 = c.indexOf('dt_set_field_own(2, 2, ');
   assert.ok(rhs > 0 && look1 > rhs && look2 > look1 && set1 > look2 && set2 > set1 && set3 > set2, [rhs, look1, look2, set1, set2, set3].join(' '));
   assert.doesNotMatch(c, /dt_field\(2, 7, /);
   // The compound form reads the whole path first, with the last step's own lookup.
@@ -242,4 +243,12 @@ test('a miss label is written only when a lookup jumps to it', () => {
   const c = compile('let xs = [1]\nprint((xs[5] else 0) else 1)', 'a.ditto');
   assert.equal(c.match(/^\s*miss\d+: ;/gm)?.length, 1);
   assert.equal(c.match(/^\s*done\d+: ;/gm)?.length, 2);
+});
+
+test('a variable read shares its value unless a lookup borrows it; updates go through the variable (D48)', () => {
+  const c = compile('let xs = [1]\nlet ys = xs\nprint(xs[0], len(xs), 1 in xs)\nxs[0] = 2\nxs += [3]', 'a.ditto');
+  const main = c.slice(c.indexOf('int main'));
+  assert.equal((main.match(/dt_share\(/g) ?? []).length, 1);
+  assert.match(main, /dt_set_index_own\(4, 3, t\d+, t\d+, t\d+, &v_xs\)/);
+  assert.match(main, /dt_add_own\(5, 4, t\d+, t\d+, &v_xs\)/);
 });

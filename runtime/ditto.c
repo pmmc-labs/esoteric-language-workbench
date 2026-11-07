@@ -110,11 +110,15 @@ Value dt_str_new(const char *bytes, int64_t len) {
 
 /* A list of n items, not yet filled in: only the function that calls this
    writes it, before anyone else can see it (D7). */
-static struct List *list_alloc(int64_t n) {
-  struct List *l = dt_alloc(sizeof(struct List) + (size_t)n * sizeof(Value));
+static struct List *list_alloc_cap(int64_t n, int64_t cap) {
+  struct List *l = dt_alloc(sizeof(struct List) + (size_t)cap * sizeof(Value));
   l->len = n;
+  l->cap = cap;
+  l->owner = NULL;
   return l;
 }
+
+static struct List *list_alloc(int64_t n) { return list_alloc_cap(n, n); }
 
 Value dt_list_new(int64_t n, const Value *items) {
   struct List *l = list_alloc(n);
@@ -126,13 +130,17 @@ Value dt_list_new(int64_t n, const Value *items) {
 
 /* A map of n pairs, not yet filled in: only the function that calls this
    writes it, before anyone else can see it (D7). */
-static struct Map *map_alloc(int64_t n) {
+static struct Map *map_alloc_cap(int64_t n, int64_t cap) {
   struct Map *m = dt_alloc(sizeof(struct Map));
   m->len = n;
-  m->keys = dt_alloc(sizeof(Value) * (size_t)n);
-  m->vals = dt_alloc(sizeof(Value) * (size_t)n);
+  m->cap = cap;
+  m->owner = NULL;
+  m->keys = dt_alloc(sizeof(Value) * (size_t)cap);
+  m->vals = dt_alloc(sizeof(Value) * (size_t)cap);
   return m;
 }
+
+static struct Map *map_alloc(int64_t n) { return map_alloc_cap(n, n); }
 
 Value dt_map_new(int64_t n, const Value *keys, const Value *vals) {
   struct Map *m = map_alloc(n);
@@ -629,6 +637,77 @@ Value dt_set_index(int line, int col, Value c, Value i, Value v) {
   struct List *l = list_alloc(c.l->len);
   memcpy(l->items, c.l->items, (size_t)c.l->len * sizeof(Value));
   l->items[i.i] = v;
+  return dt_list(l);
+}
+
+/* In-place updates (D48). `c` is the value of the variable at `slot`. If it
+   is owned by that variable, nothing else can see it, so it is written in
+   place; otherwise the update makes a copy, which the variable then owns.
+   Copies get spare room, so a run of appends is amortized O(1). */
+static int64_t grow(int64_t need) { return need < 4 ? 8 : need * 2; }
+
+static Value map_set_own(struct Map *m, Value k, Value v, void *slot) {
+  int64_t at = map_find(m, k);
+  if (m->owner != slot) {
+    struct Map *r = map_alloc_cap(m->len, at >= 0 ? m->len : grow(m->len + 1));
+    if (m->len > 0) {
+      memcpy(r->keys, m->keys, (size_t)m->len * sizeof(Value));
+      memcpy(r->vals, m->vals, (size_t)m->len * sizeof(Value));
+    }
+    r->owner = slot;
+    m = r;
+  } else if (at < 0 && m->len == m->cap) {
+    int64_t cap = grow(m->len + 1);
+    Value *keys = dt_alloc(sizeof(Value) * (size_t)cap), *vals = dt_alloc(sizeof(Value) * (size_t)cap);
+    if (m->len > 0) {
+      memcpy(keys, m->keys, (size_t)m->len * sizeof(Value));
+      memcpy(vals, m->vals, (size_t)m->len * sizeof(Value));
+    }
+    m->keys = keys;
+    m->vals = vals;
+    m->cap = cap;
+  }
+  if (at < 0) { at = m->len++; m->keys[at] = k; }
+  m->vals[at] = v;
+  return dt_map(m);
+}
+
+Value dt_set_index_own(int line, int col, Value c, Value i, Value v, void *slot) {
+  if (c.tag == T_MAP) {
+    if (!is_key(i)) dt_fault(line, col, "map key must be an int or a string, got %s", type_name(i));
+    return map_set_own(c.m, i, v, slot);
+  }
+  if (c.tag != T_LIST || c.l->owner != slot) {
+    Value r = dt_set_index(line, col, c, i, v);
+    r.l->owner = slot;
+    return r;
+  }
+  if (i.tag != T_INT) dt_fault(line, col, "list index must be an int, got %s", type_name(i));
+  if (i.i < 0 || i.i >= c.l->len) {
+    dt_fault(line, col, "index %" PRId64 " out of range (length %" PRId64 ")", i.i, c.l->len);
+  }
+  c.l->items[i.i] = v;
+  return c;
+}
+
+Value dt_set_field_own(int line, int col, Value c, Value name, Value v, void *slot) {
+  if (c.tag == T_MAP) return map_set_own(c.m, name, v, slot);
+  return dt_set_field(line, col, c, name, v);
+}
+
+Value dt_add_own(int line, int col, Value a, Value b, void *slot) {
+  if (a.tag != T_LIST || b.tag != T_LIST) return dt_add(line, col, a, b);
+  int64_t n = a.l->len + b.l->len;
+  struct List *l = a.l;
+  if (l->owner != slot || n > l->cap) {
+    l = list_alloc_cap(a.l->len, grow(n));
+    if (a.l->len > 0) memcpy(l->items, a.l->items, (size_t)a.l->len * sizeof(Value));
+    l->owner = slot;
+  }
+  /* b may be a itself (`xs += xs` can't own, but be safe): copy from b's
+     items, which were not moved. */
+  if (b.l->len > 0) memmove(l->items + l->len, b.l->items, (size_t)b.l->len * sizeof(Value));
+  l->len = n;
   return dt_list(l);
 }
 

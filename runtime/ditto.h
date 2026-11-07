@@ -28,9 +28,13 @@ typedef struct Value {
 } Value;
 
 struct Str { int64_t len; char bytes[]; };
-struct List { int64_t len; Value items[]; };
+/* `owner`, when not NULL, is the address of the one variable that holds the
+   only reference to this list or map: an update through that variable may
+   write in place (D48). Reading the variable in any way that could keep the
+   value clears it (dt_share). `cap` is the room allocated, for appends. */
+struct List { int64_t len; int64_t cap; void *owner; Value items[]; };
 /* Keys and values in insertion order, searched linearly (D27). */
-struct Map { int64_t len; Value *keys; Value *vals; };
+struct Map { int64_t len; int64_t cap; void *owner; Value *keys; Value *vals; };
 
 extern const char *dt_path;
 
@@ -68,6 +72,15 @@ Value dt_list_new(int64_t n, const Value *items);
    key's type and, for a list, its range. A map key is replaced in place if
    present and added at the end if not. */
 Value dt_set_index(int line, int col, Value c, Value i, Value v);
+/* The same, through the variable at `slot` that holds c (D48). */
+Value dt_set_index_own(int line, int col, Value c, Value i, Value v, void *slot);
+Value dt_set_field_own(int line, int col, Value c, Value name, Value v, void *slot);
+Value dt_add_own(int line, int col, Value a, Value b, void *slot);
+/* A variable's value is being read in a way that could keep it (D48). */
+static inline void dt_share(Value v) {
+  if (v.tag == T_LIST) v.l->owner = NULL;
+  else if (v.tag == T_MAP) v.m->owner = NULL;
+}
 /* The same for a `.name` step, at the `.`: a map is set like dt_set_index; a
    list faults `cannot use .name on list`, anything else `cannot assign into T`. */
 Value dt_set_field(int line, int col, Value c, Value name, Value v);

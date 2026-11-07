@@ -114,8 +114,15 @@ each a golden test whose `.expected` comes from `t/models/examples.py`, a
 Python transcription of each program with a deep copy at every store; they
 passed on the first run, so there was no compiler change and no new test in
 `t/`; 569 golden tests and 173 unit tests, green under `cc`, clang and the
-sanitizers. Builder default awaiting review: D47. **Next:** review; step 9
-is held in reserve, and unused unless review shows friction.
+sanitizers. D34 to D47, the builders' defaults, were all kept at review.
+D45 caches the compiled runtime per compiler and flags (`build/rt/`).
+
+Step 9 (D48, built by the designer): a list or map held by one variable
+alone is updated in place (`owner`, `dt_share`, the `_own` setters), so
+updates and appends are O(1) when unshared; semantics unchanged, tests
+900 to 902 from `t/models/inplace.py`. All ten steps are spent.
+**Next:** nothing planned; candidates (not agreed) are in
+`docs/BACKGROUND.md`.
 
 ## Read first, in this order
 

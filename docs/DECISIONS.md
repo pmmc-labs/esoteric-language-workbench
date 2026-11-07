@@ -222,8 +222,30 @@ leading-zero errors (octal confusion doesn't arise: there is no octal).
 
 ## Values and memory
 
+**D48. A list or map held by exactly one variable is updated in place.**
+*(designer, step 9)* Retires the "heap objects are immutable" half of
+D26 (and the matching sentence of D7's implementation): the semantics of
+D7 are unchanged, only when copies happen. Each list and map records
+the variable that holds it alone (`owner`); any read of a variable that
+could keep its value clears it, and only lookups that keep nothing of
+the container leave it. An update through the owning variable writes in
+place; otherwise it copies once and the variable owns the copy. Appends
+use spare capacity. Measured: a 1000-element insertion sort went from
+4.1 s and gigabytes to 0.011 s. Found by the step 5 builder's report,
+checked by the designer before deciding. Rejected: reference counts
+(a count on every copy and drop of a value, in every temporary of the
+generated C: much more machinery for the same answer at this scale);
+static uniqueness analysis in the compiler (aliases through function
+arguments and containers make it hard to get right, and a wrong answer
+is a silent semantic bug); leaving it and shrinking D4 to "hundreds"
+(honest, but a practical language that can't sort a thousand numbers by
+hand fails the brief); owning nested levels too (an owned element would
+need its container's owner to be the variable's, more state for a case
+the examples don't show).
+
 **D26. A value is a 16-byte tagged struct passed by value; heap
-objects are immutable; memory is never freed.** *(designer)* A bump
+objects are immutable; memory is never freed.** *(designer; immutability
+retired for unshared lists and maps by D48)* A bump
 allocator over large chunks kept on a global list (so LeakSanitizer
 sees them reachable). Rejected: pointer tagging (undefined-behaviour
 traps under the sanitizers for little gain); a collector or reference

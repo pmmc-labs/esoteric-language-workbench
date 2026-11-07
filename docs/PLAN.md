@@ -13,7 +13,8 @@ tests); step 4 done (strings; 301 golden tests, 128 unit tests); step 5 done
 (lists and the core rule; 399 golden tests, 149 unit tests); step 6 done
 (maps; 496 golden tests, 169 unit tests); step 7 done (`else`; 563 golden
 tests, 173 unit tests); step 8 done (the examples; 569 golden tests, 173 unit
-tests); step 9 held in reserve.
+tests); step 9 done (in-place updates of unshared values, D48; 572 golden
+tests, 174 unit tests). The budget is spent.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -291,10 +292,27 @@ writes to `examples/wordcount.stdin`. Nothing read awkwardly; default D47.
   on Ditto.
 - **Size:** medium.
 
-### 9. Reserve
+### 9. In-place updates of unshared values (D48) **(done)**
 
-Held for one step of friction the examples or reviews show, by
-decision. Unused if there's none.
+Spent on friction found at review rather than in the examples: the
+step 5 builder measured that a 1000-element insertion sort, with every
+`xs[j] = ...` copying the list, needed gigabytes, and the designer's
+check took 4.1 seconds; D4 promises data in the thousands. Built by the
+designer, since it's a runtime mechanism under the core rule.
+
+- Lists and maps get a capacity and an `owner` (the address of the one
+  variable that holds them alone); `dt_share` on every variable read
+  that could keep the value; `dt_set_index_own`, `dt_set_field_own`
+  and `dt_add_own` for the outermost step of an update and for
+  `x += list`.
+- No semantic change: every earlier golden test is untouched.
+- Model `t/models/inplace.py`: random programs mixing aliasing (`=`,
+  arguments, stores, returns, `for` snapshots) with updates, against
+  Python deep copies; tests 900 to 902. Disabling `dt_share` fails them
+  and three of step 5's.
+- Leaves out: in-place updates below the outermost level (an element
+  is never owned), and strings (`s += c` still copies).
+- **Size:** medium.
 
 ## Example-port table
 

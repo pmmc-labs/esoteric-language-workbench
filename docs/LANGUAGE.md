@@ -126,11 +126,12 @@ print(a, b)          // [1, 2, 3] [99, 2, 3]
 It follows that a value can never contain itself, so printing and
 comparing always end; that a loop over a list sees the list as it was
 when the loop started; and that a function can't be given anything to
-change behind the caller's back. Under the hood, values are never
-changed in place: an update builds a new value (sharing what it can) and
-stores it in the variable. That makes updating an element cost a copy of
-the list or map it's in, which is fine at the size Ditto is for (D4,
-D7).
+change behind the caller's back. Under the hood, a list or map that only
+one variable holds is updated in place, and one that is shared is copied
+first, so `xs[i] = v` and `xs += [v]` in a loop cost what they would in
+TypeScript, while `let b = a` costs nothing until one of them changes
+(D7, D48). Nested updates (`g[r][c] = v`) copy the inner list or map they
+change.
 
 ## Variables
 
