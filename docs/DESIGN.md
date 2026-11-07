@@ -111,8 +111,11 @@ value adds its lines.
 
 ## Values and memory
 
-[How the interpreter represents a value: D28 leaves it its own, and
-D14's tags are main's.]
+A value is a `bigint` (an integer, D4, range-checked after every
+operator) or a `boolean` (D11); the host's `typeof` is the tag, so D14's
+bit tags are main's and not here (D28). A form is a plain object with
+`line` and `col`. There is no heap yet, and the host's collector does
+whatever memory there is.
 
 ## The runtime
 
@@ -123,7 +126,11 @@ D14's tags are main's.]
 Passes, a file each in `interp/src/`: read (forms with their line and
 column), check (every error that D28 says comes before running), and
 evaluate (a tree-walker over the forms, D29). `bin/lang.ts` is the
-driver. [The shape of the code.]
+driver. The reader is a loop over characters with a stack of its own
+and enforces D30's depth; the checker and evaluator recurse. Errors are
+two classes (`interp/src/errors.ts`): `CheckError` (a position, exit 2)
+and `Fault` (a name, exit 1); anything else is an internal error, exit 3
+(D30).
 
 ## Open questions
 
