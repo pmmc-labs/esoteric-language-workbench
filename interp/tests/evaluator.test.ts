@@ -63,3 +63,37 @@ test("evaluation is left to right (D25)", () => {
   assert.equal(run("(+ (/ 1 0) (+ #true 1))"), "fault: division by zero");
   assert.equal(run("(+ (+ #true 1) (/ 1 0))"), "fault: not an integer");
 });
+
+test("bit and, or, xor on the sign-extended value (D15)", () => {
+  assert.equal(run("(bit/and -1 7)"), "7");
+  assert.equal(run("(bit/or -8 1)"), "-7");
+  assert.equal(run("(bit/xor -1 0)"), "-1");
+  assert.equal(run("(bit/xor -4611686018427387904 4611686018427387903)"), "-1");
+  assert.equal(run("(bit/and -4611686018427387904 -1)"), "-4611686018427387904");
+});
+
+test("shifts (D16)", () => {
+  assert.equal(run("(bit/shl 1 61)"), "2305843009213693952");
+  assert.equal(run("(bit/shl 1 62)"), "fault: overflow");
+  assert.equal(run("(bit/shl -1 62)"), "-4611686018427387904");
+  assert.equal(run("(bit/shl 0 62)"), "0");
+  assert.equal(run("(bit/shr -7 1)"), "-4");
+  assert.equal(run("(bit/shr 7 1)"), "3");
+  assert.equal(run("(bit/shr -1 62)"), "-1");
+  assert.equal(run("(bit/shr 4611686018427387903 62)"), "0");
+});
+
+test("a count outside 0 to 62 faults bad shift (D16)", () => {
+  assert.equal(run("(bit/shl 1 63)"), "fault: bad shift");
+  assert.equal(run("(bit/shl 1 -1)"), "fault: bad shift");
+  assert.equal(run("(bit/shr 7 63)"), "fault: bad shift");
+  assert.equal(run("(bit/shr 7 -1)"), "fault: bad shift");
+  assert.equal(run("(bit/shr 7 4611686018427387903)"), "fault: bad shift");
+});
+
+test("a boolean faults not an integer, and that is reported before a bad count", () => {
+  assert.equal(run("(bit/and #true 1)"), "fault: not an integer");
+  assert.equal(run("(bit/shl #true 1)"), "fault: not an integer");
+  assert.equal(run("(bit/shl #true 99)"), "fault: not an integer");
+  assert.equal(run("(bit/shr 1 #false)"), "fault: not an integer");
+});

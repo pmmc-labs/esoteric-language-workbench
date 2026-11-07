@@ -21,6 +21,13 @@ const ints = (f: (a: bigint, b: bigint) => Value): Op => (a, b) => {
   return f(a, b);
 };
 
+// A count outside 0 to 62 is a fault before any bigint shift is taken
+// (D16): bigint << by a negative count shifts the other way.
+const shiftCount = (n: bigint): bigint => {
+  if (n < 0n || n > 62n) throw new Fault("bad shift");
+  return n;
+};
+
 export const OPERATORS: Map<string, Op> = new Map([
   ["+", ints((a, b) => fit(a + b))],
   ["-", ints((a, b) => fit(a - b))],
@@ -34,6 +41,15 @@ export const OPERATORS: Map<string, Op> = new Map([
   // typeof first and === only: JS's == would coerce (D12).
   ["==", (a, b) => a === b],
   ["!=", (a, b) => a !== b],
+  // bigint & | ^ are two's complement at any width, which is D15.
+  ["bit/and", ints((a, b) => a & b)],
+  ["bit/or", ints((a, b) => a | b)],
+  ["bit/xor", ints((a, b) => a ^ b)],
+  // The types are checked first, then the count, then the result: where
+  // one application could fault two ways, the order is open (CLAUDE.md's
+  // Status), and this is the interpreter's.
+  ["bit/shl", ints((a, n) => fit(a << shiftCount(n)))],
+  ["bit/shr", ints((a, n) => a >> shiftCount(n))],
   ["/", ints((a, b) => { if (b === 0n) throw new Fault("division by zero"); return fit(a / b); })],
   ["%", ints((a, b) => { if (b === 0n) throw new Fault("division by zero"); return a % b; })],
 ]);
