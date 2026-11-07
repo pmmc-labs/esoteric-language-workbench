@@ -62,14 +62,16 @@ check:
 
 A64 ?= ../a64-slight
 DEC = tools/decisions
+# The project's other documents, those of them that exist.
+DOCS = $(foreach f,PLAN DESIGN LANGUAGE BACKGROUND,$(if $(wildcard $(1)/$(f).md),--doc $(1)/$(f).md))
 
 decisions:
 	@mkdir -p build
-	@python3 $(DEC)/extract.py docs/DECISIONS.md -o build/decisions-workbench.json
+	@python3 $(DEC)/extract.py docs/DECISIONS.md -o build/decisions-workbench.json $(call DOCS,docs)
 	@python3 $(DEC)/page.py build/decisions-workbench.json -o build/decisions-workbench.html --name workbench \
 		--base https://github.com/pmmc-labs/esoteric-language-workbench/blob/main/docs/
 	@if [ -f $(A64)/docs/DECISIONS.md ]; then \
-		python3 $(DEC)/extract.py $(A64)/docs/DECISIONS.md -o build/decisions-a64-slight.json && \
+		python3 $(DEC)/extract.py $(A64)/docs/DECISIONS.md -o build/decisions-a64-slight.json $(call DOCS,$(A64)/docs) && \
 		python3 $(DEC)/page.py build/decisions-a64-slight.json -o build/decisions-a64-slight.html --name a64-slight \
 			--base https://github.com/pmmc-labs/a64-slight/blob/main/docs/; \
 	else echo "no $(A64)/docs/DECISIONS.md: set A64 to a64-slight's checkout"; fi

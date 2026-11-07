@@ -61,10 +61,10 @@ button, select, input { font: inherit; color: inherit; }
 .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
 /* The log */
-#log { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 32px; padding-block: 20px 60vh; }
-#side { position: sticky; top: calc(var(--bar) + 16px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - var(--bar) - 32px); overflow: auto; font-size: 13px; }
-#side h2 { font: 600 11px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 16px 0 6px; }
-#side h2:first-child { margin-top: 0; }
+#log, #docs { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 32px; padding-block: 20px 60vh; }
+.side { position: sticky; top: calc(var(--bar) + 16px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - var(--bar) - 32px); overflow: auto; font-size: 13px; }
+.side h2 { font: 600 11px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 16px 0 6px; }
+.side h2:first-child { margin-top: 0; }
 #sections { list-style: none; margin: 0; padding: 0; }
 #sections a { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px 3px 8px; border-left: 3px solid var(--c); color: var(--fg); text-decoration: none; border-radius: 0 4px 4px 0; }
 #sections a:hover { background: var(--panel); }
@@ -111,6 +111,60 @@ a.d:hover { border-bottom-color: var(--accent); }
 .links dd a { font-family: var(--mono); font-size: 12.5px; }
 .links .rt { color: var(--retire); }
 .goto { grid-column: 2; display: flex; gap: 14px; margin-top: 6px; font-size: 12.5px; }
+#doclist .chip[aria-pressed="false"] { opacity: 1; text-decoration: none; }
+#doclist .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.links dd.din { font-family: var(--ui); }
+.links dd.din a { font-family: var(--ui); font-size: 13px; }
+
+/* The documents */
+#doc, #openbody { max-width: 52rem; }
+.dsec { scroll-margin-top: calc(var(--bar) + 12px); }
+.dsec .dh { text-wrap: balance; }
+.dsec[data-level="1"] .dh { font: 600 26px/1.2 var(--ui); margin: 0 0 8px; }
+.dsec[data-level="2"] .dh { font: 600 22px/1.25 var(--ui); margin: 40px 0 6px; padding-top: 12px; border-top: 2px solid var(--rule); }
+.dsec[data-level="3"] .dh { font: 600 18px/1.3 var(--ui); margin: 30px 0 4px; }
+.dsec[data-level="4"] .dh, .dsec[data-level="5"] .dh, .dsec[data-level="6"] .dh { font: 600 16px/1.3 var(--ui); margin: 24px 0 4px; }
+.dsec.flash { animation: flash 1.6s ease-out; }
+.crumb { display: none; font-size: 12px; color: var(--muted); margin-top: 24px; }
+#doc.q .crumb { display: block; }
+#doc.q .dsec .dh { margin-top: 2px; padding-top: 0; border-top: 0; }
+.st { display: inline-block; vertical-align: 3px; margin-left: 4px; font: 700 10px/1 var(--ui); letter-spacing: .06em; text-transform: uppercase; padding: 3px 6px; border-radius: 3px; border: 1.5px solid currentColor; color: var(--muted); }
+.sttext { display: block; margin-top: 3px; font: 400 13px/1.4 var(--ui); color: var(--muted); }
+.st.st-proposed, .dot.st-proposed { color: var(--accent); }
+.st.st-idea, .dot.st-idea { color: var(--other); }
+.st.st-agreed, .dot.st-agreed { color: var(--default); }
+.st.st-begun, .dot.st-begun { color: var(--user); }
+.st.st-retired, .dot.st-retired { color: var(--retire); }
+.tbl { overflow-x: auto; margin: .8em 0; }
+.body table { border-collapse: collapse; font: 13.5px/1.4 var(--ui); }
+.body th, .body td { border: 1px solid var(--rule); padding: 4px 8px; text-align: left; vertical-align: top; }
+.body th { background: var(--panel); }
+.body td code, .body th code { overflow-wrap: normal; }
+#dstatus-box h2 { margin-top: 16px; }
+a.d.drift { border-bottom: 0; text-decoration: underline wavy var(--retire); text-decoration-skip-ink: none; text-underline-offset: 3px; }
+#toc { list-style: none; margin: 0; padding: 0; }
+#toc a { display: flex; align-items: baseline; gap: 6px; padding: 2px 6px; color: var(--fg); text-decoration: none; border-radius: 4px; }
+#toc a:hover { background: var(--panel); }
+#toc li[data-level="2"] a { font-weight: 600; margin-top: 6px; }
+#toc li[data-level="3"] a { padding-left: 16px; }
+#toc li[data-level="4"] a, #toc li[data-level="5"] a { padding-left: 28px; font-size: 12px; }
+#toc li.off { opacity: .3; }
+#toc .t { flex: 1; min-width: 0; }
+.dot { flex: none; display: inline-block; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid currentColor; color: var(--muted); }
+.dr { flex: none; color: var(--retire); font-size: 11px; font-variant-numeric: tabular-nums; }
+#open { padding-block: 20px 40vh; }
+#openbody h2 { font: 600 22px/1.25 var(--ui); margin: 36px 0 6px; }
+#openbody h2:first-child { margin-top: 0; }
+#openbody h3 { font: 600 11px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 4px; }
+#openbody .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.olist, .dlist { list-style: none; margin: 0; padding: 0; }
+.olist li, .dlist li { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.olist li > a { font: 600 16px/1.35 var(--read); }
+.where { font-size: 12px; color: var(--muted); margin-left: 6px; }
+.cites { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 2px 8px; font: 12.5px var(--mono); }
+.dlist blockquote { margin: 6px 0 0; padding-left: 10px; border-left: 3px solid var(--retire); font: 15px/1.5 var(--read); }
+details > summary { cursor: pointer; font: 600 15px/1.4 var(--ui); padding: 10px 0 4px; }
+.note { color: var(--muted); font: 400 13px/1.45 var(--ui); }
 #nomatch { color: var(--muted); font: 16px var(--read); padding: 40px 0; }
 
 /* Graph and arcs */
@@ -138,8 +192,9 @@ svg text { font-family: var(--mono); fill: var(--fg); }
 .gn text { font-size: 9px; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 
 @media (max-width: 760px) {
-    #log { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-    #side { position: static; max-height: none; }
+    #log, #docs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .side { position: static; max-height: none; }
+    #docs .side { max-height: 45vh; }
     #sections { columns: 2; column-gap: 12px; }
     .entry { grid-template-columns: minmax(0, 1fr); }
     .gut { text-align: left; }
@@ -152,6 +207,8 @@ svg text { font-family: var(--mono); fill: var(--fg); }
     <h1>/*NAME*/ <small>decisions</small></h1>
     <nav id="tabs" role="tablist">
         <button id="tab-log" role="tab" data-view="log">Log</button>
+        <button id="tab-docs" role="tab" data-view="docs">Docs</button>
+        <button id="tab-open" role="tab" data-view="open">Open</button>
         <button id="tab-graph" role="tab" data-view="graph">Graph</button>
         <button id="tab-arcs" role="tab" data-view="arcs">Arcs</button>
     </nav>
@@ -162,7 +219,7 @@ svg text { font-family: var(--mono); fill: var(--fg); }
 
 <main>
     <section id="log" class="wrap">
-        <aside id="side">
+        <aside class="side">
             <h2>Who decided</h2>
             <div class="chips" id="attrs"></div>
             <h2>Order</h2>
@@ -175,6 +232,19 @@ svg text { font-family: var(--mono); fill: var(--fg); }
         </aside>
         <div id="entries"></div>
     </section>
+
+    <section id="docs" class="wrap" hidden>
+        <aside class="side">
+            <h2>Documents</h2>
+            <div class="chips" id="doclist"></div>
+            <div id="dstatus-box"><h2>Status</h2><div class="chips" id="dstatus"></div></div>
+            <h2>Contents</h2>
+            <ul id="toc"></ul>
+        </aside>
+        <div id="doc"></div>
+    </section>
+
+    <section id="open" class="wrap" hidden><div id="openbody"></div></section>
 
     <section id="graph" class="view wrap" hidden>
         <div class="controls">
@@ -191,6 +261,7 @@ svg text { font-family: var(--mono); fill: var(--fg); }
                 <option value="section">section</option>
             </select></label>
             <label><input id="g-retire" type="checkbox" checked> retirements</label>
+            <label id="g-docs-l"><input id="g-docs" type="checkbox" checked> documents</label>
             <span id="g-stats" class="legend"></span>
         </div>
         <div id="gstage" class="stage"><div class="tip" id="gtip" hidden></div></div>
@@ -236,6 +307,18 @@ const adj = new Map(D.entries.map(e => [e.n, new Set([...e.mentions, ...e.mentio
 const retirePairs = [];   // [retirer, retired]
 for (const e of D.entries) for (const r of e.retires) retirePairs.push([e.n, r.n]);
 const isRetire = new Set(retirePairs.map(([a, b]) => a < b ? a + '-' + b : b + '-' + a));
+const DOCS = D.docs || [];
+const SEC = new Map();      // a section's id: {d, s}
+for (const d of DOCS) for (const s of d.sections) SEC.set(s.id, { d, s });
+const docByName = new Map(DOCS.map(d => [d.name, d]));
+const docLabel = d => d.name.replace(/\.md$/i, '');
+const secTitle = (d, s) => s.level === 1 ? d.title : plain(s.title);
+const secLabel = id => { const { d, s } = SEC.get(id); return docLabel(d) + ' › ' + secTitle(d, s); };
+const sref = id => `<a href="#${id}" title="${esc(secLabel(id))}">${esc(clip(secLabel(id), 64))}</a>`;
+const ST = { proposed: 'Proposed', idea: 'Idea', agreed: 'Agreed', begun: 'Begun', stopped: 'Stopped', parked: 'Parked', done: 'Done', retired: 'Retired' };
+const OPEN = ['proposed', 'idea', 'agreed', 'begun'];
+const badge = st => st ? `<span class="st st-${st.class}" title="${esc(st.text)}">${ST[st.class]}</span>` : '';
+let driftCtx = null;        // while a section renders: its drift, by number
 let store = {};
 try { store = JSON.parse(localStorage.getItem('decisions') || '{}'); } catch (_) {}
 const save = () => { try { localStorage.setItem('decisions', JSON.stringify(store)); } catch (_) {} };
@@ -245,9 +328,10 @@ function inline(s) {
     // A link first, since its text can hold a code span: [`DESIGN.md`](DESIGN.md).
     const lm = [...s.matchAll(/\[((?:`[^`]*`|[^\]`])+)\]\(([^)\s]+)\)/g)].find(m => s.slice(0, m.index).split('`').length % 2);
     if (lm) {
-        const u = lm[2], url = /^[a-z]+:/i.test(u) ? u : BASE ? BASE + u : null;
-        const t = inline(lm[1]);
-        return inline(s.slice(0, lm.index)) + (url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${t}</a>` : `<span title="${esc(u)}">${t}</span>`) + inline(s.slice(lm.index + lm[0].length));
+        const u = lm[2], here = docByName.get(u.split('#')[0].split('/').pop());
+        const url = here ? '#' + here.key : /^[a-z]+:/i.test(u) ? u : BASE ? BASE + u : null;
+        const t = inline(lm[1]), out = here ? '' : ' target="_blank" rel="noopener"';
+        return inline(s.slice(0, lm.index)) + (url ? `<a href="${esc(url)}"${out}>${t}</a>` : `<span title="${esc(u)}">${t}</span>`) + inline(s.slice(lm.index + lm[0].length));
     }
     const out = [];
     const re = /(`+)([\s\S]*?)\1/g;
@@ -260,16 +344,38 @@ function inline(s) {
     out.push(text(s.slice(last)));
     return out.join('');
 }
+// PLAN.md's "Floats without boxes", as the extractor resolved it.
+const QUOTED = /\b([\w-]+\.md)((?:'s)?,? )(&quot;|\u201c)([^&\u201c\u201d]{3,80}?)(&quot;|\u201d)/g;
 function text(s) {
-    const refs = [];
-    s = esc(s).replace(/\bD(\d+)\b/g, (w, n) => E.has(+n) ? (refs.push(+n), `\u0001${refs.length - 1}\u0001`) : w);
+    const keep = [], hold = h => (keep.push(h), `\u0001${keep.length - 1}\u0001`);
+    s = esc(s).replace(QUOTED, (w, name, mid, o, q) => {
+        const id = D.doc_refs?.[name]?.[q.replace(/\s+/g, ' ').trim()];
+        return id && SEC.has(id) ? hold(`<a href="#${id}">${w}</a>`) : w;
+    });
+    s = s.replace(/\bD(\d+)\b/g, (w, n) => E.has(+n) ? hold(dref(+n)) : w);
     s = s.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w*])\*(?=[^\s*])([^*]*?[^\s*])\*(?![\w*])/g, '$1<em>$2</em>');
-    return s.replace(/\u0001(\d+)\u0001/g, (w, i) => dref(refs[+i]));
+    return s.replace(/\u0001(\d+)\u0001/g, (w, i) => keep[+i]);
 }
-const dref = n => `<a class="d" href="#D${n}" title="${esc(plain(E.get(n).title))}">D${n}</a>`;
+const dref = n => {
+    const x = driftCtx && driftCtx.get(n);
+    const t = x ? `D${n} was retired or changed by ${x.by.map(b => 'D' + b).join(', ')}. ${plain(E.get(n).title)}` : plain(E.get(n).title);
+    return `<a class="d${x ? ' drift' : ''}" href="#D${n}" title="${esc(t)}">D${n}</a>`;
+};
 
 const LIST = /^( *)([-*+]|\d+[.)]) +/;
+const TABLE = /^\s*\|/;
+function cells(row) {
+    // Split at the pipes outside code spans: `a | 0` is one cell.
+    const out = [];
+    let cur = '', code = false;
+    for (const c of row.trim().replace(/^\|/, '').replace(/\|$/, '')) {
+        if (c === '`') code = !code;
+        if (c === '|' && !code) { out.push(cur.trim()); cur = ''; } else cur += c;
+    }
+    out.push(cur.trim());
+    return out;
+}
 function blocks(lines) {
     let html = '', i = 0;
     const indent = l => l.match(/^ */)[0].length;
@@ -281,6 +387,20 @@ function blocks(lines) {
             for (i++; i < lines.length && !/^ *```/.test(lines[i]); i++) body.push(lines[i]);
             i++;
             html += '<pre><code>' + esc(body.join('\n')) + '</code></pre>';
+            continue;
+        }
+        if (indent(l) >= 4 && !LIST.test(l)) {
+            const body = [];
+            while (i < lines.length && (indent(lines[i]) >= 4 || !lines[i].trim())) body.push(lines[i++].slice(4));
+            while (body.length && !body.at(-1).trim()) body.pop();
+            html += '<pre><code>' + esc(body.join('\n')) + '</code></pre>';
+            continue;
+        }
+        if (TABLE.test(l) && i + 1 < lines.length && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1])) {
+            const head = cells(l), rows = [];
+            for (i += 2; i < lines.length && TABLE.test(lines[i]); i++) rows.push(cells(lines[i]));
+            html += '<div class="tbl"><table><thead><tr>' + head.map(c => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>'
+                + rows.map(r => '<tr>' + r.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>';
             continue;
         }
         const lm = l.match(LIST);
@@ -317,6 +437,7 @@ function blocks(lines) {
         while (i < lines.length && lines[i].trim() && !/^ *```/.test(lines[i])) {
             const pm = lines[i].match(LIST);
             if (para.length && pm && (!/\d/.test(pm[2]) || /^1[.)]$/.test(pm[2]))) break;
+            if (para.length && TABLE.test(lines[i])) break;
             para.push(lines[i].trim()); i++;
         }
         html += '<p>' + inline(para.join('\n')) + '</p>';
@@ -382,7 +503,7 @@ function entry(e) {
     ${ret}
     <div class="body">${md(e.body)}</div>
 </div>
-<dl class="links">${row('Cites', e.mentions.filter(m => m < e.n))}${row('Points to', e.mentions.filter(m => m > e.n))}${row('Cited by', e.mentioned_by)}${row('Retires', e.retires.map(r => r.n), 'rt')}${e.tests.length ? `<dt>Tests</dt><dd>${e.tests.join(', ')}</dd>` : ''}</dl>
+<dl class="links">${row('Cites', e.mentions.filter(m => m < e.n))}${row('Points to', e.mentions.filter(m => m > e.n))}${row('Cited by', e.mentioned_by)}${row('Retires', e.retires.map(r => r.n), 'rt')}${e.cited_in && e.cited_in.length ? `<dt>In the docs</dt><dd class="din">${e.cited_in.map(sref).join('<span aria-hidden="true">·</span>')}</dd>` : ''}${e.tests.length ? `<dt>Tests</dt><dd>${e.tests.join(', ')}</dd>` : ''}</dl>
 <div class="goto"><a href="#graph-D${e.n}">Graph around D${e.n}</a><a href="#arcs-D${e.n}">On the arc map</a></div>`;
     hay.set(e.n, (e.title + ' ' + e.attribution.text + ' ' + e.body).toLowerCase());
     return a;
@@ -429,11 +550,15 @@ function filter() {
     $('count').textContent = shown === D.entries.length ? `${shown} entries` : `${shown} of ${D.entries.length}`;
     if (view === 'graph') gDim();
     if (view === 'arcs') aDim();
+    if (view === 'docs') dFilter();
 }
 $('search').addEventListener('input', filter);
 $('search').addEventListener('keydown', ev => {
     if (ev.key === 'Escape') { $('search').value = ''; filter(); }
-    if (ev.key === 'Enter') {
+    if (ev.key === 'Enter' && view === 'docs') {
+        const first = [...$('doc').children].find(x => !x.hidden);
+        if (first) go(first.id);
+    } else if (ev.key === 'Enter') {
         const vis = D.entries.filter(e => !arts.get(e.n).hidden);
         const m = $('search').value.trim().match(/^d?(\d+)$/i);
         const n = m && E.has(+m[1]) ? +m[1] : vis.length === 1 ? vis[0].n : null;
@@ -444,20 +569,143 @@ document.addEventListener('keydown', ev => {
     if (ev.key === '/' && document.activeElement !== $('search') && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); $('search').focus(); $('search').select(); }
 });
 
+/* ---- The documents ---- */
+const dv = { d: DOCS[0] || null, built: new Map(), off: new Set(), hay: new Map() };
+function docNode(d) {
+    if (dv.built.has(d.key)) return dv.built.get(d.key);
+    const wrap = document.createElement('div');
+    for (const s of d.sections) {
+        const sec = document.createElement('section');
+        sec.className = 'dsec'; sec.id = s.id; sec.dataset.level = s.level;
+        const up = [];
+        for (let p = s.parent; p != null; p = d.sections[p].parent) if (d.sections[p].level > 1) up.unshift(plain(d.sections[p].title));
+        const head = s.level === 1 ? `<h1 class="dh">${inline(d.title)}</h1>`
+            : `<div class="crumb">${esc(docLabel(d))}${up.map(t => ' › ' + esc(t)).join('')}</div>`
+            + `<h${Math.min(s.level, 6)} class="dh">${inline(s.title)}${badge(s.status)}${s.status ? `<span class="sttext">(${inline(s.status.text)})</span>` : ''}</h${Math.min(s.level, 6)}>`;
+        driftCtx = new Map(s.drift.map(x => [x.n, x]));
+        sec.innerHTML = head + `<div class="body">${md(s.body)}</div>`;
+        driftCtx = null;
+        dv.hay.set(s.id, (s.title + ' ' + s.body).toLowerCase());
+        wrap.append(sec);
+    }
+    dv.built.set(d.key, wrap);
+    return wrap;
+}
+function dShow(d) {
+    if (!d) return;
+    const fresh = dv.d !== d || !$('doc').firstChild;
+    dv.d = d;
+    if (fresh) {
+        $('doc').replaceChildren(docNode(d));
+        $('doclist').innerHTML = DOCS.map(x => `<button class="chip" data-key="${x.key}" aria-pressed="${x === d}">${esc(docLabel(x))}</button>`).join('');
+        const classes = Object.keys(ST).filter(c => d.sections.some(s => s.status && s.status.class === c));
+        $('dstatus-box').hidden = !classes.length;
+        $('dstatus').innerHTML = classes.length ? `<button class="chip" data-st="open">Open only</button>` + classes.map(c =>
+            `<button class="chip" data-st="${c}" aria-pressed="${!dv.off.has(c)}"><span class="dot st-${c}" style="margin-right:5px"></span>${ST[c]} ${d.sections.filter(s => s.status && s.status.class === c).length}</button>`).join('') : '';
+        $('toc').innerHTML = d.sections.filter(s => s.level > 1).map(s => {
+            const dr = s.drift.length ? `<span class="dr" title="cites ${s.drift.length} retired or changed">${s.drift.length}</span>` : '';
+            return `<li data-level="${s.level}" data-id="${s.id}"><a href="#${s.id}" title="${esc(plain(s.title))}">${s.status ? `<span class="dot st-${s.status.class}" title="${ST[s.status.class]}"></span>` : ''}<span class="t">${esc(plain(s.title))}</span>${dr}</a></li>`;
+        }).join('');
+    }
+    dFilter();
+}
+function dFilter() {
+    const d = dv.d;
+    if (!d) return;
+    const q = $('search').value.trim().toLowerCase(), toks = q ? q.split(/\s+/) : null;
+    let shown = 0;
+    for (const s of d.sections) {
+        const hay = dv.hay.get(s.id);
+        const hit = !toks || toks.every(t => {
+            let m;
+            if ((m = t.match(/^d(\d+)$/))) return s.mentions.includes(+m[1]);
+            if (/^\d+$/.test(t)) return new RegExp('\\b' + t + '\\b').test(hay);
+            return hay.includes(t);
+        });
+        // Filtering by status shows only sections that have one that's on.
+        const vis = hit && (dv.off.size ? !!s.status && !dv.off.has(s.status.class) : true);
+        $(s.id).hidden = !vis;
+        const li = document.querySelector(`#toc li[data-id="${s.id}"]`);
+        if (li) li.classList.toggle('off', !vis);
+        if (vis) shown++;
+    }
+    $('doc').classList.toggle('q', !!toks || dv.off.size > 0);
+    $('count').textContent = shown === d.sections.length ? `${shown} sections` : `${shown} of ${d.sections.length} sections`;
+}
+$('doclist').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) go(b.dataset.key); });
+$('dstatus').addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    const all = [...$('dstatus').querySelectorAll('[data-st]:not([data-st="open"])')];
+    if (b.dataset.st === 'open') dv.off = new Set(all.map(x => x.dataset.st).filter(c => !OPEN.includes(c)));
+    else if (dv.off.has(b.dataset.st)) dv.off.delete(b.dataset.st); else dv.off.add(b.dataset.st);
+    all.forEach(x => x.setAttribute('aria-pressed', !dv.off.has(x.dataset.st)));
+    dFilter();
+});
+function dGo(id) {
+    const { d } = SEC.get(id);
+    show('docs', d);
+    const sec = $(id);
+    if (sec.hidden) { $('search').value = ''; dv.off.clear(); dShow(d); filter(); }
+    sec.scrollIntoView();
+    sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash');
+}
+
+/* ---- What's open: the plan's open sections, and citations of retired decisions ---- */
+let openDone = false;
+function openShow() {
+    if (openDone) return;
+    openDone = true;
+    const all = DOCS.flatMap(d => d.sections.map(s => ({ d, s })));
+    const row = ({ d, s }) => `<li><a href="#${s.id}">${inline(s.level === 1 ? d.title : s.title)}</a>${badge(s.status)}<span class="where">${esc(docLabel(d))}</span>`
+        + (s.status ? `<span class="sttext">(${inline(s.status.text)})</span>` : '')
+        + (s.mentions.length ? `<div class="cites">${s.mentions.slice(0, 16).map(dref).join(' ')}${s.mentions.length > 16 ? ` <span class="note">and ${s.mentions.length - 16} more</span>` : ''}</div>` : '') + '</li>';
+    let h = '<h2>Open</h2><p class="note">Sections whose heading says they are proposed, an idea, agreed but not built, or begun; and sections that mark something <b>(open)</b>.</p>';
+    let any = false;
+    for (const c of OPEN) {
+        const xs = all.filter(x => x.s.status && x.s.status.class === c);
+        if (xs.length) { any = true; h += `<h3>${ST[c]} <span class="n">${xs.length}</span></h3><ul class="olist">${xs.map(row).join('')}</ul>`; }
+    }
+    // A mark, not the rule that names it: "anything marked (open)", "an (open) item".
+    const mark = b => /(?<!marked |each |an |every )\(open\)(?! items?\b)/i.test(b.replace(/\*\*\(open\)\*\*/g, '(open)').replace(/\s+/g, ' '));
+    const marked = all.filter(x => (mark(x.s.body) || /^open questions?$/i.test(plain(x.s.title).trim()) && x.s.body.trim()) && !(x.s.status && OPEN.includes(x.s.status.class)));
+    if (marked.length) { any = true; h += `<h3>Marked (open), and open questions <span class="n">${marked.length}</span></h3><ul class="olist">${marked.map(row).join('')}</ul>`; }
+    if (!any) h += '<p class="note">Nothing is open.</p>';
+    const shut = all.filter(x => x.s.status && ['stopped', 'parked', 'retired'].includes(x.s.status.class));
+    if (shut.length) h += `<details><summary>Stopped, parked or retired <span class="n">${shut.length}</span></summary><ul class="olist">${shut.map(row).join('')}</ul></details>`;
+    h += '<h2>Citing a retired decision</h2><p class="note">Sentences that cite a decision a later one retired or changed, and don\'t say so. Read from the log\'s own words, best effort: many retirements are in part, so some of these are right as they stand. In the documents, such a citation has a wavy underline.</p>';
+    let drifts = 0;
+    for (const d of DOCS) {
+        const xs = d.sections.filter(s => s.drift.length);
+        if (!xs.length) continue;
+        // A plan is a document most of whose headings say where they stand.
+        const n = xs.reduce((a, s) => a + s.drift.length, 0), plan = d.sections.filter(s => s.status).length * 3 >= d.sections.length;
+        drifts += n;
+        h += `<details${plan ? '' : ' open'}><summary>${esc(d.name)} <span class="n">${n}</span>${plan ? ' <span class="note">a plan, whose history cites what was later retired</span>' : ''}</summary><ul class="dlist">`
+            + xs.flatMap(s => s.drift.map(x => `<li><a href="#${s.id}">${esc(secTitle(d, s))}</a>: ${dref(x.n)}, retired or changed by ${x.by.map(dref).join(', ')}<blockquote>${inline(x.sentence)}</blockquote></li>`)).join('')
+            + '</ul></details>';
+    }
+    if (!drifts) h += '<p class="note">None found.</p>';
+    $('openbody').innerHTML = h;
+}
+
 /* ---- Views and the hash ---- */
 let view = 'log';
 let logY = 0;
-function show(v) {
+const VIEWS = ['log', 'docs', 'open', 'graph', 'arcs'];
+function show(v, d) {
     if (view === 'log' && v !== 'log') logY = window.scrollY;
-    const back = view !== 'log' && v === 'log';
+    const back = view !== 'log' && v === 'log', same = view === v && (!d || d === dv.d);
     view = v;
-    for (const x of ['log', 'graph', 'arcs']) { $(x).hidden = x !== v; $('tab-' + x).setAttribute('aria-selected', x === v); }
-    $('count').hidden = false;
-    if (v !== 'log') window.scrollTo(0, 0);
+    for (const x of VIEWS) { $(x).hidden = x !== v; $('tab-' + x).setAttribute('aria-selected', x === v); }
+    if (v !== 'log' && !same) window.scrollTo(0, 0);
     else if (back) window.scrollTo(0, logY);
+    if (v === 'log' || v === 'graph' || v === 'arcs') filter();
+    if (v === 'docs') dShow(d || dv.d);
+    if (v === 'open') { openShow(); $('count').textContent = ''; }
     if (v === 'graph') gShow();
     if (v === 'arcs') aShow();
 }
+if (!DOCS.length) { $('tab-docs').hidden = true; $('tab-open').hidden = true; }
 const go = h => { if (location.hash === '#' + h) route(); else location.hash = h; };
 function route() {
     const h = decodeURIComponent(location.hash.slice(1));
@@ -474,6 +722,12 @@ function route() {
     } else if ((m = h.match(/^arcs(?:-D(\d+))?$/))) {
         if (m[1] && E.has(+m[1])) am.pin = +m[1];
         show('arcs');
+    } else if (SEC.has(h)) {
+        if (SEC.get(h).s.level === 1) show('docs', SEC.get(h).d); else dGo(h);
+    } else if (h === 'docs' && DOCS.length) {
+        show('docs');
+    } else if (h === 'open' && DOCS.length) {
+        show('open');
     } else if ((m = h.match(/^s(\d+)$/)) && D.sections[+m[1]]) {
         show('log'); if (order === 'num') setOrder('file'); $(h).scrollIntoView();
     } else show('log');
@@ -507,11 +761,14 @@ function tip(box, html, x, y) {
 const tipHtml = e => `<b>D${e.n}</b> ${inline(e.title)}<div class="s">${ATTR[e.attribution.class]} · ${esc(plain(D.sections[e.section].title))} · cites ${e.mentions.length}, cited by ${e.mentioned_by.length}</div>`;
 
 /* ---- The graph: a force layout, by hand, since 300 nodes don't need a library ---- */
-const g = { scope: 'around', centre: null, depth: 1, section: 0, colour: 'attr', retire: true, dirty: true,
+const g = { scope: 'around', centre: null, depth: 1, section: 0, colour: 'attr', retire: true, docs: true, dirty: true,
     pos: new Map(), nodes: [], edges: [], alpha: 0, fit: true, k: 1, tx: 0, ty: 0, raf: 0 };
 let seed = 1;
 const rand = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-const radius = n => 3 + 2 * Math.sqrt(E.get(n).mentioned_by.length);
+// A node is a decision's number, or a document section's id.
+const isDoc = n => typeof n === 'string';
+const radius = n => isDoc(n) ? 6 : 3 + 2 * Math.sqrt(E.get(n).mentioned_by.length);
+const nodeKey = v => /^\d+$/.test(v) ? +v : v;
 let gsvg, gview, gedges, gnodes;
 
 function gInit() {
@@ -529,10 +786,10 @@ function gInit() {
         g.scope = $('g-scope').value; g.depth = +$('g-depth').value; g.section = +$('g-section').value;
         const n = parseInt($('g-centre').value.replace(/\D/g, ''));
         if (E.has(n)) g.centre = n;
-        g.colour = $('g-colour').value; g.retire = $('g-retire').checked;
+        g.colour = $('g-colour').value; g.retire = $('g-retire').checked; g.docs = $('g-docs').checked;
         g.dirty = true; gShow();
     };
-    for (const id of ['g-scope', 'g-depth', 'g-section', 'g-colour', 'g-retire']) $(id).addEventListener('change', set);
+    for (const id of ['g-scope', 'g-depth', 'g-section', 'g-colour', 'g-retire', 'g-docs']) $(id).addEventListener('change', set);
     $('g-centre').addEventListener('change', set);
     $('g-centre').addEventListener('keydown', ev => { if (ev.key === 'Enter') set(); });
 
@@ -540,7 +797,7 @@ function gInit() {
     let drag = null;
     gsvg.addEventListener('pointerdown', ev => {
         const node = ev.target.closest('.gn');
-        drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, moved: 0, n: node ? +node.dataset.n : null, tx: g.tx, ty: g.ty };
+        drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, moved: 0, n: node ? nodeKey(node.dataset.n) : null, tx: g.tx, ty: g.ty };
         gsvg.setPointerCapture(ev.pointerId);
         if (!node) gsvg.classList.add('panning');
     });
@@ -563,7 +820,7 @@ function gInit() {
             const p = g.pos.get(drag.n);
             if (p) p.fixed = drag.n === g.centre && g.scope === 'around';
             if (drag.moved < 3 && ev.type === 'pointerup') {
-                if (ev.shiftKey) go('graph-D' + drag.n); else go('D' + drag.n);
+                if (isDoc(drag.n)) go(drag.n); else if (ev.shiftKey) go('graph-D' + drag.n); else go('D' + drag.n);
             }
         }
         drag = null;
@@ -580,8 +837,9 @@ function gInit() {
     }, { passive: false });
     gsvg.addEventListener('pointerover', ev => {
         const node = ev.target.closest('.gn'); if (!node) return;
-        const n = +node.dataset.n, r = $('gstage').getBoundingClientRect();
-        tip($('gtip'), tipHtml(E.get(n)), ev.clientX - r.left, ev.clientY - r.top);
+        const n = nodeKey(node.dataset.n), r = $('gstage').getBoundingClientRect();
+        const html = isDoc(n) ? (({ d, s: sc }) => `<b>${esc(docLabel(d))}</b> ${inline(sc.level === 1 ? d.title : sc.title)}${badge(sc.status)}<div class="s">cites ${sc.mentions.length} decisions</div>`)(SEC.get(n)) : tipHtml(E.get(n));
+        tip($('gtip'), html, ev.clientX - r.left, ev.clientY - r.top);
         gHover(n);
     });
     gsvg.addEventListener('pointerout', ev => { if (ev.target.closest('.gn')) { $('gtip').hidden = true; gHover(null); } });
@@ -613,23 +871,31 @@ function gBuild() {
     }
     // Retirements point from the retirer to the retired, whichever cites whom.
     for (const x of edges) if (x.retire) { const r = retirePairs.find(([a, b]) => (a === x.s && b === x.t) || (a === x.t && b === x.s)); x.s = r[0]; x.t = r[1]; }
+    // The sections of the documents that cite the centre, each tied to the
+    // decisions shown that it cites.
+    if (g.docs && g.scope === 'around') for (const d of DOCS) for (const sc of d.sections) {
+        if (!sc.mentions.includes(g.centre)) continue;
+        nodes.add(sc.id);
+        for (const m of sc.mentions) if (core.has(m)) edges.push({ key: sc.id + '>' + m, s: sc.id, t: m, both: false, retire: false, doc: true });
+    }
     // Place new nodes beside a placed neighbour, so a re-centring moves little.
     seed = 1;
     for (const n of nodes) if (!g.pos.has(n)) {
-        const nb = [...adj.get(n)].find(m => g.pos.has(m) && nodes.has(m));
+        const nb = isDoc(n) ? g.centre : [...adj.get(n)].find(m => g.pos.has(m) && nodes.has(m));
         const p = nb ? g.pos.get(nb) : { x: 0, y: 0 }, a = rand() * 6.283, d = nb ? 30 : 60 + rand() * 200;
         g.pos.set(n, { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, vx: 0, vy: 0, fixed: false });
     }
     for (const p of g.pos.values()) p.fixed = false;
     if (g.scope === 'around') g.pos.get(g.centre).fixed = true;
-    g.nodes = [...nodes].sort((a, b) => a - b); g.core = core; g.edges = edges;
+    g.nodes = [...nodes].sort((a, b) => isDoc(a) - isDoc(b) || (isDoc(a) ? (a < b ? -1 : 1) : a - b)); g.core = core; g.edges = edges;
     g.alpha = 1; g.fit = true; g.dirty = false;
 
     gedges.replaceChildren(); gnodes.replaceChildren();
     const arrows = g.scope !== 'all';
     for (const x of edges) {
         x.el = el('line', { class: 'ge' }, gedges);
-        const st = x.retire && g.retire ? 'stroke:var(--retire);stroke-width:2;opacity:.9' : 'stroke:var(--edge);stroke-width:1;opacity:' + (g.scope === 'all' ? .35 : .6);
+        const st = x.doc ? 'stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;opacity:.7'
+            : x.retire && g.retire ? 'stroke:var(--retire);stroke-width:2;opacity:.9' : 'stroke:var(--edge);stroke-width:1;opacity:' + (g.scope === 'all' ? .35 : .6);
         x.el.setAttribute('style', st);
         if (arrows) {
             x.el.setAttribute('marker-end', `url(#${x.retire && g.retire ? 'arr-r' : 'arr'})`);
@@ -637,6 +903,13 @@ function gBuild() {
         }
     }
     for (const n of g.nodes) {
+        if (isDoc(n)) {
+            const { d, s: sc } = SEC.get(n), grp = el('g', { class: 'gn', 'data-n': n }, gnodes);
+            el('rect', { x: -6, y: -6, width: 12, height: 12, rx: 2, style: 'fill:var(--panel);stroke:var(--fg);stroke-width:1.5' }, grp);
+            el('text', { x: 10, y: 3 }, grp).textContent = docLabel(d) + ': ' + clip(secTitle(d, sc), 30);
+            g.pos.get(n).el = grp;
+            continue;
+        }
         const e = E.get(n), grp = el('g', { class: 'gn', 'data-n': n }, gnodes);
         const fill = g.colour === 'attr' ? attrColour(e.attribution.class) : secColour(e.section);
         const ring = g.colour === 'attr' ? secColour(e.section) : attrColour(e.attribution.class);
@@ -646,7 +919,7 @@ function gBuild() {
             el('text', { x: radius(n) + 2, y: 3, style: out ? 'opacity:.5' : '' }, grp).textContent = 'D' + n;
         g.pos.get(n).el = grp;
     }
-    $('g-stats').innerHTML = '<span>' + (g.scope === 'around' ? `${dref(g.centre)}&nbsp;${inline(E.get(g.centre).title)} · ` : '') + `${core.size} entries, ${edges.length} links` + (g.scope === 'section' ? ` (and ${nodes.size - core.size} neighbours, faded)` : '') + '</span>';
+    $('g-stats').innerHTML = '<span>' + (g.scope === 'around' ? `${dref(g.centre)}&nbsp;${inline(E.get(g.centre).title)} · ` : '') + `${core.size} entries, ${edges.filter(x => !x.doc).length} links` + (nodes.size > core.size && g.scope === 'around' ? `, ${nodes.size - core.size} document sections` : '') + (g.scope === 'section' ? ` (and ${nodes.size - core.size} neighbours, faded)` : '') + '</span>';
     $('g-centre').value = g.centre;
     gDim();
 }
@@ -708,7 +981,7 @@ function gDraw() {
 }
 function gDim() {
     if (!gsvg) return;
-    for (const n of g.nodes) g.pos.get(n).el.style.opacity = !matched || matched.has(n) ? '' : .15;
+    for (const n of g.nodes) g.pos.get(n).el.style.opacity = !matched || isDoc(n) || matched.has(n) ? '' : .15;
 }
 function gHover(n) {
     for (const x of g.edges) x.el.style.strokeOpacity = n == null || x.s === n || x.t === n ? '' : .15;
@@ -717,10 +990,12 @@ function gShow() {
     if (!gsvg) gInit();
     $('g-scope').value = g.scope; $('g-depth').value = g.depth; $('g-section').value = g.section;
     $('g-around').hidden = g.scope !== 'around'; $('g-sec').hidden = g.scope !== 'section';
+    $('g-docs-l').hidden = g.scope !== 'around' || !DOCS.length;
     $('g-legend').innerHTML = (g.colour === 'attr'
         ? Object.keys(ATTR).filter(c => D.counts.attribution[c]).map(c => `<span><i style="background:${attrColour(c)}"></i>${ATTR[c]}</span>`).join('') + '<span>ring: section</span>'
         : '<span>fill: section (hover for its name)</span><span>ring: who decided</span>')
-        + `<span><i class="line" style="color:var(--retire)"></i>retires</span><span><i class="line" style="color:var(--edge)"></i>cites (arrow toward the cited)</span>`;
+        + `<span><i class="line" style="color:var(--retire)"></i>retires</span><span><i class="line" style="color:var(--edge)"></i>cites (arrow toward the cited)</span>`
+        + (DOCS.length && g.scope === 'around' && g.docs ? '<span><i style="border-radius:2px;background:var(--panel);border:1.5px solid var(--fg)"></i>a document section that cites the centre</span>' : '');
     if (g.dirty) gBuild();
     gRun();
 }
