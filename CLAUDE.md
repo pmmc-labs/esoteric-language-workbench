@@ -37,7 +37,11 @@ bit operations (D15 to D17; tests 030 to 036) on BigInt's own `& | ^ <<
 >>`, which are two's complement and floor as D15 and D16 say. Where one
 application could fault two ways (a boolean and a bad count) the
 interpreter reports `not an integer`: types first, then the count's
-range; still not agreed. **Next:** step 4. Not agreed, from main: which fault reports when one
+range; still not agreed. **Step 4** adds `**` (D18, D19;
+tests 040 to 045): the exponent is checked first (`bad exponent`, even
+for base 1), the bases 0, 1 and -1 are answered without a power, and any
+other base with an exponent past 62 is `overflow` without computing, so
+`(** 2 4611686018427387903)` is quick. **Next:** step 5. Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
 ## Read first, in this order

@@ -37,6 +37,18 @@ const shift = (f: (a: bigint, n: bigint) => bigint) =>
   int2((a, n) => f(a, n >= 0n && n <= 62n ? n : bad("bad shift")));
 const bad = (m: string): never => { throw new Fault(m); };
 
+// D18, D19: a ** 0 is 1 whatever a is; a negative exponent faults whatever
+// the base. The exponent can be as large as the range, so a base other
+// than 0, 1 and -1, whose powers stay in range, is out of range by the 63rd
+// power at the latest and never needs a loop that long.
+const pow = (a: bigint, b: bigint): bigint => {
+  if (b < 0n) throw new Fault("bad exponent");
+  if (a === 0n || a === 1n) return b === 0n ? 1n : a;
+  if (a === -1n) return b % 2n === 0n ? 1n : -1n;
+  if (b > 62n) throw new Fault("overflow");
+  return a ** b;
+};
+
 export type Op = (a: Value, b: Value) => Value;
 
 export const ops: Map<string, Op> = new Map<string, Op>([
@@ -57,6 +69,7 @@ export const ops: Map<string, Op> = new Map<string, Op>([
   ["bit/shl", shift((a, n) => a << n)],
   // BigInt's >> rounds toward negative infinity, which is D16's rule.
   ["bit/shr", shift((a, n) => a >> n)],
+  ["**", int2(pow)],
   ["==", (a, b) => a === b],
   ["!=", (a, b) => a !== b],
 ]);
