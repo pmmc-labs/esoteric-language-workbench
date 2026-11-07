@@ -106,8 +106,42 @@ value adds its lines.
   reader keeps its own stack and has no limit of its own, and a form
   nested more than 1000 deep is an error before running, so the
   evaluator's recursion is far inside the host's. Test 010 nests 147.
-- **Not in the language yet** (strings, floats, collections, tail
-  calls, time): answered when a step brings them.
+- **A string's length, index and order** (D31, D33): a JS string is
+  UTF-16, so `.length`, `s[i]` and `<` count and compare code units: a
+  character past U+FFFF is two, and `"\u{10000}" < "\u{FFFF}"`.
+  **Overrides**: `str/len`, `str/at`, `str/code` and `str/lt` work on
+  the code points (`[...s]` and `codePointAt`), never on `.length`,
+  indexing or `<` (tests 073, 074, 077, 078).
+- **Equality of strings** (D12, D31): `===` on two JS strings compares
+  UTF-16 units, and for strings of scalar values that is the same as
+  comparing code points; nothing is normalised. **Inherits** (tests
+  086, 077's `"\u{E9}"` and `"é"`). Across types `typeof` differs and
+  the values are unequal, as for the other types (test 086).
+- **Scalar values only** (D31, D33): a JS string can hold a lone
+  surrogate, and `String.fromCodePoint(0xD800)` makes one. **Overrides**:
+  no path builds one: the reader refuses `\u{D800}` to `\u{DFFF}`, and
+  `str/char` faults `not a character` before `fromCodePoint` is called
+  (tests 082, 083), so every string is well formed UTF-16.
+- **Decoding the source** (D31): `readFileSync(file, "utf8")` replaces
+  an invalid byte with U+FFFD, and `TextDecoder` drops a leading byte
+  order mark. **Overrides**: the driver reads bytes and decodes with
+  `fatal: true, ignoreBOM: true`; invalid UTF-8 is an error before
+  running, and a BOM stays in the text, where it is an unknown name.
+- **White space and name characters** (D31): JS's `\s` and `trim`
+  count U+00A0, U+FEFF and form feed. **Overrides**: the reader tests
+  the four characters D31 names and nothing else; a `"` ends a name as
+  a bracket does.
+- **A position's column** (D28, D31): a JS string index counts UTF-16
+  units. **Overrides**: the reader advances over a whole code point and
+  counts one column for it (a unit test).
+- **Printing a string** (D32): `JSON.stringify` escapes as `\u0007`
+  and leaves U+007F and U+2028 bare, and `String(s)` is bare.
+  **Overrides**: the printer writes D32's escapes itself, per code
+  point, and every other code point as itself; the driver's
+  `fs.writeSync` writes a string as UTF-8, which D32 asks (tests 070
+  to 072).
+- **Not in the language yet** (floats, collections, tail calls, time):
+  answered when a step brings them.
 
 ## Values and memory
 
