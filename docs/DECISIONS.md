@@ -488,7 +488,7 @@ and `m[k] = v` covers the rest); a hash index (D27); `.name` on a list as a
 miss (a wrong type is a fault `else` must not catch); a separate message for
 `m.name` on a missing key (`missing key "name"` is what `m["name"]` says).
 
-**D46. Step 7 details the spec left open.** *(default)* Which lookups make
+**D46. Step 7 details the spec left open.** *(default; designer, kept)* Which lookups make
 a left operand acceptable: any index, field or call of `int` written
 anywhere in it counts, including one inside a nested `else`'s left operand
 (which catches it itself), so `(xs[i] else 0) else 1` compiles, pointless as
