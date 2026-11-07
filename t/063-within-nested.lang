@@ -1,0 +1,2 @@
+; Budgets, D23: the outer pays for what the inner used. Expected output by hand from step 5.
+(within 3 (+ (within 5 (+ (+ 1 2) 3)) 4))

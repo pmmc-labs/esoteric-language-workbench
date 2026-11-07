@@ -1,0 +1,2 @@
+; Budgets, D22: an operation is charged after its operands are evaluated. Expected output by hand from step 5.
+(within 1 (+ (/ 1 0) 2))
