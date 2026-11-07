@@ -1,0 +1,12 @@
+// a comment line
+print(1) // trailing comment
+print(2); print(3)
+
+
+print(
+  4,
+  5,
+)
+print(6);
+;
+  print(7)   

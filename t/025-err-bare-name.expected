@@ -1,0 +1,2 @@
+t/025-err-bare-name.ditto:1:6: error: expected '(', found newline
+exit: 2

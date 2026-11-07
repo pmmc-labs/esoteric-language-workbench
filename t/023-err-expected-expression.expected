@@ -1,0 +1,2 @@
+t/023-err-expected-expression.ditto:1:7: error: expected an expression, found ','
+exit: 2

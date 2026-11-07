@@ -1,0 +1,2 @@
+t/026-err-end-of-file.ditto:1:8: error: expected ')', found end of file
+exit: 2

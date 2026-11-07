@@ -1,0 +1,2 @@
+t/028-lexical-before-parse.ditto:3:7: error: malformed number
+exit: 2

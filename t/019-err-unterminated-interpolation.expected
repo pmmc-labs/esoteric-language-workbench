@@ -1,0 +1,2 @@
+t/019-err-unterminated-interpolation.ditto:1:9: error: unterminated interpolation
+exit: 2

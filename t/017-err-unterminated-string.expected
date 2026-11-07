@@ -1,0 +1,2 @@
+t/017-err-unterminated-string.ditto:2:7: error: unterminated string
+exit: 2

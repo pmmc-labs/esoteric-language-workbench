@@ -1,0 +1,2 @@
+t/018-err-empty-interpolation.ditto:1:9: error: empty interpolation
+exit: 2

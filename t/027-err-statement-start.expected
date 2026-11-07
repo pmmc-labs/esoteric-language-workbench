@@ -1,0 +1,2 @@
+t/027-err-statement-start.ditto:2:1: error: expected a statement, found '42'
+exit: 2

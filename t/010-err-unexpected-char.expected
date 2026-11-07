@@ -1,0 +1,2 @@
+t/010-err-unexpected-char.ditto:2:10: error: unexpected character '#'
+exit: 2
