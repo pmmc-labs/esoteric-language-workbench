@@ -8,7 +8,7 @@ integers by the definition in LANGUAGE.md and D19/D20: `/` truncates toward
 zero, `%` has the sign of its left operand (Python's `//` and `%` floor, so
 they are not used), comparisons give 1 or 0. A line whose result doesn't fit
 in 64 bits, or which divides by zero, is left out of the program: those are
-the fault tests 105 to 110, one fault per test.
+the fault tests 105 to 110 and 113, one fault per test.
 
     python3 t/models/arith.py --program > t/100-arith.strata
     python3 t/models/arith.py > t/100-arith.expected
@@ -41,7 +41,8 @@ OPS = {
     "-": lambda a, b: a - b,
     "*": lambda a, b: a * b,
     "/": lambda a, b: None if b == 0 else tdiv(a, b),
-    "%": lambda a, b: None if b == 0 else tmod(a, b),
+    # D19: the minimum % -1 is an overflow too, so % agrees with /.
+    "%": lambda a, b: None if b == 0 or (a == MIN and b == -1) else tmod(a, b),
     "=": lambda a, b: int(a == b),
     "!=": lambda a, b: int(a != b),
     "<": lambda a, b: int(a < b),

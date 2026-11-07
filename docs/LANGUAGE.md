@@ -148,7 +148,8 @@ From loosest to tightest:
 2. `a and b`
 3. `not a`
 4. `a = b`, `a != b`, `a < b`, `a <= b`, `a > b`, `a >= b`: at most one
-   per level, so `a < b < c` is an error; write `a < b and b < c`.
+   per level, so `a < b < c` is an error (`expected statement, found
+   '<'`, at the second operator); write `a < b and b < c`.
 5. `a + b`, `a - b`, left to right.
 6. `a * b`, `a / b`, `a % b`, left to right.
 7. `-a`, `#a`.
@@ -156,6 +157,11 @@ From loosest to tightest:
 
 Primaries: integer and string literals, names, calls `f(a, b)`, history
 literals `[a, b, c]`, and `( expression )`.
+
+`not` is a prefix form at its own level: `not a = b` is `not (a = b)`,
+`not not a` is allowed, and `a and not b` is fine, but `1 + not 2` is a
+parse error; write `1 + (not 2)`. A missing `)` is `expected ')', found
+...`.
 
 Operands are evaluated left to right, all of them, except that `and` and
 `or` evaluate their right side only if needed.

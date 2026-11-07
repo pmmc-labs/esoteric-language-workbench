@@ -320,3 +320,27 @@ fault at; `strata_print` takes a history and prints its top (faulting
 larger than a chunk get a chunk of their own. Rejected: a `main`
 that calls generated `strata_main` (nothing needs the split yet);
 deleting the C file (a failing sanitizer run is easier to read with it).
+
+## Step 1 defaults
+
+**D36. Parse-error words for expressions, and the shape of the generated
+code.** *(default)* (1) The missing close of a parenthesis is `expected
+')', found TOKEN`: D33's THING list gains the one punctuation mark the
+parser can ask for by name. (2) `a < b < c` gets no special message: the
+parser takes one comparison per level and the second operator is left
+over, so it reads `expected statement, found '<'` at that operator. (3)
+`not` is a prefix form of the `not` level only: its operand is another
+`not` or a comparison, so `a and not b` and `not a = b` parse, while
+`1 + not 2` is `expected expression, found 'not'`. (4) Operators fault at
+their own token (D23); `and`/`or` can fault only on a string operand, at
+their keyword. (5) The runtime tests overflow without compiler
+extensions (no `__builtin_*_overflow`), in a statement of its own before
+any arithmetic that could overflow, so UBSan stays quiet. (6) `and`/`or`
+compile to an `if` around the right side's temporaries, with the result
+a fresh 1/0 history declared before the `if`. Rejected: a special
+chained-comparison message (a second spelling of one error, and D24's
+list says every parse error is `expected THING, found TOKEN`);
+`__builtin_*_overflow` (not C11, and gcc and clang differ on old
+versions); `__int128` for multiplication (also an extension); C's `&&`
+and `||` over temporaries (they would force the right side's temporaries
+to be computed first, breaking short-circuit).

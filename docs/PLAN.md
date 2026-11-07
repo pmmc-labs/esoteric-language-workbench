@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Seven steps,
 inside the brief's budget of ten.
 
-**Progress:** design done; step 0 built (D33 to D35). Next: step 1.
+**Progress:** design done; steps 0 (D33 to D35) and 1 (D36) built. Next: step 2.
 
 Read [`DESIGN.md`](DESIGN.md), [`LANGUAGE.md`](LANGUAGE.md) and the
 decisions each step cites first. Every step: write the model (if any)
@@ -69,7 +69,7 @@ Makefile
 - Leaves out: every other statement and expression.
 - **Size:** medium.
 
-### 1. Numbers: arithmetic, comparison, logic, write
+### 1. Numbers: arithmetic, comparison, logic, write (done)
 
 - Expressions on numbers: `+ - * / %`, prefix `-`, the six comparisons,
   `and`, `or`, `not`, parentheses, with D19's checks and D20's 1/0
@@ -91,7 +91,7 @@ Makefile
   `106-overflow-mul`, `107-overflow-neg` (prefix minus on a computed
   minimum), `108-div-zero`, `109-mod-zero`, `110-div-min-by-minus-one`,
   `111-literal-range` (compile error), `112-chained-compare` (compile
-  error), and fault-position checks within them.
+  error), and fault-position checks within them. Added: `113-mod-min-by-minus-one`.
 - Leaves out: variables, strings.
 - **Size:** medium.
 
