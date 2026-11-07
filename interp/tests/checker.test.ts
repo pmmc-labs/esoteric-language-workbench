@@ -79,3 +79,13 @@ test("within takes two parts, checked in an untaken branch too (D24, D28)", () =
   assert.equal(checked("(if #false (within 1) 0)"), "1:12 within takes 2 arguments, not 1");
   assert.equal(checked("(+ 1 within)"), "1:6 unknown name within");
 });
+
+test("the string operators' counts (D33)", async () => {
+  const { run } = await import("./helper.ts");
+  assert.equal(run('(str/len "a" "b")'), "error 1:1 str/len takes 1 argument, not 2");
+  assert.equal(run("(str/char)"), "error 1:1 str/char takes 1 argument, not 0");
+  assert.equal(run('(str/code "a" "b")'), "error 1:1 str/code takes 1 argument, not 2");
+  assert.equal(run('(str/at "a")'), "error 1:1 str/at takes 2 arguments, not 1");
+  assert.equal(run('(str/cat "a" "b" "c")'), "error 1:1 str/cat takes 2 arguments, not 3");
+  assert.equal(run('(if #false (str/len) 1)'), "error 1:12 str/len takes 1 argument, not 0");
+});

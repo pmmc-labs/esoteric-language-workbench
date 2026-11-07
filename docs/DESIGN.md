@@ -27,8 +27,9 @@ on, but bring it up before baking it in further.
 
 ## The language
 
-Integers of 63 bits (D4) and booleans (D11); seventeen operators on two
-operands each (D3, D5, D12, D15 to D19); `if` (D13) and `within`, a
+Integers of 63 bits (D4), booleans (D11) and strings of code points
+(D31 to D33); seventeen operators on two operands each (D3, D5, D12,
+D15 to D19) and six string operators of one or two (D33); `if` (D13) and `within`, a
 budget of operations (D20 to D24); evaluation left to right (D25); a
 fault ends the program (D6). `LANGUAGE.md` has them in full.
 
@@ -146,7 +147,8 @@ value adds its lines.
 ## Values and memory
 
 A value is a `bigint` (an integer, D4, range-checked after every
-operator) or a `boolean` (D11); the host's `typeof` is the tag, so D14's
+operator), a `boolean` (D11) or a `string` (D31, only scalar values);
+the host's `typeof` is the tag, so D14's
 bit tags are main's and not here (D28). A form is a plain object with
 `line` and `col`. There is no heap yet, and the host's collector does
 whatever memory there is.
@@ -158,7 +160,7 @@ whatever memory there is.
 ## The interpreter
 
 Passes, a file each in `interp/src/`: read (forms with their line and
-column), check (every error that D28 says comes before running), and
+column, string literals and their escapes, columns in code points), check (every error that D28 says comes before running), and
 evaluate (a tree-walker over the forms, D29). `bin/lang.ts` is the
 driver. The reader is a loop over characters with a stack of its own
 and enforces D30's depth; the checker and evaluator recurse. Errors are

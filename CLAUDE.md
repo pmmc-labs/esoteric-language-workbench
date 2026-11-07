@@ -19,16 +19,21 @@ TypeScript on Node, steps 0 to 5 of [`docs/PLAN.md`](docs/PLAN.md).
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). **Steps 0 to 5 are
-built; all 46 golden tests pass under both Nodes** (`make test`,
+interpreter reports before evaluating (D28, exit 2). **Steps 0 to 6 are
+built; all 66 golden tests pass under both Nodes** (`make test`,
 `make golden-node`). The host's answers and D30 (nesting limited to
 1000, exit 3 for an interpreter fault) are in `DESIGN.md`; the reader
 keeps its own stack, the checker finds every error before running
 (D28), and the evaluator is a tree-walker over `bigint`s and booleans
 with the budget as `spent` and `limit` (D21 to D24, D27's shape). Where
 one operator could fault two ways it checks types, then the count or
-exponent, then the range. **Next:** nothing agreed; step 6 (local
-bindings) is a stub in the plan. Not agreed, from main: which fault
+exponent, then the range. Step 6 (D31 to D33) adds strings: the reader takes
+literals and escapes with columns in code points and refuses a file that
+isn't UTF-8 (the driver decodes strictly and keeps a BOM), a string is a
+JS string of scalar values and every operation on it goes through code
+points, never the host's UTF-16 units, and tests 070 to 089 cover it.
+**Next:** nothing agreed; step 7 (heap values) is a stub in the plan.
+Not agreed, from main: which fault
 reports when one operator could fault two ways.
 
 ## Read first, in this order

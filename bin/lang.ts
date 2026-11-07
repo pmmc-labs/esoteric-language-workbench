@@ -20,8 +20,14 @@ function main(): number {
   }
   let src: string;
   try {
-    src = readFileSync(file, "utf8");
+    // Bytes, decoded strictly and keeping a byte order mark (D31): the
+    // default replaces a bad byte and drops a BOM.
+    src = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(readFileSync(file));
   } catch (e) {
+    if (e instanceof TypeError) {
+      out(2, `${file}:1:1: the file is not valid UTF-8\n`);
+      return 2;
+    }
     out(2, `lang: cannot read ${file}: ${(e as Error).message}\n`);
     return 2;
   }

@@ -178,3 +178,36 @@ test("each run starts with a fresh budget", () => {
   assert.equal(run("(within 1 (+ 1 1))"), "2");
   assert.equal(run("(within 1 (+ 1 1))"), "2");
 });
+
+test("strings: length, index, order, code and char by code points (D31, D33)", async () => {
+  const { run } = await import("./helper.ts");
+  assert.equal(run('(str/len "a😀e\\u{301}")'), "4");
+  assert.equal(run('(str/at "a😀" 1)'), '"😀"');
+  assert.equal(run('(str/lt "\\u{FFFF}" "\\u{10000}")'), "#true");
+  assert.equal(run('(str/lt "ab" "a")'), "#false");
+  assert.equal(run('(str/code "😀")'), "128512");
+  assert.equal(run("(str/char 128512)"), '"😀"');
+  assert.equal(run('(== "é" "e\\u{301}")'), "#false");
+});
+
+test("strings: faults and their order (D33)", async () => {
+  const { run } = await import("./helper.ts");
+  assert.equal(run('(str/at "ab" 7)'), "fault: bad index");
+  assert.equal(run('(str/at 5 #true)'), "fault: not a string");
+  assert.equal(run('(str/at "ab" #true)'), "fault: not an integer");
+  assert.equal(run('(str/len 1)'), "fault: not a string");
+  assert.equal(run('(str/code "")'), "fault: not a character");
+  assert.equal(run('(str/char #true)'), "fault: not an integer");
+  assert.equal(run('(str/char 55296)'), "fault: not a character");
+  assert.equal(run('(str/cat "a" 1)'), "fault: not a string");
+  assert.equal(run('(+ "a" 1)'), "fault: not an integer");
+  assert.equal(run('(== "1" 1)'), "#false");
+});
+
+test("strings print per D32 and are an operation each (D21, D32)", async () => {
+  const { run } = await import("./helper.ts");
+  assert.equal(run('"a\\"\\\\\\n\\t\\u{7}\\u{7f}\\u{80}\\u{2028}é"'), '"a\\"\\\\\\n\\t\\u{7}\\u{7f}\u0080 é"');
+  assert.equal(run('(within 1 (str/len "a"))'), "1");
+  assert.equal(run('(within 0 (str/len "a"))'), "fault: budget spent");
+  assert.equal(run('(within 0 "x")'), '"x"');
+});
