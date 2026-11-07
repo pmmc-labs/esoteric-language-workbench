@@ -37,7 +37,9 @@ erasable syntax (no parameter properties, no enums). (On the
 calculator is built again as one, from its decisions and its tests.**
 *(User, Nov 2026: "How applicable would the process be for an
 interpreter rather than a compiler?", then "Let's make a branch of
-esoteric language workbench with those changes.")* The language is
+esoteric language workbench with those changes." The rule for errors
+before running, and its exit 2, are a default, Claude's, fair to
+revisit.)* The language is
 the calculator's as it stands on main after step 5, D3 to D25, and its
 46 golden tests, its models and its referee are the spec: what a
 program prints doesn't change. The compiler, the runtime and the C they
