@@ -17,7 +17,9 @@ make decisions A64=path/to/a64-slight
 That writes `build/decisions-workbench.html` and
 `build/decisions-a64-slight.html`, each with its JSON beside it, and
 reads each project's `PLAN.md`, `DESIGN.md`, `LANGUAGE.md` and
-`BACKGROUND.md` beside its log, those that exist. A page
+`BACKGROUND.md` beside its log, those that exist, and for a64-slight
+its Sublime syntax, `editors/sublime/Slight/Slight.sublime-syntax`, to
+colour the code in them. A page
 is one file with the data inlined: open it from Finder or send it; it
 needs no server and fetches nothing. By hand:
 
@@ -31,7 +33,8 @@ python3 tools/decisions/page.py a64.json -o a64.html --name a64-slight \
 `--doc` is any Markdown document of the project, as many as wanted. A
 link to one that came (`[DESIGN.md](DESIGN.md)`) stays in the page;
 `--base` is where other relative links go, and without it they're shown
-as text. `--fragment` leaves out the
+as text. `--syntax` is a Sublime syntax for the language's
+s-expressions; without it code isn't coloured. `--fragment` leaves out the
 doctype and metas, for a host that wraps the page itself.
 
 The extractor fails if the entries it parsed aren't as many as the
@@ -61,7 +64,9 @@ JSON can be committed and diffed.
   citation of a decision a later one retired or changed, in a sentence
   that doesn't say so, has a wavy red underline, and the contents show
   how many a section has. The search filters sections; `D158` finds
-  those that cite it.
+  those that cite it. slight's code is coloured: special forms, a
+  `defun`'s name and parameters, builtins, strings, comments, numbers,
+  keywords, and `$$`, `#true` and the like.
 - **Open.** The sections whose status is proposed, an idea, agreed but
   not built, or begun, with the decisions each cites; those marked
   **(open)** and the open questions; what was stopped, parked or
@@ -113,6 +118,23 @@ document, to its id.
 
 ## Judgement calls
 
+- **One file, still.** A page opened from a file can load scripts from
+  a CDN, so a server isn't what dependencies need; and nothing on a CDN
+  reads a `.sublime-syntax` (highlight.js, Prism and Shiki each have
+  their own grammars, and syntect, which reads Sublime's, is Rust). A
+  server would earn its place for editing the log through the page.
+- **Colouring code.** The tokenizer is the page's, about 40 lines, for
+  s-expressions; the words come from the Sublime syntax at build time,
+  read by `page.py` with regexes: each head in its `forms` context and
+  the class its scope gives, whether a name or parameters follow
+  (`defun`, `lambda`, `deftype`, `sig`), its `builtin` variable, and the
+  constants in `atoms`. So a builtin added to the editor's syntax is
+  coloured on the next build, and a syntax whose shape has changed fails
+  the build rather than colour nothing. A block is slight's when it's
+  marked `lisp` or `slight`, or unmarked and starting with `(` or `;`,
+  so shell commands, output and `.sly` stay plain. Calls stay plain too,
+  so a page of code isn't a page of colour. Code spans in running text
+  aren't coloured.
 - **No library.** The brief allowed one, for the force layout. A
   hand-written one is about 40 lines for 300 nodes, and without a CDN the
   page opens offline from a `file://` URL, which matters more for a

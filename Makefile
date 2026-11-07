@@ -73,7 +73,8 @@ decisions:
 	@if [ -f $(A64)/docs/DECISIONS.md ]; then \
 		python3 $(DEC)/extract.py $(A64)/docs/DECISIONS.md -o build/decisions-a64-slight.json $(call DOCS,$(A64)/docs) && \
 		python3 $(DEC)/page.py build/decisions-a64-slight.json -o build/decisions-a64-slight.html --name a64-slight \
-			--base https://github.com/pmmc-labs/a64-slight/blob/main/docs/; \
+			--base https://github.com/pmmc-labs/a64-slight/blob/main/docs/ \
+			$(if $(wildcard $(A64)/editors/sublime/Slight/Slight.sublime-syntax),--syntax $(A64)/editors/sublime/Slight/Slight.sublime-syntax); \
 	else echo "no $(A64)/docs/DECISIONS.md: set A64 to a64-slight's checkout"; fi
 
 clean:

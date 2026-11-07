@@ -23,16 +23,21 @@
     --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --bar: 52px;
+    /* code: slight's words, as its Sublime syntax names them */
+    --hl-k: #9a2a6a; --hl-b: #1f6a86; --hl-n: #2a5ca8; --hl-s: #2d7438; --hl-cm: #77817c;
+    --hl-num: #a8560c; --hl-sym: #6a4bb8; --hl-p: #85600a; --hl-v: #b8361f;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
     --bg: #131716; --panel: #1b201e; --fg: #e2e7e4; --muted: #94a09b; --rule: #2b3330;
     --accent: #79a6ee; --user: #3cc0a6; --default: #e0a743; --other: #a98aed; --retire: #f06a53;
     --edge: #6c7773; --hit: #4a4316; --sec-s: 55%; --sec-l: 64%; color-scheme: dark;
+    --hl-k: #e58bc6; --hl-b: #6cc4dc; --hl-n: #86b0f2; --hl-s: #8fd08f; --hl-cm: #8c9893; --hl-num: #f0a65e; --hl-sym: #b9a3f2; --hl-p: #e5c16c; --hl-v: #f2806b;
 } }
 :root[data-theme="dark"] {
     --bg: #131716; --panel: #1b201e; --fg: #e2e7e4; --muted: #94a09b; --rule: #2b3330;
     --accent: #79a6ee; --user: #3cc0a6; --default: #e0a743; --other: #a98aed; --retire: #f06a53;
     --edge: #6c7773; --hit: #4a4316; --sec-s: 55%; --sec-l: 64%; color-scheme: dark;
+    --hl-k: #e58bc6; --hl-b: #6cc4dc; --hl-n: #86b0f2; --hl-s: #8fd08f; --hl-cm: #8c9893; --hl-num: #f0a65e; --hl-sym: #b9a3f2; --hl-p: #e5c16c; --hl-v: #f2806b;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -102,6 +107,9 @@ button, select, input { font: inherit; color: inherit; }
 code { font: .86em/1 var(--mono); background: var(--panel); padding: .1em .3em; border-radius: 3px; overflow-wrap: anywhere; }
 pre { overflow-x: auto; background: var(--panel); padding: 10px; border-radius: 4px; }
 pre code { background: none; padding: 0; line-height: 1.4; }
+pre .k { color: var(--hl-k); font-weight: 600; } pre .b { color: var(--hl-b); } pre .n { color: var(--hl-n); font-weight: 600; }
+pre .s { color: var(--hl-s); } pre .cm { color: var(--hl-cm); font-style: italic; } pre .num, pre .c { color: var(--hl-num); }
+pre .sym { color: var(--hl-sym); } pre .p { color: var(--hl-p); } pre .v { color: var(--hl-v); }
 a.d { text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); font-variant-numeric: tabular-nums; }
 a.d:hover { border-bottom-color: var(--accent); }
 .links { grid-column: 2; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule); font-size: 13px; }
@@ -383,17 +391,17 @@ function blocks(lines) {
         const l = lines[i];
         if (!l.trim()) { i++; continue; }
         if (/^ *```/.test(l)) {
-            const body = [];
+            const body = [], tag = l.trim().slice(3).trim();
             for (i++; i < lines.length && !/^ *```/.test(lines[i]); i++) body.push(lines[i]);
             i++;
-            html += '<pre><code>' + esc(body.join('\n')) + '</code></pre>';
+            html += codeBlock(tag, body.join('\n'));
             continue;
         }
         if (indent(l) >= 4 && !LIST.test(l)) {
             const body = [];
             while (i < lines.length && (indent(lines[i]) >= 4 || !lines[i].trim())) body.push(lines[i++].slice(4));
             while (body.length && !body.at(-1).trim()) body.pop();
-            html += '<pre><code>' + esc(body.join('\n')) + '</code></pre>';
+            html += codeBlock('', body.join('\n'));
             continue;
         }
         if (TABLE.test(l) && i + 1 < lines.length && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1])) {
@@ -445,6 +453,45 @@ function blocks(lines) {
     return html;
 }
 const md = s => blocks(s.split('\n'));
+
+/* ---- slight's code, coloured with the words of its Sublime syntax ---- */
+const SYN = /*SYNTAX*/;
+// A block is slight's if it's marked so, or, unmarked, starts with ( or ;.
+const isSlight = (tag, code) => SYN && (/^(lisp|slight|sli)$/i.test(tag) || !tag && /^\s*[(;]/.test(code));
+const TOK = /(;[^\n]*)|("(?:\\[\s\S]|[^"\\])*"?)|(#\(|\()|(\))|(')|(:[^\s()'";`,]+)|([^\s()'";`,]+)|(\s+)|([\s\S])/g;
+const NUM = /^-?\d+(?:\.\d+(?:[eE][+-]?\d+)?)?$/;
+function highlight(code) {
+    // want: what the last special form says comes next, a name and then
+    // parameters (defun), or parameters (lambda).
+    let out = '', m, head = false, want = null, want2 = null, depth = 0, pdepth = -1;
+    const span = (c, t) => `<span class="${c}">${esc(t)}</span>`;
+    TOK.lastIndex = 0;
+    while ((m = TOK.exec(code))) {
+        const [t, cm, str, open, close, quote, kw, sym] = m;
+        if (cm) out += span('cm', t);
+        else if (str) out += span('s', t);
+        else if (open) {
+            // A defun's or lambda's parameters are the list after its name.
+            if (want === 'params') { pdepth = depth; want = null; }
+            depth++; head = open === '(' && pdepth < 0; out += esc(t);
+        } else if (close) { depth--; if (depth === pdepth) pdepth = -1; head = false; out += esc(t); }
+        else if (quote) out += span('k', t);
+        else if (kw) out += span('sym', t);
+        else if (sym) {
+            const h = head && SYN.heads[sym];
+            if (pdepth >= 0) out += span('p', t);
+            else if (want === 'name') { out += span('n', t); want = want2; }
+            else if (h) { out += span(h.cls, t); want = h.name ? 'name' : h.params ? 'params' : null; want2 = h.name && h.params ? 'params' : null; }
+            else if (NUM.test(sym)) out += span('num', t);
+            else if (SYN.atoms[sym]) out += span(SYN.atoms[sym], t);
+            else if (head) out += span('f', t);
+            else out += esc(t);
+            head = false;
+        } else out += esc(t);
+    }
+    return out;
+}
+const codeBlock = (tag, code) => '<pre><code>' + (isSlight(tag, code) ? highlight(code) : esc(code)) + '</code></pre>';
 
 /* ---- The log ---- */
 const arts = new Map(), heads = [];
