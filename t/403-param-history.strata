@@ -1,0 +1,8 @@
+fn trend(x) { return x - x@1 }
+fn id(x) { return x }
+let a = 10
+a <- 13
+a <- 20
+print trend(a)
+print trend(a@1)
+print #id(a)

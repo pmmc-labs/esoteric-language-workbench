@@ -1,0 +1,5 @@
+fn f() { let x = 1 }
+fn g(n) { if n > 0 { return n } }
+print #f()
+print #g(5)
+print #g(0)

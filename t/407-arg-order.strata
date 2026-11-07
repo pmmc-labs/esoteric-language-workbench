@@ -1,0 +1,4 @@
+fn p(n) { print n  return n }
+fn f(a, b) { return a + b }
+print f(p(1), p(2))
+print f(p(3) / 0, p(4) % 0)
