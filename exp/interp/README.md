@@ -110,6 +110,30 @@ differing from the referee. Where nothing is decided, main's compiler:
   Maximum call stack size exceeded`, in the reader. main has the depth
   gap too; nobody decided it there either.
 
+## Rounds 2 and 3, as run
+
+After the first run (Sonnet, on `exp-interp`), the person asked for
+three more and for experiments on what is particular to an
+interpreter, run without them.
+
+- **Haiku** on `exp-interp`, to `interp-haiku`.
+- **A control**, Sonnet on `exp-interp-control`: `exp-interp` without
+  `DESIGN.md`'s "What the host gives", `PROCESS.md`'s interpreter
+  section and every pointer to them, to `interp-control-sonnet`.
+- **Step 6, functions, tail calls and depth**, on `exp-interp-fn`: the
+  interpreter of `interp-sonnet` (adopted into this branch) with D31 to
+  D34 decided as defaults, `t/models/fn.py` and tests 070 to 089 by
+  Sonnet, `t/referee/calc.py` extended by Opus apart from it, built by
+  Sonnet and Haiku to `interp-fn-sonnet` and `interp-fn-haiku`. The
+  decisions, model and referee are on `prep-fn`.
+- **Step 6, strings**, on `exp-interp-str`, the same way, D31 to D33,
+  `t/models/strings.py`; `prep-str`; `interp-str-sonnet` and
+  `interp-str-haiku`.
+
+`judge.py`'s `probes-fn`, `probes-str` and `fuzz-str` judge the step 6
+builds. The results are in `docs/MODELS.md`, "An interpreter, from the
+decisions".
+
 ## Record
 
 A section of `docs/MODELS.md`, "An interpreter, from the decisions",
