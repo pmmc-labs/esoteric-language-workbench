@@ -1,16 +1,18 @@
-# [name]
+# Ditto
 
-[One paragraph: what the language is, what it runs on, what the compiler
-is written in and what it should become. Two or three sentences.]
+Ditto is a small, practical, dynamically typed imperative language
+whose core rule is that every value is a value: lists and maps are
+copied, never shared, so nothing you hold changes behind your back (D7).
+Its compiler is TypeScript run directly by Node 22; it compiles a
+`.ditto` file to C11 and links it with a runtime in C by `cc`. It stays
+small: one file per program, no floats, no first-class functions, memory
+never freed.
 
 ## Status
 
-[A running paragraph of what's built, by plan step and decision number,
-updated every time a step lands. This is the handoff between sessions:
-a new session reads it before anything else. Keep it as one paragraph
-per era, dense, with golden test numbers and `Dn` references, so a
-claim can be checked against a test and a decision. Say what's **Next**
-at the end, and what's a candidate but not agreed.]
+Design complete (D1 to D33, every form, error and fault in
+`docs/LANGUAGE.md`; the six examples drafted in `docs/DESIGN.md`). No
+code yet. **Next:** step 0, the scaffold.
 
 ## Read first, in this order
 
@@ -27,10 +29,14 @@ at the end, and what's a candidate but not agreed.]
 
 ## Working rules
 
+- **In this run there is no person to ask** (`docs/briefs/design-and-build.md`).
+  The design is decided in full; a builder who meets a silence takes
+  the simplest default, records it in `docs/DECISIONS.md` as
+  *(default)*, and flags it in its report. Never stop to ask.
 - **Aggressively simple** is the main design rule. When a feature needs
   machinery, say so and offer to cut or change it.
 - **Propose before building** any change to language semantics, a new
-  special form or builtin, a change to [the core rule], or anything
+  special form or builtin, a change to the core rule (D7: every value is a value), or anything
   marked (open). Give options and a recommendation. Record the outcome in
   `docs/DECISIONS.md` (who decided, why, what was rejected) and update
   `docs/DESIGN.md`.
@@ -47,51 +53,62 @@ at the end, and what's a candidate but not agreed.]
   wrote, rerun the model; don't patch the file. A patched file leaves the
   model stale, and the next change finds the two disagreeing.
 - When editing with scripts, assert that each replacement matched.
-- Test timing uses a virtual clock; real time is never used in tests.
 - Update the Status section above as steps land.
 
 ## Code style
 
-- [Indentation, line width, naming.]
-- [The compiler's shape. a64-slight's rule: pure functions over immutable
-  s-expressions, association lists for environments, no classes, so it
-  can be ported to the language itself line by line. Pick the shape that
-  makes self-hosting a translation rather than a rewrite.]
-- [Constraints the host platforms impose, as you learn them. Name the
-  symptom and the fix, so the lesson isn't relearned.]
+- TypeScript: 2 spaces, 100 columns, `camelCase` functions and
+  variables, `PascalCase` types. Erasable syntax only (Node runs the
+  `.ts` files by stripping types): no `enum`, no parameter properties,
+  no namespaces; imports name the `.ts` file.
+- The compiler's shape (D29): pure functions over plain data. AST nodes
+  are objects with a `kind` string and a `pos` (`{line, col}`),
+  discriminated unions, no classes. Self-hosting isn't a goal.
+- C: C11, 2 spaces, `snake_case`, runtime functions prefixed `dt_`,
+  generated names prefixed (`v_` variables, `f_` functions, `t` temps).
+- Generated C computes every subexpression into a temporary in source
+  order (D30). Never pass a variable and a call that sets it in one
+  argument list, and never nest two calls that can fault or print in
+  one expression: C doesn't order a call's arguments, and gcc and clang
+  order them differently.
 - Comments explain why, not what.
 
 ## Toolchain
 
-- [Primary machine: compiler, versions.]
-- [The machine cloud sessions develop on, and how a target that isn't
-  native runs there (cross-compile and an emulator, say).]
-- [One command that checks the setup, and what it should print.]
+- Node 22 (22.23 here; runs `.ts` directly), `cc` = gcc 13, clang 18,
+  Python 3 for models and checks. Linux x86-64; the target is the host,
+  so nothing is emulated.
+- `make test` checks the setup: it should end with every golden test
+  passing under each of the three compiler configurations.
 
 ## Layout
 
 | Path | |
 |---|---|
 | `bin/` | The driver |
-| `compiler/src/` | One file per pass: reader, expander, checker, codegen, targets, errors |
+| `compiler/src/` | One file per pass: lexer, parser, resolve, codegen, errors, main |
 | `compiler/tests/` | Unit tests, per pass |
-| `runtime/` | [C, assembly, whatever the language runs on] |
-| `lib/` | The prelude, compiled into every program, and the libraries a program asks for |
+| `runtime/` | `ditto.h`, `ditto.c`: values, operators, builtins, faults, the allocator |
 | `examples/` | Example programs; each with a `.expected` is a golden test |
-| `docs/guide/` | The guide; its code blocks are golden tests too |
-| `t/` | Golden tests: `NNN-name.ext` + `NNN-name.expected`; `run.sh`; `models/`; `data/` |
+| `t/` | Golden tests: `NNN-name.ditto` + `NNN-name.expected` (+ `.stdin`); `run.sh`; `checks.py`; `models/` |
 | `build/` | Output (ignored) |
 
 ## Commands
 
-- `make test`: everything, for every target. [How long it takes.]
-- `make unit`, `make golden`, ...: one at a time. `t/run.sh t/NNN-name.ext`
-  runs one golden test.
-- [The compiler's command line, its exit codes.]
-- [Environment variables a compiled program reads: the virtual clock,
-  the heap cap, record and replay, the scheduling seed, the GC stress
-  and poison knobs. `t/run.sh` sets the ones the tests assume.]
+- `make test`: unit tests, golden tests under `cc`, under `clang`, under
+  clang's `-fsanitize=undefined,address`, and `t/checks.py`.
+- `make unit`, `make golden`, `make golden-clang`, `make sanitize`,
+  `make checks`: one at a time. `t/run.sh t/NNN-name.ditto` runs one
+  golden test.
+- `bin/ditto build FILE -o EXE`, `bin/ditto run FILE`, `bin/ditto c FILE`
+  (D31). Exit 2 for a compile error or bad usage, 3 if the C compiler
+  fails. `LANG_CC` picks the C compiler, `LANG_CFLAGS` adds flags.
+- A compiled program reads no environment variables: there is no clock,
+  randomness or concurrency to pin down. Its only input is standard
+  input (`read()`), which a test supplies in `NNN-name.stdin`.
 
-[How the runtime reports a program's value, a fault, a deadlock, and the
-exit code for each; what a golden test compares (stdout and stderr
-together, plus `exit: N` when not 0).]
+A program prints only what it `print`s. A fault prints
+`path:line:col: fault: message` on standard error and exits 1; a
+compile error prints `path:line:col: error: message` and exits 2. A
+golden test compares stdout and stderr together, plus `exit: N` when not
+0.

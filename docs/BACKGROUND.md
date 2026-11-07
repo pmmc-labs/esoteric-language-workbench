@@ -1,7 +1,47 @@
 # Background
 
-[Prior art: what was read, what was borrowed, from where. Earlier
-implementations this started from, and how to get them back from git
-after they're removed. Ideas that are parked, with the reason, so they
-stop coming up: other targets, other compilation strategies, things the
-scale (D4) rules out.]
+Prior art, what was borrowed and from where, and ideas parked so they
+stop coming up.
+
+## Borrowed
+
+- **Mutable value semantics** (D7): Swift's arrays and dictionaries are
+  values with copy-on-write; Hylo (formerly Val) builds a whole language
+  on mutable value semantics; Go's arrays and structs are values. Ditto
+  takes the semantics without the machinery: heap objects are immutable,
+  and an update rebuilds the path to the variable, as a persistent data
+  structure would, but by copying.
+- **`else` for a missed lookup** (D20): Zig's `x catch default`,
+  Swift's and C#'s `??`, Kotlin's `?:`, Perl's `//`, Python's
+  `dict.get(k, d)`. Ditto's differs in catching misses (not nil) and
+  in deciding what it catches lexically.
+- **Syntax** (D11): Go's braces without parentheses and newline
+  termination; Rust's `..` and `..=` ranges and `fn`; JavaScript's
+  `let`; Python's `and or not in not in`, insertion-ordered dicts,
+  interpolated strings (as `{}` without the `f`), and its recursion
+  limit of 1000.
+- **No truthiness** (D10): Go, Rust, Swift.
+- **Checked integer arithmetic** (D14): Swift and Rust's debug builds,
+  with C and Go's truncating division.
+- **Expression statements must be calls** (D21): Go's "evaluated but not
+  used" error.
+
+## Parked
+
+- **Floats.** A second numeric type, a printing format and its model.
+  Add with a decimal printing rule (shortest round-trip) if programs
+  need them.
+- **First-class functions and closures.** With D7, closures would
+  capture by value, which is simple, but they need a function value
+  type and indirect calls, a step of their own. `sort` by key, `map`
+  and `filter` would follow.
+- **In-place updates when a value isn't shared.** Reference counts would
+  let `xs[i] = v` write in place when `xs` holds the only reference,
+  turning O(n) updates into O(1). The semantics wouldn't change, so it
+  can be added without a language decision, but it touches D7's
+  implementation and D26.
+- **A collector.** Programs at D4's scale end before memory matters.
+- **Static types.** A checker over this language would be ordinary
+  (records as maps make it structural); the budget had no room.
+- **Modules, files, command-line arguments, line-by-line input.** No
+  example needed them.

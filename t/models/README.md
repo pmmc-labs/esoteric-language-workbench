@@ -9,8 +9,12 @@ with a trustworthy library for the subject.
 A model's docstring says which test it's for, what it models and how,
 and the exact commands that regenerate the files:
 
-    python3 t/models/thing.py --program > t/NNN-thing.slight
+    python3 t/models/thing.py --program > t/NNN-thing.ditto
     python3 t/models/thing.py > t/NNN-thing.expected
+
+Each such line starts with `python3 t/models/`, is run from the
+repository root, and redirects to exactly one file; `t/checks.py` runs
+them all and fails if a file differs.
 
 Rules:
 
