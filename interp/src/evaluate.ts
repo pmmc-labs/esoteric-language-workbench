@@ -15,6 +15,12 @@ export function evaluate(f: Form): Value {
       // The checker has made sure of the shape: an operator, then its operands.
       const head = f.items[0];
       if (head?.kind !== 'sym') throw new Error('a list that the checker let through has no operator');
+      // `if` evaluates its test, then only the branch the test picks (D13).
+      if (head.name === 'if') {
+        const test = evaluate(f.items[1]!);
+        if (typeof test !== 'boolean') throw new Fault('not a boolean');
+        return evaluate(f.items[test ? 2 : 3]!);
+      }
       // Left operand completely, then right, then the operator (D25).
       const a = evaluate(f.items[1]!);
       const b = evaluate(f.items[2]!);
@@ -36,8 +42,19 @@ function fit(v: bigint): bigint {
 // The order of the faults within one application (D32): the operands' types, then
 // the operator's own check, then the range of the result.
 function operate(op: string, a: Value, b: Value): Value {
+  // Equality takes any two values (D12): two of different types are unequal, not a fault.
+  if (op === '==') return a === b;
+  if (op === '!=') return a !== b;
   if (typeof a !== 'bigint' || typeof b !== 'bigint') throw new Fault('not an integer');
   switch (op) {
+    case '<':
+      return a < b;
+    case '<=':
+      return a <= b;
+    case '>':
+      return a > b;
+    case '>=':
+      return a >= b;
     case '+':
       return fit(a + b);
     case '-':

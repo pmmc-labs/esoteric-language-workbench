@@ -6,4 +6,12 @@ export const ARITY = new Map<string, number>([
   ['*', 2],
   ['/', 2],
   ['%', 2],
+  ['<', 2],
+  ['<=', 2],
+  ['>', 2],
+  ['>=', 2],
+  ['==', 2],
+  ['!=', 2],
+  // A special form, not an operator: it evaluates only the branch taken (D13).
+  ['if', 3],
 ]);
