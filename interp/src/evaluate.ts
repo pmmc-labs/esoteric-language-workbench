@@ -68,6 +68,22 @@ function operate(op: string, a: Value, b: Value): Value {
     case '%':
       if (b === 0n) throw new Fault('division by zero');
       return fit(a % b);
+    // Two's complement of any width, so these are the integers' own bits (D15) and
+    // can't leave the range.
+    case 'bit/and':
+      return a & b;
+    case 'bit/or':
+      return a | b;
+    case 'bit/xor':
+      return a ^ b;
+    // The count is checked before the shift is done, so no huge count reaches <<, and
+    // the result's range after it (D16). `>>` on a bigint floors, as bit/shr says.
+    case 'bit/shl':
+      if (b < 0n || b > 62n) throw new Fault('bad shift');
+      return fit(a << b);
+    case 'bit/shr':
+      if (b < 0n || b > 62n) throw new Fault('bad shift');
+      return a >> b;
     default:
       throw new Error(`no operator ${op}`);
   }
