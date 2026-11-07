@@ -173,6 +173,15 @@ PROBES_STR = [
     ('eq-not-normalised', '(== (str/char 233) (str/cat "e" (str/char 769)))', value('#false')),
     ('char-surrogate', '(str/char 55296)', fault('not a character')),
     ('code-of-pair', '(str/code (str/cat (str/char 55295) (str/char 57344)))', fault('not a character')),
+    # D31 as clarified: white space is four characters, and a quote ends a name.
+    ('quote-ends-name', '(str/len"ab")', value(2)),
+    ('two-literals', '(str/cat "a""b")', value('"ab"')),
+    ('bom-start', b'\xef\xbb\xbf(+ 1 2)', STATIC),
+    ('nbsp-not-space', '(+' + chr(0xA0) + '1 2)', STATIC),
+    ('ls-not-space', '(+' + chr(0x2028) + '1 2)', STATIC),
+    ('cr-in-literal', '"a' + chr(13) + 'b"', value('"a' + chr(92) + 'u{d}b"')),
+    ('tab-in-literal', '"a' + chr(9) + 'b"', value('"a' + chr(92) + 'tb"')),
+    ('c1-raw', '(str/char 133)', value('"' + chr(0x85) + '"')),
     ('big-cat', '(str/len (str/cat "' + 'x' * 100000 + '" "' + chr(0x1F600) * 100000 + '"))', value(200000)),
 ]
 
