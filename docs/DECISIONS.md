@@ -299,7 +299,7 @@ operand's type. Rejected: a paren node to forbid `(f())` as a statement
 (machinery for a harmless case); reporting `comparisons do not chain` in
 the resolver (the parser knows at once).
 
-**D39. Step 2 details the spec left open.** *(default)* Parsing: the
+**D39. Step 2 details the spec left open.** *(default; designer, kept)* Parsing: the
 target of `=` or a compound operator is parsed as an expression first, so
 `cannot assign to this` (at the statement's first token) comes from the
 parser, before any resolver error; a parenthesized name is still a name
@@ -327,7 +327,7 @@ reporting `cannot assign to this` in the resolver (the parser knows at
 once, as with `comparisons do not chain`); a block statement (a second
 use of `{` that step 6's map literals would have to disambiguate).
 
-**D40. Evaluation order of `for` headers.** *(default)* Both range
+**D40. Evaluation order of `for` headers.** *(default; designer, kept)* Both range
 bounds are evaluated, left to right, and then checked, the low bound
 first: `for i in nil..1 / 0` is `division by zero`, not
 `range bounds must be ints, got nil`, as D38 does for an operator's two
