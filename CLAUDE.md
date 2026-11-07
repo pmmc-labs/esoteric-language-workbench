@@ -41,7 +41,14 @@ range; still not agreed. **Step 4** adds `**` (D18, D19;
 tests 040 to 045): the exponent is checked first (`bad exponent`, even
 for base 1), the bases 0, 1 and -1 are answered without a power, and any
 other base with an exponent past 62 is `overflow` without computing, so
-`(** 2 4611686018427387903)` is quick. **Next:** step 5. Not agreed, from main: which fault reports when one
+`(** 2 4611686018427387903)` is quick. **Step 5** adds `within` (D20
+to D25; tests 050 to 069): a node of its own, checked for two parts
+before running (D24, D28). The budget is D27's two counts, `spent` and
+`limit`, kept by the evaluator: every operator is charged after its
+operands and before its own checks, `==` and `!=` too; `if`, `within` and
+literals aren't. Evaluation is left to right (D25) because the walker
+is. **All 46 golden tests pass under both Nodes.** **Next:** step 6 is
+a placeholder; nothing is agreed. Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
 ## Read first, in this order

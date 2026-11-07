@@ -9,7 +9,8 @@ export type Value = bigint | boolean;
 export type Node =
   | { kind: "lit"; value: Value }
   | { kind: "op"; name: string; a: Node; b: Node }
-  | { kind: "if"; test: Node; then: Node; else: Node };
+  | { kind: "if"; test: Node; then: Node; else: Node }
+  | { kind: "within"; budget: Node; body: Node };
 
 export function check(forms: Form[]): Node {
   if (forms.length === 0) throw new CompileError("empty program", 1, 1);
@@ -35,6 +36,11 @@ function list(f: Extract<Form, { kind: "list" }>): Node {
     // D13, D28: the three parts are checked whether or not a branch is ever taken.
     if (args.length !== 3) throw new CompileError(`if takes 3 arguments, not ${args.length}`, f.line, f.col);
     return { kind: "if", test: expr(args[0]), then: expr(args[1]), else: expr(args[2]) };
+  }
+  if (head.name === "within") {
+    // D24: a special form of two parts, checked like if's (D7, D13).
+    if (args.length !== 2) throw new CompileError(`within takes 2 arguments, not ${args.length}`, f.line, f.col);
+    return { kind: "within", budget: expr(args[0]), body: expr(args[1]) };
   }
   if (ops.has(head.name)) {
     if (args.length !== 2) throw new CompileError(`${head.name} takes 2 arguments, not ${args.length}`, f.line, f.col);

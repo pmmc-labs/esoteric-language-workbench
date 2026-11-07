@@ -71,5 +71,7 @@ Node's stack; the tests go 147 deep.
 
 ## Open questions
 
-[Each **(open)** item, in one place, so the person can settle them in a
-batch.]
+- **(open)** Which fault reports when one operator's own checks could
+  fault two ways, as in `(bit/shl #true 99)` (D25 leaves it, `PLAN.md`
+  step 3). The interpreter reports `not an integer`: both operands'
+  types are checked, then the operator's own rule. No test has one.
