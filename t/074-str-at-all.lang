@@ -1,0 +1,3 @@
+; D31, D33: str/at at every index. test 074.
+; Expected output and this program from t/models/strings.py.
+(str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat "" "|") (str/at "a😀é￿𐀀b" 0)) "|") (str/at "a\u{1F600}e\u{301}\u{FFFF}\u{10000}\u{E000}b" 1)) "|") (str/at "a😀é￿𐀀b" 2)) "|") (str/at "a\u{1F600}e\u{0301}\u{FFFF}\u{10000}\u{E000}b" 3)) "|") (str/at "a😀é￿𐀀b" 4)) "|") (str/at "a\u{1F600}e\u{301}\u{FFFF}\u{10000}\u{E000}b" 5)) "|") (str/at "a😀é￿𐀀b" 6)) "|") (str/at "a\u{1F600}e\u{301}\u{FFFF}\u{10000}\u{E000}b" 7))

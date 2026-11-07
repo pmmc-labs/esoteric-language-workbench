@@ -1,0 +1,3 @@
+; D31, D32: characters past ASCII print as themselves. test 071.
+; Expected output and this program from t/models/strings.py.
+(str/cat (str/cat "éé😀👨‍👩‍👧￿𐀀􏿿" "\u{80}\u{9F}\u{A0}\u{2028}\u{FEFF}\u{D7FF}\u{10FFFF}\u{1F600}") "|é")

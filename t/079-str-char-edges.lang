@@ -1,0 +1,3 @@
+; D33: str/char at the edges. test 079.
+; Expected output and this program from t/models/strings.py.
+(str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat (str/cat "" "|") (str/char 0)) "|") (str/char 127)) "|") (str/char 55295)) "|") (str/char 57344)) "|") (str/char 65535)) "|") (str/char 65536)) "|") (str/char 1114111)) "|") (str/char 65)) "|") (str/char 128512)) "|") (str/char 32)) "|") (str/char 34)) "|") (str/char 92))

@@ -1,0 +1,3 @@
+; D33: str/at faults bad index at the length. test 076.
+; Expected output and this program from t/models/strings.py.
+(str/cat "x" (str/at "a😀" 2))

@@ -1,0 +1,3 @@
+; D32: the empty string prints as "". test 072.
+; Expected output and this program from t/models/strings.py.
+(if (== "" (str/cat "" "")) "" "x")
