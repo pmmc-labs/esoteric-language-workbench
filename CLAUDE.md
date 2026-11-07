@@ -17,8 +17,15 @@ newline rule, every lexical error), and a parser, resolver, codegen and
 C runtime for calls of `print` with int arguments; `bin/ditto`
 `build`/`run`/`c` (D31); `t/run.sh` (parallel), `t/checks.py`, the
 Makefile; golden tests 000 to 028 and 48 unit tests, all green under
-`cc`, clang and the sanitizers. Builder defaults awaiting review: D34 to
-D37. **Next:** step 1, expressions on ints, bools and nil.
+`cc`, clang and the sanitizers. Builder defaults D34 to D37 are kept. Step 1
+(expressions on ints, bools and nil) is done: the precedence table
+without `else` and `in`, checked 64-bit arithmetic with truncating
+`/` and `%` (D14), comparisons, `==`/`!=` on any pair (D18), short-circuit
+`and`/`or`, every fault and the two compile errors of the plan;
+`t/models/ints.py` writes golden tests 100 to 108, faults and errors
+are 111 to 152 by hand; 75 golden tests and 62 unit tests, green under
+`cc`, clang and the sanitizers. Builder default awaiting review: D38.
+**Next:** step 2, variables and control flow.
 
 ## Read first, in this order
 

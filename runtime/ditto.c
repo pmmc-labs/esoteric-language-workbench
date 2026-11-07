@@ -67,6 +67,103 @@ _Noreturn void dt_fault(int line, int col, const char *fmt, ...) {
   exit(1);
 }
 
+/* Operators --------------------------------------------------------------- */
+
+static const char *type_name(Value v) {
+  switch (v.tag) {
+    case T_NIL: return "nil";
+    case T_BOOL: return "bool";
+    case T_INT: return "int";
+    case T_STR: return "string";
+    case T_LIST: return "list";
+    case T_MAP: return "map";
+  }
+  return "?";
+}
+
+static _Noreturn void type_fault2(int line, int col, const char *op, Value a, Value b) {
+  dt_fault(line, col, "cannot use %s on %s and %s", op, type_name(a), type_name(b));
+}
+
+/* The overflow checks are written out rather than using __builtin_*_overflow,
+   which is a compiler extension. */
+Value dt_add(int line, int col, Value a, Value b) {
+  if (a.tag != T_INT || b.tag != T_INT) type_fault2(line, col, "+", a, b);
+  if ((b.i > 0 && a.i > INT64_MAX - b.i) || (b.i < 0 && a.i < INT64_MIN - b.i))
+    dt_fault(line, col, "integer overflow");
+  return dt_int(a.i + b.i);
+}
+
+Value dt_sub(int line, int col, Value a, Value b) {
+  if (a.tag != T_INT || b.tag != T_INT) type_fault2(line, col, "-", a, b);
+  if ((b.i < 0 && a.i > INT64_MAX + b.i) || (b.i > 0 && a.i < INT64_MIN + b.i))
+    dt_fault(line, col, "integer overflow");
+  return dt_int(a.i - b.i);
+}
+
+Value dt_mul(int line, int col, Value a, Value b) {
+  if (a.tag != T_INT || b.tag != T_INT) type_fault2(line, col, "*", a, b);
+  int64_t x = a.i, y = b.i;
+  bool over;
+  if (x > 0) over = y > 0 ? x > INT64_MAX / y : y < INT64_MIN / x;
+  else if (x < 0) over = y > 0 ? x < INT64_MIN / y : y < INT64_MAX / x;
+  else over = false;
+  if (over) dt_fault(line, col, "integer overflow");
+  return dt_int(x * y);
+}
+
+/* Division truncates toward zero and % takes the dividend's sign, as C does;
+   the two cases C leaves undefined are handled first (D14). */
+Value dt_div(int line, int col, Value a, Value b) {
+  if (a.tag != T_INT || b.tag != T_INT) type_fault2(line, col, "/", a, b);
+  if (b.i == 0) dt_fault(line, col, "division by zero");
+  if (a.i == INT64_MIN && b.i == -1) dt_fault(line, col, "integer overflow");
+  return dt_int(a.i / b.i);
+}
+
+Value dt_mod(int line, int col, Value a, Value b) {
+  if (a.tag != T_INT || b.tag != T_INT) type_fault2(line, col, "%", a, b);
+  if (b.i == 0) dt_fault(line, col, "division by zero");
+  if (b.i == -1) return dt_int(0);
+  return dt_int(a.i % b.i);
+}
+
+Value dt_neg(int line, int col, Value a) {
+  if (a.tag != T_INT) dt_fault(line, col, "cannot use - on %s", type_name(a));
+  if (a.i == INT64_MIN) dt_fault(line, col, "integer overflow");
+  return dt_int(-a.i);
+}
+
+Value dt_not(int line, int col, Value a) {
+  if (a.tag != T_BOOL) dt_fault(line, col, "cannot use not on %s", type_name(a));
+  return dt_bool(!a.b);
+}
+
+void dt_need_bool(int line, int col, const char *op, Value v) {
+  if (v.tag != T_BOOL) dt_fault(line, col, "cannot use %s on %s", op, type_name(v));
+}
+
+/* Ordering is for ints now; strings and lists join at steps 4 and 5. */
+static int compare(int line, int col, const char *op, Value a, Value b) {
+  if (a.tag != T_INT || b.tag != T_INT) type_fault2(line, col, op, a, b);
+  return a.i < b.i ? -1 : a.i > b.i ? 1 : 0;
+}
+
+Value dt_lt(int line, int col, Value a, Value b) { return dt_bool(compare(line, col, "<", a, b) < 0); }
+Value dt_le(int line, int col, Value a, Value b) { return dt_bool(compare(line, col, "<=", a, b) <= 0); }
+Value dt_gt(int line, int col, Value a, Value b) { return dt_bool(compare(line, col, ">", a, b) > 0); }
+Value dt_ge(int line, int col, Value a, Value b) { return dt_bool(compare(line, col, ">=", a, b) >= 0); }
+
+bool dt_equal(Value a, Value b) {
+  if (a.tag != b.tag) return false;
+  switch (a.tag) {
+    case T_NIL: return true;
+    case T_BOOL: return a.b == b.b;
+    case T_INT: return a.i == b.i;
+    default: return false; /* strings, lists and maps arrive with later steps */
+  }
+}
+
 /* Printing ---------------------------------------------------------------- */
 
 /* Writes the printed form of v (LANGUAGE.md, str). `quoted` is true inside a

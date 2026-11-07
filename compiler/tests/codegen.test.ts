@@ -28,3 +28,26 @@ test('statements come out in source order', () => {
 test('compile errors carry position and message', () => {
   assert.throws(() => compile('foo(1)', 'a.ditto'), (e: any) => e.message === 'unknown function foo');
 });
+
+test('operators call the runtime with their own position, operands first', () => {
+  const c = compile('print(1 +\n  -2 * 3)', 'a.ditto');
+  const at = ['dt_neg(2, 3,', 'dt_mul(2, 6,', 'dt_add(1, 9,', 'dt_b_print('].map((s) => c.indexOf(s));
+  assert.ok(at.every((n) => n > 0), String(at));
+  assert.deepEqual([...at].sort((a, b) => a - b), at);
+});
+
+test('== and != take no position; comparisons do', () => {
+  const c = compile('print(1 == 2, 1 != 2, 1 <= 2)', 'a.ditto');
+  assert.match(c, /dt_bool\(dt_equal\(t\d+, t\d+\)\)/);
+  assert.match(c, /dt_bool\(!dt_equal\(/);
+  assert.match(c, /dt_le\(1, 25,/);
+});
+
+test('and / or evaluate the right operand only inside an if', () => {
+  const c = compile('print(true and 1 / 0 == 0)', 'a.ditto');
+  const iff = c.indexOf('if (');
+  assert.ok(iff > 0 && c.indexOf('dt_div') > iff && c.indexOf('dt_int') < iff + 400);
+  assert.ok(c.indexOf('dt_bool(true)') < iff);
+  assert.match(compile('print(true or false)', 'a.ditto'), /if \(!t\d+\.b\)/);
+  assert.match(c, /dt_need_bool\(1, 12, "and", /);
+});

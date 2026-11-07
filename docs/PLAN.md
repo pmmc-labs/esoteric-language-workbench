@@ -6,7 +6,8 @@ steps, step 0 and the examples included (the brief); steps 0 to 8 are
 planned and step 9 is held in reserve for friction the examples show.
 
 **Progress:** design done; step 0 done (scaffold, 28 golden tests, 48 unit
-tests); step 1 next.
+tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
+62 unit tests); step 2 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -82,7 +83,13 @@ no Ditto program can fault yet; the golden runs under `cc` and clang add
 - Leaves out: every other expression.
 - **Size:** medium.
 
-### 1. Expressions on ints, bools and nil
+### 1. Expressions on ints, bools and nil **(done)**
+
+Landed as planned. Differences: tests 100 to 152 (the model writes 100 to
+108; faults 111 to 133 and compile errors 140 to 152 are by hand, with
+positions counted from the source); test 027 now expects `expression
+statement must be a call` (D38); default D38. The runtime writes its
+overflow checks out instead of using `__builtin_*_overflow`, an extension.
 
 - `true false nil`, prefix `-` and `not`, `* / % + -`, comparisons on
   ints, `==`/`!=` on these types, `and`/`or` with short-circuit,

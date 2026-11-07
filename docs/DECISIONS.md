@@ -281,6 +281,24 @@ file ending inside a call is `expected ')', found end of file`, at the
 position after the last byte. These are the `expected X, found Y`
 sites `DESIGN.md` leaves to the builder.
 
+**D38. Step 1 details the spec left open.** *(default)* Parentheses
+leave no node in the AST, so `(print(1))` is a call and an allowed
+statement. Until variables arrive (step 2) a name in an expression can
+only start a call, so `print(print)` is `expected '(', found ')'`. A
+statement starting with anything that can start an expression is parsed
+as one, so `42` is `expression statement must be a call` (test 027
+changed from step 0's `expected a statement, found '42'`); only a token
+that can't start an expression (`else`, `}`) is `expected a statement`.
+The newline rule is as written: a newline is skipped after a binary
+operator but not after a prefix `-` or `not`. In an arithmetic or
+comparison operator a type fault is reported before `division by zero`
+or `integer overflow`, and both operands are evaluated before either is
+checked. `and`/`or` check the left operand before evaluating the right
+and the right one after; both fault `cannot use and on T` with that
+operand's type. Rejected: a paren node to forbid `(f())` as a statement
+(machinery for a harmless case); reporting `comparisons do not chain` in
+the resolver (the parser knows at once).
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,

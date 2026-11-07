@@ -46,6 +46,24 @@ void *dt_alloc(size_t n);
    error and exits 1 (D28). */
 _Noreturn void dt_fault(int line, int col, const char *fmt, ...);
 
+/* Operators (LANGUAGE.md, Expressions). Each takes the position of its
+   operator and faults there. */
+Value dt_add(int line, int col, Value a, Value b);
+Value dt_sub(int line, int col, Value a, Value b);
+Value dt_mul(int line, int col, Value a, Value b);
+Value dt_div(int line, int col, Value a, Value b);
+Value dt_mod(int line, int col, Value a, Value b);
+Value dt_lt(int line, int col, Value a, Value b);
+Value dt_le(int line, int col, Value a, Value b);
+Value dt_gt(int line, int col, Value a, Value b);
+Value dt_ge(int line, int col, Value a, Value b);
+Value dt_neg(int line, int col, Value a);
+Value dt_not(int line, int col, Value a);
+/* Structural equality; never faults, values of different types differ (D18). */
+bool dt_equal(Value a, Value b);
+/* Faults `cannot use OP on T` unless v is a bool (and, or). */
+void dt_need_bool(int line, int col, const char *op, Value v);
+
 /* Builtins: every one takes its call's position and its arguments, and
    returns a Value. Named dt_b_NAME, which is what the code generator emits. */
 Value dt_b_print(int line, int col, int argc, const Value *argv);

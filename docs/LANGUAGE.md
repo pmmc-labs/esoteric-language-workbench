@@ -329,7 +329,8 @@ A call nested more than 1000 deep faults:
 
 A call on its own line runs it and drops its result. Any other
 expression on its own is `expression statement must be a call`, at its
-first token, which catches `x == 1` written for `x = 1`.
+first token, which catches `x == 1` written for `x = 1`. A call in
+parentheses is still a call (D38).
 
 ### `if`
 

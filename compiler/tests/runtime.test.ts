@@ -14,7 +14,7 @@ mkdirSync(dir, { recursive: true });
 function cprog(name: string, body: string) {
   const c = join(dir, name + '.c');
   const exe = join(dir, name);
-  writeFileSync(c, `#include <stdint.h>\n#include <string.h>\n#include "ditto.h"\nint main(void) {\n${body}\n}\n`);
+  writeFileSync(c, `#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include "ditto.h"\nint main(void) {\n${body}\n}\n`);
   const cc = process.env.LANG_CC || 'cc';
   const b = spawnSync(cc, ['-std=c11', '-Wall', '-Wextra', '-Werror', '-I', join(root, 'runtime'),
     c, join(root, 'runtime', 'ditto.c'), '-o', exe], { encoding: 'utf8' });
@@ -71,4 +71,29 @@ test('the allocator hands out aligned, distinct, lasting memory', () => {
     return 0;`);
   assert.equal(r.out, '\n');
   assert.equal(r.status, 0);
+});
+
+test('integer operators: truncating division, checked arithmetic', () => {
+  const r = cprog('ops', `
+    Value mn = dt_int(INT64_MIN), mx = dt_int(INT64_MAX);
+    int64_t got[] = {
+      dt_div(1, 1, dt_int(-7), dt_int(2)).i, dt_mod(1, 1, dt_int(-7), dt_int(2)).i,
+      dt_div(1, 1, dt_int(7), dt_int(-2)).i, dt_mod(1, 1, dt_int(7), dt_int(-2)).i,
+      dt_mod(1, 1, mn, dt_int(-1)).i, dt_add(1, 1, mx, mn).i, dt_sub(1, 1, mn, mn).i,
+      dt_mul(1, 1, mx, dt_int(-1)).i, dt_mul(1, 1, mn, dt_int(1)).i, dt_mul(1, 1, dt_int(-3037000499), dt_int(3037000499)).i,
+      dt_neg(1, 1, mx).i, dt_sub(1, 1, dt_int(-1), mx).i, dt_sub(1, 1, dt_int(0), mx).i,
+    };
+    for (size_t i = 0; i < sizeof got / sizeof got[0]; i++) printf("%lld\\n", (long long)got[i]);
+    return 0;`);
+  assert.equal(r.out, ['-3', '-1', '-3', '1', '0', '-1', '0', '-9223372036854775807', '-9223372036854775808',
+    '-9223372030926249001', '-9223372036854775807', '-9223372036854775808', '-9223372036854775807', ''].join('\n'));
+  assert.equal(r.status, 0);
+});
+
+test('equality is structural across types and never faults', () => {
+  const r = cprog('eq', `
+    Value v[] = {dt_nil(), dt_bool(true), dt_bool(false), dt_int(0), dt_int(1)};
+    for (int i = 0; i < 5; i++) { for (int j = 0; j < 5; j++) putchar(dt_equal(v[i], v[j]) ? '1' : '0'); putchar('\\n'); }
+    return 0;`);
+  assert.equal(r.out, '10000\n01000\n00100\n00010\n00001\n');
 });

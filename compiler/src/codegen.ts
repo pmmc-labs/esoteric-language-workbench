@@ -8,6 +8,11 @@ const cString = (s: string) =>
   '"' + s.replace(/[\\"?]/g, (c) => '\\' + c).replace(/[^\x20-\x7e]/g, (c) =>
     '\\' + c.charCodeAt(0).toString(8).padStart(3, '0')) + '"';
 
+const ARITH: Record<string, string> = {
+  '+': 'dt_add', '-': 'dt_sub', '*': 'dt_mul', '/': 'dt_div', '%': 'dt_mod',
+  '<': 'dt_lt', '<=': 'dt_le', '>': 'dt_gt', '>=': 'dt_ge',
+};
+
 export function codegen(program: Program, path: string): string {
   let temps = 0;
   const lines: string[] = [];
@@ -19,6 +24,49 @@ export function codegen(program: Program, path: string): string {
       case 'int': {
         const t = `t${++temps}`;
         emit(depth, `Value ${t} = dt_int(INT64_C(${e.value}));`);
+        return t;
+      }
+      case 'bool': {
+        const t = `t${++temps}`;
+        emit(depth, `Value ${t} = dt_bool(${e.value});`);
+        return t;
+      }
+      case 'nil': {
+        const t = `t${++temps}`;
+        emit(depth, `Value ${t} = dt_nil();`);
+        return t;
+      }
+      case 'unary': {
+        const a = expr(e.operand, depth);
+        const t = `t${++temps}`;
+        const fn = e.op === '-' ? 'dt_neg' : 'dt_not';
+        emit(depth, `Value ${t} = ${fn}(${e.pos.line}, ${e.pos.col}, ${a});`);
+        return t;
+      }
+      case 'binary': {
+        const l = expr(e.left, depth);
+        const r = expr(e.right, depth);
+        const t = `t${++temps}`;
+        const { line, col } = e.pos;
+        // == and != never fault, so they take no position.
+        if (e.op === '==') emit(depth, `Value ${t} = dt_bool(dt_equal(${l}, ${r}));`);
+        else if (e.op === '!=') emit(depth, `Value ${t} = dt_bool(!dt_equal(${l}, ${r}));`);
+        else emit(depth, `Value ${t} = ${ARITH[e.op]}(${line}, ${col}, ${l}, ${r});`);
+        return t;
+      }
+      case 'logic': {
+        // The result starts as the left operand and is replaced by the right
+        // one only when the left doesn't decide (D30: `if`, not `&&`).
+        const { line, col } = e.pos;
+        const l = expr(e.left, depth);
+        const t = `t${++temps}`;
+        emit(depth, `dt_need_bool(${line}, ${col}, "${e.op}", ${l});`);
+        emit(depth, `Value ${t} = ${l};`);
+        emit(depth, `if (${e.op === 'and' ? '' : '!'}${t}.b) {`);
+        const r = expr(e.right, depth + 1);
+        emit(depth + 1, `dt_need_bool(${line}, ${col}, "${e.op}", ${r});`);
+        emit(depth + 1, `${t} = ${r};`);
+        emit(depth, '}');
         return t;
       }
       case 'call': {
