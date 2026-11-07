@@ -26,7 +26,7 @@ report.
    closely.
 3. `docs/LANGUAGE.md` and `docs/DESIGN.md`.
 4. `docs/PLAN.md`: step 6 closely, and steps 0 to 5 for what landed.
-5. `docs/D31 to D33.md`: D31 to D33, and what they cite.
+5. `docs/DECISIONS.md`: D31 to D33, and what they cite.
 6. `t/README.md`, the new tests (`t/07*`, `t/08*`), and
    `t/models/strings.py`.
 7. The interpreter: `bin/lang.ts`, `interp/src/`, `interp/tests/`.
@@ -56,7 +56,7 @@ nothing if one was copied from the other.
 - Anything under `t/`: no test, expected output, model, referee,
   `t/checks.py` or `t/run.sh` changes.
 - The `Makefile`, `package.json`'s scripts, `tsconfig.json`'s options.
-- `docs/D31 to D33.md` up to the step's last decision (add after it, as
+- `docs/DECISIONS.md` up to the step's last decision (add after it, as
   below), `docs/PROCESS.md`, `docs/strings.pyS.md`, `docs/REPORT.md`,
   `docs/BACKGROUND.md`, this brief, `README.md`, `tools/`.
 - Nothing from the step's "Leave out"; no form, operator, flag or
