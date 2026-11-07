@@ -106,8 +106,46 @@ value adds its lines.
   reader keeps its own stack and has no limit of its own, and a form
   nested more than 1000 deep is an error before running, so the
   evaluator's recursion is far inside the host's. Test 010 nests 147.
-- **Not in the language yet** (strings, floats, collections, tail
-  calls, time): answered when a step brings them.
+- **Code points** (D31): a JavaScript string is UTF-16, so its `length`,
+  its indexes and its `<` count code units, and a character past U+FFFF
+  counts two. **Overrides**: a string's code points are taken with
+  `Array.from` and `codePointAt`, and `str/lt` compares them one by one
+  (tests 073, 074, 077).
+- **Source encoding** (D31): `readFileSync(f, "utf8")` turns an invalid
+  byte into U+FFFD and drops a leading byte order mark. **Overrides**:
+  the driver decodes with `TextDecoder("utf-8", { fatal: true,
+  ignoreBOM: true })`. An invalid file is `not valid UTF-8` before
+  running (D34), and a byte order mark stays a character, so it begins
+  a name the checker doesn't know (unit tests in `interp/tests/`).
+- **Columns** (D28, D31): a JavaScript index counts code units, so a
+  column after `"😀"` would be one too many. **Overrides**: the reader
+  advances a code point at a time, and `col` counts those (a unit test
+  with a form after `"😀"`).
+- **White space** (D31): a regular expression's `\s` takes U+00A0, U+FEFF
+  and a form feed. **Overrides**: the reader's white space is its own
+  four characters, and the delimiters are those and the brackets, `;`
+  and `"`. A unit test has U+00A0 and a form feed each read as an unknown
+  name.
+- **Equality of strings** (D12, D31): JavaScript's `===` on strings
+  compares code units. A string here is well formed (the source is valid
+  UTF-8, and a surrogate escape is an error), so equal code units are
+  equal code points: **inherits**, with test 086 (`"é"` and `"e\u{301}"`
+  differ, `"😀"` and `"\u{1F600}"` agree).
+- **Printing a string** (D32): `JSON.stringify` writes `\u0007`, and
+  surrogate pairs past U+FFFF, neither of which is D32. **Overrides**:
+  `show` writes D32's escapes itself, a code point at a time (tests 070
+  to 072).
+- **Output encoding** (D32): `fs.writeSync` of a string writes UTF-8, as
+  D32 says. **Inherits**, with test 071.
+- **Code points from integers** (D33): `String.fromCodePoint` throws a
+  host `RangeError` past 10FFFF and accepts a surrogate. **Overrides**:
+  `str/char` checks the range and the surrogates itself and faults
+  `not a character` (tests 079, 081 to 083).
+- **Ordering of strings** (D33): JavaScript's `<` on strings compares
+  code units, which puts `"\u{10000}"` before `"\u{FFFF}"`. **Overrides**:
+  `str/lt` compares code points (test 077).
+- **Not in the language yet** (floats, collections, tail calls, time):
+  answered when a step brings them.
 
 ## Values and memory
 
@@ -145,3 +183,6 @@ body, and puts the saved `limit` back. A run starts with a fresh pair.
   builder of step 0.
 - **(open)** From main, not agreed: which fault reports when one
   operator could fault two ways.
+- **(open)** D34: the messages and positions of a string literal's
+  errors, and of a file that isn't UTF-8. Defaults, written by the builder
+  of step 6, which could not ask.

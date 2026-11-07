@@ -347,6 +347,8 @@ and the rest (D12 keeps them to integers, and a separate name says
 which order); comparing by UTF-16 code units, JavaScript's `<` (it puts
 `"\u{10000}"` before `"\u{FFFF}"`).
 
+**D34. The errors of strings and of a file's encoding: `unclosed string` at the opening quote, `newline in string` at the newline, `bad escape` at the backslash of any escape D31 refuses, and `not valid UTF-8` at 1:1 for a file that isn't.** *(Default, written by the builder of the interpreter's step 6, which could not ask; fair to revisit.)* D31 says which of these are errors and not what they say or where they are, and D28 needs a position on each. These are the places a reader looks first: where the literal began, where the line broke, where the backslash is. A file that isn't UTF-8 has no position the decoder gives, so it is the start of the file. An operator given the wrong count (D33) reads `str/len takes 1 argument, not 2`, the singular where the count is one. Rejected: one position for every literal error, the opening quote (it points away from the mistake); the byte offset of the bad UTF-8 byte (the decoder doesn't give a line and column for it, and finding one means decoding the file again).
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
