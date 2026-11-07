@@ -84,9 +84,23 @@ function operate(op: string, a: Value, b: Value): Value {
     case 'bit/shr':
       if (b < 0n || b > 62n) throw new Fault('bad shift');
       return a >> b;
+    case '**':
+      return pow(a, b);
     default:
       throw new Error(`no operator ${op}`);
   }
+}
+
+// `**` without calling the host's on a huge exponent: Node's bigint `**` builds the
+// result, and 2 to the power 2^62 can't be built. So a base of 0, 1 or -1 is answered
+// from its rule (D19), and any other base to a power past 62 is past the range.
+function pow(a: bigint, b: bigint): bigint {
+  if (b < 0n) throw new Fault('bad exponent');
+  if (b === 0n) return 1n;
+  if (a === 0n || a === 1n) return a;
+  if (a === -1n) return b % 2n === 0n ? 1n : -1n;
+  if (b > 62n) throw new Fault('overflow');
+  return fit(a ** b);
 }
 
 // Printed as the language writes them. String(true) isn't `#true`, so a boolean is

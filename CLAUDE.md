@@ -25,13 +25,14 @@ the host's answers are in `DESIGN.md` (committed before any code), and
 D30 to D34 are the interpreter's own defaults, written then because
 nothing could be asked. The reader, the checker and the evaluator
 exist, with `bin/lang.ts` on top, and only integers and booleans run:
-golden tests 000 to 001, 010 to 015, 020 to 024 and 030 to 036 pass on
-Node 22 and 24, and 26 unit tests in `interp/tests/`. Steps 1 to 3 are
-built: `+ - * / %` (D3 to D6), the booleans and the six comparisons (D11,
+golden tests 000 to 001, 010 to 015, 020 to 024, 030 to 036 and 040 to 045
+pass on Node 22 and 24, and 30 unit tests in `interp/tests/`. Steps 1 to
+4 are built: `**`, with the guard against a huge exponent that the host
+can't take (D18, D19), and the earlier steps, which are: `+ - * / %` (D3 to D6), the booleans and the six comparisons (D11,
 D12), `if` (D13), and the five bit operations (D15 to D17), with the
 errors before running that D33 gives them. Step 3's open point, which
 fault reports for `(bit/shl #true 99)`, is settled by D32 as the
-interpreter's default. **Next:** step 4 (tests 040 to 045). Not agreed,
+interpreter's default. **Next:** step 5 (tests 050 to 069). Not agreed,
 from main: which fault reports when one operator could fault two ways.
 D32 is the interpreter's default for it, and step 3 is where it bites.
 
