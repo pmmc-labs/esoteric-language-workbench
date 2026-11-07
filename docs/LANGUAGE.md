@@ -120,6 +120,13 @@ while condition { ... }
 Runs the block while the condition is true, testing before each round.
 There is no `for`, `break` or `continue`.
 
+### Blocks
+
+A block is `{`, any number of statements, `}`. Blocks are the bodies of
+`if`, `else` and `while`; `{ ... }` is not a statement by itself. A name
+declared with `let` in a block is visible to the end of that block and
+gone after its `}`, so a later `let` of the same name is allowed.
+
 ### return
 
 ```

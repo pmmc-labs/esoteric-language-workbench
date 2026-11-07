@@ -12,10 +12,15 @@ export type Expr =
   | { k: "un"; op: string; e: Expr; line: number; col: number };
 // `let` and `<-` carry the name's own position (resolve errors point at it);
 // a write also carries the `<-` position, where it faults (D23).
+// `if` and `while` carry the keyword's position, where a fault in the
+// condition is reported (D23). `else if` is an `if` inside the else block:
+// no separate form (D38).
 export type Stmt =
   | { k: "print" | "write"; e: Expr; line: number; col: number }
   | { k: "let"; name: string; e: Expr; line: number; col: number }
-  | { k: "set"; name: string; e: Expr; line: number; col: number; nline: number; ncol: number };
+  | { k: "set"; name: string; e: Expr; line: number; col: number; nline: number; ncol: number }
+  | { k: "if"; cond: Expr; then: Stmt[]; els: Stmt[] | null; line: number; col: number }
+  | { k: "while"; cond: Expr; body: Stmt[]; line: number; col: number };
 export type Program = { k: "program"; stmts: Stmt[] };
 
 // What a token is called in "expected THING, found TOKEN" (D33).
@@ -130,25 +135,61 @@ export function parse(toks: Token[]): Program {
     return t;
   };
 
-  const stmts: Stmt[] = [];
-  while (toks[p].k !== "eof") {
+  // A block is the body of an if, else or while (D38). Its statements end
+  // at the `}`; a file that ends first is reported at the end of file.
+  const block = (): Stmt[] => {
+    expect("'{'", (x) => isOp(x, "{"));
+    const body: Stmt[] = [];
+    while (!isOp(toks[p], "}")) {
+      if (toks[p].k === "eof") fail(toks[p].line, toks[p].col, "expected '}', found end of file");
+      body.push(stmt());
+    }
+    p++;
+    return body;
+  };
+
+  // `t` is the `if` keyword, already consumed by the caller's check.
+  const ifRest = (t: Token): Stmt => {
+    p++;
+    const cond = or();
+    const then = block();
+    let els: Stmt[] | null = null;
+    if (isKw(toks[p], "else")) {
+      p++;
+      if (isKw(toks[p], "if")) els = [ifRest(toks[p])];
+      else els = block();
+    }
+    return { k: "if", cond, then, els, line: t.line, col: t.col };
+  };
+
+  const stmt = (): Stmt => {
     const t = toks[p];
     if (isKw(t, "print") || isKw(t, "write")) {
       p++;
-      stmts.push({ k: t.text as "print" | "write", e: or(), line: t.line, col: t.col });
-    } else if (isKw(t, "let")) {
+      return { k: t.text as "print" | "write", e: or(), line: t.line, col: t.col };
+    }
+    if (isKw(t, "let")) {
       p++;
       const n = expect("name", (x) => x.k === "name");
       expect("'='", (x) => isOp(x, "="));
-      stmts.push({ k: "let", name: n.text, e: or(), line: n.line, col: n.col });
-    } else if (t.k === "name") {
+      return { k: "let", name: n.text, e: or(), line: n.line, col: n.col };
+    }
+    if (t.k === "name") {
       p++;
       const arrow = expect("'<-'", (x) => isOp(x, "<-"));
-      stmts.push({ k: "set", name: t.text, e: or(), line: arrow.line, col: arrow.col,
-        nline: t.line, ncol: t.col });
-    } else {
-      fail(t.line, t.col, `expected statement, found ${describe(t)}`);
+      return { k: "set", name: t.text, e: or(), line: arrow.line, col: arrow.col,
+        nline: t.line, ncol: t.col };
     }
-  }
+    if (isKw(t, "if")) return ifRest(t);
+    if (isKw(t, "while")) {
+      p++;
+      const cond = or();
+      return { k: "while", cond, body: block(), line: t.line, col: t.col };
+    }
+    return fail(t.line, t.col, `expected statement, found ${describe(t)}`);
+  };
+
+  const stmts: Stmt[] = [];
+  while (toks[p].k !== "eof") stmts.push(stmt());
   return { k: "program", stmts };
 }

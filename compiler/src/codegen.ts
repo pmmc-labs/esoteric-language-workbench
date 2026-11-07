@@ -1,4 +1,4 @@
-import type { Expr, Program } from "./parser.ts";
+import type { Expr, Program, Stmt } from "./parser.ts";
 
 const BIN: Record<string, string> = {
   "+": "add", "-": "sub", "*": "mul", "/": "div", "%": "mod",
@@ -9,7 +9,8 @@ const BIN: Record<string, string> = {
 // Every value is a history (D11), so a literal is a one-layer history.
 // Runtime calls only ever see temporaries, so C's unspecified argument
 // order can't matter. `and`/`or` are an `if` around the right side so it
-// runs only when needed (D20).
+// runs only when needed (D20). A `while` condition's temporaries sit inside
+// the loop, so they are computed again each round (D38).
 export function codegen(prog: Program): string {
   const out: string[] = [];
   let tmp = 0;
@@ -82,11 +83,40 @@ export function codegen(prog: Program): string {
     return t;
   };
 
-  for (const s of prog.stmts) {
-    const t = expr(s.e);
-    if (s.k === "let") emit(`strata_hist v_${s.name} = ${t};`);
-    else if (s.k === "set") emit(`v_${s.name} = strata_lay(v_${s.name}, ${t}, ${s.line}, ${s.col});`);
-    else emit(`strata_${s.k}(${t}, ${s.line}, ${s.col});`);
-  }
+  // A block is a C block: a `let` in it is a C local, so each round of a
+  // loop gets a fresh one (D14), and a name is gone at the closing brace.
+  const block = (body: Stmt[]) => {
+    depth++;
+    body.forEach(stmt);
+    depth--;
+  };
+
+  const stmt = (s: Stmt): void => {
+    if (s.k === "if") {
+      const c = expr(s.cond);
+      emit(`if (strata_truth(${c}, ${s.line}, ${s.col})) {`);
+      block(s.then);
+      if (s.els) {
+        emit("} else {");
+        block(s.els);
+      }
+      emit("}");
+    } else if (s.k === "while") {
+      emit("for (;;) {");
+      depth++;
+      const c = expr(s.cond);
+      emit(`if (!strata_truth(${c}, ${s.line}, ${s.col})) break;`);
+      depth--;
+      block(s.body);
+      emit("}");
+    } else {
+      const t = expr(s.e);
+      if (s.k === "let") emit(`strata_hist v_${s.name} = ${t};`);
+      else if (s.k === "set") emit(`v_${s.name} = strata_lay(v_${s.name}, ${t}, ${s.line}, ${s.col});`);
+      else emit(`strata_${s.k}(${t}, ${s.line}, ${s.col});`);
+    }
+  };
+
+  prog.stmts.forEach(stmt);
   return `#include "strata.h"\n\nint main(void) {\n${out.join("\n")}\n  return 0;\n}\n`;
 }

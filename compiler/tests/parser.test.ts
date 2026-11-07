@@ -35,7 +35,7 @@ test("codegen: one temporary per literal, in source order", () => {
 });
 
 // The expression as an s-expression, so precedence reads off the string.
-import type { Expr } from "../src/parser.ts";
+import type { Expr, Stmt } from "../src/parser.ts";
 const show = (e: Expr): string =>
   e.k === "int" ? e.v
   : e.k === "name" ? e.name
@@ -130,4 +130,48 @@ test("codegen: @ evaluates its base before its index (D25)", () => {
   assert.ok(c.indexOf("INT64_C(7)") < c.indexOf("INT64_C(1)"));
   assert.ok(c.indexOf("INT64_C(1)") < c.indexOf("strata_div"));
   assert.ok(c.indexOf("strata_div") < c.indexOf("strata_at"));
+});
+
+// A statement's shape: `(if COND THEN ELSE)` with blocks as [...], `-` for
+// no else; `(while COND BODY)`; other statements by their keyword (D38).
+const shape = (s: Stmt): string =>
+  s.k === "if" ? `(if ${show(s.cond)} [${s.then.map(shape).join(" ")}] ${s.els ? `[${s.els.map(shape).join(" ")}]` : "-"})`
+  : s.k === "while" ? `(while ${show(s.cond)} [${s.body.map(shape).join(" ")}])`
+  : s.k;
+const shp = (src: string) => parse(lex(src)).stmts.map(shape).join(" ");
+
+test("if, else if, else and while: blocks hold statements, else if nests", () => {
+  assert.equal(shp("if 1 { print 2 } else if 3 { print 4 } else { print 5 }"),
+    "(if 1 [print] [(if 3 [print] [print])])");
+  assert.equal(shp("if 1 { print 2 } else if 3 { print 4 }"), "(if 1 [print] [(if 3 [print] -)])");
+  assert.equal(shp("while 0 {}"), "(while 0 [])");
+  assert.equal(shp("if 1 {} else {}"), "(if 1 [] [])");
+  assert.equal(shp("while x@1 { if 2 { let y = 3 } write y }"), "(while (@ x 1) [(if 2 [let] -) write])");
+  assert.equal(shp("print 1\nwhile 1 {\n}\nwrite 2"), "print (while 1 []) write");
+});
+
+test("if and while carry the keyword's position; so does an else if", () => {
+  const p = parse(lex("let a = 1\n  while a {}\nif 0 {} else if 1 {}")).stmts;
+  assert.deepEqual([p[1].line, p[1].col], [2, 3]);
+  assert.equal(p[2].k === "if" && p[2].els && p[2].els[0].col, 14);
+});
+
+test("block and condition errors, in D33's shape", () => {
+  assert.deepEqual(err("if 1 print 2"), { line: 1, col: 6, msg: "expected '{', found 'print'" });
+  assert.equal(err("while 1").msg, "expected '{', found end of file");
+  assert.equal(err("if 1 { print 2").msg, "expected '}', found end of file");
+  assert.equal(err("if 1 { print 2 } else print 3").msg, "expected '{', found 'print'");
+  assert.equal(err("if 1 { } else").msg, "expected '{', found end of file");
+  assert.equal(err("if { }").msg, "expected expression, found '{'");
+  assert.equal(err("}").msg, "expected statement, found '}'");
+  assert.equal(err("if 1 { 5 }").msg, "expected statement, found '5'");
+});
+
+test("codegen: a while condition sits inside the loop; an else if inside the else (D38)", () => {
+  const w = codegen(parse(lex("while 1 { print 2 }")));
+  assert.ok(w.indexOf("for (;;) {") < w.indexOf("INT64_C(1)"));
+  assert.ok(w.indexOf("INT64_C(1)") < w.indexOf("break;"));
+  assert.ok(w.indexOf("break;") < w.indexOf("INT64_C(2)"));
+  const i = codegen(parse(lex("if 1 { print 2 } else if 3 { print 4 }")));
+  assert.ok(i.indexOf("} else {") < i.indexOf("INT64_C(3)"));
 });

@@ -3,8 +3,9 @@ import type { Expr, Program, Stmt } from "./parser.ts";
 
 // Names (D14). `scopes` is a stack of sets, innermost last: a name is
 // visible if any scope holds it, and declaring a visible name is an error,
-// so there is no shadowing. Step 3's blocks push a scope on entry and pop
-// it on exit; step 4's functions start from an empty stack.
+// so there is no shadowing. A block pushes a scope on entry and pops it on
+// exit, so a name from a finished block is gone (D38); step 4's functions
+// start from an empty stack.
 export function resolve(prog: Program): Program {
   const scopes: Set<string>[] = [new Set()];
   const visible = (n: string) => scopes.some((s) => s.has(n));
@@ -22,8 +23,22 @@ export function resolve(prog: Program): Program {
     }
   };
 
+  // A block's names die with it. The condition is resolved outside it.
+  const block = (body: Stmt[]): void => {
+    scopes.push(new Set());
+    body.forEach(stmt);
+    scopes.pop();
+  };
+
   const stmt = (s: Stmt): void => {
-    if (s.k === "let") {
+    if (s.k === "if") {
+      expr(s.cond);
+      block(s.then);
+      if (s.els) block(s.els);
+    } else if (s.k === "while") {
+      expr(s.cond);
+      block(s.body);
+    } else if (s.k === "let") {
       // Checked before the initializer is resolved (source order), but the
       // name is added after it: `let x = x` reads an unknown x.
       if (visible(s.name)) fail(s.line, s.col, `${s.name} is already declared`);

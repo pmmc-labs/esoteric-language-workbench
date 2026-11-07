@@ -375,3 +375,32 @@ Rejected: a distinct message for `x` alone as a statement (it is
 at the `<-` (the name is what is unknown); laying each element as soon
 as it is evaluated (interleaves two kinds of fault); allowing `x@-1`
 (a second precedence rule for one token).
+
+## Step 3 defaults
+
+**D38. Blocks, `else if` and `while` details D16 and D17 leave open.**
+*(default)* (1) A block is `{`, statements, `}`, and is only the body of
+`if`, `else` or `while`: a bare `{ ... }` is not a statement, so a block's
+one job is to scope its names. `else if` is an `if` inside the `else`
+block, with no form of its own: its condition runs only when the earlier
+ones are false, and its names live in a scope of their own. (2) A `let`
+is gone at its block's closing brace, so a later `let` of the same name
+in an enclosing block, or in a sibling block, is not an error: the name
+is no longer visible (D14). (3) A `while` condition is evaluated again
+each round. The generated C is `for (;;) { condition; if (!truth) break;
+body }`, the condition's temporaries inside the loop; `break` appears only
+in generated code, D17 is unchanged. (4) Parse errors: after `if`,
+`else` and `while` the block's `{` is `expected '{', found TOKEN` (so
+`else` followed by anything but `if` or `{` gets this message); a file
+that ends inside a block is `expected '}', found end of file`, at the end
+of the file. D33's THING list gains `'{'` and `'}'`. (5) A condition's
+fault is at its `if` or `while` keyword (D23); an `else if`'s at its own
+`if`. Rejected: a bare block statement (a second statement form whose
+only effect is scoping, which nothing needs at this size); a flat `elif`
+chain (a separate node and a second codegen path for what nesting already
+says); hoisting a `while` condition's temporaries above the loop (they
+are computed once, so the loop tests a stale value); keeping a block's
+names reserved for the rest of the function (then `if c { let a = 1 }`
+would forbid a later `let a`, a rule D14 doesn't state); `expected
+statement, found end of file` inside an unclosed block (it names the
+wrong missing thing: the `}`, not a statement).

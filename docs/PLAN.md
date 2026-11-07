@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Seven steps,
 inside the brief's budget of ten.
 
-**Progress:** design done; steps 0 (D33 to D35), 1 (D36) and 2 (D37) built. Next: step 3.
+**Progress:** design done; steps 0 (D33 to D35), 1 (D36), 2 (D37) and 3 (D38) built. Next: step 4.
 
 Read [`DESIGN.md`](DESIGN.md), [`LANGUAGE.md`](LANGUAGE.md) and the
 decisions each step cites first. Every step: write the model (if any)
@@ -121,7 +121,7 @@ The core rule (D7, D11 to D15).
 - Leaves out: blocks (step 3), functions (step 4).
 - **Size:** medium.
 
-### 3. Control: if, else, while, blocks
+### 3. Control: if, else, while, blocks (done)
 
 - `if`/`else if`/`else`, `while`, blocks with D14's scoping (a `let`
   in a block is visible to its end; redeclaring a name from an
