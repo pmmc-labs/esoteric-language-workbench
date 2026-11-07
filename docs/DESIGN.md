@@ -27,8 +27,9 @@ on, but bring it up before baking it in further.
 
 ## The language
 
-Integers of 63 bits (D4) and booleans (D11); seventeen operators on two
-operands each (D3, D5, D12, D15 to D19); `if` (D13) and `within`, a
+Integers of 63 bits (D4), booleans (D11) and strings of code points
+(D31); seventeen operators on two operands each (D3, D5, D12, D15 to
+D19), and six string operators (D33); `if` (D13) and `within`, a
 budget of operations (D20 to D24); evaluation left to right (D25); a
 fault ends the program (D6). `LANGUAGE.md` has them in full.
 
@@ -150,10 +151,12 @@ value adds its lines.
 ## Values and memory
 
 A value is a `bigint` (an integer, D4, range-checked after every
-operator) or a `boolean` (D11); the host's `typeof` is the tag, so D14's
+operator), a `boolean` (D11) or a `string` (D31, its characters the code
+points the host's string is made of, never its UTF-16 units, which the
+operators on it take care of). The host's `typeof` is the tag, so D14's
 bit tags are main's and not here (D28). A form is a plain object with
-`line` and `col`. There is no heap yet, and the host's collector does
-whatever memory there is.
+`line` and `col`, and a string literal's column counts code points. There
+is no heap yet, and the host's collector does whatever memory there is.
 
 ## The runtime
 

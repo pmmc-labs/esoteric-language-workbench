@@ -11,10 +11,13 @@ An integer: 63 bits, from -4611686018427387904 to 4611686018427387903.
 Written in decimal, with a `-` for a negative. A literal past the range
 is an error before the program runs.
 
+A boolean, `#true` or `#false`, and a string, in double quotes, are the
+other two kinds of value; both are below.
+
 ## Forms
 
-A program is one expression. An expression is an integer, or an
-operator applied to two expressions:
+A program is one expression. An expression is a value written out, an
+integer, a boolean or a string, or an operator applied to its operands:
 
     (+ (* 6 7) (- 10 (/ 7 2)))
 
@@ -35,7 +38,8 @@ program, so `(+ (/ 1 0) (+ #true 1))` faults `division by zero`.
 give a boolean; `==` and `!=` compare any two values. `(if test then
 else)` gives `then` when `test` is `#true` and `else` when it's
 `#false`, evaluating only that one; anything else as the test faults.
-Arithmetic, an ordering or a bit operation on a boolean faults.
+Arithmetic, an ordering or a bit operation on a boolean or a string
+faults `not an integer`.
 
 ## Bit operations
 
@@ -53,11 +57,67 @@ a n)` is `a` divided by 2^n rounded toward negative infinity, so
 the answer would fit (`(** 1 -1)`), and a result past the range faults
 `overflow`. `(** 1 4611686018427387903)` is `1` without taking long.
 
+## Strings
+
+A string is written in double quotes: `"hello"`, and `""` is the empty
+one. A string is a sequence of characters, and a character is a Unicode
+code point. Its length, its indexes and its order are its code points',
+never the bytes or the UTF-16 units of its encoding, so `(str/len "😀")`
+is `1`, and `(str/len "e\u{301}")` is `2`: the accent is a character of
+its own. Nothing is normalised, so `"é"` and `"e\u{301}"` are different
+strings, and `(== "é" "e\u{301}")` is `#false`.
+
+In a literal, `\"` is a quote, `\\` a backslash, `\n` a line feed and
+`\t` a tab. `\u{X}` is the code point X, written in hex with one to six
+digits: `\u{41}` is `A` and `\u{1F600}` is `😀`. A tab or a carriage
+return written raw stands for itself, and any other character stands for
+itself too. These are errors before the program runs: a backslash before
+anything else; a `\u{X}` that is empty, has more than six digits, isn't
+hex, is a surrogate (D800 to DFFF) or is past 10FFFF; a line feed written
+raw, which is `\n`'s job; and a string with no closing quote. A quote
+ends a name or a number, so `(str/len"a")` is `(str/len "a")`. The file
+is UTF-8, and one that isn't is an error before the program runs.
+
+A string prints in double quotes, so that what prints reads back as the
+same string. A `"` and a `\` have a backslash before them, a line feed is
+`\n` and a tab is `\t`, and any other character below U+0020, and U+007F,
+is `\u{X}` in lowercase hex. Everything else prints as itself, in UTF-8.
+So `(str/char 7)` prints `"\u{7}"`, and `"é"` prints `"é"`.
+
+Six operators take strings (`str/len`, `str/code` and `str/char` take
+one operand, the others two; a different count is an error before the
+program runs):
+
+- `(str/len s)` is the number of characters of `s`.
+- `(str/at s i)` is the character at index `i`, counted from 0, as a
+  string of one. An index below 0 or at or past the length faults
+  `bad index`.
+- `(str/cat a b)` is `a` followed by `b`.
+- `(str/lt a b)` is `#true` when `a` sorts before `b`. It compares
+  character by character, by code point, and a string sorts before any
+  longer string that begins with it: `(str/lt "\u{FFFF}" "\u{10000}")` is
+  `#true`, and `(str/lt "ab" "a")` is `#false`.
+- `(str/code s)` is the code point of a string of one character, as an
+  integer, and faults `not a character` for any other length.
+- `(str/char n)` is the string of one character with code point `n`. An
+  integer that isn't a code point, a negative one, a surrogate or one past
+  10FFFF, faults `not a character`.
+
+`==` and `!=` compare two strings by their characters, and compare a
+string with any other value as unequal. The other operators don't take a
+string: an arithmetic operator, an ordering or a bit operation given one
+faults `not an integer`. A string operator given something that isn't a
+string faults `not a string`, and one given something that isn't an
+integer where it wants one faults `not an integer`. Operands are checked
+left to right, each for its type, and then the index or code point for
+its range, so `(str/at 5 #true)` faults `not a string` and
+`(str/at "ab" 7)` faults `bad index`.
+
 ## Budgets
 
 `(within n expr)` is the value of `expr`, of whatever type, evaluated
 with a budget of `n` operations. An operation is one application of an
-operator, any of the seventeen: `(** 1 4611686018427387903)` is one,
+operator, any of them, the string operators too: `(** 1 4611686018427387903)` is one,
 however large the exponent. Literals, `if` and `within` cost nothing,
 and a branch of an `if` that isn't taken isn't evaluated, so costs
 nothing. Operations are counted as they run, and an operator is charged
@@ -90,11 +150,13 @@ negative, else `bad budget`, either before the body runs:
 ## Faults
 
 A result that doesn't fit 63 bits, a division by zero, a shift count
-out of range, a negative exponent, an operation past the budget, or a
-negative budget ends the program: `fault: overflow`, `fault: division
-by zero`, `fault: bad shift`, `fault: bad exponent`, `fault: budget
-spent` or `fault: bad budget` on stderr, and exit 1. Nothing is printed
-on stdout.
+out of range, a negative exponent, an operation past the budget, a
+negative budget, a string index out of range, or a string operator given
+a value that isn't a string or a character, ends the program:
+`fault: overflow`, `fault: division by zero`, `fault: bad shift`,
+`fault: bad exponent`, `fault: budget spent`, `fault: bad budget`,
+`fault: bad index`, `fault: not a string` or `fault: not a character` on
+stderr, and exit 1. Nothing is printed on stdout.
 
 ## Programs
 

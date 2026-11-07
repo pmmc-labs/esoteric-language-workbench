@@ -6,8 +6,9 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Steps 0 to 5 are built; all 46 golden tests pass. Next: step 6,
-decided as defaults for the interpreter experiments (D31 on).
+Steps 0 to 6 are built; all 66 golden tests pass under both Nodes. Next:
+step 7 (heap values), a stub. Step 6's decisions are D31 to D34, defaults
+for the interpreter experiments.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -143,14 +144,17 @@ proposed them.
 - Leave out: a way to catch `budget spent` or ask what's left, budgets
   of anything but operator applications.
 
-### 6. Strings (to build)
+### 6. Strings (done)
 
 Size: medium. D31 to D33 decide it; every test is written and agrees
 with the referee, extended for this step. Referee: `t/referee/calc.py`,
 extended for D31 to D33 before the build, by someone other than the
 model's writer; wanted because what a string's length, index and order
 are is where a host's own strings differ from the language's, and a
-mirror of the interpreter would copy the host.
+mirror of the interpreter would copy the host. Built: the host's answers
+are in `DESIGN.md` (committed before the code), D34 settles the messages
+and positions the decisions left open, and `make checks` finds all 66
+tests agreeing with the referee.
 
 - Strings (D31): the reader takes string literals and their escapes;
   every error D31 lists is an error before running (D28), each a unit
