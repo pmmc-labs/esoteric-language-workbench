@@ -1,0 +1,2 @@
+; Budgets, D21: an if costs its test and its taken branch, not the other branch. Expected output by hand from step 5.
+(within 2 (if (< 1 2) (+ 40 2) (+ (+ 1 1) (+ 1 1))))

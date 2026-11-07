@@ -1,0 +1,2 @@
+; Budgets, D22: the third operation of a budget of two is refused. Expected output by hand from step 5.
+(within 2 (+ (* 2 3) (- 10 4)))

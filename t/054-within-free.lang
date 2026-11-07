@@ -1,0 +1,2 @@
+; Budgets, D21 and D24: if, within and literals cost nothing, and the branch not taken is not charged. Expected output by hand from step 5.
+(within 0 (if #true (within 0 7) (/ 1 0)))

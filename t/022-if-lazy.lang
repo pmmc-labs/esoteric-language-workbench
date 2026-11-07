@@ -1,0 +1,2 @@
+; Only the taken branch runs (D13): the division by zero is never reached.
+(if (< 1 2) (if #false (/ 1 0) 42) (/ 1 0))

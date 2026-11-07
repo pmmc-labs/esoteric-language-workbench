@@ -1,0 +1,2 @@
+; Budgets, D22: a within's value is its body's, of any type. Expected output by hand from step 5.
+(within 1 (< 1 2))

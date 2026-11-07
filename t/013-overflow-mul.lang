@@ -1,0 +1,3 @@
+; (* 3037000500 3037000500) faults, after a value is computed: the fault ends the
+; program before anything prints. From t/models/arith.py.
+(+ (* 2 3) (* 3037000500 3037000500))
