@@ -1,0 +1,81 @@
+let xs = [3, 1, 4, 1, 5, 9, 2, 6]
+let total = 0
+for x in xs { total += x }
+print(total)
+let seen = []
+for x in xs {
+  if x not in seen { seen += [x] }
+}
+print(seen, len(seen))
+for x in xs {
+  xs += [x * 10]
+}
+print(xs, len(xs))
+let n = 0
+for x in xs {
+  xs = [n]
+  n += 1
+}
+print(xs, n)
+let ys = [1, 2, 3]
+for y in ys {
+  y = y * 100
+  print(y)
+}
+print(ys)
+for i in 0..len(ys) {
+  ys[i] = ys[i] * 2
+}
+print(ys)
+for y in ys {
+  ys[0] += 1
+  print(y, ys)
+}
+let g = [[1, 2], [3, 4], [5, 6]]
+let sums = []
+for row in g {
+  let s = 0
+  for v in row { s += v }
+  sums += [s]
+}
+print(sums)
+for row in g {
+  row += [0]
+  row[0] = 99
+}
+print(g)
+let flat = []
+for row in g {
+  for v in row { flat += [v] }
+}
+print(flat)
+for w in ["a", "b", "c"] { print(w) }
+fn evens(n) {
+  let out = []
+  for i in 0..n {
+    if i % 2 == 0 { out += [i] }
+  }
+  return out
+}
+for e in evens(10) { print(e) }
+for x in [] { print("never") }
+for x in [[]] { print("once", x) }
+let zs = [1, 2, 3]
+for z in zs {
+  zs = []
+  print(z)
+}
+print(zs)
+let tail = []
+for v in [4, 8, 15, 16, 23, 42] {
+  if v % 2 == 1 { continue }
+  if v > 20 { break }
+  tail += [v]
+}
+print(tail)
+for q in [1, 2] { }
+let q = []
+print(q)
+for s in ["ab", "c"] {
+  for c in s { print(c, s) }
+}

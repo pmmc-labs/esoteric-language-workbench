@@ -1,0 +1,2 @@
+t/594-err-fn-named-join.ditto:1:4: error: join is a builtin
+exit: 2

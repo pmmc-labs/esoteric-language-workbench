@@ -220,3 +220,41 @@ test('an index expression is not a statement', () => {
   fails('let s = "a"\ns[0]', 'expression statement must be a call', 2, 1);
   fails('"hi"', 'expression statement must be a call', 1, 1);
 });
+
+test('the list builtins resolve, with their arities', () => {
+  run('print(sort([2, 1]), split("a", ","), join(["a"], ","), words("a b"), slice([1], 0, 1), len([1]))');
+  fails('print(sort())', 'sort takes 1 argument, got 0', 1, 7);
+  fails('print(sort([1], 2))', 'sort takes 1 argument, got 2', 1, 7);
+  fails('print(split("a"))', 'split takes 2 arguments, got 1', 1, 7);
+  fails('print(join([1], ",", 2))', 'join takes 2 arguments, got 3', 1, 7);
+  fails('print(words())', 'words takes 1 argument, got 0', 1, 7);
+});
+
+test('a function cannot take the name of sort, split, join or words, now that they exist', () => {
+  for (const name of ['sort', 'split', 'join', 'words']) {
+    fails(`fn ${name}() { }`, `${name} is a builtin`, 1, 4);
+  }
+  run('let sort = [2, 1]\nprint(sort(sort))');
+  // keys and remove arrive with maps (step 6).
+  run('fn keys() { }\nfn remove() { }');
+});
+
+test('names in a list literal and in the steps of an assignment target are resolved, in source order', () => {
+  const p = run('let xs = [1]\nlet i = 0\nxs[i] = [xs, i]') as any;
+  const a = p.body[2];
+  assert.equal(a.target.cname, 'v_xs');
+  assert.equal(a.target.steps[0].index.cname, 'v_i');
+  assert.deepEqual(a.value.items.map((e: any) => e.cname), ['v_xs', 'v_i']);
+  fails('print([1, z])', 'unknown variable z', 1, 11);
+  fails('let xs = [1]\nxs[i] = 1', 'unknown variable i', 2, 4);
+  fails('let xs = [1]\nxs[0] = y', 'unknown variable y', 2, 9);
+  fails('ys[i] = z', 'unknown variable ys', 1, 1);
+  fails('let xs = [1]\nxs[0][j] = 1', 'unknown variable j', 2, 7);
+  fails('let xs = [1]\nxs[xs[k]] += [q]', 'unknown variable k', 2, 7);
+});
+
+test('a list is not a statement; assigning through a path needs the variable to be declared', () => {
+  fails('[1, 2]', 'expression statement must be a call', 1, 1);
+  fails('xs[0] = 1', 'unknown variable xs', 1, 1);
+  fails('fn f() {\n  xs[0] = 1\n}\nlet xs = [1]', 'xs is a top-level variable; functions see only their parameters and their own variables', 2, 3);
+});

@@ -1,0 +1,2 @@
+t/539-fault-in-int-list.ditto:1:11: fault: cannot use in on list and int
+exit: 1

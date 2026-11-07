@@ -1,0 +1,6 @@
+fn say(n) {
+  print("say", n)
+  return n
+}
+let xs = [1]
+xs[1 / 0] = say(1)

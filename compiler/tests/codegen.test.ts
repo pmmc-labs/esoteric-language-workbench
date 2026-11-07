@@ -141,3 +141,38 @@ test('a lookup is a runtime call that returns whether it hit, so step 7 can bran
   assert.match(h, /bool dt_try_index\(int line, int col, Value c, Value i, Value \*out\);/);
   assert.match(h, /bool dt_try_int\(int line, int col, Value s, Value \*out\);/);
 });
+
+test('a list literal computes its items in order, then builds the list once', () => {
+  const c = compile('print([1, [2], []])', 'a.ditto');
+  assert.match(c, /Value a\d+\[\] = \{t\d+, t\d+, t\d+\};\n\s*Value t\d+ = dt_list_new\(3, a\d+\);/);
+  assert.match(c, /dt_list_new\(0, NULL\)/);
+  assert.ok(c.indexOf('dt_int(INT64_C(1))') < c.indexOf('dt_int(INT64_C(2))'));
+});
+
+test('an indexed assignment evaluates its indexes, then the value, then rebuilds the spine from the inside out', () => {
+  const c = compile('let g = [[1]]\nlet i = 0\ng[i][0] = 5', 'a.ditto');
+  // The path is looked up (all steps but the last) at each step's own `[`, then set, innermost first.
+  const look = c.indexOf('dt_index(3, 2, ');
+  const rhs = c.indexOf('INT64_C(5)');
+  const inner = c.indexOf('dt_set_index(3, 5, ');
+  const outer = c.indexOf('dt_set_index(3, 2, ');
+  assert.ok(rhs > 0 && look > rhs && inner > look && outer > inner, `${rhs} ${look} ${inner} ${outer}`);
+  assert.match(c, /v_g = t\d+;/);
+  assert.doesNotMatch(c, /dt_index\(3, 5, /);
+});
+
+test('a compound assignment on a path reads the current value, evaluates the value, then applies the operator at the operator', () => {
+  const c = compile('let g = [[1]]\ng[0][0] += 2', 'a.ditto');
+  const read = c.indexOf('dt_index(2, 5, ');
+  const rhs = c.indexOf('INT64_C(2)');
+  const add = c.indexOf('dt_add(2, 9, ');
+  const set = c.indexOf('dt_set_index(2, 5, ');
+  assert.ok(read > 0 && rhs > read && add > rhs && set > add, `${read} ${rhs} ${add} ${set}`);
+});
+
+test('a lookup on a list is the same runtime call as on a string, so step 7 can branch on its result', () => {
+  const h = readFileSync(new URL('../../runtime/ditto.h', import.meta.url), 'utf8');
+  assert.match(h, /Value dt_set_index\(int line, int col, Value c, Value i, Value v\);/);
+  assert.match(h, /Value dt_list_new\(int64_t n, const Value \*items\);/);
+  assert.match(h, /Value dt_b_sort\(/);
+});

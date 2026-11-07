@@ -1,0 +1,2 @@
+t/515-fault-index-string-key.ditto:2:9: fault: list index must be an int, got string
+exit: 1

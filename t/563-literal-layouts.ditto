@@ -1,0 +1,20 @@
+let a = [1, 2, 3,]
+let b = [
+  1,
+  2,
+  3
+]
+let c = [ // a comment after the bracket
+  "x", // and after an element
+  "y",
+]
+let d = [[1,
+          2],
+         [3]]
+let e = [
+]
+print(a == b, a, b)
+print(c, d, e)
+print([1,
+  2][1], [
+  [7]][0][0])

@@ -1,0 +1,2 @@
+t/521-fault-assign-into-string.ditto:2:2: fault: cannot assign into string
+exit: 1

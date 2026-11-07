@@ -1,0 +1,2 @@
+t/518-fault-set-high.ditto:2:3: fault: index 3 out of range (length 3)
+exit: 1

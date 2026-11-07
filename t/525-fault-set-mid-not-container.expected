@@ -1,0 +1,2 @@
+t/525-fault-set-mid-not-container.ditto:2:6: fault: cannot index int
+exit: 1

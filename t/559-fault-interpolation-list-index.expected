@@ -1,0 +1,2 @@
+t/559-fault-interpolation-list-index.ditto:2:14: fault: index 5 out of range (length 1)
+exit: 1

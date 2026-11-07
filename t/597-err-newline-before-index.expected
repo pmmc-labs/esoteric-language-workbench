@@ -1,0 +1,2 @@
+t/597-err-newline-before-index.ditto:3:1: error: cannot assign to this
+exit: 2

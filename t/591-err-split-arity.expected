@@ -1,0 +1,2 @@
+t/591-err-split-arity.ditto:1:7: error: split takes 2 arguments, got 1
+exit: 2

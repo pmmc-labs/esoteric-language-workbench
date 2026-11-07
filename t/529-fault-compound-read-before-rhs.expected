@@ -1,0 +1,2 @@
+t/529-fault-compound-read-before-rhs.ditto:6:3: fault: index 5 out of range (length 2)
+exit: 1

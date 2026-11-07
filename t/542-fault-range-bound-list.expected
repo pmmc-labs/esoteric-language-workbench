@@ -1,0 +1,2 @@
+t/542-fault-range-bound-list.ditto:1:10: fault: range bounds must be ints, got list
+exit: 1

@@ -1,0 +1,2 @@
+t/533-fault-add-list-int.ditto:1:11: fault: cannot use + on list and int
+exit: 1

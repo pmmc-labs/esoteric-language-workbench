@@ -1,0 +1,2 @@
+t/581-err-assign-to-literal-index.ditto:1:1: error: cannot assign to this
+exit: 2

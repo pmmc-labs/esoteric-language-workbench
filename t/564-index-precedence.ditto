@@ -1,0 +1,9 @@
+let xs = [10, 20, 30]
+fn pair(a, b) {
+  return [a, b]
+}
+print(-xs[0], xs[0] + 1, xs[1] * 2, -xs[2] % 7)
+print(xs[1 + 1], xs[len(xs) - 1], xs[xs[0] / 10], [4, 5, 6][1])
+print([[1, 2], [3, 4]][1][0], pair(1, [2, 3])[1][0], pair("ab", "cd")[0][1])
+print(xs[0] < xs[1], xs[2] == 30, not xs[0] == 10)
+print(1 in [xs[0] / 10], "{xs[0]}{xs[1]}", "{pair(xs[2], 0)[0]}")

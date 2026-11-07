@@ -1,0 +1,5 @@
+print(["a\"b", "c\nd", "e\\f", "g\th", "i\rj"], [nil, true, -1])
+print([], [[]], [[], [[]]], ["", " "])
+print("top: a\"b", ["top: a\"b"])
+print(str(["x", 1]) + str([]) + str([[nil]]))
+print("{["q", ["r"]]}")

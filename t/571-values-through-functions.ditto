@@ -1,0 +1,18 @@
+fn build(n) {
+  let out = []
+  for i in 0..n { out += [i] }
+  return out
+}
+fn twice(xs) {
+  return xs + xs
+}
+fn first_two(xs) {
+  return slice(xs, 0, 2)
+}
+let a = build(4)
+let b = twice(a)
+let c = first_two(b)
+c[0] = 50
+b[1] = 60
+print(a, b, c)
+print(twice(first_two(twice(build(2)))))

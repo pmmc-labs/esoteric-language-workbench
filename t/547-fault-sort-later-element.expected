@@ -1,0 +1,2 @@
+t/547-fault-sort-later-element.ditto:1:7: fault: cannot use < on nil and int
+exit: 1

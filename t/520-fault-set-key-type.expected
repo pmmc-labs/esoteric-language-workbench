@@ -1,0 +1,2 @@
+t/520-fault-set-key-type.ditto:2:3: fault: list index must be an int, got string
+exit: 1

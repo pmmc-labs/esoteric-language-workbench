@@ -1,0 +1,2 @@
+t/556-fault-join-type.ditto:1:7: fault: join: expected a list of strings, got string
+exit: 1

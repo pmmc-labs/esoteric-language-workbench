@@ -1,0 +1,2 @@
+t/593-err-fn-named-sort.ditto:1:4: error: sort is a builtin
+exit: 2

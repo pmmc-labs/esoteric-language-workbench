@@ -1,0 +1,14 @@
+let rows = [[1, 2], [3]]
+for r in rows {
+  r += [0]
+  r[0] = 9
+  print(r)
+}
+print(rows)
+let ys = [1, 2]
+for y in ys {
+  ys[0] = 100
+  ys += [y]
+  print(y, ys)
+}
+print(ys)

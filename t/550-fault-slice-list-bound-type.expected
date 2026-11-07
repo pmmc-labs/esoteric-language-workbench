@@ -1,0 +1,2 @@
+t/550-fault-slice-list-bound-type.ditto:1:7: fault: slice: expected an int, got string
+exit: 1

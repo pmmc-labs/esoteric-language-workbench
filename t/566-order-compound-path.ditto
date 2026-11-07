@@ -1,0 +1,13 @@
+fn say(n) {
+  print("say", n)
+  return n
+}
+fn idx(n) {
+  print("index", n)
+  return n
+}
+let g = [[1, 2], [3, 4]]
+g[idx(1)][idx(1)] += say(10)
+print(g)
+g[idx(0)][idx(0)] -= say(1) * say(2)
+print(g)

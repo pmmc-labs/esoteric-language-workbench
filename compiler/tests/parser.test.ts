@@ -71,6 +71,7 @@ function sx(e: any): string {
     case 'name': return e.name;
     case 'call': return `${e.name}(${e.args.map(sx).join(' ')})`;
     case 'index': return `${sx(e.target)}[${sx(e.index)}]`;
+    case 'list': return `[${e.items.map(sx).join(' ')}]`;
     case 'string':
       return '"' + e.parts.map((q: any) => (q.kind === 'text' ? q.value : `{${sx(q.expr)}}`)).join('') + '"';
   }
@@ -347,4 +348,59 @@ test('step 4 parse errors', () => {
   parseError('print(s[])', "expected an expression, found ']'", 1, 9);
   parseError('print("a" "b")', "expected ')', found string", 1, 11);
   parseError('print(a not b)', "expected ')', found 'not'", 1, 9);
+});
+
+test('a list literal: items, trailing comma, nesting, breaks across lines, the position of its [', () => {
+  const lst = (src: string) => (ast(`print(${src})`).body[0] as any).expr.args[0];
+  assert.equal(sx(lst('[]')), '[]');
+  assert.equal(sx(lst('[1, 2, 3]')), '[1 2 3]');
+  assert.equal(sx(lst('[1, 2,]')), '[1 2]');
+  assert.equal(sx(lst('[[1], [], [[2]]]')), '[[1] [] [[2]]]');
+  assert.equal(sx(lst('[\n  1 +\n 2,\n  "a",\n]')), '[(+ 1 2) "a"]');
+  assert.equal(sx(lst('[1 < 2, not true, -3, f(1)]')), '[(< 1 2) (not true) (- 3) f(1)]');
+  assert.deepEqual(lst('  [1]').pos, at(1, 9));
+});
+
+test('indexing after a list literal, a call and a parenthesized expression', () => {
+  const idx = (src: string) => (ast(`print(${src})`).body[0] as any).expr.args[0];
+  assert.equal(idx('[1, 2][0]').kind, 'index');
+  assert.equal(idx('[1, 2][0]').target.kind, 'list');
+  assert.equal(idx('[[1]][0][0]').target.kind, 'index');
+  assert.equal(idx('f(x)[1]').target.kind, 'call');
+  assert.equal(idx('(xs)[1]').target.kind, 'name');
+  assert.deepEqual(idx('[1][0]').pos, at(1, 10));
+});
+
+test('an assignment target is a name and any number of [index] steps', () => {
+  const b = ast('xs[0] = 1\ng[i + 1][j] += 2\nys[ys[0]][1][2] -= 3\n(zs)[4] *= 5').body as any[];
+  assert.deepEqual(b.map((s) => s.kind), ['assign', 'assign', 'assign', 'assign']);
+  assert.deepEqual(b.map((s) => s.target.name), ['xs', 'g', 'ys', 'zs']);
+  assert.deepEqual(b.map((s) => s.target.steps.length), [1, 2, 3, 1]);
+  assert.deepEqual(b.map((s) => s.op), ['=', '+=', '-=', '*=']);
+  // The statement's pos is its operator; the target's is the first token; a step's is its `[`.
+  assert.deepEqual(b[0].pos, at(1, 7));
+  assert.deepEqual(b[0].target.pos, at(1, 1));
+  assert.deepEqual(b[0].target.steps[0], { kind: 'index', pos: at(1, 3), index: { kind: 'int', pos: at(1, 4), value: 0n } });
+  assert.deepEqual(b[1].target.steps.map((s: any) => s.pos), [at(2, 2), at(2, 9)]);
+  assert.equal(sx(b[1].target.steps[0].index), '(+ i 1)');
+  assert.equal(sx(b[2].target.steps[0].index), 'ys[0]');
+  assert.deepEqual(b[3].target.pos, at(4, 1));
+});
+
+test('cannot assign to this: a path must start at a name and have only index steps', () => {
+  parseError('[1, 2][0] = 5', 'cannot assign to this', 1, 1);
+  parseError('f(x)[0] = 1', 'cannot assign to this', 1, 1);
+  parseError('"abc"[0] = "x"', 'cannot assign to this', 1, 1);
+  parseError('  (xs[0] + 1)[0] = 1', 'cannot assign to this', 1, 3);
+  parseError('[1] += [2]', 'cannot assign to this', 1, 1);
+  parseError('xs\n[0] = 1', 'cannot assign to this', 2, 1);
+});
+
+test('list literal errors', () => {
+  parseError('print([1 2])', "expected ']', found '2'", 1, 10);
+  parseError('print([,])', "expected an expression, found ','", 1, 8);
+  parseError('print([1,,2])', "expected an expression, found ','", 1, 10);
+  parseError('print([1,', 'expected an expression, found end of file', 1, 10);
+  parseError('let xs = [1, 2\nprint(xs)', "expected ']', found 'print'", 2, 1);
+  parseError('print(1])', "expected ')', found ']'", 1, 8);
 });

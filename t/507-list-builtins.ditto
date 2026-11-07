@@ -1,0 +1,80 @@
+print(split("a,b,c", ","), len(split("a,b,c", ",")))
+print(split("a,,b", ","), len(split("a,,b", ",")))
+print(split("", ","), len(split("", ",")))
+print(split(",", ","), len(split(",", ",")))
+print(split(",a,", ","), len(split(",a,", ",")))
+print(split("abc", ","), len(split("abc", ",")))
+print(split("abc", "abc"), len(split("abc", "abc")))
+print(split("aaa", "aa"), len(split("aaa", "aa")))
+print(split("a--b--c", "--"), len(split("a--b--c", "--")))
+print(split("a b  c", " "), len(split("a b  c", " ")))
+print(split("line1\nline2\n", "\n"), len(split("line1\nline2\n", "\n")))
+print(split("a\tb", "\t"), len(split("a\tb", "\t")))
+print(split("x", "x"), len(split("x", "x")))
+print(split("xx", "x"), len(split("xx", "x")))
+print(split("abab", "ab"), len(split("abab", "ab")))
+print(split("ab", "abc"), len(split("ab", "abc")))
+print(split("a, b, c", ", "), len(split("a, b, c", ", ")))
+print(split("one", " "), len(split("one", " ")))
+print(split("\{}", "\{"), len(split("\{}", "\{")))
+print(split("a\"b\"c", "\""), len(split("a\"b\"c", "\"")))
+print(split("aXbxc", "x"), len(split("aXbxc", "x")))
+print(split("...", "."), len(split("...", ".")))
+print(join([], ","))
+print(join(["a"], ","))
+print(join(["a", "b", "c"], ","))
+print(join(["a", "", "b"], ", "))
+print(join(["", ""], "-"))
+print(join(["ab", "cd"], ""))
+print(join([""], "x"))
+print(join(["x", "y"], "\n"))
+print(join(["1", "2"], " + "))
+print(words(""), len(words("")))
+print(words(" "), len(words(" ")))
+print(words("a"), len(words("a")))
+print(words("  hello   world  "), len(words("  hello   world  ")))
+print(words("a\tb\nc\rd e"), len(words("a\tb\nc\rd e")))
+print(words("\n\n"), len(words("\n\n")))
+print(words("one,two three"), len(words("one,two three")))
+print(words("x  \t \n y"), len(words("x  \t \n y")))
+print(words(" lead"), len(words(" lead")))
+print(words("trail "), len(words("trail ")))
+print(words("tabs\t\tand\r\nlines"), len(words("tabs\t\tand\r\nlines")))
+let csv = "name,qty,price"
+let cells = split(csv, ",")
+print(cells, join(cells, ",") == csv)
+print(join(words("  the   quick brown  "), " "))
+let lines = split("1 2\n3 4 5\n\n6", "\n")
+for line in lines {
+  print(len(words(line)), words(line))
+}
+let total = 0
+for w in words("10 20 30 -5") { total += int(w) }
+print(total)
+let xs = [10, 20, 30, 40, 50]
+print(slice(xs, 0, 5), len(slice(xs, 0, 5)))
+print(slice(xs, 0, 0), len(slice(xs, 0, 0)))
+print(slice(xs, 5, 5), len(slice(xs, 5, 5)))
+print(slice(xs, 1, 3), len(slice(xs, 1, 3)))
+print(slice(xs, 2, 3), len(slice(xs, 2, 3)))
+print(slice(xs, 0, 1), len(slice(xs, 0, 1)))
+print(slice(xs, 4, 5), len(slice(xs, 4, 5)))
+print(slice(xs, 3, 3), len(slice(xs, 3, 3)))
+print(slice([], 0, 0), slice([[1], [2, 3], []], 1, 3), slice(["a", "b"], 1, 2), slice(xs, 1, 4) + slice(xs, 0, 1))
+print(slice(xs, 0, len(xs)) == xs, slice(slice(xs, 1, 5), 1, 3))
+let part = slice(xs, 1, 3)
+part[0] = 0
+print(xs, part)
+let g = [[1, 2], [3, 4]]
+let top = slice(g, 0, 1)
+top[0][0] = 9
+print(g, top)
+let chunks = []
+let at = 0
+while at < len(xs) {
+  let end = at + 2
+  if end > len(xs) { end = len(xs) }
+  chunks += [slice(xs, at, end)]
+  at = end
+}
+print(chunks)

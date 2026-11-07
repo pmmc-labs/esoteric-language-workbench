@@ -1,0 +1,4 @@
+5
+10
+t/558-fault-loop-body-fault.ditto:2:12: fault: division by zero
+exit: 1

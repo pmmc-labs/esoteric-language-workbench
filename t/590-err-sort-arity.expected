@@ -1,0 +1,2 @@
+t/590-err-sort-arity.ditto:1:7: error: sort takes 1 argument, got 0
+exit: 2

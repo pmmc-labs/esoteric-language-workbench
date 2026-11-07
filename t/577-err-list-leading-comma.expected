@@ -1,0 +1,2 @@
+t/577-err-list-leading-comma.ditto:1:8: error: expected an expression, found ','
+exit: 2

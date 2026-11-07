@@ -1,0 +1,5 @@
+print(join(["a", "b", "c"], "") + "!", split("x=1;y=2", ";"), words(" a  b "))
+for kv in split("x=1;y=2;z=3", ";") {
+  let parts = split(kv, "=")
+  print(parts[0], int(parts[1]) * 10)
+}

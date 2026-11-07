@@ -1,0 +1,4 @@
+say 9
+say 1
+t/526-fault-set-rhs-before-path.ditto:6:3: fault: index 9 out of range (length 2)
+exit: 1

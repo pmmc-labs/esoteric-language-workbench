@@ -1,0 +1,2 @@
+t/517-fault-index-element-int.ditto:2:12: fault: cannot index int
+exit: 1

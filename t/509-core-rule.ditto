@@ -1,0 +1,124 @@
+let a = [1, 2, 3]
+let b = a
+b[0] = 99
+print(a, b)
+a[2] = -3
+print(a, b)
+b = a
+a[1] += 5
+print(a, b)
+b += [4]
+print(a, b)
+print(a == b, a == slice(b, 0, 3))
+fn bump(xs) {
+  xs[0] = 100
+  xs += [200]
+  return xs
+}
+fn scratch(xs) {
+  xs[0] += 1
+}
+let c = [1, 2]
+let d = bump(c)
+print(c, d)
+scratch(c)
+print(c)
+print(bump(c), c)
+fn same(xs) {
+  return xs
+}
+let e = same(c)
+e[0] = -1
+print(c, e)
+let inner = [1, 2]
+let outer = [inner, inner, [inner]]
+inner[0] = 50
+print(inner, outer)
+outer[0][1] = 60
+outer[2][0][0] = 70
+print(inner, outer)
+outer[1] = inner
+inner[1] = 0
+print(inner, outer)
+let row = outer[0]
+row[0] = 0
+print(row, outer)
+let twice = outer + outer
+twice[0][0] = 1
+twice[3][0] = 2
+print(outer, twice)
+fn wrap(xs) {
+  let box = [xs]
+  xs[0] = 0
+  box += [xs]
+  return box
+}
+let w = [5, 6]
+let boxed = wrap(w)
+print(w, boxed)
+let items = [1, 2, 3]
+let visits = []
+for it in items {
+  items += [it * 10]
+  items[0] += 1
+  visits += [it]
+}
+print(items, visits)
+for it in items {
+  items = []
+}
+print(items)
+let grid = [[1, 2], [3, 4]]
+let seen_rows = []
+for r in grid {
+  grid[1][0] = 0
+  seen_rows += [r]
+}
+print(seen_rows, grid)
+let acc = []
+let snaps = []
+for i in 0..5 {
+  acc += [i]
+  snaps += [acc]
+}
+print(acc)
+print(snaps)
+snaps[2][0] = 99
+print(snaps[2], snaps[3], acc)
+fn swap(xs, i, j) {
+  let t = xs[i]
+  xs[i] = xs[j]
+  xs[j] = t
+  return xs
+}
+fn rotate(xs) {
+  return slice(xs, 1, len(xs)) + [xs[0]]
+}
+let s = ["a", "b", "c", "d"]
+let s2 = swap(s, 0, 3)
+let s3 = rotate(s2)
+print(s, s2, s3)
+s = swap(s, 1, 2)
+print(s)
+s = s
+s = s + s
+s[0] = "z"
+print(s)
+let n1 = [[1, [2]], [[3]]]
+let n2 = n1
+n2[0][1][0] = 20
+n2[1][0][0] = 30
+print(n1, n2)
+print(n1 == n2, n1[0][0] == n2[0][0], n1[0][1] == n2[0][1])
+fn outerfn(xs) {
+  xs[0] = "outer"
+  return innerfn(xs) + xs
+}
+fn innerfn(xs) {
+  xs[0] = "inner"
+  xs += ["x"]
+  return xs
+}
+let base = ["b", "c"]
+let res = outerfn(base)
+print(base, res)

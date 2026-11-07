@@ -1,0 +1,3 @@
+let lines = split(read(), "\n")
+print(len(lines), lines)
+print(join(lines, "|"))

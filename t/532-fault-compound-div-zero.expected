@@ -1,0 +1,2 @@
+t/532-fault-compound-div-zero.ditto:2:7: fault: division by zero
+exit: 1

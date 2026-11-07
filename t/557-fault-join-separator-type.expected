@@ -1,0 +1,2 @@
+t/557-fault-join-separator-type.ditto:1:7: fault: join: expected a string, got int
+exit: 1

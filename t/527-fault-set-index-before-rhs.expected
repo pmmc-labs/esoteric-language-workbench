@@ -1,0 +1,2 @@
+t/527-fault-set-index-before-rhs.ditto:6:6: fault: division by zero
+exit: 1

@@ -1,0 +1,2 @@
+t/592-err-join-arity.ditto:1:7: error: join takes 2 arguments, got 3
+exit: 2

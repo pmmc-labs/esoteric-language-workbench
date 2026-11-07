@@ -1,0 +1,2 @@
+t/554-fault-words-type.ditto:1:7: fault: words: expected a string, got list
+exit: 1

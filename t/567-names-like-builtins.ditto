@@ -1,0 +1,6 @@
+let sort = [3, 1, 2]
+let words = ["b", "a"]
+let join = "-"
+let split = [[]]
+print(sort(sort), words, join, split)
+print(join(sort(words), join))

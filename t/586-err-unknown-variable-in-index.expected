@@ -1,0 +1,2 @@
+t/586-err-unknown-variable-in-index.ditto:2:4: error: unknown variable i
+exit: 2

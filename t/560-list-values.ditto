@@ -1,0 +1,9 @@
+let a = [1, 2, 3]
+let b = a
+b[0] = 99
+print(a, b)
+a += [4]
+print(a, b)
+b = a
+b[3] = 0
+print(a, b, a == b)

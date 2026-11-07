@@ -1,0 +1,2 @@
+t/548-fault-slice-list-high.ditto:1:7: fault: slice 1..4 out of range (length 3)
+exit: 1

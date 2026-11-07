@@ -1,0 +1,2 @@
+t/589-err-unknown-variable-in-literal.ditto:1:11: error: unknown variable z
+exit: 2

@@ -1,0 +1,2 @@
+t/543-fault-sort-int.ditto:1:7: fault: sort: expected a list, got int
+exit: 1

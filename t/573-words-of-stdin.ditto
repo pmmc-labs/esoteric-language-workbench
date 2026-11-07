@@ -1,0 +1,3 @@
+let ws = words(read())
+print(len(ws), ws)
+for w in ws { print(len(w)) }

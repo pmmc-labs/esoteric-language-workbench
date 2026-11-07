@@ -1,0 +1,2 @@
+t/540-fault-condition-list.ditto:1:4: fault: condition must be a bool, got list
+exit: 1

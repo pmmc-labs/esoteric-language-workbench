@@ -1,0 +1,2 @@
+t/584-err-assign-to-expression-index.ditto:2:1: error: cannot assign to this
+exit: 2

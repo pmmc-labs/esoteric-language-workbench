@@ -1,0 +1,2 @@
+t/537-fault-less-nested-mixed.ditto:1:16: fault: cannot use < on string and int
+exit: 1

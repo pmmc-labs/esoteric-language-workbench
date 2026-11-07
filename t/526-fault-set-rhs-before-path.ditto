@@ -1,0 +1,6 @@
+fn say(n) {
+  print("say", n)
+  return n
+}
+let xs = [1, 2]
+xs[say(9)] = say(1)

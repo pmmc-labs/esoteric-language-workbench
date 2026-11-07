@@ -1,0 +1,2 @@
+t/582-err-assign-to-call-index.ditto:1:1: error: cannot assign to this
+exit: 2

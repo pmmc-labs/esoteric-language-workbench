@@ -1,0 +1,2 @@
+t/524-fault-set-mid-miss.ditto:2:3: fault: index 5 out of range (length 2)
+exit: 1
