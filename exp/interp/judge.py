@@ -77,6 +77,8 @@ PROBES = [
     ('position', '\n\n   (+ 1 2 3)', ('line 3, column 4', lambda o, e, s: s == 2 and re.match(r'\S+:3:4: ', e))),
     ('usage-no-file', None, ('exit 2', lambda o, e, s: s == 2)),
     ('missing-file', None, ('exit 2', lambda o, e, s: s == 2)),
+    ('name-toString', '(toString 1 2)', STATIC),
+    ('name-hasOwnProperty', '(if #false (hasOwnProperty 1 2) 0)', STATIC),
     # The host's numbers, where a double or 32-bit shift would answer wrongly.
     ('exact-max', '(+ 4611686018427387902 1)', ('4611686018427387903', lambda o, e, s: o == '4611686018427387903\n' and s == 0)),
     ('past-2^53', '(+ 9007199254740992 1)', ('9007199254740993', lambda o, e, s: o == '9007199254740993\n' and s == 0)),
@@ -134,6 +136,11 @@ PROBES_FN = [
     ('deep-frames-stack', '(def (d n) (if (== n 0) 0 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (d (- n 1))))))))) (d 10000)', fault('stack')),
     ('deep-in-args', '(def (d n) (if (== n 0) 0 (id (+ 1 (d (- n 1)))))) (def (id x) x) (d 9999)', value(9999)),
     ('deep-in-args-stack', '(def (d n) (if (== n 0) 0 (id (+ 1 (d (- n 1)))))) (def (id x) x) (d 10000)', fault('stack')),
+    # A host's objects as maps: names nobody defined must stay unknown.
+    ('name-constructor', '(constructor)', STATIC),
+    ('name-proto', '(__proto__)', STATIC),
+    ('def-constructor', '(def (constructor) 7) (constructor)', value(7)),
+    ('param-proto', '(def (f __proto__) __proto__) (f 3)', value(3)),
     ('fib-25', '(def (fib n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))) (fib 25)', ('75025, timed', lambda o, e, s: o == '75025\n' and s == 0)),
 ]
 
