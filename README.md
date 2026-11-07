@@ -37,6 +37,7 @@ TypeScript on Node. main has the compiler.
 | `t/referee/` | The referee: a second implementation from the decisions, which a delegated model is judged against. |
 | `docs/MODELS.md` | Which tasks need which size of model, when to escalate, when a smaller one is safe. |
 | `exp/local/` | The same experiments on a local model through ollama: a plain agent loop, the briefs, the runs. |
+| `exp/interp/` | The interpreter experiment: the plan, and `judge.py`, its probes, a comparison with the referee on random programs, and the process checks. Not on its base branch, `exp-interp`. |
 | `t/run.sh`, `Makefile` | The runner, which runs each golden test through `bin/lang.ts`, and the targets. The interpreter itself is built from step 0 (`docs/PLAN.md`). |
 
 ## Using it
