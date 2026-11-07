@@ -1,0 +1,133 @@
+== interp-fn-haiku (base exp-interp-fn)
+d0f52fe step 6: LANGUAGE, DESIGN, PLAN and Status for functions, tail calls and depth; D35 for the messages of D31's errors (D31 to D35)
+1163aba step 6: functions, tail calls and depth, the evaluator on its own stack (D31 to D34)
+e05e1a4 step 6: what the host gives for calls, tail calls and depth (D31 to D34)
+== make test
+66 tests, 0 failed
+models: 80 files from 5 models
+referee: 1 referees, 66 tests agree, 0 outside them
+all: 0 failed
+== make golden-node
+ok   089-fault-in-function
+66 tests, 0 failed
+== make commits
+commits: 3 in origin/exp-interp-fn..HEAD
+commits: 0 failed
+== process
+DESIGN.md first: ('e05e1a4', 'step 6: what the host gives for calls, tail calls and depth (D31 to D34)'); code first: ('1163aba', 'step 6: functions, tail calls and depth, the evaluator on its own stack (D31 to D34)')
+host answers committed before code: yes
+files under t/ changed: none
+files the brief said not to touch, changed: none
+decisions added: ['D35']
+== probes-fn
+def-after-expr         ok      want: error before running
+                               got:  build/judge/def-after-expr.lang:1:3: a definition after the expression [exit 2, 0.1s, 69 MB peak so far]
+only-defs              ok      want: error before running
+                               got:  build/judge/only-defs.lang:1:1: a program of definitions needs an expression after them [exit 2, 0.1s, 70 MB peak so far]
+def-twice              ok      want: error before running
+                               got:  build/judge/def-twice.lang:1:19: two definitions of f [exit 2, 0.1s, 70 MB peak so far]
+def-named-op           ok      want: error before running
+                               got:  build/judge/def-named-op.lang:1:7: + is not a name for a function [exit 2, 0.1s, 70 MB peak so far]
+def-named-if           ok      want: error before running
+                               got:  build/judge/def-named-if.lang:1:7: if is not a name for a function [exit 2, 0.1s, 70 MB peak so far]
+def-malformed          ok      want: error before running
+                               got:  build/judge/def-malformed.lang:1:6: a definition's first part is its name and parameters,  [exit 2, 0.1s, 70 MB peak so far]
+def-in-body            ok      want: error before running
+                               got:  build/judge/def-in-body.lang:1:10: a definition is only at the top of the program [exit 2, 0.1s, 70 MB peak so far]
+param-twice            ok      want: error before running
+                               got:  build/judge/param-twice.lang:1:11: two parameters named a [exit 2, 0.1s, 70 MB peak so far]
+param-named-fn         ok      want: error before running
+                               got:  build/judge/param-named-fn.lang:1:21: g is the name of a function [exit 2, 0.1s, 70 MB peak so far]
+param-named-within     ok      want: error before running
+                               got:  build/judge/param-named-within.lang:1:9: within is not a name for a parameter [exit 2, 0.1s, 70 MB peak so far]
+call-arity             ok      want: error before running
+                               got:  build/judge/call-arity.lang:1:26: f takes 1 arguments, not 2 [exit 2, 0.1s, 70 MB peak so far]
+fn-as-value            ok      want: error before running
+                               got:  build/judge/fn-as-value.lang:1:16: f is a function, not a value [exit 2, 0.1s, 70 MB peak so far]
+param-as-head          ok      want: error before running
+                               got:  build/judge/param-as-head.lang:1:13: g is a parameter, not a function [exit 2, 0.1s, 70 MB peak so far]
+unknown-in-untaken     ok      want: error before running
+                               got:  build/judge/unknown-in-untaken.lang:1:25: unknown name h [exit 2, 0.1s, 70 MB peak so far]
+tail-10M               ok      want: 10000000, in constant space
+                               got:  10000000 [exit 0, 7.6s, 78 MB peak so far]
+tail-nested-if         ok      want: 0
+                               got:  0 [exit 0, 0.2s, 78 MB peak so far]
+tail-mutual-1M         ok      want: '#false'
+                               got:  #false [exit 0, 0.6s, 78 MB peak so far]
+within-not-tail-ok     ok      want: 0
+                               got:  0 [exit 0, 0.1s, 81 MB peak so far]
+within-not-tail-stack  ok      want: fault: stack
+                               got:  fault: stack [exit 1, 0.1s, 81 MB peak so far]
+deep-frames-ok         ok      want: 49995
+                               got:  49995 [exit 0, 0.1s, 95 MB peak so far]
+deep-frames-stack      ok      want: fault: stack
+                               got:  fault: stack [exit 1, 0.1s, 99 MB peak so far]
+deep-in-args           ok      want: 9999
+                               got:  9999 [exit 0, 0.1s, 99 MB peak so far]
+deep-in-args-stack     ok      want: fault: stack
+                               got:  fault: stack [exit 1, 0.1s, 99 MB peak so far]
+name-constructor       ok      want: error before running
+                               got:  build/judge/name-constructor.lang:1:2: unknown name constructor [exit 2, 0.1s, 99 MB peak so far]
+name-proto             ok      want: error before running
+                               got:  build/judge/name-proto.lang:1:2: unknown name __proto__ [exit 2, 0.1s, 99 MB peak so far]
+def-constructor        ok      want: 7
+                               got:  7 [exit 0, 0.1s, 99 MB peak so far]
+param-proto            ok      want: 3
+                               got:  3 [exit 0, 0.1s, 99 MB peak so far]
+fib-25                 ok      want: 75025, timed
+                               got:  75025 [exit 0, 0.3s, 99 MB peak so far]
+probes: 28, 0 wrong
+== probes
+untaken-arity         ok      want: error before running
+                              got:  build/judge/untaken-arity.lang:1:12: + takes 2 arguments, not 3 [exit 2]
+untaken-unknown       ok      want: error before running
+                              got:  build/judge/untaken-unknown.lang:1:14: unknown name foo [exit 2]
+untaken-if-parts      ok      want: error before running
+                              got:  build/judge/untaken-if-parts.lang:1:13: if takes 3 arguments, not 2 [exit 2]
+untaken-within-parts  ok      want: error before running
+                              got:  build/judge/untaken-within-parts.lang:1:13: within takes 2 arguments, not 1 [exit 2]
+literal-past-max      ok      want: error before running
+                              got:  build/judge/literal-past-max.lang:1:1: integer 4611686018427387904 is out of range (63 bit [exit 2]
+literal-past-min      ok      want: error before running
+                              got:  build/judge/literal-past-min.lang:1:1: integer -4611686018427387905 is out of range (63 bi [exit 2]
+two-expressions       ok      want: error before running
+                              got:  build/judge/two-expressions.lang:1:3: a second expression after the program's expression [exit 2]
+empty-program         ok      want: error before running
+                              got:  build/judge/empty-program.lang:1:1: expected an expression [exit 2]
+unbalanced            ok      want: error before running
+                              got:  build/judge/unbalanced.lang:1:1: unclosed ( [exit 2]
+position              ok      want: line 3, column 4
+                              got:  build/judge/position.lang:3:4: + takes 2 arguments, not 3 [exit 2]
+usage-no-file         ok      want: exit 2
+                              got:  usage: lang FILE [exit 2]
+missing-file          ok      want: exit 2
+                              got:  lang: cannot read build/judge/no-such-file.lang: ENOENT: no such file or directory, open ' [exit 2]
+name-toString         ok      want: error before running
+                              got:  build/judge/name-toString.lang:1:2: unknown name toString [exit 2]
+name-hasOwnProperty   ok      want: error before running
+                              got:  build/judge/name-hasOwnProperty.lang:1:13: unknown name hasOwnProperty [exit 2]
+exact-max             ok      want: 4611686018427387903
+                              got:  4611686018427387903 [exit 0]
+past-2^53             ok      want: 9007199254740993
+                              got:  9007199254740993 [exit 0]
+shl-32                ok      want: 4294967296
+                              got:  4294967296 [exit 0]
+shr-negative          ok      want: -3
+                              got:  -3 [exit 0]
+div-min-by-minus-one  ok      want: fault: overflow
+                              got:  fault: overflow [exit 1]
+pow-big-exponent      ok      want: 1, quickly
+                              got:  1 [exit 0]
+two-faults-shl        record  want: nothing decided: recorded
+                              got:  fault: not an integer [exit 1]
+two-faults-pow        record  want: nothing decided: recorded
+                              got:  fault: not an integer [exit 1]
+deep-1000             ok      want: 1001
+                              got:  1001 [exit 0]
+deep-20000            record  want: nothing decided: recorded
+                              got:  build/judge/deep-20000.lang:1:5001: nested too deeply (limit 1000) [exit 2]
+deep-100000           record  want: nothing decided: recorded
+                              got:  build/judge/deep-100000.lang:1:5001: nested too deeply (limit 1000) [exit 2]
+probes: 25, 0 wrong
+== fuzz 2000 1
+fuzz: 2000 programs (seed 1), 0 differ, 0 outside the referee

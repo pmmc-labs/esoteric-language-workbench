@@ -164,7 +164,7 @@ it).
 | Random programs against the referee | 2,000, none differ | 2,000, none differ | 1,000 string and 2,000, none differ | the same |
 | Host lines committed before code | yes | yes | yes | yes |
 | Decisions added | 0 | 1, the wording of D31's errors | 0 | 1, the wording of literal errors |
-| 10,000,000 tail calls | 10.6 s, flat at 78 MB | 6.2 s, flat at 79 MB | | |
+| 10,000,000 tail calls, two runs | 10.6 s and 9.9 s, flat at 78 MB | 6.2 s and 7.6 s, flat at 79 MB | | |
 | Time, turns, output tokens, cost | 5.5 min, 26, 22K, $0.77 | 14.2 min, 56, 77K, $0.76 | 3.6 min, 26, 20K, $0.78 | 5.9 min, 66, 63K, $0.57 |
 | Session | `session_017A3bHY5Xfog1cEiS9rwzeD` | `session_017A3bHUwMhqGi6tRcL7YFtb` | `session_017A3bHW5EkUFBiW9bvmRS6C` | `session_017A3bHVWARHdUAL13oKtQ84` |
 
