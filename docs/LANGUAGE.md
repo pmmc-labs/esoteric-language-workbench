@@ -99,4 +99,7 @@ on stdout.
 ## Programs
 
 The program's value is printed, followed by a newline, and the program
-exits 0.
+exits 0. A program that nests more than 1000 levels deep, or that has an
+error the checker finds before running (an unknown name, a form with the
+wrong number of arguments), is reported before anything runs, with its
+position, and exits 2.

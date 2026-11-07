@@ -416,7 +416,8 @@ is never taken too (D28).
   arguments, not 1` as the forms take them (D13, D24).
 - A list whose head is a symbol that isn't an operator or form: `unknown
   operator foo`; a head that is itself a list: `expected an operator, not a
-  list`.
+  list`; one that is an integer or a boolean: `expected an operator, not
+  an integer` or `..., not a boolean`.
 - A symbol that's not an integer or a boolean, bare: `unknown name foo`.
   An operator or form name on its own is one of these too, as `within` is
   (D24 says so for `within`, and `if` is the same).

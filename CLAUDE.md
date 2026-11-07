@@ -20,10 +20,15 @@ interpreter in TypeScript on Node, steps 0 to 5 of
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). Nothing is built.
-**Next:** step 0, which starts by answering `DESIGN.md`'s "What the
-host gives". Not agreed, from main: which fault reports when one
-operator could fault two ways.
+interpreter reports before evaluating (D28, exit 2). Step 0 is built:
+the host's answers are in `DESIGN.md` (committed before any code), and
+D30 to D34 are the interpreter's own defaults, written then because
+nothing could be asked. The reader, the checker and the evaluator
+exist, with `bin/lang.ts` on top, and only integers and booleans run:
+golden tests 000 and 001 pass on Node 22 and 24, and nine unit tests
+in `interp/tests/`. **Next:** step 1 (tests 010 to 015). Not agreed,
+from main: which fault reports when one operator could fault two ways.
+D32 is the interpreter's default for it, and step 3 is where it bites.
 
 ## Read first, in this order
 
