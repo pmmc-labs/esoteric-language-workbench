@@ -148,6 +148,7 @@ limit.
 | `lib/` | The prelude, compiled into every program, and the libraries a program asks for |
 | `examples/` | Example programs; each with a `.expected` is a golden test |
 | `docs/guide/` | The guide; its code blocks are golden tests too |
+| `tools/decisions/` | The decision-log browser: `extract.py` (a `DECISIONS.md` to JSON), `page.py` and `page.html` (one HTML page of it); its README has the judgement calls |
 | `t/` | Golden tests: `NNN-name.ext` + `NNN-name.expected`; `run.sh`; `models/`; `referee/` (an evaluator of the language from the decisions, run over every test by `checks.py`; the builder of a step doesn't read it); `data/` |
 | `build/` | Output (ignored) |
 
@@ -168,6 +169,9 @@ limit.
   toolchain error, or a file it can't read or write; a fault in the
   compiler itself is `langc: internal error: ...` with Node's stack.
   `LANG_CC` overrides the C compiler.
+- `make decisions`: `build/decisions-workbench.html` and
+  `build/decisions-a64-slight.html` (`A64=path`, `../a64-slight` by
+  default), a browser of each decision log, one file each.
 - [Environment variables a compiled program reads: the virtual clock,
   the heap cap, record and replay, the scheduling seed, the GC stress
   and poison knobs. `t/run.sh` sets the ones the tests assume.]
