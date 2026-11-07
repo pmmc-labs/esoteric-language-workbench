@@ -1,0 +1,42 @@
+// All-or-nothing transfers: apply() works on its own copy of the accounts, so a
+// batch that fails halfway leaves the caller's accounts exactly as they were.
+fn apply(accounts, batch) {
+  for t in batch {
+    if t.from not in accounts or t.to not in accounts {
+      return {ok: false, why: "no account for {t}"}
+    }
+    if accounts[t.from].balance < t.amount {
+      return {ok: false, why: "{t.from} has only {accounts[t.from].balance}"}
+    }
+    accounts[t.from].balance -= t.amount
+    accounts[t.to].balance += t.amount
+    accounts[t.from].log += ["-{t.amount} to {t.to}"]
+    accounts[t.to].log += ["+{t.amount} from {t.from}"]
+  }
+  return {ok: true, accounts: accounts}
+}
+
+let accounts = {
+  alice: {balance: 100, log: []},
+  bob: {balance: 50, log: []},
+  carol: {balance: 0, log: []},
+}
+let opening = accounts
+let batches = [
+  [{from: "alice", to: "bob", amount: 30}, {from: "bob", to: "carol", amount: 60}],
+  [{from: "carol", to: "alice", amount: 10}, {from: "carol", to: "bob", amount: 90}],
+  [{from: "bob", to: "dave", amount: 5}],
+]
+for batch in batches {
+  let result = apply(accounts, batch)
+  if result.ok {
+    accounts = result.accounts
+    print("applied {len(batch)} transfers")
+  } else {
+    print("rejected: {result.why}")
+  }
+}
+for name in accounts {
+  print("{name}: {accounts[name].balance} {accounts[name].log}")
+}
+print("opening: {opening}")
