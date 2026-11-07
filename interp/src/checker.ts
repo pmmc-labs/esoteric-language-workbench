@@ -10,6 +10,7 @@ export function check(f: Form): void {
   switch (f.t) {
     case "int":
     case "bool":
+    case "str":
       return;
     case "sym":
       throw new CheckError(`unknown name ${f.name}`, f.line, f.col);
@@ -17,11 +18,12 @@ export function check(f: Form): void {
       const head = f.items[0];
       if (head === undefined || head.t !== "sym")
         throw new CheckError("a list must start with an operator", f.line, f.col);
-      const arity = OPERATORS.has(head.name) ? 2 : head.name === "if" ? 3 : head.name === "within" ? 2 : undefined;
+      const op = OPERATORS.get(head.name);
+      const arity = op ? op.arity : head.name === "if" ? 3 : head.name === "within" ? 2 : undefined;
       if (arity === undefined) throw new CheckError(`unknown name ${head.name}`, head.line, head.col);
       const n = f.items.length - 1;
       if (n !== arity)
-        throw new CheckError(`${head.name} takes ${arity} arguments, not ${n}`, f.line, f.col);
+        throw new CheckError(`${head.name} takes ${arity} argument${arity === 1 ? "" : "s"}, not ${n}`, f.line, f.col);
       for (let k = 1; k <= n; k++) check(f.items[k]);
     }
   }

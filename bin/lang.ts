@@ -18,11 +18,20 @@ function main(): number {
     out(2, "usage: lang FILE\n");
     return 2;
   }
-  let src: string;
+  let bytes: Buffer;
   try {
-    src = readFileSync(file, "utf8");
+    bytes = readFileSync(file);
   } catch (e) {
     out(2, `lang: cannot read ${file}: ${(e as Error).message}\n`);
+    return 2;
+  }
+  // Strict UTF-8, and a byte order mark kept as a character (D31): the
+  // host's default drops it, and then a file would begin with no name.
+  let src: string;
+  try {
+    src = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    out(2, `${file}:1:1: not valid UTF-8\n`);
     return 2;
   }
   try {
