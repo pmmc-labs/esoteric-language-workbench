@@ -352,6 +352,98 @@ atoms too (it changes the C of every program for nothing an atom
 needs). (The compiler's: on the `interpreter` branch D25's order is the
 interpreter's to keep, D28.)
 
+## Interpreter
+
+The entries below are the interpreter's own (D28, D29), written by the
+builder of its steps, which could not ask. Each is a default, fair to
+revisit, and is listed under `DESIGN.md`'s Open questions.
+
+**D30. A program nested more than 1000 levels deep is an error before
+running.** *(Default, written by the builder of the interpreter's step 0,
+which could not ask; fair to revisit.)* The reader, the checker and the
+evaluator recurse, one host call stack per level, so how deep a program
+may nest was the host's to decide. Here it's the language's: on both Node
+22 and Node 24, plain recursion reaches about 10,000 frames (measured), the
+evaluator takes a few frames a level, and a limit a long way under that
+holds on both. It's a fixed number, not one measured per host, so a
+program is accepted or refused the same way by either. The tests nest at
+most 147 (`010-arith`). The reader reports it as `FILE:LINE:COL: nested
+more than 1000 deep`, at the form that goes past, with exit 2 (D28).
+Rejected: no limit (a deep program dies in the host's own `RangeError`, at
+a depth that varies with the host's version and with how a call is made);
+a limit measured on the host (the two Nodes would disagree about the same
+program, which is what the second oracle is there to catch); an iterative
+reader and evaluator with a stack of their own (more code, and it moves
+the limit to the heap, which would need a decision of its own).
+
+**D31. A value is a `bigint` (an integer) or a `boolean`, and equality is
+`===`.** *(Default, written by the builder of the interpreter's step 0;
+fair to revisit.)* An integer is a `bigint`, because a `number` is exact
+only to 2^53 and D4's range is 2^62 wide. A boolean is a JavaScript
+boolean. With `===`, values of different types are never equal, so `==`
+on two of them is `#false` (D12) with no rule of its own. Rejected: a
+`number` for an integer (inexact past 2^53, so the overflow check would
+have to know which results are exact); a tagged object for each value
+(nothing needs it, and the language has two types); loose `==`, which
+Node says `1n == true` is, so a boolean would equal the integer 1.
+
+**D32. Within one application, the first fault in this order is the one
+reported: the budget (D22), then `not an integer` on an operand, then the
+operator's own check, then `overflow`. The operator's own check is the
+count of a shift (`bad shift`), a negative exponent of `**` (`bad
+exponent`), and a zero divisor of `/` and `%` (`division by zero`).**
+*(Default, written by the builder of the interpreter's step 0; fair to
+revisit.)* This is the question `CLAUDE.md`'s Status lists as not agreed
+from main: which fault reports when one operator could fault two ways. The
+tests fix part of it. Test 034 has `(bit/shl 1 63)` report `bad shift`,
+where the result would also overflow, so the count comes before the range.
+D27 has `need_ints` as the first check after the charge, so the operands'
+types come before the operator's own checks. So `(bit/shl #true 99)`,
+`(/ #true 0)` and `(** #true -1)` each report `not an integer`. Rejected:
+an operator's own check before its types (it would report the fault about
+a count or a divisor for an operand that isn't an integer at all, against
+D27's order); overflow before the count (contradicts test 034).
+
+**D33. What the reader and checker reject before running, and how each is
+worded.** *(Default, written by the builder of the interpreter's step 0;
+fair to revisit.)* Each is reported as `FILE:LINE:COL: message` on stderr,
+exit 2 (D28), at the start of the offending form or token; lines and
+columns count from 1. The checker covers the whole program, a branch that
+is never taken too (D28).
+- A literal outside the 63-bit range: `integer out of range` (D4).
+- A form with the wrong number of arguments: `+ takes 2 arguments, not 3`
+  for each operator, `if takes 3 arguments, not 2` and `within takes 2
+  arguments, not 1` as the forms take them (D13, D24).
+- A list whose head is a symbol that isn't an operator or form: `unknown
+  operator foo`; a head that is itself a list: `expected an operator, not a
+  list`.
+- A symbol that's not an integer or a boolean, bare: `unknown name foo`.
+  An operator or form name on its own is one of these too, as `within` is
+  (D24 says so for `within`, and `if` is the same).
+- A `#` token other than `#true` and `#false`: `unknown name #foo`.
+- A program that is no expression: `expected an expression`; more than one
+  expression in the file: `expected end of file after the expression`; a
+  `(` never closed, reported at that `(`: `unclosed (`; a `)` with nothing
+  open: `unexpected )`.
+Digits with leading zeros or a leading `-` read as the integer (`007` is 7,
+`-0` is 0); no test needs otherwise, and the digits-only rule is the simplest.
+Rejected: checking a form only when it's evaluated (D28 rejects it); a
+warning and not an error for a symbol the checker doesn't know (a program
+would then depend on which branches it takes, which D28 rules out).
+
+**D34. Exit statuses: 0 for a value, 1 for a fault, 2 for an error before
+running, a usage error or a file that can't be read, and 3 for an
+interpreter's own internal error.** *(Default, written by the builder of
+the interpreter's step 0; fair to revisit.)* D6 and D28 give 0, 1 and 2.
+The internal error's status is the one neither decided. It prints
+`lang: internal error: ...` with the host's stack, on stderr, and exits 3,
+so a golden test's `exit: 3` would show an interpreter bug and not a
+program's fault. Node's own status for an uncaught exception is 1, which is
+a fault's, so the driver catches everything and sets 3 itself. Rejected:
+1 (a fault and an interpreter bug would look the same); the sysexits
+numbers (nothing in the suite uses them, and 3 is the first number that
+isn't taken).
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,
