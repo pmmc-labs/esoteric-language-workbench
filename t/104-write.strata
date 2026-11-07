@@ -1,0 +1,9 @@
+write 1
+write 2
+write 3
+print 0
+write 10
+write -5
+print 99
+write 7 > 3
+write 40 + 2
