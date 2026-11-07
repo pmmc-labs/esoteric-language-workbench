@@ -281,7 +281,7 @@ file ending inside a call is `expected ')', found end of file`, at the
 position after the last byte. These are the `expected X, found Y`
 sites `DESIGN.md` leaves to the builder.
 
-**D38. Step 1 details the spec left open.** *(default)* Parentheses
+**D38. Step 1 details the spec left open.** *(default; designer, kept)* Parentheses
 leave no node in the AST, so `(print(1))` is a call and an allowed
 statement. Until variables arrive (step 2) a name in an expression can
 only start a call, so `print(print)` is `expected '(', found ')'`. A
