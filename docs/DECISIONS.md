@@ -437,7 +437,7 @@ callee (every `return` would need to undo it); checking bodies and
 definitions in one source-order pass (a call to a later function would
 be unknown, which is not hoisting).
 
-**D40. String and builtin details D10, D21 and D23 leave open.** *(default)*
+**D40. String and builtin details D10, D21 and D23 leave open.** *(default; kept by the designer at review of step 5)*
 (1) A builtin call is checked by arity like a function call, with the same
 words and position (`len takes 1 argument, given 2`, at the name, before
 the arguments are resolved); `len` and `str` take 1, `at` takes 2. (2)
