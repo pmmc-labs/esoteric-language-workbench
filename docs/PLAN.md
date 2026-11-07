@@ -4,7 +4,7 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Seven steps,
 inside the brief's budget of ten.
 
-**Progress:** design done; steps 0 (D33 to D35), 1 (D36), 2 (D37), 3 (D38) and 4 (D39) built, and 5 (D40). Next: step 6.
+**Progress:** design done; steps 0 (D33 to D35), 1 (D36), 2 (D37), 3 (D38) and 4 (D39) built, 5 (D40) and 6 built. Next: none planned.
 
 Read [`DESIGN.md`](DESIGN.md), [`LANGUAGE.md`](LANGUAGE.md) and the
 decisions each step cites first. Every step: write the model (if any)
@@ -178,7 +178,7 @@ The core rule (D7, D11 to D15).
 - Leaves out: character codes, parsing numbers (D21).
 - **Size:** medium.
 
-### 6. Examples
+### 6. Examples (done)
 
 - `examples/fizzbuzz.strata` (1 to 100; expected from a model,
   `t/models/fizzbuzz.py`), `examples/factorial.strata` (recursive,
@@ -204,8 +204,8 @@ None open.
 
 | Example | Needs | Status |
 |---|---|---|
-| fizzbuzz | steps 1, 3, 5 | waits on step 6 |
-| factorial | steps 1, 4 | waits on step 6 |
-| sort | steps 2, 3, 4 | waits on step 6 |
-| reverse | steps 2, 3, 5 | waits on step 6 |
-| history | steps 2, 3, 4, 5 | waits on step 6 |
+| fizzbuzz | steps 1, 3, 5 | done (step 6) |
+| factorial | steps 1, 4 | done (step 6) |
+| sort | steps 2, 3, 4 | done (step 6) |
+| reverse | steps 2, 3, 5 | done (step 6) |
+| history | steps 2, 3, 4, 5 | done (step 6) |

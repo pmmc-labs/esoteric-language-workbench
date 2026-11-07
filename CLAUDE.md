@@ -53,7 +53,15 @@ bytewise unsigned comparison (a prefix first), `len`, `at`, `str` as
 runtime builtins faulting at their name, every type fault of D21/D20,
 builtin arity checked at compile time (D40); golden tests `500` to `522`
 pass under gcc, clang and sanitized clang (85 each), 37 unit tests.
-**Next:** step 6, the examples.
+**Step 6** (examples) is built: `examples/` has `fizzbuzz` (the word built by
+writes, 15 needing no case), `factorial` (1! to 20!), `sort` (insertion sort
+by recursion on `@1`, 14 numbers), `reverse` (words written in order, read
+back from the top; a letter count) and `history` (Fibonacci by `f <- f +
+f@1`, undo as a write of `doc@1`, a trend function reading its argument's
+past, `#` as a counter), written to the language as it is (D9); expected
+output from `t/models/{fizzbuzz,factorial,sort}.py`, by hand for `reverse`
+and `history`; 90 golden tests pass under gcc, clang and sanitized clang, 37
+unit tests. **Next:** none planned.
 
 ## Read first, in this order
 
