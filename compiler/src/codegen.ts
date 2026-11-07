@@ -2,8 +2,8 @@
 // source order, so C's unspecified argument order never shows (D30). Names:
 // `t1, t2, ...` temporaries; `v_x` the variable x (a Ditto block is a C block,
 // and there is no shadowing, so the names never clash); `lo3`, `hi3`, `k3`,
-// `more3`, `n3` the counters of the loop whose number is 3; `f_` functions
-// arrive with step 3. `break` and `continue` are C's, since every Ditto loop
+// `more3`, `n3` the counters of the loop whose number is 3; `f_f` the Ditto
+// function f, with its parameters as C parameters named like variables. `break` and `continue` are C's, since every Ditto loop
 // is one C loop.
 import type { Expr, Iter, Program, Stmt, Target } from './parser.ts';
 
@@ -81,6 +81,13 @@ export function codegen(program: Program, path: string): string {
         const args = e.args.map((a) => expr(a, depth));
         const t = `t${++temps}`;
         const { line, col } = e.pos;
+        if (e.target === 'fn') {
+          // The depth is counted from the call being made, after its arguments.
+          emit(depth, `dt_enter(${line}, ${col});`);
+          emit(depth, `Value ${t} = f_${e.name}(${args.join(', ')});`);
+          emit(depth, 'dt_leave();');
+          return t;
+        }
         let argv = 'NULL';
         if (args.length > 0) {
           argv = `a${temps}`;
@@ -217,6 +224,19 @@ export function codegen(program: Program, path: string): string {
       case 'for':
         loop(s.iter, s.cname!, s.body, depth);
         return;
+      case 'return': {
+        if (s.value === null) {
+          emit(depth, 'return dt_nil();');
+        } else {
+          emit(depth, '{');
+          const t = expr(s.value, depth + 1);
+          emit(depth + 1, `return ${t};`);
+          emit(depth, '}');
+        }
+        return;
+      }
+      case 'fn':
+        throw new Error('internal: a function is not a statement of main');
       case 'break':
         emit(depth, 'break;');
         return;
@@ -226,11 +246,31 @@ export function codegen(program: Program, path: string): string {
     }
   }
 
+  // Functions are prototyped first, so each can call any other (hoisting). They
+  // have external linkage: a static one that is never called would be a
+  // -Wunused-function warning, and D37 makes warnings errors.
+  const fns = program.body.filter((s): s is Extract<Stmt, { kind: 'fn' }> => s.kind === 'fn');
+  const signature = (f: (typeof fns)[number]) =>
+    `Value f_${f.name}(${f.params.length === 0 ? 'void' : f.params.map((p) => `Value ${p.cname}`).join(', ')})`;
+
   emit(0, '#include "ditto.h"');
   emit(0, '');
+  // A Ditto function that always calls itself is a program that ends in a
+  // stack overflow fault (D28), not a mistake the C compiler should report.
+  if (fns.length > 0) emit(0, '#pragma GCC diagnostic ignored "-Winfinite-recursion"');
+  for (const f of fns) emit(0, `${signature(f)};`);
+  if (fns.length > 0) emit(0, '');
+  for (const f of fns) {
+    emit(0, `${signature(f)} {`);
+    for (const p of f.params) emit(1, `(void)${p.cname};`);
+    block(f.body, 1);
+    emit(1, 'return dt_nil();');
+    emit(0, '}');
+    emit(0, '');
+  }
   emit(0, 'int main(void) {');
   emit(1, `dt_path = ${cString(path)};`);
-  block(program.body, 1);
+  block(program.body.filter((s) => s.kind !== 'fn'), 1);
   emit(1, 'return 0;');
   emit(0, '}');
   return lines.join('\n') + '\n';

@@ -35,8 +35,21 @@ faults, and the scope errors; `t/models/loops.py` writes golden tests 200
 to 210 (fixed algorithms and three random programs checked against a
 small interpreter), faults 211 to 229, semantics 230 to 236 and errors
 240 to 278 are by hand; 151 golden tests and 88 unit tests, green under
-`cc`, clang and the sanitizers. Builder defaults awaiting review: D39,
-D40. **Next:** step 3, functions.
+`cc`, clang and the sanitizers. Builder defaults D39 and D40 are kept.
+Step 3 (functions) is done: `fn` at the top level (parameter lists like
+argument lists, D34), hoisted and of fixed arity, calls with the arity
+error, `return` (bare or with a value, falling off the end gives `nil`),
+parameters as copies, the depth limit of 1000 nested calls (`dt_enter` and
+`dt_leave` around each call of a user function, D28), and the errors for
+duplicate and builtin names, repeated parameters, `fn` below the top level,
+`return` outside a function, top-level variables seen from a function and
+functions used as values; `t/models/functions.py` writes golden tests 300
+to 310 (gcd, factorial, Fibonacci, Ackermann, mutual recursion, parameter
+copies, hoisting, `return` shapes, 1000 nested calls, two random programs
+checked against a small interpreter), faults 311 to 319, semantics 326 to
+329 and errors 340 to 380 are by hand; 216 golden tests and 105 unit
+tests, green under `cc`, clang and the sanitizers. Builder default
+awaiting review: D41. **Next:** step 4, strings.
 
 ## Read first, in this order
 

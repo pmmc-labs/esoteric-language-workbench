@@ -76,6 +76,12 @@ void dt_need_range_bound(int line, int col, Value v);
 int64_t dt_iter_len(int line, int col, Value v);
 Value dt_iter_item(Value v, int64_t i);
 
+/* Function calls (D28): a call is bracketed by dt_enter and dt_leave. Entering
+   the 1001st nested call faults `stack overflow (more than 1000 nested
+   calls)` at the position of the call's name. Builtins don't count. */
+void dt_enter(int line, int col);
+void dt_leave(void);
+
 /* Builtins: every one takes its call's position and its arguments, and
    returns a Value. Named dt_b_NAME, which is what the code generator emits. */
 Value dt_b_print(int line, int col, int argc, const Value *argv);

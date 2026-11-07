@@ -184,6 +184,18 @@ Value dt_iter_item(Value v, int64_t i) {
   dt_fault(0, 0, "internal error: iteration over a collection arrives with steps 4 to 6");
 }
 
+/* Calls ------------------------------------------------------------------- */
+
+#define MAX_DEPTH 1000
+static int depth = 0;
+
+void dt_enter(int line, int col) {
+  if (depth >= MAX_DEPTH) dt_fault(line, col, "stack overflow (more than %d nested calls)", MAX_DEPTH);
+  depth++;
+}
+
+void dt_leave(void) { depth--; }
+
 /* Printing ---------------------------------------------------------------- */
 
 /* Writes the printed form of v (LANGUAGE.md, str). `quoted` is true inside a

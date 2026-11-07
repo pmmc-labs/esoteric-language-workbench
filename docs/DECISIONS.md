@@ -342,6 +342,42 @@ faults). Rejected: checking each bound as it is evaluated (the order
 would depend on which is bad); `k <= hi` with `k++` (undefined behaviour
 at the largest int).
 
+**D41. Step 3 details the spec left open.** *(default)* Parsing: a
+parameter list is like an argument list (D34): it may break across
+lines and end with a comma, and the body's `{` must be on the line of the
+`)`. `fn` met anywhere but the program's own statements is
+`functions are defined at the top level` at the keyword, from the parser
+and before anything after it is read (so it comes before any resolver
+error, like `cannot assign to this`). A `return` is bare when the next
+token is a newline, `;`, `}` or the end of the file; otherwise an
+expression follows. Resolving: errors still come in source order across
+functions and top-level code, with the arity checked before the
+arguments are resolved (`f(1, y, 3)` for a two-parameter `f` is the arity
+error, not `unknown variable y`). `x is a top-level variable; ...` is said
+for a name not declared in the function that is declared by any `let` or
+`for` in the top level's own code, at any depth of blocks and above or
+below the function; a name used inside a function that is declared
+nowhere is `unknown variable`. A builtin's name is reserved only once the
+builtin exists (`print` now), so `fn len` is allowed until step 4 adds
+`len`; no test defines one. A parameter may have a builtin's or another
+function's name (separate namespaces, D39). Depth: only calls of user
+functions count; a call enters after its arguments are evaluated and
+leaves when it returns, and the 1001st nested one faults at its name (the
+top level is depth 0, so `f(999)` below makes exactly 1000). Codegen: a
+function is a non-static C function `f_NAME` over `Value` parameters,
+prototyped before any definition, with the call bracketed by `dt_enter`
+and `dt_leave`; its parameters are the C parameters themselves, which is
+the copy the core rule asks for since values are immutable. The generated
+file turns off `-Winfinite-recursion` with a pragma, because gcc and
+clang report a function that always calls itself, which in Ditto is a
+valid program that faults at the depth limit. Rejected: checking depth
+inside every function (an extra statement in each body for the same
+effect); `static` functions with `__attribute__((unused))` (an
+extension, D30); reserving all fifteen builtin names now (a function
+could not be called `len` yet `len(x)` would still be `unknown function`
+until step 4); reporting `functions are defined at the top level` from
+the resolver (the parser knows at once).
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,

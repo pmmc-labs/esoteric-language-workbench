@@ -323,8 +323,11 @@ take a fixed number of arguments; another number is
 A name that isn't a function or builtin is `unknown function f`.
 
 A call nested more than 1000 deep faults:
-`stack overflow (more than 1000 nested calls)`, at the call's name.
-(Step 3, D28.)
+`stack overflow (more than 1000 nested calls)`, at the call's name. Only
+calls of functions you define count, and the top level isn't one:
+`down(999)` for a `down` that calls itself until `n` is 0 makes 1000
+nested calls and succeeds; `down(1000)` makes a 1001st and faults.
+Arguments are evaluated before the depth is counted. (Step 3, D28, D41.)
 
 ## Statements
 
@@ -414,7 +417,16 @@ reaching the end, returns `nil`. `return` at the top level is
 
 Compile errors, at the name: `duplicate function f`,
 `print is a builtin` (defining a builtin's name), and, at the second
-one, `x is already declared` for a repeated parameter. (Step 3.)
+one, `x is already declared` for a repeated parameter (a `let` or `for`
+in the body that reuses a parameter's name is the same error). A parameter list
+may break across lines and end with a comma, like an argument list, and
+the body's `{` is on the line of the `)`. A bare `return` is one followed
+by a newline, `;` or `}`. A name in a function that is declared there
+nowhere is `unknown variable`, unless the top level's code declares it
+anywhere (a `let` or `for` at any depth, above or below the function),
+which is the longer message under Variables. A function can have the
+name of a variable, its own or the top level's: they are separate names.
+(Step 3, D41.)
 
 ## Builtins
 

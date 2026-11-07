@@ -1,6 +1,7 @@
-// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 2
+// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 3
 // parses expressions on ints, bools and nil, names and calls, and the
-// statements `let`, assignment, `if`, `while`, `for`, `break` and `continue`;
+// statements `fn`, `return`, `let`, assignment, `if`, `while`, `for`, `break`
+// and `continue`;
 // each later step adds members to Expr and Stmt and cases to the functions
 // below.
 import { compileError } from './errors.ts';
@@ -20,7 +21,7 @@ export type Expr =
   | { kind: 'binary'; pos: Pos; op: BinaryOp; left: Expr; right: Expr }
   // `and`/`or` short-circuit, so they are not `binary`.
   | { kind: 'logic'; pos: Pos; op: 'and' | 'or'; left: Expr; right: Expr }
-  // `target` is filled in by the resolver: 'builtin' or (step 3) 'fn'.
+  // `target` is filled in by the resolver: 'builtin' or 'fn' (a user function).
   | { kind: 'call'; pos: Pos; name: string; args: Expr[]; target?: 'builtin' | 'fn' };
 
 export type AssignOp = '=' | '+=' | '-=' | '*=' | '/=' | '%=';
@@ -47,7 +48,14 @@ export type Stmt =
   | { kind: 'while'; pos: Pos; cond: Expr; condPos: Pos; body: Stmt[] }
   | { kind: 'for'; pos: Pos; name: string; namePos: Pos; iter: Iter; body: Stmt[]; cname?: string }
   | { kind: 'break'; pos: Pos }
-  | { kind: 'continue'; pos: Pos };
+  | { kind: 'continue'; pos: Pos }
+  // Top level only. `pos` is the keyword; `namePos` the name, where
+  // `duplicate function` and `print is a builtin` point.
+  | { kind: 'fn'; pos: Pos; name: string; namePos: Pos; params: Param[]; body: Stmt[] }
+  // `value` is null for a bare `return`.
+  | { kind: 'return'; pos: Pos; value: Expr | null };
+
+export type Param = { name: string; pos: Pos; cname?: string };
 
 export type Iter =
   | { kind: 'range'; lo: Expr; loPos: Pos; hi: Expr; hiPos: Pos; inclusive: boolean }
@@ -242,8 +250,42 @@ export function parse(tokens: Token[]): Program {
     return { kind: 'for', pos: kw.pos, name: nameTok.text, namePos: nameTok.pos, iter, body: block() };
   }
 
-  function statement(): Stmt {
+  // A parameter list is like an argument list: it may break across lines and
+  // end with a comma (D34). The body's `{` must be on the line of the `)`.
+  function fnStmt(): Stmt {
+    const kw = next();
+    const nameTok = peek();
+    if (nameTok.kind !== 'name') return expected('a name');
+    next();
+    expect('(');
+    const params: Param[] = [];
+    while (!isOp(peek(), ')')) {
+      const p = peek();
+      if (p.kind !== 'name') return expected('a name');
+      next();
+      params.push({ name: p.text, pos: p.pos });
+      if (!isOp(peek(), ',')) break;
+      next();
+    }
+    expect(')');
+    return { kind: 'fn', pos: kw.pos, name: nameTok.text, namePos: nameTok.pos, params, body: block() };
+  }
+
+  // `top` is true only for the program's own statements: a function is
+  // defined there and nowhere else, which the parser knows at once.
+  function statement(top = false): Stmt {
     const t = peek();
+    if (isKw(t, 'fn')) {
+      if (!top) throw compileError(t.pos, 'functions are defined at the top level');
+      return fnStmt();
+    }
+    if (isKw(t, 'return')) {
+      next();
+      const n = peek();
+      // A bare `return` ends at the end of its statement.
+      if (isSeparator(n) || isOp(n, '}') || n.kind === 'eof') return { kind: 'return', pos: t.pos, value: null };
+      return { kind: 'return', pos: t.pos, value: expr() };
+    }
     if (isKw(t, 'let')) {
       next();
       const nameTok = peek();
@@ -282,7 +324,7 @@ export function parse(tokens: Token[]): Program {
   for (;;) {
     while (isSeparator(peek())) next();
     if (peek().kind === 'eof') break;
-    body.push(statement());
+    body.push(statement(true));
     // A statement ends at a newline, a `;` or the end of the file.
     if (!isSeparator(peek()) && peek().kind !== 'eof') expected('newline');
   }

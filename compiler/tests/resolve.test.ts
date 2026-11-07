@@ -127,7 +127,7 @@ test('arity: the exact number of arguments, at the name', () => {
   fails('fn f(a) { }\nf()', 'f takes 1 argument, got 0', 2, 1);
   fails('fn f(a) { }\nf(1, 2)', 'f takes 1 argument, got 2', 2, 1);
   fails('fn f() { }\nf(1)', 'f takes 0 arguments, got 1', 2, 1);
-  fails('fn f(a) { return f() }', 'f takes 1 argument, got 0', 1, 19);
+  fails('fn f(a) { return f() }', 'f takes 1 argument, got 0', 1, 18);
   fails('f(1, x)\nfn f(a) { }', 'f takes 1 argument, got 2', 1, 1);
   run('print()\nprint(1, 2, 3)');
 });
@@ -136,9 +136,9 @@ test('definitions: duplicates, builtins, repeated parameters', () => {
   fails('fn f() { }\nfn f() { }', 'duplicate function f', 2, 4);
   fails('fn f() { }\nfn g() { }\nfn f(a) { }', 'duplicate function f', 3, 4);
   fails('fn print() { }', 'print is a builtin', 1, 4);
-  fails('fn f(a, b, a) { }', 'a is already declared', 1, 14);
-  fails('fn f(a) { let a = 1 }', 'a is already declared', 1, 16);
-  fails('fn f(a) { for a in 0..1 { } }', 'a is already declared', 1, 16);
+  fails('fn f(a, b, a) { }', 'a is already declared', 1, 12);
+  fails('fn f(a) { let a = 1 }', 'a is already declared', 1, 15);
+  fails('fn f(a) { for a in 0..1 { } }', 'a is already declared', 1, 15);
   run('fn f(print) { return print }\nlet f = 1');
 });
 
@@ -163,13 +163,13 @@ test('a function sees its parameters and variables, not the top level', () => {
 
 test('break and continue count loops of their own function', () => {
   fails('fn f() { break }\nwhile true { f() }', 'break outside a loop', 1, 10);
-  fails('fn f() { while true { } break }', 'break outside a loop', 1, 28);
+  fails('fn f() { while true { }; break }', 'break outside a loop', 1, 26);
 });
 
 test('a function used as a value is not a value, wherever it is', () => {
   fails('fn f() { }\nprint(f)', 'functions are not values', 2, 7);
   fails('fn f() { }\nlet g = f', 'functions are not values', 2, 9);
-  fails('fn f() { }\nfn g() { return f }', 'functions are not values', 2, 18);
+  fails('fn f() { }\nfn g() { return f }', 'functions are not values', 2, 17);
   fails('fn f() { }\nf = 1', 'functions are not values', 2, 1);
   run('fn f() { }\nlet f = 1\nprint(f)');
 });

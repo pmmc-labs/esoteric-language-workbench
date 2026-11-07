@@ -1,8 +1,11 @@
-// Names, scopes and the placement of `break`/`continue` (D12); step 3 adds
-// user functions and arity. Returns a new program: the input is not changed.
+// Names, scopes, functions and arity, and the placement of `break`,
+// `continue` and `return` (D12, D13). Returns a new program: the input is not
+// changed.
 import { compileError } from './errors.ts';
 import type { Pos } from './errors.ts';
 import type { Expr, Iter, Program, Stmt, Target } from './parser.ts';
+
+type FnStmt = Extract<Stmt, { kind: 'fn' }>;
 
 // arity: the exact number of arguments, or null for any number.
 export const BUILTINS: Record<string, { arity: number | null }> = {
@@ -10,9 +13,18 @@ export const BUILTINS: Record<string, { arity: number | null }> = {
 };
 
 // A function body (and the top level) has a stack of block scopes and a count
-// of the loops around the statement being resolved. Step 3 makes one per
-// function, so a function sees nothing of the top level (D13).
-type Ctx = { scopes: Set<string>[]; loops: number };
+// of the loops around the statement being resolved; each function has its own,
+// so it sees nothing of the top level (D13). `fns` holds the first definition
+// of each user function, found before anything is resolved so that a call can
+// come above its function; `topVars` every name the top level's code declares,
+// which only serves to say a better error inside a function.
+type Ctx = {
+  scopes: Set<string>[];
+  loops: number;
+  inFn: boolean;
+  fns: Map<string, FnStmt>;
+  topVars: Set<string>;
+};
 
 // C names: no shadowing means a name is one variable within a function, so the
 // name alone is enough to tell variables apart.
@@ -31,7 +43,15 @@ function declare(ctx: Ctx, name: string) {
 
 function useName(ctx: Ctx, name: string, pos: Pos): string {
   if (isDeclared(ctx, name)) return cname(name);
-  if (Object.hasOwn(BUILTINS, name)) throw compileError(pos, 'functions are not values');
+  if (ctx.inFn && ctx.topVars.has(name)) {
+    throw compileError(
+      pos,
+      `${name} is a top-level variable; functions see only their parameters and their own variables`,
+    );
+  }
+  if (Object.hasOwn(BUILTINS, name) || ctx.fns.has(name)) {
+    throw compileError(pos, 'functions are not values');
+  }
   throw compileError(pos, `unknown variable ${name}`);
 }
 
@@ -49,8 +69,18 @@ function resolveExpr(ctx: Ctx, e: Expr): Expr {
     case 'logic':
       return { ...e, left: resolveExpr(ctx, e.left), right: resolveExpr(ctx, e.right) };
     case 'call': {
-      if (!Object.hasOwn(BUILTINS, e.name)) throw compileError(e.pos, `unknown function ${e.name}`);
-      return { ...e, target: 'builtin', args: e.args.map((a) => resolveExpr(ctx, a)) };
+      // The name and its arity come before the arguments: leftmost first.
+      const isBuiltin = Object.hasOwn(BUILTINS, e.name);
+      const fn = ctx.fns.get(e.name);
+      if (!isBuiltin && fn === undefined) throw compileError(e.pos, `unknown function ${e.name}`);
+      const arity = isBuiltin ? BUILTINS[e.name].arity : fn!.params.length;
+      if (arity !== null && e.args.length !== arity) {
+        throw compileError(
+          e.pos,
+          `${e.name} takes ${arity} argument${arity === 1 ? '' : 's'}, got ${e.args.length}`,
+        );
+      }
+      return { ...e, target: isBuiltin ? 'builtin' : 'fn', args: e.args.map((a) => resolveExpr(ctx, a)) };
     }
   }
 }
@@ -121,10 +151,46 @@ function resolveStmt(ctx: Ctx, s: Stmt): Stmt {
     case 'continue':
       if (ctx.loops === 0) throw compileError(s.pos, `${s.kind} outside a loop`);
       return s;
+    case 'return':
+      if (!ctx.inFn) throw compileError(s.pos, 'return outside a function');
+      return { ...s, value: s.value === null ? null : resolveExpr(ctx, s.value) };
+    case 'fn':
+      return resolveFn(ctx, s);
+  }
+}
+
+// The parser only lets `fn` through at the top level, so `ctx` is the top
+// level's. The function gets a context of its own.
+function resolveFn(top: Ctx, s: FnStmt): Stmt {
+  if (Object.hasOwn(BUILTINS, s.name)) throw compileError(s.namePos, `${s.name} is a builtin`);
+  if (top.fns.get(s.name) !== s) throw compileError(s.namePos, `duplicate function ${s.name}`);
+  const ctx: Ctx = { ...top, scopes: [new Set()], loops: 0, inFn: true };
+  const params = s.params.map((p) => {
+    checkNew(ctx, p.name, p.pos);
+    declare(ctx, p.name);
+    return { ...p, cname: cname(p.name) };
+  });
+  return { ...s, params, body: resolveBlock(ctx, s.body) };
+}
+
+// Every name declared by a `let` or a `for` in the top level's own code, at
+// any depth of blocks, before or after a function that uses it.
+function collectVars(body: Stmt[], out: Set<string>) {
+  for (const s of body) {
+    if (s.kind === 'let') out.add(s.name);
+    if (s.kind === 'for') out.add(s.name);
+    if (s.kind === 'if') { collectVars(s.then, out); if (s.else !== null) collectVars(s.else, out); }
+    if (s.kind === 'while' || s.kind === 'for') collectVars(s.body, out);
   }
 }
 
 export function resolve(program: Program): Program {
-  const ctx: Ctx = { scopes: [new Set()], loops: 0 };
+  const fns = new Map<string, FnStmt>();
+  for (const s of program.body) {
+    if (s.kind === 'fn' && !Object.hasOwn(BUILTINS, s.name) && !fns.has(s.name)) fns.set(s.name, s);
+  }
+  const topVars = new Set<string>();
+  collectVars(program.body, topVars);
+  const ctx: Ctx = { scopes: [new Set()], loops: 0, inFn: false, fns, topVars };
   return { ...program, body: program.body.map((s) => resolveStmt(ctx, s)) };
 }

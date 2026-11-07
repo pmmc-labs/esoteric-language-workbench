@@ -8,7 +8,8 @@ planned and step 9 is held in reserve for friction the examples show.
 **Progress:** design done; step 0 done (scaffold, 28 golden tests, 48 unit
 tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
 62 unit tests); step 2 done (variables and control flow; 151 golden tests,
-88 unit tests); step 3 next.
+88 unit tests); step 3 done (functions; 216 golden tests, 105 unit
+tests); step 4 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -135,7 +136,15 @@ path cases.
   `break`/`continue`, a range ending at the largest int).
 - **Size:** medium.
 
-### 3. Functions
+### 3. Functions **(done)**
+
+Landed as planned. Differences: tests 300 to 380 (the model writes 300 to
+310, including two random programs of generated functions run through a
+small interpreter; faults 311 to 319, semantics 326 to 329 and compile
+errors 340 to 380 are by hand); test 278 now expects `expected a name,
+found newline` for a bare `fn`; default D41. The runtime has `dt_enter` and
+`dt_leave` for the depth counter, with a unit test; the 1000-deep call
+test (308) passes under the sanitizers.
 
 - `fn`, calls, `return`, hoisting, arity (D13), parameters as variables,
   the depth limit (D28), recursion.
