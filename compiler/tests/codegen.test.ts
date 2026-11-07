@@ -116,7 +116,7 @@ test('a for over a value asks the runtime for its length, at the expression', ()
 });
 
 test('a string literal is built once and cached; its bytes are escaped for C', () => {
-  const c = compile('print("a\\n\\"?\\xc3\\xa9")'.replace('\\xc3\\xa9', 'é'), 'a.ditto');
+  const c = compile('print("a\\n\\"?\xc3\xa9")', 'a.ditto');
   assert.match(c, /static Value s\d+;/);
   assert.match(c, /dt_str_new\("a\\012\\"\\\?\\303\\251", 6\)/);
   assert.match(compile('print("")', 'a.ditto'), /dt_str_new\("", 0\)/);
@@ -131,9 +131,9 @@ test('interpolation evaluates its parts in order, then joins them', () => {
 
 test('indexing and in call the runtime at the operator', () => {
   const c = compile('let s = "abc"\nprint(s[1], 1 in s, 2 not in s)', 'a.ditto');
-  assert.match(c, /dt_index\(2, 9, /);
-  assert.match(c, /dt_bool\(dt_in\(2, 17, /);
-  assert.match(c, /dt_bool\(!dt_in\(2, 24, /);
+  assert.match(c, /dt_index\(2, 8, /);
+  assert.match(c, /dt_bool\(dt_in\(2, 15, /);
+  assert.match(c, /dt_bool\(!dt_in\(2, 23, /);
 });
 
 test('a lookup is a runtime call that returns whether it hit, so step 7 can branch on a miss', () => {

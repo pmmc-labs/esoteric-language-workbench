@@ -10,6 +10,14 @@ type FnStmt = Extract<Stmt, { kind: 'fn' }>;
 // arity: the exact number of arguments, or null for any number.
 export const BUILTINS: Record<string, { arity: number | null }> = {
   print: { arity: null },
+  str: { arity: 1 },
+  len: { arity: 1 },
+  int: { arity: 1 },
+  lower: { arity: 1 },
+  upper: { arity: 1 },
+  slice: { arity: 3 },
+  read: { arity: 0 },
+  fail: { arity: 1 },
 };
 
 // A function body (and the top level) has a stack of block scopes and a count
@@ -63,6 +71,10 @@ function resolveExpr(ctx: Ctx, e: Expr): Expr {
       return e;
     case 'name':
       return { ...e, cname: useName(ctx, e.name, e.pos) };
+    case 'string':
+      return { ...e, parts: e.parts.map((p) => (p.kind === 'text' ? p : { ...p, expr: resolveExpr(ctx, p.expr) })) };
+    case 'index':
+      return { ...e, target: resolveExpr(ctx, e.target), index: resolveExpr(ctx, e.index) };
     case 'unary':
       return { ...e, operand: resolveExpr(ctx, e.operand) };
     case 'binary':

@@ -188,7 +188,7 @@ test('strings: index hits and misses are reported by dt_try_index, faults by dt_
     ['dt_try_index(2, 3, dt_int(1), dt_int(0), &o);', 'x.ditto:2:3: fault: cannot index int\n'],
   ];
   for (const [i, [call, out]] of bad.entries()) {
-    const r = cprog(`str-index-bad-${i}`, `dt_path = "x.ditto"; Value s = ${S('abc')}, o; ${call} return 0;`);
+    const r = cprog(`str-index-bad-${i}`, `dt_path = "x.ditto"; Value s = ${S('abc')}, o; (void)s; ${call} return 0;`);
     assert.equal(r.out, out);
     assert.equal(r.status, 1);
   }

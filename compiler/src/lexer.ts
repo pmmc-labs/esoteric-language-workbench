@@ -6,7 +6,8 @@ import type { Pos } from './errors.ts';
 export type StringPart =
   | { kind: 'text'; value: string }
   // The tokens of one {expr}, without an end-of-file token; pos is the `{`.
-  | { kind: 'interp'; pos: Pos; tokens: Token[] };
+  // `end` is the closing `}`, where a parser error at the end of the expression points.
+  | { kind: 'interp'; pos: Pos; end: Pos; tokens: Token[] };
 
 export type Token =
   | { kind: 'int'; text: string; pos: Pos; value: bigint }
@@ -127,7 +128,7 @@ export function lex(src: string): Token[] {
         const inner = tokens(true, open);
         if (inner.length === 0) throw compileError(open, 'empty interpolation');
         flush();
-        parts.push({ kind: 'interp', pos: open, tokens: inner });
+        parts.push({ kind: 'interp', pos: open, end: { line, col: i - lineStart }, tokens: inner });
         continue;
       }
       text += c;

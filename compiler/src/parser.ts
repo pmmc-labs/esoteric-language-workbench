@@ -1,20 +1,26 @@
-// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 3
-// parses expressions on ints, bools and nil, names and calls, and the
-// statements `fn`, `return`, `let`, assignment, `if`, `while`, `for`, `break`
+// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 4
+// parses expressions on ints, bools, nil and strings, names, calls and
+// indexing, and the statements `fn`, `return`, `let`, assignment, `if`, `while`, `for`, `break`
 // and `continue`;
 // each later step adds members to Expr and Stmt and cases to the functions
 // below.
 import { compileError } from './errors.ts';
 import type { Pos } from './errors.ts';
-import type { Token } from './lexer.ts';
+import type { StringPart, Token } from './lexer.ts';
 
-export type BinaryOp = '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<' | '<=' | '>' | '>=';
+export type BinaryOp =
+  | '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<' | '<=' | '>' | '>=' | 'in' | 'not in';
 
-// `pos` of a unary or binary node is its operator: where faults point.
+// `pos` of a unary or binary node is its operator: where faults point (for
+// `not in`, the `not`). An index's is its `[`; a string's its opening quote.
 export type Expr =
   | { kind: 'int'; pos: Pos; value: bigint }
   | { kind: 'bool'; pos: Pos; value: boolean }
   | { kind: 'nil'; pos: Pos }
+  // Text and interpolated expressions in source order; an interpolation's pos
+  // is its `{`.
+  | { kind: 'string'; pos: Pos; parts: StringPartNode[] }
+  | { kind: 'index'; pos: Pos; target: Expr; index: Expr }
   // `cname` is filled in by the resolver: the C variable's name.
   | { kind: 'name'; pos: Pos; name: string; cname?: string }
   | { kind: 'unary'; pos: Pos; op: '-' | 'not'; operand: Expr }
@@ -23,6 +29,10 @@ export type Expr =
   | { kind: 'logic'; pos: Pos; op: 'and' | 'or'; left: Expr; right: Expr }
   // `target` is filled in by the resolver: 'builtin' or 'fn' (a user function).
   | { kind: 'call'; pos: Pos; name: string; args: Expr[]; target?: 'builtin' | 'fn' };
+
+export type StringPartNode =
+  | { kind: 'text'; value: string }
+  | { kind: 'interp'; pos: Pos; expr: Expr };
 
 export type AssignOp = '=' | '+=' | '-=' | '*=' | '/=' | '%=';
 
@@ -63,7 +73,9 @@ export type Iter =
 
 export type Program = { kind: 'program'; body: Stmt[] };
 
-export function parse(tokens: Token[]): Program {
+export function parse(input: Token[]): Program {
+  // Swapped for an interpolation's own tokens while one is parsed.
+  let tokens = input;
   let i = 0;
   const peek = () => tokens[i];
   const next = () => tokens[Math.min(i++, tokens.length - 1)];
@@ -90,8 +102,8 @@ export function parse(tokens: Token[]): Program {
   function operator(): Token { const t = next(); skipNewlines(); return t; }
 
   // Precedence, loosest first (LANGUAGE.md, Expressions): or, and, not,
-  // comparisons, + -, * / %, prefix -, then calls and atoms. `else` (step 7)
-  // goes between * and prefix -, and `in` joins the comparisons.
+  // comparisons (`in` and `not in` among them), + -, * / %, prefix -, then
+  // calls, indexes and atoms. `else` (step 7) goes between * and prefix -.
   function expr(): Expr { return orExpr(); }
 
   function orExpr(): Expr {
@@ -120,15 +132,21 @@ export function parse(tokens: Token[]): Program {
   }
 
   const COMPARISONS = ['==', '!=', '<', '<=', '>', '>='];
-  const isComparison = (t: Token) => t.kind === 'op' && COMPARISONS.includes(t.text);
+  const isNotIn = () => isKw(peek(), 'not') && isKw(tokens[i + 1], 'in');
+  const isComparison = () =>
+    (peek().kind === 'op' && COMPARISONS.includes(peek().text)) || isKw(peek(), 'in') || isNotIn();
 
   function comparison(): Expr {
     const left = additive();
-    if (!isComparison(peek())) return left;
+    if (!isComparison()) return left;
+    // `not in` is one operator, whose position is the `not`.
+    const notIn = isNotIn();
     const op = operator();
+    if (notIn) next();
+    skipNewlines();
     const right = additive();
-    if (isComparison(peek())) throw compileError(peek().pos, 'comparisons do not chain');
-    return { kind: 'binary', pos: op.pos, op: op.text as BinaryOp, left, right };
+    if (isComparison()) throw compileError(peek().pos, 'comparisons do not chain');
+    return { kind: 'binary', pos: op.pos, op: notIn ? 'not in' : (op.text as BinaryOp), left, right };
   }
 
   function additive(): Expr {
@@ -151,9 +169,35 @@ export function parse(tokens: Token[]): Program {
 
   function unary(): Expr {
     const t = peek();
-    if (!isOp(t, '-')) return primary();
+    if (!isOp(t, '-')) return postfix();
     next();
     return { kind: 'unary', pos: t.pos, op: '-', operand: unary() };
+  }
+
+  // Indexes bind tighter than prefix minus: `-s[0]` is `-(s[0])`. The lexer
+  // drops newlines inside `[ ]`.
+  function postfix(): Expr {
+    let e = primary();
+    while (isOp(peek(), '[')) {
+      const bracket = next();
+      const index = expr();
+      expect(']');
+      e = { kind: 'index', pos: bracket.pos, target: e, index };
+    }
+    return e;
+  }
+
+  // The tokens of one `{expr}` are parsed on their own, closed by a `}` at
+  // the position the lexer saw it.
+  function interpolation(part: Extract<StringPart, { kind: 'interp' }>): Expr {
+    const saved = { tokens, i };
+    tokens = [...part.tokens, { kind: 'op', text: '}', pos: part.end }];
+    i = 0;
+    const e = expr();
+    expect('}');
+    tokens = saved.tokens;
+    i = saved.i;
+    return e;
   }
 
   function primary(): Expr {
@@ -164,6 +208,12 @@ export function parse(tokens: Token[]): Program {
       return { kind: 'bool', pos: t.pos, value: t.text === 'true' };
     }
     if (isKw(t, 'nil')) { next(); return { kind: 'nil', pos: t.pos }; }
+    if (t.kind === 'string') {
+      next();
+      const parts = t.parts.map((p): StringPartNode =>
+        p.kind === 'text' ? p : { kind: 'interp', pos: p.pos, expr: interpolation(p) });
+      return { kind: 'string', pos: t.pos, parts };
+    }
     if (isOp(t, '(')) {
       next();
       const inner = expr();
@@ -192,7 +242,7 @@ export function parse(tokens: Token[]): Program {
   }
 
   const startsExpression = (t: Token) =>
-    t.kind === 'int' || t.kind === 'name' || isOp(t, '(') || isOp(t, '-') ||
+    t.kind === 'int' || t.kind === 'string' || t.kind === 'name' || isOp(t, '(') || isOp(t, '-') ||
     isKw(t, 'true') || isKw(t, 'false') || isKw(t, 'nil') || isKw(t, 'not');
 
   const isSeparator = (t: Token) => t.kind === 'newline' || isOp(t, ';');

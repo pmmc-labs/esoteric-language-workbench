@@ -37,6 +37,7 @@ extern const char *dt_path;
 static inline Value dt_nil(void) { Value v; v.tag = T_NIL; v.i = 0; return v; }
 static inline Value dt_bool(bool b) { Value v; v.tag = T_BOOL; v.i = 0; v.b = b; return v; }
 static inline Value dt_int(int64_t i) { Value v; v.tag = T_INT; v.i = i; return v; }
+static inline Value dt_str(struct Str *s) { Value v; v.tag = T_STR; v.i = 0; v.s = s; return v; }
 
 /* Bump allocator over large malloc'ed chunks kept on a global list, never
    freed (D26). Memory is 16-byte aligned; dt_alloc(0) is a valid pointer. */
@@ -45,6 +46,28 @@ void *dt_alloc(size_t n);
 /* Flushes standard output, prints `path:line:col: fault: message` on standard
    error and exits 1 (D28). */
 _Noreturn void dt_fault(int line, int col, const char *fmt, ...);
+
+/* Strings are byte sequences with a length: a NUL is an ordinary byte, and
+   every function here goes by `len`, never by a terminator (there is one
+   past the end, for C's convenience, and nothing relies on it). */
+/* A new string holding a copy of `len` bytes. */
+Value dt_str_new(const char *bytes, int64_t len);
+/* The string of `n` parts joined, each as `str` gives it (interpolation). */
+Value dt_interp(int n, const Value *parts);
+
+/* Lookups (LANGUAGE.md, Indexing). The `try` forms store the value and return
+   true on a hit, return false on a miss (an index out of range) and fault, as
+   usual, on anything else (a wrong type); step 7's `else` branches on that.
+   `dt_index` is the lookup that faults on a miss too. They take the
+   position of the `[`. */
+bool dt_try_index(int line, int col, Value c, Value i, Value *out);
+Value dt_index(int line, int col, Value c, Value i);
+/* The builtin `int` the same way: faults `int: expected a string, got T`,
+   returns false when the string isn't a number. Position of the name. */
+bool dt_try_int(int line, int col, Value s, Value *out);
+
+/* `x in c` (LANGUAGE.md, Comparison). Faults `cannot use in on T and U`. */
+bool dt_in(int line, int col, Value x, Value c);
 
 /* Operators (LANGUAGE.md, Expressions). Each takes the position of its
    operator and faults there. */
@@ -71,8 +94,8 @@ void dt_need_cond(int line, int col, Value v);
 /* Faults `range bounds must be ints, got T` unless v is an int (for). */
 void dt_need_range_bound(int line, int col, Value v);
 /* The number of items a `for` over v walks, and item i (from 0). Anything but
-   a string, list or map faults `cannot iterate over T`; those three arrive
-   with steps 4 to 6, so for now every value faults. */
+   a string, list or map faults `cannot iterate over T`; lists and maps arrive
+   with steps 5 and 6, so for now only strings (their bytes) do. */
 int64_t dt_iter_len(int line, int col, Value v);
 Value dt_iter_item(Value v, int64_t i);
 
@@ -85,5 +108,13 @@ void dt_leave(void);
 /* Builtins: every one takes its call's position and its arguments, and
    returns a Value. Named dt_b_NAME, which is what the code generator emits. */
 Value dt_b_print(int line, int col, int argc, const Value *argv);
+Value dt_b_str(int line, int col, int argc, const Value *argv);
+Value dt_b_len(int line, int col, int argc, const Value *argv);
+Value dt_b_int(int line, int col, int argc, const Value *argv);
+Value dt_b_lower(int line, int col, int argc, const Value *argv);
+Value dt_b_upper(int line, int col, int argc, const Value *argv);
+Value dt_b_slice(int line, int col, int argc, const Value *argv);
+Value dt_b_read(int line, int col, int argc, const Value *argv);
+_Noreturn Value dt_b_fail(int line, int col, int argc, const Value *argv);
 
 #endif

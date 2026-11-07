@@ -49,7 +49,21 @@ copies, hoisting, `return` shapes, 1000 nested calls, two random programs
 checked against a small interpreter), faults 311 to 319, semantics 326 to
 329 and errors 340 to 380 are by hand; 216 golden tests and 105 unit
 tests, green under `cc`, clang and the sanitizers. Builder default
-awaiting review: D41. **Next:** step 4, strings.
+awaiting review: D41.
+Step 4 (strings) is done: string literals with escapes and
+interpolation (each `{expr}` parsed on its own, parts evaluated left to
+right and joined by `dt_interp`), strings as byte sequences with a length
+(NULs from `read()` are ordinary bytes), `+`, the four orderings and
+`==`, indexing (`dt_try_index` reports a miss, `dt_index` faults on it,
+which is the shape step 7's `else` needs), `in` and `not in`, `for` over a
+string, and the builtins `str len int lower upper slice read fail`; the
+faults and errors of the plan; `t/models/strings.py` writes golden tests
+400 to 410 (escapes, interpolation, comparisons, indexing, `in`, `int`
+round trips, case and slice, two `read()` tests with `.stdin`, text
+algorithms, a random program), faults 411 to 455, semantics 460 to 470
+and errors 480 to 497 are by hand; 301 golden tests and 128 unit tests,
+green under `cc`, clang and the sanitizers. Builder default awaiting
+review: D42. **Next:** step 5, lists and the core rule.
 
 ## Read first, in this order
 

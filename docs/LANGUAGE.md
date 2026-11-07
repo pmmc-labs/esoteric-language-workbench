@@ -88,7 +88,8 @@ interpolation: `"total: {len(xs)} items, first {xs[0]}"`. `{}` with
 nothing in it is `empty interpolation`, at the `{`; an interpolation that
 reaches the end of the line (even inside a string written in it) is
 `unterminated interpolation`, at the `{` (D35).
-Parts are evaluated left to right. (Step 4, D15.)
+An expression that doesn't end at the closing brace is `expected '}', found '2'`, at the
+offending token. Parts are evaluated left to right. (Step 4, D15, D42.)
 
 ## Values
 
@@ -259,7 +260,7 @@ the way, is `cannot use < on int and string`, at the operator.
   string).
 
 Anything else is `cannot use in on int and int`, at `in`. `x not in c`
-is `not (x in c)`, with faults at `not`.
+is `not (x in c)`, with faults at `not` (the message still says `in`, D42).
 
 ### Logic
 
@@ -495,5 +496,5 @@ the printed form of anything else), at `fail`. Never returns.
 
 (Builtins arrive with the step for their types: `print` in step 0 and 1,
 `str`, `len`, `int`, `lower`, `upper`, `slice` on strings, `read` and
-`fail` in step 4, `words`, `split`, `join`, `sort` and `slice` on lists
-in step 5, `keys` and `remove` in step 6.)
+`fail` in step 4 (done), `words`, `split`, `join`, `sort` and `slice` on
+lists in step 5, `keys` and `remove` in step 6.)

@@ -9,7 +9,7 @@ planned and step 9 is held in reserve for friction the examples show.
 tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
 62 unit tests); step 2 done (variables and control flow; 151 golden tests,
 88 unit tests); step 3 done (functions; 216 golden tests, 105 unit
-tests); step 4 next.
+tests); step 4 done (strings; 301 golden tests, 128 unit tests); step 5 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -159,7 +159,16 @@ test (308) passes under the sanitizers.
   the function not changing the caller's variable.
 - **Size:** medium.
 
-### 4. Strings
+### 4. Strings **(done)**
+
+Landed as planned. Differences: tests 400 to 497 (the model writes 400 to
+410, including a random program of string, int and bool expressions
+evaluated by Python in step with the generator, and two `.stdin` files, one
+with NUL bytes; faults 411 to 455, semantics 460 to 470 and compile errors
+480 to 497 are by hand, positions marked in the source and counted by a
+script); test 024 now expects `expected ')', found string`; default D42.
+Lookups are runtime functions that report a miss (`dt_try_index`,
+`dt_try_int`) with the faulting versions on top, ready for step 7.
 
 - String literals with escapes and interpolation (the parser and
   codegen half: the lexer has them since step 0), `+`, comparisons,

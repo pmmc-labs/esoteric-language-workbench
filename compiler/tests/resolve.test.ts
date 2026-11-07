@@ -211,9 +211,9 @@ test('names inside an interpolation and an index are resolved, in source order',
   fails('print("a{x}b{y}")', 'unknown variable x', 1, 10);
   fails('print(y[x])', 'unknown variable y', 1, 7);
   fails('let s = "a"\nprint(s[x])', 'unknown variable x', 2, 9);
-  fails('print("{nope(1)}")', 'unknown function nope', 1, 10);
-  fails('print(1 in x)', 'unknown variable x', 1, 13);
-  fails('fn f() { return "{t}" }\nlet t = 1', 't is a top-level variable; functions see only their parameters and their own variables', 1, 20);
+  fails('print("{nope(1)}")', 'unknown function nope', 1, 9);
+  fails('print(1 in x)', 'unknown variable x', 1, 12);
+  fails('fn f() { return "{t}" }\nlet t = 1', 't is a top-level variable; functions see only their parameters and their own variables', 1, 19);
 });
 
 test('an index expression is not a statement', () => {

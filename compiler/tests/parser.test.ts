@@ -54,7 +54,6 @@ test('errors: expected X, found Y', () => {
   parseError('print(1', "expected ')', found end of file", 1, 8);
   parseError('print(,)', "expected an expression, found ','", 1, 7);
   parseError('print(1,,)', "expected an expression, found ','", 1, 9);
-  parseError('print("hi")', 'expected an expression, found string', 1, 7);
   parseError('print(\n\n', 'expected an expression, found end of file', 3, 1);
   parseError('else', "expected a statement, found 'else'", 1, 1);
   parseError('print(1)\n}', "expected a statement, found '}'", 2, 1);
@@ -301,7 +300,7 @@ test('a string literal is text and interpolated expressions, in order', () => {
   assert.deepEqual(e.pos, at(1, 7));
   assert.equal(sx(e), '"a{(+ x 1)}b{y}"');
   assert.deepEqual(e.parts[1].pos, at(1, 9));
-  assert.deepEqual(e.parts[1].expr.pos, at(1, 13)); // the `+`, where faults point
+  assert.deepEqual(e.parts[1].expr.pos, at(1, 12)); // the `+`, where faults point
   assert.equal(sx((ast('print("")').body[0] as any).expr.args[0]), '""');
 });
 
@@ -325,14 +324,13 @@ test('in and not in are comparisons: below + and above and/not, not chained', ()
   assert.equal(shape('a not in b'), '(not in a b)');
   assert.equal(shape('not a in b'), '(not (in a b))');
   assert.equal(shape('a in b and c not in d'), '(and (in a b) (not in c d))');
-  assert.equal(shape('a in b == c'.replace(' == c', '')), '(in a b)');
   const bin = (src: string) => (ast(`print(${src})`).body[0] as any).expr.args[0];
   assert.deepEqual(bin('a in b').pos, at(1, 9));
   assert.deepEqual(bin('a not in b').pos, at(1, 9)); // the `not`
   parseError('print(a in b in c)', 'comparisons do not chain', 1, 14);
   parseError('print(a < b in c)', 'comparisons do not chain', 1, 13);
   parseError('print(a in b not in c)', 'comparisons do not chain', 1, 14);
-  parseError('print(a == b not in c)', 'comparisons do not chain', 1, 15);
+  parseError('print(a == b not in c)', 'comparisons do not chain', 1, 14);
 });
 
 test('a for header may iterate over an in-less expression: for c in s', () => {
@@ -344,7 +342,7 @@ test('a for header may iterate over an in-less expression: for c in s', () => {
 test('step 4 parse errors', () => {
   parseError('print("{1 2}")', "expected '}', found '2'", 1, 11);
   parseError('print("{1 +}")', "expected an expression, found '}'", 1, 12);
-  parseError('print("{)}")', "expected an expression, found ')'", 1, 10);
+  parseError('print("{)}")', "expected an expression, found ')'", 1, 9);
   parseError('print(s[0)', "expected ']', found ')'", 1, 10);
   parseError('print(s[])', "expected an expression, found ']'", 1, 9);
   parseError('print("a" "b")', "expected ')', found string", 1, 11);

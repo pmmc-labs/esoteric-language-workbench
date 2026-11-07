@@ -378,6 +378,39 @@ could not be called `len` yet `len(x)` would still be `unknown function`
 until step 4); reporting `functions are defined at the top level` from
 the resolver (the parser knows at once).
 
+**D42. Step 4 details the spec left open.** *(default)* Parsing: `in` and
+`not in` are comparisons, so a newline after them is skipped like after
+any binary operator and they don't chain (the error points at the second
+operator, the `not` of a `not in`). A `x not in c` that faults says
+`cannot use in on T and U`, at the `not`: it is `not (x in c)`, so the
+operator that failed is `in`. Each `{expr}` of a string is parsed on its
+own and must be used up by the expression: `"{1 2}"` is
+`expected '}', found '2'`, and `"{1 +}"` is
+`expected an expression, found '}'`, pointing at the closing brace (the
+lexer records where it was). An index `x[i]` is parsed after any primary
+(a call, a parenthesized expression, a string literal) and binds tighter
+than prefix minus; `.name` is not parsed until step 6, so a `.` after an
+expression is an ordinary `expected newline, found '.'`. A string is no
+longer `expected an expression` as a call argument (test 024 now has two
+strings side by side: `expected ')', found string`). Runtime: an index
+checks the container's type (`cannot index int`), then the index's
+(`string index must be an int, got bool`), then the range, so the miss is
+the last thing that can happen; a builtin checks its arguments left to
+right (`slice` the value, then `from`, then `to`) and the range last.
+`fail` writes a string's bytes as they are (NULs and all) and any other
+value as `str` gives it. `len` already answers for lists and maps, which
+no program can make yet. Shape for step 7: every lookup is a runtime
+function that returns whether it hit (`dt_try_index`, `dt_try_int`) and
+faults only for what `else` must not catch; `dt_index` and `dt_b_int` are
+those plus the fault for a miss, so the `else` branch needs no new runtime
+support. Codegen: a string literal is built once, in a `static Value`
+cached at its first use, so a literal in a loop allocates once;
+interpolation computes every part in order into temporaries and joins
+them with `dt_interp`. Rejected: parsing `.name` now to give
+`cannot use .name on string` (a form no test of this step can use);
+`setjmp` for misses (D20 rejects it); building each literal on every
+evaluation (allocation per iteration for no gain).
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,

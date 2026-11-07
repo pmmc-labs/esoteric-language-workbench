@@ -21,6 +21,15 @@ export function codegen(program: Program, path: string): string {
   const lines: string[] = [];
   const emit = (depth: number, s: string) => lines.push('  '.repeat(depth) + s);
 
+  // A string literal is built once, the first time control reaches it.
+  function literal(value: string, depth: number): string {
+    const t = `t${++temps}`;
+    emit(depth, `static Value s${temps};`);
+    emit(depth, `if (s${temps}.tag != T_STR) s${temps} = dt_str_new(${cString(value)}, ${value.length});`);
+    emit(depth, `Value ${t} = s${temps};`);
+    return t;
+  }
+
   // Emits the code for `e` and returns the name of the temporary holding it.
   function expr(e: Expr, depth: number): string {
     switch (e.kind) {
@@ -52,7 +61,9 @@ export function codegen(program: Program, path: string): string {
         const t = `t${++temps}`;
         const { line, col } = e.pos;
         // == and != never fault, so they take no position.
-        if (e.op === '==') emit(depth, `Value ${t} = dt_bool(dt_equal(${l}, ${r}));`);
+        if (e.op === 'in' || e.op === 'not in') {
+          emit(depth, `Value ${t} = dt_bool(${e.op === 'in' ? '' : '!'}dt_in(${line}, ${col}, ${l}, ${r}));`);
+        } else if (e.op === '==') emit(depth, `Value ${t} = dt_bool(dt_equal(${l}, ${r}));`);
         else if (e.op === '!=') emit(depth, `Value ${t} = dt_bool(!dt_equal(${l}, ${r}));`);
         else emit(depth, `Value ${t} = ${ARITH[e.op]}(${line}, ${col}, ${l}, ${r});`);
         return t;
@@ -60,6 +71,26 @@ export function codegen(program: Program, path: string): string {
       case 'name': {
         const t = `t${++temps}`;
         emit(depth, `Value ${t} = ${e.cname};`);
+        return t;
+      }
+      case 'string': {
+        // Text is a literal built the first time it is reached; every part is
+        // computed in order, then joined.
+        const vals = e.parts.map((p) => (p.kind === 'text' ? literal(p.value, depth) : expr(p.expr, depth)));
+        if (e.parts.length === 0) return literal('', depth);
+        if (e.parts.length === 1 && e.parts[0].kind === 'text') return vals[0];
+        const t = `t${++temps}`;
+        emit(depth, `Value a${temps}[] = {${vals.join(', ')}};`);
+        emit(depth, `Value ${t} = dt_interp(${vals.length}, a${temps});`);
+        return t;
+      }
+      case 'index': {
+        const c = expr(e.target, depth);
+        const i = expr(e.index, depth);
+        const t = `t${++temps}`;
+        // dt_index is dt_try_index plus the fault for a miss; step 7's `else`
+        // calls dt_try_index itself and branches on the result.
+        emit(depth, `Value ${t} = dt_index(${e.pos.line}, ${e.pos.col}, ${c}, ${i});`);
         return t;
       }
       case 'logic': {
