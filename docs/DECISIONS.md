@@ -324,7 +324,7 @@ deleting the C file (a failing sanitizer run is easier to read with it).
 ## Step 1 defaults
 
 **D36. Parse-error words for expressions, and the shape of the generated
-code.** *(default)* (1) The missing close of a parenthesis is `expected
+code.** *(default; kept by the designer at review of step 1)* (1) The missing close of a parenthesis is `expected
 ')', found TOKEN`: D33's THING list gains the one punctuation mark the
 parser can ask for by name. (2) `a < b < c` gets no special message: the
 parser takes one comparison per level and the second operator is left
