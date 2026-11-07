@@ -20,8 +20,11 @@ interpreter in TypeScript on Node, steps 0 to 5 of
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). Nothing is built.
-**Next:** step 0. Not agreed, from main: which fault reports when one
+interpreter reports before evaluating (D28, exit 2). **Step 0 is built:** `bin/lang.ts`
+reads, checks, evaluates and prints one literal (tests 000, 001); the
+reader keeps line and column and rejects a literal past 63 bits (D4,
+D28), with unit tests. A value is a `bigint` or a `boolean`.
+**Next:** step 1. Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
 ## Read first, in this order

@@ -6,7 +6,7 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Nothing is built. Next: step 0.
+Step 0 is built. Next: step 1.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -48,7 +48,7 @@ model to write; *medium* where the design is agreed and the step
 describes its tests; *small* where the step is a pattern to repeat.
 A session's first move is to compare its own model with the step's size.
 
-### 0. One literal, evaluated and printed (to build)
+### 0. One literal, evaluated and printed (done)
 
 Size: medium. The decisions are made. Referee: none new;
 `t/referee/calc.py` covers every test already.

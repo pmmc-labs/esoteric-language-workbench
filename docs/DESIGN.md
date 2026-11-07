@@ -41,8 +41,11 @@ convention. Name it, so a proposal that touches it is recognised.]
 
 ## Values and memory
 
-[How the interpreter represents a value: D28 leaves it its own, and
-D14's tags are main's.]
+An integer is a JavaScript `bigint`, kept in the 63-bit range of D4 by
+a check after every operation that can leave it, and a boolean is a
+JavaScript `boolean` (D11). The two never mix in JS: `typeof` is the tag
+the arithmetic checks. D28 leaves the representation the interpreter's
+own, and D14's tags are main's.
 
 ## The runtime
 
@@ -52,8 +55,19 @@ D14's tags are main's.]
 
 Passes, a file each in `interp/src/`: read (forms with their line and
 column), check (every error that D28 says comes before running), and
-evaluate (a tree-walker over the forms, D29). `bin/lang.ts` is the
-driver. [The shape of the code.]
+evaluate (a tree-walker, D29). `bin/lang.ts` is the driver.
+
+The reader (`reader.ts`) turns text into forms, each with its line and
+column; it keeps a stack of its own, so nesting depth is not bounded by
+Node's. The checker (`checker.ts`) walks the forms in reading order and
+makes a tree of nodes, or throws the first `CompileError` (D28); nothing
+is evaluated until the whole program has passed. The evaluator
+(`evaluator.ts`) walks the nodes and throws `Fault` (D6). `errors.ts` has
+both. The driver is the only place that prints or exits: 0 and the value,
+1 for a fault, 2 for an error before running, a usage error or a file it
+can't read, 3 for a fault in the interpreter itself. The tree-walker
+recurses, so a program nested a few thousand levels deep may overflow
+Node's stack; the tests go 147 deep.
 
 ## Open questions
 
