@@ -1,0 +1,4 @@
+; 21! is past the range: fault overflow (D4), at the multiplication.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (fact n) (if (== n 0) 1 (* n (fact (- n 1)))))
+(fact 21)

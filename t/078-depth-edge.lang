@@ -1,0 +1,4 @@
+; (sum 9999) is 10,000 calls in progress: it runs (D34).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (sum n) (if (== n 0) 0 (+ n (sum (- n 1)))))
+(sum 9999)

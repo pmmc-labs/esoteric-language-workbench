@@ -1,0 +1,6 @@
+; A function of eight parameters, each weighted so a swap shows (D31).
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (mix a b c d e f g h)
+    (+ (+ (+ (* 1 a) (* 2 b)) (+ (* 3 c) (* 4 d)))
+       (+ (+ (* 5 e) (* 6 f)) (+ (* 7 g) (* 8 h)))))
+(mix 1 -2 3 -4 5 -6 7 -8)

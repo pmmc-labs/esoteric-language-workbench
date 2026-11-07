@@ -1,0 +1,5 @@
+; Definitions and calls (D31): a function calling another.
+; Expected output from t/models/fn.py, a model of D31 to D34.
+(def (sq x) (* x x))
+(def (hyp2 a b) (+ (sq a) (sq b)))
+(+ (hyp2 3 4) (sq 10))
