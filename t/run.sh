@@ -1,8 +1,11 @@
 #!/bin/sh
-# Golden tests: compile each t/NNN-name.lang, examples/name.lang and
+# Golden tests: run each t/NNN-name.lang, examples/name.lang and
 # docs/guide/code/name.lang that has a .expected next to it (or the files
-# given), run it, and diff what it prints against the .expected: stdout
-# and stderr together, then "exit: N" if it exits with N other than 0.
+# given) through the interpreter, `$LANG_NODE bin/lang.ts FILE`, and diff
+# what it prints against the .expected: stdout and stderr together, then
+# "exit: N" if it exits with N other than 0. $LANG_NODE is node unless
+# set: `make golden-node` runs the suite under a second Node, the
+# interpreter's second oracle (docs/PROCESS.md, "An interpreter").
 # A line "; stdin: bytes" is what the test reads from stdin, written with
 # printf %b's escapes (\n, \t, \\, \0nnn in octal; \033 is ESC); without
 # one, stdin is empty. "; args: words" gives the program its arguments,
@@ -13,10 +16,11 @@ cd "$(dirname "$0")/.." || exit 2
 # A test that runs longer than $TIMEOUT seconds is killed, and fails.
 # (macOS has no timeout(1), hence the watchdog.)
 TIMEOUT=${TIMEOUT-60}
-export TIMEOUT
+LANG_NODE=${LANG_NODE-node}
+export TIMEOUT LANG_NODE
 
-# What every test assumes of the runtime. Add each knob here as the
-# runtime gains it, so that no test depends on the machine it runs on:
+# What every test assumes of the interpreter. Add each knob here as it
+# gains one, so that no test depends on the machine it runs on:
 # the virtual clock, the random seed, the epoch, the heap cap, the
 # collector's poison. (None exist at step 0.)
 # export LANG_CLOCK=virtual
@@ -24,10 +28,12 @@ export TIMEOUT
 
 # The watchdog leaves a file to say it killed the test, since its own
 # output can't go down the pipe to diff: diff would wait for it.
+# $1 is where the test's files go (build/t/NAME), $2 its stdin, $3 its
+# arguments, $4 its environment, $5 the program.
 output() {
     rm -f "$1.killed"
     set -f                                  # $3 and $4 are split into words, not globbed
-    env $4 "./$1" $3 <"$2" 2>&1 &
+    env $4 "$LANG_NODE" bin/lang.ts "$5" $3 <"$2" 2>&1 &
     set +f
     pid=$!
     ( sleep "$TIMEOUT" && : >"$1.killed" && kill "$pid" ) >/dev/null 2>&1 &
@@ -47,10 +53,7 @@ if [ "$1" = "--one" ]; then
     name=${name%.*}
     bin=build/t/$name
     printf '%b' "$(sed -n 's#^; stdin: ##p' "$src")" >"$bin.stdin"
-    if ! node bin/langc.ts -o "$bin" "$src" >"$bin.fail" 2>&1; then
-        echo "FAIL $name (compile)"
-        exit 1
-    elif output "$bin" "$bin.stdin" "$(sed -n 's#^; args: ##p' "$src")" "$(sed -n 's#^; env: ##p' "$src")" | diff -u "${src%.*}.expected" - >"$bin.fail"; then
+    if output "$bin" "$bin.stdin" "$(sed -n 's#^; args: ##p' "$src")" "$(sed -n 's#^; env: ##p' "$src")" "$src" | diff -u "${src%.*}.expected" - >"$bin.fail"; then
         rm -f "$bin.fail"
         echo "ok   $name"
     else

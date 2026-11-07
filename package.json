@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "test": "node --test \"compiler/tests/**/*.test.ts\""
+        "test": "node --test \"interp/tests/**/*.test.ts\""
     },
     "devDependencies": {
         "@types/node": "^22",

@@ -9,34 +9,29 @@
 # make commits  every commit since origin/main that touches the
 #               implementation names a decision or a plan step
 # make hooks    install the commit-msg hook that checks that as you commit
-# make sanitize the golden tests built with clang's UBSan and ASan, every
-#               finding fatal; not part of make test, since it needs
-#               clang's sanitizer runtime (Xcode has it; on Ubuntu,
-#               apt-get install libclang-rt-18-dev). Run it after any
-#               change to the runtime
+# make golden-node  the golden tests under a second Node, the
+#               interpreter's second oracle: LANG_NODE_OTHER, or
+#               /opt/node24/bin/node, the cloud machine's (the person's
+#               machine runs its own Node with `make golden`)
 # make check    type-check the compiler (needs `npm install` first)
 # make decisions  the decision-log browser (tools/decisions/) for this
 #               log and a64-slight's (A64=path, ../a64-slight by default),
 #               as build/decisions-*.html
 # make clean    remove build/
 #
-# Step 0 compiles to C and links with cc, so a binary runs on the machine
-# that built it and nothing is cross-compiled. When a native target comes,
-# TARGETS and a cross-compiler plus emulator go here, as a64-slight's
-# Makefile has them.
+# This branch builds an interpreter (D28, D29): `node bin/lang.ts FILE`
+# runs a program, and there's nothing to compile or link. main's Makefile
+# has the compiler's targets, golden-clang and sanitize.
 
 test: unit golden checks
 
-# The golden tests under another C compiler, since the cloud machine's cc
-# is gcc and a Mac's is clang: LANG_CC=clang make golden, or this.
-golden-clang:
-	@LANG_CC=clang ./t/run.sh
-
-sanitize:
-	@LANG_CC="clang -fsanitize=undefined,address -fno-sanitize-recover=all" ./t/run.sh
+# The golden tests under another Node: a host's behaviour can move
+# between its versions, and the language mustn't move with it.
+golden-node:
+	@LANG_NODE=$${LANG_NODE_OTHER:-/opt/node24/bin/node} ./t/run.sh
 
 unit:
-	node --test "compiler/tests/**/*.test.ts"
+	@if ls interp/tests/*.test.ts >/dev/null 2>&1; then node --test "interp/tests/**/*.test.ts"; else echo "unit: no tests yet"; fi
 
 golden:
 	@./t/run.sh
@@ -80,4 +75,4 @@ decisions:
 clean:
 	rm -rf build
 
-.PHONY: test unit golden golden-clang sanitize checks models commits hooks check decisions clean
+.PHONY: test unit golden golden-node checks models commits hooks check decisions clean

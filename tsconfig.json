@@ -8,5 +8,5 @@
         "allowImportingTsExtensions": true,
         "types": ["node"]
     },
-    "include": ["bin", "compiler"]
+    "include": ["bin", "interp"]
 }

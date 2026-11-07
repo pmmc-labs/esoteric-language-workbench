@@ -17,7 +17,7 @@ what the models write.
             every golden test, and must print the .expected, or say the
             program is outside what it covers (exit 3), which is skipped.
   commits   Every commit in a range (BASE..HEAD, default origin/main..HEAD)
-            that touches compiler/, runtime/ or lib/ names a decision
+            that touches interp/, compiler/, runtime/, lib/ or bin/ names a decision
             (D12) or a plan step (step 3) in its subject, so that the
             change can be found from the log and the log from the
             change. `commit-msg FILE [--staged]` checks one message, for
@@ -31,7 +31,7 @@ import subprocess
 import sys
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-IMPL = ('compiler/', 'runtime/', 'lib/', 'bin/')
+IMPL = ('interp/', 'compiler/', 'runtime/', 'lib/', 'bin/')
 TEST_DIRS = ['t', 'examples', 'docs/guide/code']
 EXT = '.lang'
 

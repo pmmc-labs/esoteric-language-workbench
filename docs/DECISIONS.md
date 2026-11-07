@@ -21,7 +21,8 @@ them, keeping D8 to D10, which are the process.
 ## Scope
 
 **D1. A calculator: integer expressions, compiled to a native binary
-that prints the value.** *(User: "let's make a small calculator language
+that prints the value.** (Run by an interpreter on the `interpreter`
+branch: D28.) *(User: "let's make a small calculator language
 to work out these steps.")* The language exists to exercise the
 process: steps, models, checks. It grows only as far as that needs.
 
@@ -29,7 +30,44 @@ process: steps, models, checks. It grows only as far as that needs.
 *(Default)* C so step 0 runs wherever there's a C compiler; a native
 target through a target interface when something needs one. Node's
 type stripping, so there's no build step; the compiler uses only
-erasable syntax (no parameter properties, no enums).
+erasable syntax (no parameter properties, no enums). (On the
+`interpreter` branch there's no compiler: D28, D29.)
+
+**D28. An interpreter, not a compiler: on the `interpreter` branch the
+calculator is built again as one, from its decisions and its tests.**
+*(User, Nov 2026: "How applicable would the process be for an
+interpreter rather than a compiler?", then "Let's make a branch of
+esoteric language workbench with those changes.")* The language is
+the calculator's as it stands on main after step 5, D3 to D25, and its
+46 golden tests, its models and its referee are the spec: what a
+program prints doesn't change. The compiler, the runtime and the C they
+make are main's, and the decisions about them, D2, D14's encoding, D26
+and D27, don't bind the interpreter, which keeps their observable part
+(D11's booleans, D25's order, D21 to D24's budgets) its own way. What
+the compiler reported before a program ran (D3's arity, an unknown
+name, a literal past the range, the forms of D13 and D24) the
+interpreter reports before it evaluates anything, so `(if #false (+ 1
+2 3) 0)` is an error and not `0`: `FILE:LINE:COL: message` on stderr
+and exit 2, kept apart from a fault (D6, exit 1), since one process now
+does both. Such an error is a unit test, as before (D7). Rejected:
+checking a form only when it's evaluated (a program's errors would
+depend on which branches it takes, which no program on main's compiler
+could show); exit 1 for both (a test couldn't tell a program that
+faults from one that never ran).
+
+**D29. The interpreter is TypeScript, run by Node as it is: a
+tree-walker over the reader's forms.** *(Default)* The workbench's
+tooling is TypeScript already, and the referee is Python, so the two
+implementations of the language stay in different hosts
+(`docs/PROCESS.md`, "An interpreter instead of a compiler"). Node's
+type stripping and erasable syntax only, as D2 had it. Where Node's
+behaviour and the decisions could differ, `DESIGN.md`'s "What the host
+gives" says what the interpreter inherits, what it overrides and how,
+answered at step 0, before the code. Rejected: a bytecode VM in C (a
+compiler and a runtime in all but name, which main has); Python (the
+referee's host, and two implementations in one host share its blind
+spots); a bytecode VM in TypeScript (a step of its own, if speed is
+ever wanted).
 
 ## Language
 
@@ -230,7 +268,8 @@ bignums (machinery the calculator doesn't need; a step later, if ever).
 `11`, the value in bit 2.** *(Default)* An integer's low bit stays 0
 (D4), so integers are untouched, and `01` is left for what comes next.
 The runtime checks a value's tag before arithmetic and comparison now
-that the compiler can't know what an `if` gives.
+that the compiler can't know what an `if` gives. (The compiler's
+encoding: the interpreter represents a value its own way, D28.)
 
 **D5. Division truncates toward zero and the remainder takes the
 dividend's sign.** *(Default)* C's rule, so the runtime is `/` and `%`
@@ -268,14 +307,16 @@ wording, and the referee's, but a cost per operation that grows with
 the nesting, and a stack to size); the charge emitted by the compiler
 around each call (the charge must come after the operands and before
 the checks, which is a runtime function's entry, and the runtime is
-where the checks are).
+where the checks are). (The compiler's runtime: on the `interpreter`
+branch, any mechanism that keeps D21 to D24, D28.)
 
 ## Compiler
 
 **D7. A compile error can't be a golden test; it's a unit test.**
 *(Default)* `t/run.sh` calls a failed compile a failure, which is what
 it should be for a test that's meant to run. Messages and positions
-are checked in `compiler/tests/`. Rejected: a `; compile-error:` header
+are checked in `compiler/tests/` (`interp/tests/` on the `interpreter`
+branch, where such an error comes before evaluation, D28). Rejected: a `; compile-error:` header
 line in a golden test; it would come when a language has enough
 compile errors to want it.
 
@@ -306,7 +347,8 @@ unit tests that read its C, and the bracket limit is a decision of its
 own, still waiting); GNU statement expressions, `({ ... })` (two
 brackets a level, so the limit halves); a temporary for every operand,
 atoms too (it changes the C of every program for nothing an atom
-needs).
+needs). (The compiler's: on the `interpreter` branch D25's order is the
+interpreter's to keep, D28.)
 
 ## Project
 
