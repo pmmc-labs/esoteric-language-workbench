@@ -6,7 +6,8 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Steps 0 to 5 are built; all 46 golden tests pass. Next: step 6 (not agreed).
+Steps 0 to 5 are built; all 46 golden tests pass. Next: step 6,
+decided as defaults for the interpreter experiments (D31 on).
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
