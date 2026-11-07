@@ -32,7 +32,12 @@ D7, D28). **Step 2** adds `#true`
 and `#false` (the checker turns the symbols into JS booleans, D11), the
 six comparisons (D12; `==` is `===`, so unlike types are unequal) and
 `if` (D13) as a node of its own; its arity is checked in a branch never
-taken too (D28, unit test). Tests 020 to 024. **Next:** step 3. Not agreed, from main: which fault reports when one
+taken too (D28, unit test). Tests 020 to 024. **Step 3** adds the five
+bit operations (D15 to D17; tests 030 to 036) on BigInt's own `& | ^ <<
+>>`, which are two's complement and floor as D15 and D16 say. Where one
+application could fault two ways (a boolean and a bad count) the
+interpreter reports `not an integer`: types first, then the count's
+range; still not agreed. **Next:** step 4. Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
 ## Read first, in this order

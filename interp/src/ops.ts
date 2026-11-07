@@ -29,6 +29,14 @@ const nonzero = (b: bigint): bigint => {
 // and values of different types are unequal (=== on a bigint and a boolean).
 const ord = (f: (a: bigint, b: bigint) => boolean) => (a: Value, b: Value): Value => f(...ints(a, b));
 
+// D16: a shift count is checked, 0 to 62, never masked. When one
+// application could fault two ways (a boolean and a bad count) the
+// interpreter reports `not an integer`: operands' types first, then the
+// operator's own checks. Not agreed (CLAUDE.md's Status), and no test has one.
+const shift = (f: (a: bigint, n: bigint) => bigint) =>
+  int2((a, n) => f(a, n >= 0n && n <= 62n ? n : bad("bad shift")));
+const bad = (m: string): never => { throw new Fault(m); };
+
 export type Op = (a: Value, b: Value) => Value;
 
 export const ops: Map<string, Op> = new Map<string, Op>([
@@ -41,6 +49,14 @@ export const ops: Map<string, Op> = new Map<string, Op>([
   ["<=", ord((a, b) => a <= b)],
   [">", ord((a, b) => a > b)],
   [">=", ord((a, b) => a >= b)],
+  // D15: BigInt's & | ^ are two's complement of unbounded width, which
+  // every width agrees with, and the result is always in range.
+  ["bit/and", int2((a, b) => a & b)],
+  ["bit/or", int2((a, b) => a | b)],
+  ["bit/xor", int2((a, b) => a ^ b)],
+  ["bit/shl", shift((a, n) => a << n)],
+  // BigInt's >> rounds toward negative infinity, which is D16's rule.
+  ["bit/shr", shift((a, n) => a >> n)],
   ["==", (a, b) => a === b],
   ["!=", (a, b) => a !== b],
 ]);

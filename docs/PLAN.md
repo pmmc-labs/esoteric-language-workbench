@@ -6,7 +6,7 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Steps 0 to 2 are built. Next: step 3.
+Steps 0 to 3 are built. Next: step 4.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -95,7 +95,7 @@ Size: medium. Referee: none new.
 - Tests 020 to 024.
 - Leave out: `and`, `or`, `not`, `cond`, truthiness.
 
-### 3. Bit operations (to build)
+### 3. Bit operations (done)
 
 Size: medium. Referee: none new.
 
