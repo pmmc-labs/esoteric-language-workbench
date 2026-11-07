@@ -517,7 +517,7 @@ a case no one writes).
 
 ## Project
 
-**D47. Step 8 details the spec left open.** *(default)* The examples are
+**D47. Step 8 details the spec left open.** *(default; designer, kept)* The examples are
 DESIGN.md's six programs unchanged, each with one leading `//` comment of
 what it shows, named `fizzbuzz`, `recursion`, `sorting`, `wordcount`,
 `routes` and `ledger`. The word count's standard input is a passage of 303
