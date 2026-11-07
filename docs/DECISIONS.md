@@ -378,7 +378,7 @@ could not be called `len` yet `len(x)` would still be `unknown function`
 until step 4); reporting `functions are defined at the top level` from
 the resolver (the parser knows at once).
 
-**D42. Step 4 details the spec left open.** *(default)* Parsing: `in` and
+**D42. Step 4 details the spec left open.** *(default; designer, kept)* Parsing: `in` and
 `not in` are comparisons, so a newline after them is skipped like after
 any binary operator and they don't chain (the error points at the second
 operator, the `not` of a `not in`). A `x not in c` that faults says
