@@ -131,6 +131,12 @@ and enforces D30's depth; the checker and evaluator recurse. Errors are
 two classes (`interp/src/errors.ts`): `CheckError` (a position, exit 2)
 and `Fault` (a name, exit 1); anything else is an internal error, exit 3
 (D30).
+The budget is two counts threaded through the evaluator (D27's shape,
+which D28 allows): `spent`, the operations done, and `limit`, the count
+at which the next is refused. An operator is charged after its operands
+and before its checks; `within` evaluates its budget under the budgets
+around it, lowers `limit` to `spent + n` if that is lower, runs the
+body, and puts the saved `limit` back. A run starts with a fresh pair.
 
 ## Open questions
 
