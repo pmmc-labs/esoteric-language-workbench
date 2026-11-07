@@ -59,3 +59,9 @@ test("if on its own is an unknown name, and #true is no operator", () => {
   assert.equal(checked("(#true 1 2)"), "1:1 a list must start with an operator");
   assert.equal(checked("#maybe"), "1:1 unknown name #maybe");
 });
+
+test("the bit operations take two arguments", () => {
+  assert.equal(checked("(bit/and 1 2)"), "ok");
+  assert.equal(checked("(bit/not 1)"), "1:2 unknown name bit/not");
+  assert.equal(checked("(bit/shl 1)"), "1:1 bit/shl takes 2 arguments, not 1");
+});
