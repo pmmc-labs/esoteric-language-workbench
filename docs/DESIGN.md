@@ -30,7 +30,10 @@ on, but bring it up before baking it in further.
 Integers of 63 bits (D4) and booleans (D11); seventeen operators on two
 operands each (D3, D5, D12, D15 to D19); `if` (D13) and `within`, a
 budget of operations (D20 to D24); evaluation left to right (D25); a
-fault ends the program (D6). `LANGUAGE.md` has them in full.
+fault ends the program (D6). Functions (D31): a program is definitions
+and then one expression; a call is an operation (D32); a call in tail
+position adds no depth (D33); calls in progress are limited to 10,000
+(D34). `LANGUAGE.md` has them in full.
 
 ## The core rule
 
@@ -137,8 +140,9 @@ value adds its lines.
 A value is a `bigint` (an integer, D4, range-checked after every
 operator) or a `boolean` (D11); the host's `typeof` is the tag, so D14's
 bit tags are main's and not here (D28). A form is a plain object with
-`line` and `col`. There is no heap yet, and the host's collector does
-whatever memory there is.
+`line` and `col`. A function's parameters are bound in a `Map` for each
+call, so a name is never a property the host already has (step 6). There
+is no heap yet, and the host's collector does whatever memory there is.
 
 ## The runtime
 
@@ -147,24 +151,37 @@ whatever memory there is.
 ## The interpreter
 
 Passes, a file each in `interp/src/`: read (forms with their line and
-column), check (every error that D28 says comes before running), and
-evaluate (a tree-walker over the forms, D29). `bin/lang.ts` is the
-driver. The reader is a loop over characters with a stack of its own
-and enforces D30's depth; the checker and evaluator recurse. Errors are
-two classes (`interp/src/errors.ts`): `CheckError` (a position, exit 2)
-and `Fault` (a name, exit 1); anything else is an internal error, exit 3
-(D30).
-The budget is two counts threaded through the evaluator (D27's shape,
-which D28 allows): `spent`, the operations done, and `limit`, the count
-at which the next is refused. An operator is charged after its operands
-and before its checks; `within` evaluates its budget under the budgets
-around it, lowers `limit` to `spent + n` if that is lower, runs the
-body, and puts the saved `limit` back. A run starts with a fresh pair.
+column; a program is a sequence of them), check (every error that D28 and
+D31 say comes before running, and the program split into its
+definitions and its expression), and evaluate (a tree-walker over the
+forms, D29). `bin/lang.ts` is the driver. The reader is a loop over
+characters with a stack of its own and enforces D30's depth; the checker
+recurses over the forms, which the reader has bounded. The evaluator
+does not recurse on the host at all: it is a loop over a stack of frames
+of its own, one for each thing waiting for a value (an operand, an
+`if`'s test, a `within`'s budget, a call's arguments, a call's return),
+so a call's depth is counted there and D34's 10,000 is the interpreter's
+own (step 6, D34). A tail call pushes no return frame, so it replaces
+its caller (D33). Errors are two classes (`interp/src/errors.ts`):
+`CheckError` (a position, exit 2) and `Fault` (a name, exit 1); anything
+else is an internal error, exit 3 (D30).
+The budget is two counts held by the evaluator (D27's shape, which D28
+allows): `spent`, the operations done, and `limit`, the count at which
+the next is refused. An operator or a call is charged after its operands
+(or arguments) and before its checks; `within` evaluates its budget under
+the budgets around it, lowers `limit` to `spent + n` if that is lower,
+runs the body, and puts the saved `limit` back, by a frame that does so
+when the body's value comes back. A run starts with a fresh pair.
 
 ## Open questions
 
 - **(open)** D30: nesting limited to 1000 deep (an error before
   running), and exit 3 for an internal error. Defaults, written by the
   builder of step 0.
+- **(open)** D31 to D34: functions, tail calls and depth. Defaults,
+  written by the builder of the interpreter's step 6, for the experiments
+  the person asked for; fair to revisit.
+- **(open)** D35: the messages and positions of D31's errors, and where
+  reading ends and checking begins. Default, written by the same builder.
 - **(open)** From main, not agreed: which fault reports when one
   operator could fault two ways.

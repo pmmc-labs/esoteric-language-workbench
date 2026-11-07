@@ -6,8 +6,9 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Steps 0 to 5 are built; all 46 golden tests pass. Next: step 6,
-decided as defaults for the interpreter experiments (D31 on).
+Steps 0 to 6 are built; all 66 golden tests pass under both Nodes, and
+`make unit` has 56. Next: step 7, not yet proposed (`[Heap values.]`
+below is a placeholder).
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -143,13 +144,19 @@ proposed them.
 - Leave out: a way to catch `budget spent` or ask what's left, budgets
   of anything but operator applications.
 
-### 6. Functions, tail calls and depth (to build)
+### 6. Functions, tail calls and depth (done)
 
 Size: medium. D31 to D34 decide it; every test is written and agrees
 with the referee, extended for this step. Referee: `t/referee/calc.py`,
 extended for D31 to D34 before the build, by someone other than the
 model's writer; wanted because the depth's edge and the charge's order
 are traps a mirror of the interpreter would copy.
+
+Built: the evaluator is a loop over its own stack of frames, not a
+recursion on the host's, since 10,000 calls in progress would have
+overrun Node's stack (`DESIGN.md`, "Calls and tail calls", "Depth of
+calls"). Tests 070 to 089 pass under both Nodes. The messages and
+positions of D31's errors are D35, a default.
 
 - Definitions and calls (D31): the reader and checker take a program of
   definitions and then one expression; every error D31 lists is an

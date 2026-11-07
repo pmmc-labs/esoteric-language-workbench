@@ -13,8 +13,9 @@ is an error before the program runs.
 
 ## Forms
 
-A program is one expression. An expression is an integer, or an
-operator applied to two expressions:
+A program is any number of definitions and then one expression (see
+Functions). An expression is an integer, a boolean, an `if`, a `within`,
+a call of a function, or an operator applied to two expressions:
 
     (+ (* 6 7) (- 10 (/ 7 2)))
 
@@ -26,8 +27,9 @@ sign: `(/ -7 2)` is `-3` and `(% -7 2)` is `-1`.
 
 Evaluation is left to right: an operator's left operand completely, then
 its right, then the operator; an `if`'s test, then one branch; a
-`within`'s budget, then its body. The first fault in that order ends the
-program, so `(+ (/ 1 0) (+ #true 1))` faults `division by zero`.
+`within`'s budget, then its body; a call's arguments, then the call, then
+its body. The first fault in that order ends the program, so `(+ (/ 1 0)
+(+ #true 1))` faults `division by zero`.
 
 ## Booleans, comparisons and `if`
 
@@ -57,8 +59,9 @@ the answer would fit (`(** 1 -1)`), and a result past the range faults
 
 `(within n expr)` is the value of `expr`, of whatever type, evaluated
 with a budget of `n` operations. An operation is one application of an
-operator, any of the seventeen: `(** 1 4611686018427387903)` is one,
-however large the exponent. Literals, `if` and `within` cost nothing,
+operator, any of the seventeen, or one call of a function: `(** 1
+4611686018427387903)` is one, however large the exponent, and a call is
+one before its body runs. Literals, `if` and `within` cost nothing,
 and a branch of an `if` that isn't taken isn't evaluated, so costs
 nothing. Operations are counted as they run, and an operator is charged
 after its operands have been evaluated and before it checks anything:
@@ -87,14 +90,69 @@ faults. The budget must be an integer, else `not an integer`, and not
 negative, else `bad budget`, either before the body runs:
 `(within -1 (/ 1 0))` faults `bad budget`.
 
+## Functions
+
+A program is any number of definitions, then one expression:
+
+    (def (square x) (* x x))
+    (def (hyp2 a b) (+ (square a) (square b)))
+    (hyp2 3 4)                                  ; 25
+
+A definition is `(def (name param ...) body)`: the name, then its
+parameters, none or more, each a name, then one expression for the body.
+Every definition sees every other, whatever order they come in, so a
+function may call itself, or one defined after it. A parameter is visible
+only in its own function's body, and holds the value its call gave it.
+
+A call is a function's name and its arguments: `(square 3)`. It gives
+exactly as many arguments as the function has parameters. The arguments
+are evaluated left to right, then the call is one operation under the
+budget, then the body runs.
+
+Functions are not values. A function's name is only ever a call's head,
+and a parameter is only ever a value, so there are no function arguments,
+no closures and no local definitions.
+
+These are errors before the program runs, each with its position (exit
+2): a definition after the expression, or one inside another expression;
+a program of definitions with no expression; two definitions of one
+name; a definition named as an operator, `if`, `within` or `def`; two
+parameters of one name, or a parameter named as a function; a call with
+the wrong number of arguments; a name that is neither a parameter in
+scope nor a function; a function's name used as a value; a parameter
+used as a call.
+
+## Tail calls and depth
+
+A call in tail position replaces its caller. A function's body is in
+tail position, and so are both branches of an `if` that is. A tail call
+adds nothing to the depth, so a function that calls itself in tail
+position is a loop of any length:
+
+    (def (count n acc) (if (== n 0) acc (count (- n 1) (+ acc 1))))
+    (count 1000000 0)                           ; 1000000
+
+Any other call is not in tail position. The calls in progress are the
+depth: the program's expression is at depth 0, so a call from it makes
+depth 1. The call that would make depth 10,001 faults `stack`, after its
+charge and before its body:
+
+    (def (sum n) (if (== n 0) 0 (+ n (sum (- n 1)))))
+    (sum 9999)                                  ; 49995000
+    (sum 10000)                                 ; fault: stack
+
+A `within`'s body is not in tail position, since the budget is put back
+when it ends, so a loop through a `within` nests as a call does.
+
 ## Faults
 
 A result that doesn't fit 63 bits, a division by zero, a shift count
-out of range, a negative exponent, an operation past the budget, or a
-negative budget ends the program: `fault: overflow`, `fault: division
-by zero`, `fault: bad shift`, `fault: bad exponent`, `fault: budget
-spent` or `fault: bad budget` on stderr, and exit 1. Nothing is printed
-on stdout.
+out of range, a negative exponent, an operation past the budget, a
+negative budget, or a call that would be the 10,001st in progress ends
+the program: `fault: overflow`, `fault: division by zero`, `fault: bad
+shift`, `fault: bad exponent`, `fault: budget spent`, `fault: bad
+budget` or `fault: stack` on stderr, and exit 1. Nothing is printed on
+stdout.
 
 ## Programs
 

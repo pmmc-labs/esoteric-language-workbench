@@ -357,6 +357,31 @@ machines, and a golden test at the edge would pass on one and fail on
 another); a limit as low as a naive tree-walker reaches (the language's
 depth would be the host's accident).
 
+**D35. The messages and positions of D31's errors, and where a
+program's reading and its checking divide.** *(Default, written by the
+builder of the interpreter's step 6, which could not ask; fair to
+revisit.)* D31 says which errors come before running, not what they
+say. Each is `FILE:LINE:COL: message` (D28), at the form D31 names: a
+definition after the expression, or a second expression, at the form
+that breaks the shape (the first form after the expression); a program
+of definitions with no expression, at the last definition; `def takes 2
+arguments, not N` as an operator's arity is worded; a definition whose
+first part isn't a list with a name first, at the name or, if there is
+none, at that part; a name that is
+an operator or `if`, `within` or `def`, at the name; two definitions of
+one name, at the second; a parameter that isn't a name, at it; two
+parameters named alike, or a parameter named as a function, at the
+second; a call's arity as `f takes 2 arguments, not 3`, at the call; a
+function's name used as a value, or a parameter as a call's head, at
+that name. The reader reads any number of top-level forms and only
+their nesting and literals are its errors (D30, D31), so a shape error
+is the checker's; an error the reader finds in a later form comes before
+a shape error the checker would find in an earlier one, since the reader
+runs first. Rejected: the shape errors in the reader (it would have to
+know which forms are definitions, and the reader's job is text to forms,
+D29); a single message for every shape error (a program's author then
+can't tell which shape is wrong, the one thing D31's list is for).
+
 ## Values and memory
 
 **D4. Integers are 63 bits, and a result that doesn't fit faults.**
