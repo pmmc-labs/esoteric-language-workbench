@@ -347,7 +347,7 @@ to be computed first, breaking short-circuit).
 
 ## Step 2 defaults
 
-**D37. Statement and name details D12 to D15 leave open.** *(default)*
+**D37. Statement and name details D12 to D15 leave open.** *(default; kept by the designer at review of step 2)*
 (1) Parse errors: after `let` the parser wants `name` (`expected name,
 found TOKEN`), then `'='`; a statement that starts with a name wants
 `'<-'`; a list wants `']'` (or `,`) after an element. All are D33's
