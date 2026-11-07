@@ -1,16 +1,17 @@
-# [name]
+# Strata
 
-[One paragraph: what the language is, what it runs on, what the compiler
-is written in and what it should become. Two or three sentences.]
+Strata is a small imperative language in which every variable is a
+history: a write lays a new value on top, `@` reads the variable as it
+was, and nothing is ever overwritten. Its compiler is TypeScript run by
+Node 22, emitting C that `cc` links with a small C runtime; it should
+become a language in which ordinary small programs (FizzBuzz, sorting,
+text) read plainly and the history makes some of them shorter.
 
 ## Status
 
-[A running paragraph of what's built, by plan step and decision number,
-updated every time a step lands. This is the handoff between sessions:
-a new session reads it before anything else. Keep it as one paragraph
-per era, dense, with golden test numbers and `Dn` references, so a
-claim can be checked against a test and a decision. Say what's **Next**
-at the end, and what's a candidate but not agreed.]
+**Design** (D1 to D32): the whole language is decided in `docs/DESIGN.md`,
+`docs/DECISIONS.md` and `docs/LANGUAGE.md`; seven steps in
+`docs/PLAN.md`. Nothing built yet. **Next:** step 0, the scaffold.
 
 ## Read first, in this order
 
@@ -30,12 +31,14 @@ at the end, and what's a candidate but not agreed.]
 - **Aggressively simple** is the main design rule. When a feature needs
   machinery, say so and offer to cut or change it.
 - **Propose before building** any change to language semantics, a new
-  special form or builtin, a change to [the core rule], or anything
+  special form or builtin, a change to the core rule (D7: every name is a history), or anything
   marked (open). Give options and a recommendation. Record the outcome in
   `docs/DECISIONS.md` (who decided, why, what was rejected) and update
-  `docs/DESIGN.md`.
+  `docs/DESIGN.md`. In this run there is no person: a builder writes any
+  default it has to take as a *(default)* decision and flags it in its
+  report; the designer rules on it at review.
 - When a special form or builtin is added or changes, update
-  `docs/LANGUAGE.md` (no tables there), and the guide where it shows it.
+  `docs/LANGUAGE.md` (no tables there).
 - Keep a working compiler with passing tests at the end of every step
   (Ghuloum). Each step adds golden tests.
 - **Examples bend to the language, not the other way round.** When an
@@ -52,21 +55,24 @@ at the end, and what's a candidate but not agreed.]
 
 ## Code style
 
-- [Indentation, line width, naming.]
-- [The compiler's shape. a64-slight's rule: pure functions over immutable
-  s-expressions, association lists for environments, no classes, so it
-  can be ported to the language itself line by line. Pick the shape that
-  makes self-hosting a translation rather than a rewrite.]
-- [Constraints the host platforms impose, as you learn them. Name the
-  symptom and the fix, so the lesson isn't relearned.]
+- TypeScript: 2-space indent, lines under 100, camelCase, `.ts`
+  imports with the extension. Erasable syntax only (Node strips types):
+  no enums, no parameter properties, no namespaces.
+- The compiler is pure functions over plain-object ASTs (tagged unions
+  with a `k` field), no classes, one file per pass (D29). Compile errors
+  are thrown as `{line, col, msg}` and caught once in `main.ts`.
+- C: C11, no extensions, snake_case, runtime names prefixed `strata_`.
+  Generated code puts every subexpression in a fresh temporary, in
+  source order (D25). Never pass a variable and a call that sets it in
+  one argument list: C doesn't order arguments, and gcc and clang differ.
+- Terse where the code is simple, spelled out where it isn't.
 - Comments explain why, not what.
 
 ## Toolchain
 
-- [Primary machine: compiler, versions.]
-- [The machine cloud sessions develop on, and how a target that isn't
-  native runs there (cross-compile and an emulator, say).]
-- [One command that checks the setup, and what it should print.]
+- Node 22 (v22.23 here; type stripping on by default), gcc 13 as `cc`,
+  clang 18. One machine: the cloud x86-64 Linux box; no other target.
+- `make tools` prints the three versions.
 
 ## Layout
 
@@ -75,23 +81,23 @@ at the end, and what's a candidate but not agreed.]
 | `bin/` | The driver |
 | `compiler/src/` | One file per pass: reader, expander, checker, codegen, targets, errors |
 | `compiler/tests/` | Unit tests, per pass |
-| `runtime/` | [C, assembly, whatever the language runs on] |
-| `lib/` | The prelude, compiled into every program, and the libraries a program asks for |
+| `runtime/` | `strata.h`, `strata.c`: arena, histories, arithmetic, strings, faults |
 | `examples/` | Example programs; each with a `.expected` is a golden test |
-| `docs/guide/` | The guide; its code blocks are golden tests too |
-| `t/` | Golden tests: `NNN-name.ext` + `NNN-name.expected`; `run.sh`; `models/`; `data/` |
+| `t/` | Golden tests: `NNN-name.strata` + `NNN-name.expected` (step n's are `n00` up, D31); `run.sh`; `checks.py`; `models/` |
 | `build/` | Output (ignored) |
 
 ## Commands
 
-- `make test`: everything, for every target. [How long it takes.]
-- `make unit`, `make golden`, ...: one at a time. `t/run.sh t/NNN-name.ext`
-  runs one golden test.
-- [The compiler's command line, its exit codes.]
-- [Environment variables a compiled program reads: the virtual clock,
-  the heap cap, record and replay, the scheduling seed, the GC stress
-  and poison knobs. `t/run.sh` sets the ones the tests assume.]
+- `make test`: unit, golden (gcc), golden-clang, sanitize, checks.
+- `make unit`, `make golden`, `make golden-clang`, `make sanitize`,
+  `make checks`: one at a time. `t/run.sh t/NNN-name.strata` runs one
+  golden test (`LANG_CC`, `LANG_CFLAGS` pass through).
+- `bin/strata build FILE -o OUT`: exit 0, 2 on a compile error
+  (`error at L:C: message` on stderr), 3 if `cc` fails (a compiler bug).
+  `bin/strata run FILE` builds into `build/` and runs it (D30).
+- A compiled program reads no environment and no input (D28).
 
-[How the runtime reports a program's value, a fault, a deadlock, and the
-exit code for each; what a golden test compares (stdout and stderr
-together, plus `exit: N` when not 0).]
+A program prints only through `print`/`write`, exits 0 at its end, and on
+a fault flushes stdout, prints `fault at L:C: message` to stderr and exits
+1 (D23). A golden test compares stdout and stderr together, plus a line
+`exit: N` when N isn't 0.
