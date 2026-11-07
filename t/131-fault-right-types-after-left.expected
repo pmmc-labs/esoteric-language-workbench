@@ -1,0 +1,2 @@
+t/131-fault-right-types-after-left.ditto:1:12: fault: cannot use - on nil and int
+exit: 1

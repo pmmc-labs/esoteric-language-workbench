@@ -1,0 +1,2 @@
+t/121-fault-neg-bool.ditto:1:7: fault: cannot use - on bool
+exit: 1

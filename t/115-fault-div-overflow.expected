@@ -1,0 +1,2 @@
+t/115-fault-div-overflow.ditto:1:34: fault: integer overflow
+exit: 1

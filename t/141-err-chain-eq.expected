@@ -1,0 +1,2 @@
+t/141-err-chain-eq.ditto:1:14: error: comparisons do not chain
+exit: 2

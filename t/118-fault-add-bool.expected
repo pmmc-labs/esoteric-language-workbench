@@ -1,0 +1,2 @@
+t/118-fault-add-bool.ditto:1:9: fault: cannot use + on int and bool
+exit: 1

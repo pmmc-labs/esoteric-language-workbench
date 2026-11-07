@@ -1,0 +1,2 @@
+t/124-fault-and-right.ditto:1:12: fault: cannot use and on nil
+exit: 1

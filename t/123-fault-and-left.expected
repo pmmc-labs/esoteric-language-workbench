@@ -1,0 +1,2 @@
+t/123-fault-and-left.ditto:1:9: fault: cannot use and on int
+exit: 1

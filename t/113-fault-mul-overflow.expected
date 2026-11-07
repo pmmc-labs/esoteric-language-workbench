@@ -1,0 +1,2 @@
+t/113-fault-mul-overflow.ditto:1:18: fault: integer overflow
+exit: 1

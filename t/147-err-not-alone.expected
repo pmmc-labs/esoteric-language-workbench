@@ -1,0 +1,2 @@
+t/147-err-not-alone.ditto:1:10: error: expected an expression, found ')'
+exit: 2

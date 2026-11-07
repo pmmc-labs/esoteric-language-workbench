@@ -1,0 +1,2 @@
+t/144-err-expression-statement-bool.ditto:1:1: error: expression statement must be a call
+exit: 2

@@ -1,0 +1,2 @@
+t/128-fault-greater-mixed.ditto:1:9: fault: cannot use >= on int and nil
+exit: 1

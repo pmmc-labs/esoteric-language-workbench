@@ -1,0 +1,2 @@
+t/143-err-expression-statement.ditto:2:1: error: expression statement must be a call
+exit: 2

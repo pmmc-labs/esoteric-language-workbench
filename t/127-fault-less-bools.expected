@@ -1,0 +1,2 @@
+t/127-fault-less-bools.ditto:1:12: fault: cannot use < on bool and bool
+exit: 1

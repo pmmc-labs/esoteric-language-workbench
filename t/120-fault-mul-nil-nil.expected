@@ -1,0 +1,2 @@
+t/120-fault-mul-nil-nil.ditto:1:11: fault: cannot use * on nil and nil
+exit: 1

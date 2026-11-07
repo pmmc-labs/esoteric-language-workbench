@@ -1,0 +1,4 @@
+false
+true
+t/133-fault-short-circuit-then-fault.ditto:3:18: fault: division by zero
+exit: 1

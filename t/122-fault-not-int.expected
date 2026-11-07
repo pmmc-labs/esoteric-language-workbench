@@ -1,0 +1,2 @@
+t/122-fault-not-int.ditto:1:7: fault: cannot use not on int
+exit: 1

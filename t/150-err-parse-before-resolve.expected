@@ -1,0 +1,2 @@
+t/150-err-parse-before-resolve.ditto:2:10: error: expected an expression, found ')'
+exit: 2

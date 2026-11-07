@@ -1,0 +1,2 @@
+t/117-fault-mod-zero.ditto:1:10: fault: division by zero
+exit: 1

@@ -1,0 +1,2 @@
+t/151-err-unknown-function-in-expression.ditto:1:11: error: unknown function foo
+exit: 2

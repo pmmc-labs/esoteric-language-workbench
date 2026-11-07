@@ -1,0 +1,6 @@
+print(true, false, nil)
+print(nil)
+print(true)
+print(1, nil, true, -2, false)
+print((true), ((nil)), (-(3)))
+print(1_000 + 007)

@@ -1,0 +1,3 @@
+print(false and 1 / 0 == 0)
+print(true or nil < 1)
+print(true and 1 / 0 == 0)
