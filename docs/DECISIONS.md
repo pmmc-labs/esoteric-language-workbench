@@ -426,6 +426,11 @@ is never taken too (D28).
   expression in the file: `expected end of file after the expression`; a
   `(` never closed, reported at that `(`: `unclosed (`; a `)` with nothing
   open: `unexpected )`.
+When a program has more than one such error, the reader's come first, since
+it reads the whole text before the checker sees any of it (so a literal out
+of range is reported before an arity error earlier in the text), and then the
+checker's, each kind in the order of the text. *(Default, step 1's builder;
+fair to revisit.)*
 Digits with leading zeros or a leading `-` read as the integer (`007` is 7,
 `-0` is 0); no test needs otherwise, and the digits-only rule is the simplest.
 Rejected: checking a form only when it's evaluated (D28 rejects it); a

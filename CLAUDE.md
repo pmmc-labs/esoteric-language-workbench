@@ -25,8 +25,10 @@ the host's answers are in `DESIGN.md` (committed before any code), and
 D30 to D34 are the interpreter's own defaults, written then because
 nothing could be asked. The reader, the checker and the evaluator
 exist, with `bin/lang.ts` on top, and only integers and booleans run:
-golden tests 000 and 001 pass on Node 22 and 24, and nine unit tests
-in `interp/tests/`. **Next:** step 1 (tests 010 to 015). Not agreed,
+golden tests 000, 001 and 010 to 015 pass on Node 22 and 24, and 16
+unit tests in `interp/tests/`. Step 1 is built: `+ - * / %` (D3 to D6),
+and the errors before running that D33 gives them. **Next:** step 2
+(tests 020 to 024). Not agreed,
 from main: which fault reports when one operator could fault two ways.
 D32 is the interpreter's default for it, and step 3 is where it bites.
 
