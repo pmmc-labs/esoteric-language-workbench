@@ -1,0 +1,13 @@
+; Factorials 1! to 20!, by recursion. 20! is the last that fits in 64
+; bits; 21! would be a fault, `integer overflow`, not a wrong answer.
+fn fact(n) {
+  if n <= 1 { return 1 }
+  return n * fact(n - 1)
+}
+
+let n = 1
+while n <= 20 {
+  write str(n) + "! = "
+  print fact(n)
+  n <- n + 1
+}

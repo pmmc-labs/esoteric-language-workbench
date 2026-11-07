@@ -1,0 +1,34 @@
+; Insertion sort by recursion on the past.
+;
+; A list is a history, and `xs@1` is the list without its newest element,
+; so recursing on `@1` is recursing on the rest. A sorted list is kept
+; with its largest element on top, which is the order you'd get by
+; writing the elements in ascending order.
+
+; Lay x into a sorted list, keeping it sorted.
+fn insert(x, sorted) {
+  if #sorted = 0 { return [x] }
+  if x >= sorted {            ; comparisons look at the top: the largest
+    let out = sorted
+    out <- x                  ; a longer history; `sorted` itself is untouched
+    return out
+  }
+  let out = insert(x, sorted@1)
+  out <- sorted               ; put the larger one back on top
+  return out
+}
+
+fn sort(xs) {
+  if #xs = 0 { return [] }
+  return insert(xs, sort(xs@1))
+}
+
+; Print oldest first: the rest, then the top.
+fn show(xs) {
+  if #xs > 0 {
+    show(xs@1)
+    print xs
+  }
+}
+
+show(sort([5, -3, 12, 0, 5, -8, 7, 12, 1, -3, 9, 4, 20, -1]))

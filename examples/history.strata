@@ -1,0 +1,69 @@
+; The core rule: every name is a history. A write lays a new value on top,
+; `@` reads the past, `#` counts the layers, and nothing is overwritten.
+
+; Print a history oldest first, on one line.
+fn show(h) {
+  let k = #h - 1
+  while k >= 0 {
+    write h@k
+    if k > 0 { write " " }
+    k <- k - 1
+  }
+  print ""
+}
+
+; Is the latest value above, below or equal to the one before it? The
+; function sees its argument's whole past, not just its value.
+fn trend(x) {
+  if #x < 2 { return "no trend" }
+  if x > x@1 { return "rising" }
+  if x < x@1 { return "falling" }
+  return "steady"
+}
+
+fn report(t) {
+  print "temp " + str(t) + ": " + trend(t)
+}
+
+print "-- fibonacci --"
+; Each new layer is the newest plus the one before it. The sequence is
+; the variable's own history; no second variable holds the previous term.
+let f = [0, 1]
+while #f < 12 {
+  f <- f + f@1
+}
+show(f)
+print f
+print #f
+
+print "-- undo --"
+let doc = "hello"
+doc <- doc + " world"
+doc <- "oops"
+print doc
+doc <- doc@1                   ; undo is a write of an older value
+print doc
+print #doc                     ; "oops" is still there, one layer down
+print doc@3
+
+print "-- trend --"
+let temp = 15
+report(temp)
+temp <- 18
+report(temp)
+temp <- 12
+report(temp)
+temp <- 12
+report(temp)
+
+print "-- counter --"
+; `#` as a write counter: how many even numbers came up to 20?
+let evens = []
+let n = 1
+while n <= 20 {
+  if n % 2 = 0 { evens <- n }
+  n <- n + 1
+}
+print "evens: " + str(#evens)
+print "first: " + str(evens@(#evens - 1))
+print "last: " + str(evens)

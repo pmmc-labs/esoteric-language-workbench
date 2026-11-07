@@ -1,0 +1,18 @@
+; FizzBuzz, 1 to 100: three for Fizz, five for Buzz, both for FizzBuzz,
+; otherwise the number.
+;
+; Each round builds its word by writing to it, so 15 needs no case of its
+; own: it gets "Fizz" and then "Buzz" laid on the same variable. An empty
+; word means neither applied.
+let i = 1
+while i <= 100 {
+  let word = ""
+  if i % 3 = 0 { word <- word + "Fizz" }
+  if i % 5 = 0 { word <- word + "Buzz" }
+  if len(word) = 0 {
+    print i
+  } else {
+    print word
+  }
+  i <- i + 1
+}

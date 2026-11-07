@@ -1,0 +1,50 @@
+; Reverse the words of a sentence, and count a letter.
+;
+; Words are written to a history in reading order, so the newest word is
+; the last one. Reading it from the top, `words@0`, `words@1`, ... gives
+; them in reverse, and no swapping is needed.
+
+fn split(s) {
+  let words = []
+  let word = ""
+  let i = 0
+  while i < len(s) {
+    let c = at(s, i)
+    if c = " " {
+      words <- word
+      word <- ""
+    } else {
+      word <- word + c
+    }
+    i <- i + 1
+  }
+  words <- word                ; the last word has no space after it
+  return words
+}
+
+fn reversed(words) {
+  let out = ""
+  let k = 0
+  while k < #words {
+    if k > 0 { out <- out + " " }
+    out <- out + words@k       ; k writes ago: newest first
+    k <- k + 1
+  }
+  return out
+}
+
+fn count(s, letter) {
+  let n = 0
+  let i = 0
+  while i < len(s) {
+    if at(s, i) = letter { n <- n + 1 }
+    i <- i + 1
+  }
+  return n
+}
+
+let text = "the quick brown fox jumps over the lazy dog"
+let words = split(text)
+print reversed(words)
+print "words: " + str(#words)
+print "o appears " + str(count(text, "o")) + " times"
