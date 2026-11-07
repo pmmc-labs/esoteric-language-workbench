@@ -11,7 +11,7 @@ unit:
 # Runs every golden test, reports all failures, then fails if any did.
 golden:
 	@fail=0; n=0; for f in $(TESTS); do n=$$((n+1)); t/run.sh $$f || fail=$$((fail+1)); done; \
-	echo "golden ($${LANG_CC:-cc}): $$((n-fail))/$$n passed"; [ $$fail -eq 0 ]
+	echo "golden ($${LANG_CC:-cc}$${LANG_CFLAGS:+, sanitized}): $$((n-fail))/$$n passed"; [ $$fail -eq 0 ]
 
 golden-clang:
 	@$(MAKE) --no-print-directory golden LANG_CC=clang

@@ -289,14 +289,14 @@ in their own commit; the code commit makes them green.** *(experimenter)*
 `statement` or `expression` and TOKEN is the offending token's source
 text in single quotes, or `end of file`, at that token's position (the
 end of file is the line and column just past the last byte).**
-*(default)* D24 fixes the shape but not the words. Naming the grammar
+*(default; kept by the designer at review of step 0)* D24 fixes the shape but not the words. Naming the grammar
 class rather than the one form that happens to be legal in step 0
 (`integer`) means the messages in tests `004` and later don't change as
 forms arrive. Rejected: `expected integer` (stale at step 1); quoting
 token kinds (`found name`) rather than text (says less); a list of
 every token that could have appeared (machinery).
 
-**D34. Lexer details D24 leaves open.** *(default)* The source is read
+**D34. Lexer details D24 leaves open.** *(default; kept by the designer at review of step 0)* The source is read
 as latin1, one character per byte, so columns are byte columns. All of
 the file is lexed before parsing, so a lexical error anywhere is
 reported ahead of an earlier parse error. An unterminated string is
@@ -309,7 +309,7 @@ first-error rule that costs nothing now); decoding UTF-8 (columns
 would stop being bytes); leaving the range check to step 1 (the
 lexical-error unit tests of step 0 want all four of D24's).
 
-**D35. The runtime's shape for step 0.** *(default)* `strata.h` defines
+**D35. The runtime's shape for step 0.** *(default; kept by the designer at review of step 0)* `strata.h` defines
 the atom (`is_str` and a union of `int64_t` and a string pointer), the
 layer `{atom, below, depth}` and `strata_hist` as a `const` pointer to
 a layer, NULL for empty. Generated code is one `int main(void)` of
