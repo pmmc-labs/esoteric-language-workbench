@@ -349,7 +349,8 @@ def process(base='origin/exp-interp'):
     touched = git('diff', '--name-only', f'{base}..HEAD', '--',
                   'Makefile', 'docs/PROCESS.md', 'docs/MODELS.md', 'docs/REPORT.md', 'README.md', 'tools', 'exp',
                   'docs/briefs').split()
-    new_d = re.findall(r'(?m)^\*\*D(3\d|[4-9]\d)\.', git('show', 'HEAD:docs/DECISIONS.md'))
+    had = set(re.findall(r'(?m)^\*\*D(\d+)\.', git('show', f'{base}:docs/DECISIONS.md')))
+    new_d = [d for d in re.findall(r'(?m)^\*\*D(\d+)\.', git('show', 'HEAD:docs/DECISIONS.md')) if d not in had]
     print(f'host answers committed before code: {"yes" if design_first else "NO"}')
     print(f'files under t/ changed: {t_changed or "none"}')
     print(f'files the brief said not to touch, changed: {touched or "none"}')
