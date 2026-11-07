@@ -1,0 +1,28 @@
+let s = "hello, world"
+print(len(s))
+for i in 0..len(s) {
+  print(i, s[i])
+}
+let rev = ""
+let seen = 0
+for c in s {
+  rev = c + rev
+  seen += 1
+  if c == "o" { print("o at", seen) }
+}
+print(rev, seen)
+let t = "abc"
+for c in t {
+  t = t + c
+  print(c, len(t))
+}
+print(t)
+print(s[0] + s[len(s) - 1], s[1 + 2], s[12 / 4], s[0] == "h", s[5] == ",", s[0] < s[1])
+print("abc"[1], ("a" + "bc")[2], len("xyz"[0]), str(12345)[2])
+let u = "café"
+print(len(u), u[3] == slice(u, 3, 4), u[3] != u[4], u[3] + u[4] == "é")
+let n = 0
+for c in u { n += 1 }
+print(n)
+for c in "" { print("never") }
+for c in "x" { print("once", c) }

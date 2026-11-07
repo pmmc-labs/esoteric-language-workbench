@@ -59,7 +59,6 @@ test('errors: expected X, found Y', () => {
   parseError('else', "expected a statement, found 'else'", 1, 1);
   parseError('print(1)\n}', "expected a statement, found '}'", 2, 1);
   parseError('foo bar', 'expected newline, found \'bar\'', 1, 5);
-  parseError('"s"', 'expected a statement, found string', 1, 1);
 });
 
 // A compact s-expression of an expression, to check the shape precedence gives.
@@ -72,6 +71,9 @@ function sx(e: any): string {
     case 'binary': case 'logic': return `(${e.op} ${sx(e.left)} ${sx(e.right)})`;
     case 'name': return e.name;
     case 'call': return `${e.name}(${e.args.map(sx).join(' ')})`;
+    case 'index': return `${sx(e.target)}[${sx(e.index)}]`;
+    case 'string':
+      return '"' + e.parts.map((q: any) => (q.kind === 'text' ? q.value : `{${sx(q.expr)}}`)).join('') + '"';
   }
   throw new Error(e.kind);
 }
@@ -291,4 +293,60 @@ test('step 3 parse errors', () => {
   parseError('fn f() {\n return 1\n', "expected '}', found end of file", 3, 1);
   parseError('fn f() { return ) }', "expected an expression, found ')'", 1, 17);
   parseError('fn f() { } fn g() { }', "expected newline, found 'fn'", 1, 12);
+});
+
+test('a string literal is text and interpolated expressions, in order', () => {
+  const e = (ast('print("a{x + 1}b{y}")').body[0] as any).expr.args[0];
+  assert.equal(e.kind, 'string');
+  assert.deepEqual(e.pos, at(1, 7));
+  assert.equal(sx(e), '"a{(+ x 1)}b{y}"');
+  assert.deepEqual(e.parts[1].pos, at(1, 9));
+  assert.deepEqual(e.parts[1].expr.pos, at(1, 13)); // the `+`, where faults point
+  assert.equal(sx((ast('print("")').body[0] as any).expr.args[0]), '""');
+});
+
+test('an interpolation holds any expression, including strings and calls', () => {
+  assert.equal(shape('"{f("x{y}")}"'), '"{f("x{y}")}"');
+  assert.equal(shape('"{a[0]}{-b}{not c}"'), '"{a[0]}{(- b)}{(not c)}"');
+});
+
+test('indexing binds tighter than prefix minus and applies to calls, strings and parentheses', () => {
+  assert.equal(shape('-s[0]'), '(- s[0])');
+  assert.equal(shape('s[0][1]'), 's[0][1]');
+  assert.equal(shape('f(1)[2]'), 'f(1)[2]');
+  assert.equal(shape('"abc"[1 + 1]'), '"abc"[(+ 1 1)]');
+  assert.equal(shape('(a + b)[0] * 2'), '(* (+ a b)[0] 2)');
+  const e = (ast('print(s [\n 1\n ])').body[0] as any).expr.args[0];
+  assert.deepEqual(e.pos, at(1, 9)); // the `[`
+});
+
+test('in and not in are comparisons: below + and above and/not, not chained', () => {
+  assert.equal(shape('a + b in c + d'), '(in (+ a b) (+ c d))');
+  assert.equal(shape('a not in b'), '(not in a b)');
+  assert.equal(shape('not a in b'), '(not (in a b))');
+  assert.equal(shape('a in b and c not in d'), '(and (in a b) (not in c d))');
+  assert.equal(shape('a in b == c'.replace(' == c', '')), '(in a b)');
+  const bin = (src: string) => (ast(`print(${src})`).body[0] as any).expr.args[0];
+  assert.deepEqual(bin('a in b').pos, at(1, 9));
+  assert.deepEqual(bin('a not in b').pos, at(1, 9)); // the `not`
+  parseError('print(a in b in c)', 'comparisons do not chain', 1, 14);
+  parseError('print(a < b in c)', 'comparisons do not chain', 1, 13);
+  parseError('print(a in b not in c)', 'comparisons do not chain', 1, 14);
+  parseError('print(a == b not in c)', 'comparisons do not chain', 1, 15);
+});
+
+test('a for header may iterate over an in-less expression: for c in s', () => {
+  const f = ast('for c in "ab" + s {\n}').body[0] as any;
+  assert.equal(f.iter.kind, 'each');
+  assert.equal(sx(f.iter.expr), '(+ "ab" s)');
+});
+
+test('step 4 parse errors', () => {
+  parseError('print("{1 2}")', "expected '}', found '2'", 1, 11);
+  parseError('print("{1 +}")', "expected an expression, found '}'", 1, 12);
+  parseError('print("{)}")', "expected an expression, found ')'", 1, 10);
+  parseError('print(s[0)', "expected ']', found ')'", 1, 10);
+  parseError('print(s[])', "expected an expression, found ']'", 1, 9);
+  parseError('print("a" "b")', "expected ')', found string", 1, 11);
+  parseError('print(a not b)', "expected ')', found 'not'", 1, 9);
 });

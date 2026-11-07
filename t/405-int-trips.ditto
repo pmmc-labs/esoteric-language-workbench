@@ -1,0 +1,68 @@
+print(int("42"), int("-42"), int("0"), int("-0"), int("007"), int("00"))
+print(int("9223372036854775807"), int("-9223372036854775807"), int("-9223372036854775808"))
+let n = 0
+n = 0
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 1
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = -1
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 7
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = -7
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 10
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 99
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 100
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 12345
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = -12345
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 2147483648
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = -2147483648
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 4294967297
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 1000000000000000
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = -1000000000000000
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 9223372036854775807
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = 9223372036854775806
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = -9223372036854775807 - 1
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+n = -9223372036854775807
+print(str(n), len(str(n)), int(str(n)) == n, str(int(str(n))))
+print(int("000746027"), int("000746027") + 1, "{int("000746027")}")
+print(int("000778035894487009818"), int("000778035894487009818") + 1, "{int("000778035894487009818")}")
+print(int("-007718751621"), int("-007718751621") + 1, "{int("-007718751621")}")
+print(int("007879227873164"), int("007879227873164") + 1, "{int("007879227873164")}")
+print(int("003582390842"), int("003582390842") + 1, "{int("003582390842")}")
+print(int("00078654731277872000"), int("00078654731277872000") + 1, "{int("00078654731277872000")}")
+print(int("53068816"), int("53068816") + 1, "{int("53068816")}")
+print(int("-031720427730807"), int("-031720427730807") + 1, "{int("-031720427730807")}")
+print(int("358758453957446"), int("358758453957446") + 1, "{int("358758453957446")}")
+print(int("00336957042847265926"), int("00336957042847265926") + 1, "{int("00336957042847265926")}")
+print(int("0003551950480091794"), int("0003551950480091794") + 1, "{int("0003551950480091794")}")
+print(int("483485815296341776"), int("483485815296341776") + 1, "{int("483485815296341776")}")
+print(int("-32211"), int("-32211") + 1, "{int("-32211")}")
+print(int("000361403049956378105"), int("000361403049956378105") + 1, "{int("000361403049956378105")}")
+print(int("045215"), int("045215") + 1, "{int("045215")}")
+print(int("-072826016383633735"), int("-072826016383633735") + 1, "{int("-072826016383633735")}")
+print(int("004650520148147746"), int("004650520148147746") + 1, "{int("004650520148147746")}")
+print(int("-0601824139155504264"), int("-0601824139155504264") + 1, "{int("-0601824139155504264")}")
+print(int("0040214178635232901"), int("0040214178635232901") + 1, "{int("0040214178635232901")}")
+print(int("-04011399128"), int("-04011399128") + 1, "{int("-04011399128")}")
+print(int("-033436"), int("-033436") + 1, "{int("-033436")}")
+print(int("210232786178264491"), int("210232786178264491") + 1, "{int("210232786178264491")}")
+print(int("-5079739973893"), int("-5079739973893") + 1, "{int("-5079739973893")}")
+print(int("006443762084674"), int("006443762084674") + 1, "{int("006443762084674")}")
+print(int("-0826505800494496400"), int("-0826505800494496400") + 1, "{int("-0826505800494496400")}")
+print(str(5) + str(true) + str(nil) + str("q"), str(-9) == "-9", str("x") == "x", str(str(7)) == "7", len(str(nil)), int(str(12) + str(34)) + 1)
+print(int("1" + "2"), int(slice("abc123", 3, 6)) * 2, int("12") < int("9"), "12" < "9")

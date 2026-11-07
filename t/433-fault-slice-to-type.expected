@@ -1,0 +1,2 @@
+t/433-fault-slice-to-type.ditto:1:7: fault: slice: expected an int, got bool
+exit: 1

@@ -1,0 +1,2 @@
+t/443-fault-neg-string.ditto:1:7: fault: cannot use - on string
+exit: 1

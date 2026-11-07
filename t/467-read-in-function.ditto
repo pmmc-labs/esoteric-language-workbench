@@ -1,0 +1,6 @@
+fn load() {
+  return read()
+}
+let first = load()
+print(len(first), len(load()))
+print(first + "!")

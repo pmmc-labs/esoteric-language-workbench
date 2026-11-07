@@ -1,0 +1,15 @@
+let t = read()
+let nul = slice(t, 2, 3)
+print(len(t), len(nul), t[2] == nul, nul == slice(t, 5, 6), nul == slice(t, 6, 7), nul == "", nul != "a")
+print("[" + nul + "]")
+print(len("a" + nul + "b"), "a" + nul + "b" == slice(t, 1, 4), "a" + nul < "a" + nul + "b", "ab" < "ab" + nul, "ab" + nul < "ab" + nul + nul, "ab" + nul > "ab", "a" + nul < "a1")
+print(nul in t, nul + nul in t, nul + nul + nul in t, "b" + nul + "c" in t, "c" + nul + "e" in t, nul in "abc", "abc" + nul + "d" not in "abc")
+let zeros = 0
+let others = 0
+for c in t {
+  if c == nul { zeros += 1 } else { others += 1 }
+}
+print(zeros, others)
+print(len(upper(t)) == len(t), upper(t) == "AB" + nul + "CD" + nul + nul + "E\n", lower(upper(t)) == t, len(slice(t, 2, 6)), slice(t, 3, 5))
+print(str(t) == t, len(str(t)), len("{t}"), "{t}" == t)
+print(len(t + t), (t + t)[9] == nul)

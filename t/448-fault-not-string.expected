@@ -1,0 +1,2 @@
+t/448-fault-not-string.ditto:1:7: fault: cannot use not on string
+exit: 1

@@ -1,0 +1,3 @@
+say a
+t/454-fault-interpolation-order.ditto:5:21: fault: division by zero
+exit: 1

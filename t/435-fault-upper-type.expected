@@ -1,0 +1,2 @@
+t/435-fault-upper-type.ditto:1:7: fault: upper: expected a string, got nil
+exit: 1

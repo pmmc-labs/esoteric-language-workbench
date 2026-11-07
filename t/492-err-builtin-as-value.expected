@@ -1,0 +1,2 @@
+t/492-err-builtin-as-value.ditto:1:9: error: functions are not values
+exit: 2

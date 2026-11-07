@@ -1,0 +1,3 @@
+9223372036854775807
+t/421-fault-int-too-big.ditto:2:7: fault: not a number: "9223372036854775808"
+exit: 1

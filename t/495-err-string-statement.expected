@@ -1,0 +1,2 @@
+t/495-err-string-statement.ditto:1:1: error: expression statement must be a call
+exit: 2

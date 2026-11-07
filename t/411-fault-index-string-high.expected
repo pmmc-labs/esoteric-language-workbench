@@ -1,0 +1,3 @@
+b
+t/411-fault-index-string-high.ditto:3:8: fault: index 3 out of range (length 3)
+exit: 1

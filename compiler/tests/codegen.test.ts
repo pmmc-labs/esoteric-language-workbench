@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { compile } from '../src/main.ts';
 
 test('the program includes the runtime header and sets the path', () => {
@@ -112,4 +113,31 @@ test('a range loop checks both bounds after evaluating both, and cannot overflow
 
 test('a for over a value asks the runtime for its length, at the expression', () => {
   assert.match(compile('for x in 5 {\n}', 'a.ditto'), /dt_iter_len\(1, 10, t\d+\)/);
+});
+
+test('a string literal is built once and cached; its bytes are escaped for C', () => {
+  const c = compile('print("a\\n\\"?\\xc3\\xa9")'.replace('\\xc3\\xa9', 'é'), 'a.ditto');
+  assert.match(c, /static Value s\d+;/);
+  assert.match(c, /dt_str_new\("a\\012\\"\\\?\\303\\251", 6\)/);
+  assert.match(compile('print("")', 'a.ditto'), /dt_str_new\("", 0\)/);
+});
+
+test('interpolation evaluates its parts in order, then joins them', () => {
+  const c = compile('print("<{f(1)}{g(2)}>")\nfn f(a) {\n}\nfn g(a) {\n}', 'a.ditto');
+  const main = c.indexOf('int main');
+  const at = ['f_f(', 'f_g(', 'dt_interp(4, '].map((s) => c.indexOf(s, main));
+  assert.ok(at.every((n) => n > 0) && at[0] < at[1] && at[1] < at[2], String(at));
+});
+
+test('indexing and in call the runtime at the operator', () => {
+  const c = compile('let s = "abc"\nprint(s[1], 1 in s, 2 not in s)', 'a.ditto');
+  assert.match(c, /dt_index\(2, 9, /);
+  assert.match(c, /dt_bool\(dt_in\(2, 17, /);
+  assert.match(c, /dt_bool\(!dt_in\(2, 24, /);
+});
+
+test('a lookup is a runtime call that returns whether it hit, so step 7 can branch on a miss', () => {
+  const h = readFileSync(new URL('../../runtime/ditto.h', import.meta.url), 'utf8');
+  assert.match(h, /bool dt_try_index\(int line, int col, Value c, Value i, Value \*out\);/);
+  assert.match(h, /bool dt_try_int\(int line, int col, Value s, Value \*out\);/);
 });

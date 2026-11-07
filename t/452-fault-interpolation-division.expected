@@ -1,0 +1,2 @@
+t/452-fault-interpolation-division.ditto:1:12: fault: division by zero
+exit: 1

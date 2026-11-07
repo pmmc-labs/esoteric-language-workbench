@@ -1,0 +1,2 @@
+t/483-err-interpolation-two-expressions.ditto:1:11: error: expected '}', found '2'
+exit: 2

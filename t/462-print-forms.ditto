@@ -1,0 +1,5 @@
+print("hi")
+print("a", 1, nil, true)
+print("")
+print("x", "")
+print("", "")

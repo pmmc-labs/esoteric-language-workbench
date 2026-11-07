@@ -1,0 +1,5 @@
+fn say(s) {
+  print("say " + s)
+  return s
+}
+print("{say("a")}{1 / 0}")

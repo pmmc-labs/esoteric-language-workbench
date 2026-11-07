@@ -1,0 +1,27 @@
+print(lower("Hello, World!"), upper("Hello, World!"), len(upper("Hello, World!")) == len("Hello, World!"))
+print(lower("abcXYZ"), upper("abcXYZ"), len(upper("abcXYZ")) == len("abcXYZ"))
+print(lower(""), upper(""), len(upper("")) == len(""))
+print(lower("MiXeD cAsE 123"), upper("MiXeD cAsE 123"), len(upper("MiXeD cAsE 123")) == len("MiXeD cAsE 123"))
+print(lower("café ÉCOLE"), upper("café ÉCOLE"), len(upper("café ÉCOLE")) == len("café ÉCOLE"))
+print(lower("日本"), upper("日本"), len(upper("日本")) == len("日本"))
+print(lower("a\tb\nc"), upper("a\tb\nc"), len(upper("a\tb\nc")) == len("a\tb\nc"))
+print(lower("ZZZ zzz AAA aaa"), upper("ZZZ zzz AAA aaa"), len(upper("ZZZ zzz AAA aaa")) == len("ZZZ zzz AAA aaa"))
+print(lower("@[`\{"), upper("@[`\{"), len(upper("@[`\{")) == len("@[`\{"))
+print(lower(upper("aBc")) == "abc", upper(lower("aBc")) == "ABC", lower("") == "")
+let s = "The quick brown fox"
+print(slice(s, 0, 19), len(slice(s, 0, 19)))
+print(slice(s, 0, 0), len(slice(s, 0, 0)))
+print(slice(s, 19, 19), len(slice(s, 19, 19)))
+print(slice(s, 4, 9), len(slice(s, 4, 9)))
+print(slice(s, 0, 3), len(slice(s, 0, 3)))
+print(slice(s, 16, 19), len(slice(s, 16, 19)))
+print(slice(s, 10, 11), len(slice(s, 10, 11)))
+print(slice(s, 3, 3), len(slice(s, 3, 3)))
+print(slice(s, 0, len(s)) == s, slice(s, 4, 9) + slice(s, 9, 10) == slice(s, 4, 10), slice(slice(s, 4, 9), 1, 3), upper(slice(s, 4, 9)), slice(upper(s), 4, 9))
+let u = "café!"
+print(slice(u, 0, 3), slice(u, 3, 5), slice(u, 5, 6), len(u))
+let i = 0
+while i < len(s) {
+  print(i, slice(s, i, i + 1) == s[i], slice(s, i, len(s)))
+  i += 5
+}

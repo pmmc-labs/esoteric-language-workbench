@@ -1,0 +1,2 @@
+t/429-fault-slice-reversed.ditto:1:7: fault: slice 2..1 out of range (length 3)
+exit: 1

@@ -1,0 +1,2 @@
+t/414-fault-index-bool.ditto:2:8: fault: string index must be an int, got bool
+exit: 1

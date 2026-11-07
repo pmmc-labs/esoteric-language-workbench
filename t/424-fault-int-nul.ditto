@@ -1,0 +1,2 @@
+print(1)
+print(int(slice(read(), 1, 3)))

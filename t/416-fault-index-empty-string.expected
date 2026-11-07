@@ -1,0 +1,2 @@
+t/416-fault-index-empty-string.ditto:1:9: fault: index 0 out of range (length 0)
+exit: 1

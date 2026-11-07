@@ -1,0 +1,2 @@
+t/431-fault-slice-type.ditto:1:7: fault: slice: expected a list or string, got int
+exit: 1

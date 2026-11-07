@@ -1,0 +1,2 @@
+t/419-fault-int-plus.ditto:1:7: fault: not a number: "+5"
+exit: 1

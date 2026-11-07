@@ -1,0 +1,2 @@
+t/451-fault-range-string.ditto:1:10: fault: range bounds must be ints, got string
+exit: 1

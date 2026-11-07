@@ -1,0 +1,2 @@
+t/426-fault-len-int.ditto:1:7: fault: len: expected a string, list or map, got int
+exit: 1

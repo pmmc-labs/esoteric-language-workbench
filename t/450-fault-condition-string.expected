@@ -1,0 +1,2 @@
+t/450-fault-condition-string.ditto:1:4: fault: condition must be a bool, got string
+exit: 1

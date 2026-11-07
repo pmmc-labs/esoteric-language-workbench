@@ -1,0 +1,4 @@
+fn word() {
+  return "hello"
+}
+print(word()[1], str(123)[0], (word() + "!")[5])

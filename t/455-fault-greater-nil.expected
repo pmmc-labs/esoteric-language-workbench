@@ -1,0 +1,2 @@
+t/455-fault-greater-nil.ditto:1:11: fault: cannot use >= on string and nil
+exit: 1

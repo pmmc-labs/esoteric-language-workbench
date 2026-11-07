@@ -1,0 +1,3 @@
+print(not "a" in "abc")
+print("a" + "b" in "xaby", "q" in "a" or "b" in "b")
+print(not "z" not in "abc")

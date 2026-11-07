@@ -1,0 +1,2 @@
+t/486-err-interpolation-unknown-variable.ditto:1:10: error: unknown variable x
+exit: 2

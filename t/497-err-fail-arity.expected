@@ -1,0 +1,2 @@
+t/497-err-fail-arity.ditto:1:7: error: fail takes 1 argument, got 0
+exit: 2

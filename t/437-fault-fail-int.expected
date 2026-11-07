@@ -1,0 +1,2 @@
+t/437-fault-fail-int.ditto:1:1: fault: 42
+exit: 1

@@ -1,0 +1,2 @@
+t/487-err-interpolation-unknown-function.ditto:1:9: error: unknown function nope
+exit: 2

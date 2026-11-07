@@ -1,0 +1,23 @@
+let text = read()
+print(len(text))
+print(len(read()), read() == "")
+let line = ""
+let lines = 0
+for c in text {
+  if c == "\n" {
+    lines += 1
+    print("{lines}: [{line}] {len(line)}")
+    line = ""
+  } else {
+    line += c
+  }
+}
+print("{lines + 1}: [{line}] {len(line)}")
+let spaces = 0
+let vowels = 0
+for c in lower(text) {
+  if c == " " { spaces += 1 }
+  if c in "aeiou" { vowels += 1 }
+}
+print(spaces, vowels)
+print(slice(upper(text), 0, 19), slice(text, 20, 43) == "jumps over the lazy dog", "liquor" in text, "liquor jugs   \n" in text, "dog\ncat" in text)

@@ -1,0 +1,5 @@
+let len = 3
+print(len)
+print(len("ab"))
+let str = "s"
+print(str, str("x"))

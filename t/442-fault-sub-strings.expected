@@ -1,0 +1,2 @@
+t/442-fault-sub-strings.ditto:1:11: fault: cannot use - on string and string
+exit: 1

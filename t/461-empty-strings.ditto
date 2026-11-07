@@ -1,0 +1,7 @@
+print(len(""), "" == "", "" in "", "" in "abc", "" + "" == "")
+print(slice("", 0, 0) == "", upper(""), lower("") == "")
+print("[" + "" + "]")
+for c in "" {
+  print("never")
+}
+print(int("0"), "a" < "", "" < "a")

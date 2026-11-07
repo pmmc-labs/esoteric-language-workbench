@@ -1,0 +1,2 @@
+t/427-fault-len-nil.ditto:1:7: fault: len: expected a string, list or map, got nil
+exit: 1

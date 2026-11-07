@@ -1,0 +1,80 @@
+fn reverse(s) {
+  let r = ""
+  for c in s { r = c + r }
+  return r
+}
+fn is_palindrome(s) {
+  return s == reverse(s)
+}
+fn count(s, ch) {
+  let n = 0
+  for c in s { if c == ch { n += 1 } }
+  return n
+}
+fn index_of(s, ch) {
+  for i in 0..len(s) {
+    if s[i] == ch { return i }
+  }
+  return -1
+}
+fn caesar(s, shift) {
+  let alphabet = "abcdefghijklmnopqrstuvwxyz"
+  let out = ""
+  for c in s {
+    let at = index_of(alphabet, c)
+    if at < 0 {
+      out += c
+    } else {
+      out += alphabet[(at + shift) % 26]
+    }
+  }
+  return out
+}
+fn rle(s) {
+  if s == "" { return "" }
+  let out = ""
+  let cur = s[0]
+  let run = 1
+  for i in 1..len(s) {
+    if s[i] == cur {
+      run += 1
+    } else {
+      out += "{run}{cur}"
+      cur = s[i]
+      run = 1
+    }
+  }
+  return out + "{run}{cur}"
+}
+fn repeat(s, n) {
+  let out = ""
+  for i in 0..n { out += s }
+  return out
+}
+print(reverse("level"), is_palindrome("level"))
+print(reverse("hello"), is_palindrome("hello"))
+print(reverse(""), is_palindrome(""))
+print(reverse("a"), is_palindrome("a"))
+print(reverse("abba"), is_palindrome("abba"))
+print(reverse("abcba"), is_palindrome("abcba"))
+print(reverse("Abba"), is_palindrome("Abba"))
+print(reverse("ab cd dc ba"), is_palindrome("ab cd dc ba"))
+print(reverse("racecar!"), is_palindrome("racecar!"))
+print(count("mississippi", "s"), count("mississippi", "a"), index_of("mississippi", "a"), index_of("mississippi", "z"))
+print(count("banana", "s"), count("banana", "a"), index_of("banana", "a"), index_of("banana", "z"))
+print(count("a b a", "s"), count("a b a", "a"), index_of("a b a", "a"), index_of("a b a", "z"))
+print(caesar("hello, world", 3), caesar(caesar("hello, world", 3), 23) == "hello, world")
+print(caesar("xyz abc", 3), caesar(caesar("xyz abc", 3), 23) == "xyz abc")
+print(caesar("attack at dawn", 13), caesar(caesar("attack at dawn", 13), 13) == "attack at dawn")
+print(caesar("round trip", 0), caesar(caesar("round trip", 0), 26) == "round trip")
+print(rle("aaabccdddd"))
+print(rle("abc"))
+print(rle(""))
+print(rle("zzzzzzzzzzzz"))
+print(rle("aabbaabb"))
+print(repeat("ab", 5), len(repeat("xyz", 100)), repeat("-", 0) == "", repeat("=", 20))
+let row = ""
+for i in 1..=9 {
+  row += str(i)
+  print(row + " " + reverse(row))
+}

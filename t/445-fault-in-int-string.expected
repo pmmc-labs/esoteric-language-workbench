@@ -1,0 +1,2 @@
+t/445-fault-in-int-string.ditto:1:9: fault: cannot use in on int and string
+exit: 1

@@ -1,0 +1,2 @@
+t/432-fault-slice-from-type.ditto:1:7: fault: slice: expected an int, got string
+exit: 1

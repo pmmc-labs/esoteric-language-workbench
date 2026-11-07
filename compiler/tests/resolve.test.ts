@@ -185,3 +185,38 @@ test('the first error in source order is the one reported', () => {
   fails('break\nprint(b)', 'break outside a loop', 1, 1);
   fails('let x = 1\nlet x = y', 'x is already declared', 2, 5);
 });
+
+test('the string builtins resolve, with their arities', () => {
+  run('print(str(1), len("a"), int("1"), lower("A"), upper("a"), slice("abc", 0, 1), read())\nfail("x")');
+  fails('print(len())', 'len takes 1 argument, got 0', 1, 7);
+  fails('print(str(1, 2))', 'str takes 1 argument, got 2', 1, 7);
+  fails('print(slice("a", 1))', 'slice takes 3 arguments, got 2', 1, 7);
+  fails('print(read(1))', 'read takes 0 arguments, got 1', 1, 7);
+  fails('fail()', 'fail takes 1 argument, got 0', 1, 1);
+});
+
+test('a function cannot take a builtin\'s name, now that the builtin exists', () => {
+  for (const name of ['str', 'len', 'int', 'lower', 'upper', 'slice', 'read', 'fail']) {
+    fails(`fn ${name}() { }`, `${name} is a builtin`, 1, 4);
+  }
+  run('let len = 1\nprint(len)');
+  fails('let f = len', 'functions are not values', 1, 9);
+});
+
+test('names inside an interpolation and an index are resolved, in source order', () => {
+  const p = run('let s = "ab"\nprint("{s}", s[0])') as any;
+  const [str, idx] = p.body[1].expr.args;
+  assert.equal(str.parts[0].expr.cname, 'v_s');
+  assert.equal(idx.target.cname, 'v_s');
+  fails('print("a{x}b{y}")', 'unknown variable x', 1, 10);
+  fails('print(y[x])', 'unknown variable y', 1, 7);
+  fails('let s = "a"\nprint(s[x])', 'unknown variable x', 2, 9);
+  fails('print("{nope(1)}")', 'unknown function nope', 1, 10);
+  fails('print(1 in x)', 'unknown variable x', 1, 13);
+  fails('fn f() { return "{t}" }\nlet t = 1', 't is a top-level variable; functions see only their parameters and their own variables', 1, 20);
+});
+
+test('an index expression is not a statement', () => {
+  fails('let s = "a"\ns[0]', 'expression statement must be a call', 2, 1);
+  fails('"hi"', 'expression statement must be a call', 1, 1);
+});

@@ -1,0 +1,2 @@
+t/422-fault-int-minus-only.ditto:1:7: fault: not a number: "-"
+exit: 1

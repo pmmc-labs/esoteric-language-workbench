@@ -1,0 +1,2 @@
+t/488-err-len-arity.ditto:1:7: error: len takes 1 argument, got 2
+exit: 2

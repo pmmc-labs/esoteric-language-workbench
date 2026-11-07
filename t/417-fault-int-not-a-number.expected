@@ -1,0 +1,2 @@
+t/417-fault-int-not-a-number.ditto:1:7: fault: not a number: "12x"
+exit: 1

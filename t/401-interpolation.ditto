@@ -1,0 +1,36 @@
+let a = 7
+let b = -3
+let name = "Ada"
+let flag = true
+let nothing = nil
+fn double(n) {
+  return n * 2
+}
+fn say(s) {
+  print("say " + s)
+  return s
+}
+print("a = {a}, b = {b}")
+print("{name} is {flag} and {nothing}")
+print("{a * 2 + b}")
+print("{a / b} {a % b}")
+print("{a < b} {a == 7} {a != 7}")
+print("{double(a)} {double(double(b))}")
+print("{name + "!"}")
+print("{len(name)} letters")
+print("{upper(name)} {lower(name)}")
+print("{name[0]}{name[1]}")
+print("{slice(name, 1, 3)}")
+print("{"x{a}y"}/{"{b}"}")
+print("{"<{"[{name}]"}>"}")
+print("{str(a) + str(b)}")
+print("{"7" in str(a)}")
+print("{int("42") + 1}")
+print("{"}"} {"\{"}")
+print("only text \\\{braces\\\} and }")
+print("{a}")
+print("{a}{b}{a}")
+print("{name}{name}")
+print("" == "{""}")
+print("<{say("a")}{say("b")}-{say("c")}>")
+print("{say("x")}" + "{say("y")}")

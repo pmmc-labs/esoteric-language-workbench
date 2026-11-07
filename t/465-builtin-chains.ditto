@@ -1,0 +1,3 @@
+print(upper(slice(str(12345), 1, 4)) + lower("AB"))
+print(len(str(len("hello"))))
+print(str(len("abc") * 2) + "!")

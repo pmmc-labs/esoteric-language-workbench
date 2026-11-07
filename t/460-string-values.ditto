@@ -1,0 +1,9 @@
+let a = "x"
+let b = a
+b += "y"
+print(a, b)
+fn grow(s) {
+  s += "!"
+  return s
+}
+print(grow(a), a)

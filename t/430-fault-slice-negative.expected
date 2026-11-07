@@ -1,0 +1,2 @@
+t/430-fault-slice-negative.ditto:1:7: fault: slice -1..2 out of range (length 3)
+exit: 1

@@ -1,0 +1,2 @@
+t/412-fault-index-negative.ditto:1:12: fault: index -1 out of range (length 3)
+exit: 1

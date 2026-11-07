@@ -1,0 +1,2 @@
+t/485-err-interpolation-bad-token.ditto:1:9: error: expected an expression, found ')'
+exit: 2
