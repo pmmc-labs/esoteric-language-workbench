@@ -379,7 +379,7 @@ as it is evaluated (interleaves two kinds of fault); allowing `x@-1`
 ## Step 3 defaults
 
 **D38. Blocks, `else if` and `while` details D16 and D17 leave open.**
-*(default)* (1) A block is `{`, statements, `}`, and is only the body of
+*(default; kept by the designer at review of step 3)* (1) A block is `{`, statements, `}`, and is only the body of
 `if`, `else` or `while`: a bare `{ ... }` is not a statement, so a block's
 one job is to scope its names. `else if` is an `if` inside the `else`
 block, with no form of its own: its condition runs only when the earlier
