@@ -6,7 +6,7 @@ be a session or two each.
 
 **Progress:** this is the `interpreter` branch (D28, D29): the
 calculator of main after step 5, to be built again as an interpreter.
-Steps 0 to 3 are built. Next: step 4.
+Steps 0 to 4 are built. Next: step 5.
 
 Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
 item, propose options to the user before building (see `CLAUDE.md`).
@@ -111,11 +111,13 @@ Size: medium. Referee: none new.
 - Where one application could fault two ways (a boolean and a bad
   count), which fault reports is open (`CLAUDE.md`'s Status). No test
   has one; don't add one, and say what the interpreter does.
+  (Built: types first, then the count, then `bit/shl`'s range, so
+  `(bit/shl #true 99)` faults `not an integer`.)
 - Tests 030 to 036.
 - Leave out: `bit/not`, a count masked rather than checked, anything
   unsigned.
 
-### 4. Exponentiation (to build)
+### 4. Exponentiation (done)
 
 Size: medium. Referee: none new.
 

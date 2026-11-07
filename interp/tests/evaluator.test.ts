@@ -97,3 +97,36 @@ test("a boolean faults not an integer, and that is reported before a bad count",
   assert.equal(run("(bit/shl #true 99)"), "fault: not an integer");
   assert.equal(run("(bit/shr 1 #false)"), "fault: not an integer");
 });
+
+test("exponentiation (D18, D19)", () => {
+  assert.equal(run("(** 2 10)"), "1024");
+  assert.equal(run("(** -3 3)"), "-27");
+  assert.equal(run("(** 2 61)"), "2305843009213693952");
+  assert.equal(run("(** -2 62)"), "fault: overflow");
+  assert.equal(run("(** -2 61)"), "-2305843009213693952");
+  assert.equal(run("(** 2 62)"), "fault: overflow");
+  assert.equal(run("(** 2 4611686018427387903)"), "fault: overflow");
+  assert.equal(run("(** 3 39)"), "4052555153018976267");
+  assert.equal(run("(** 3 40)"), "fault: overflow");
+});
+
+test("a ** 0 is 1, 0 ** 0 too; 0, 1 and -1 to any power (D19)", () => {
+  assert.equal(run("(** 0 0)"), "1");
+  assert.equal(run("(** 4611686018427387903 0)"), "1");
+  assert.equal(run("(** -4611686018427387904 0)"), "1");
+  assert.equal(run("(** 0 4611686018427387903)"), "0");
+  assert.equal(run("(** 1 4611686018427387903)"), "1");
+  assert.equal(run("(** -1 4611686018427387903)"), "-1");
+  assert.equal(run("(** -1 4611686018427387902)"), "1");
+});
+
+test("a negative exponent faults bad exponent, whatever the base (D19)", () => {
+  assert.equal(run("(** 2 -1)"), "fault: bad exponent");
+  assert.equal(run("(** 1 -1)"), "fault: bad exponent");
+  assert.equal(run("(** 0 -4611686018427387904)"), "fault: bad exponent");
+});
+
+test("a boolean to ** faults not an integer (D19)", () => {
+  assert.equal(run("(** #true 2)"), "fault: not an integer");
+  assert.equal(run("(** 2 #false)"), "fault: not an integer");
+});
