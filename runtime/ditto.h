@@ -64,6 +64,18 @@ bool dt_equal(Value a, Value b);
 /* Faults `cannot use OP on T` unless v is a bool (and, or). */
 void dt_need_bool(int line, int col, const char *op, Value v);
 
+/* Statements (LANGUAGE.md, Statements). Each takes the position of the first
+   token of the expression it checks. */
+/* Faults `condition must be a bool, got T` unless v is a bool (if, while). */
+void dt_need_cond(int line, int col, Value v);
+/* Faults `range bounds must be ints, got T` unless v is an int (for). */
+void dt_need_range_bound(int line, int col, Value v);
+/* The number of items a `for` over v walks, and item i (from 0). Anything but
+   a string, list or map faults `cannot iterate over T`; those three arrive
+   with steps 4 to 6, so for now every value faults. */
+int64_t dt_iter_len(int line, int col, Value v);
+Value dt_iter_item(Value v, int64_t i);
+
 /* Builtins: every one takes its call's position and its arguments, and
    returns a Value. Named dt_b_NAME, which is what the code generator emits. */
 Value dt_b_print(int line, int col, int argc, const Value *argv);

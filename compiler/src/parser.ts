@@ -1,6 +1,8 @@
-// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 1
-// parses expressions on ints, bools and nil, and calls of `print`; each later
-// step adds members to Expr and Stmt and cases to the functions below.
+// Tokens to an AST of plain objects with a `kind` and a `pos` (D29). Step 2
+// parses expressions on ints, bools and nil, names and calls, and the
+// statements `let`, assignment, `if`, `while`, `for`, `break` and `continue`;
+// each later step adds members to Expr and Stmt and cases to the functions
+// below.
 import { compileError } from './errors.ts';
 import type { Pos } from './errors.ts';
 import type { Token } from './lexer.ts';
@@ -12,6 +14,8 @@ export type Expr =
   | { kind: 'int'; pos: Pos; value: bigint }
   | { kind: 'bool'; pos: Pos; value: boolean }
   | { kind: 'nil'; pos: Pos }
+  // `cname` is filled in by the resolver: the C variable's name.
+  | { kind: 'name'; pos: Pos; name: string; cname?: string }
   | { kind: 'unary'; pos: Pos; op: '-' | 'not'; operand: Expr }
   | { kind: 'binary'; pos: Pos; op: BinaryOp; left: Expr; right: Expr }
   // `and`/`or` short-circuit, so they are not `binary`.
@@ -19,7 +23,35 @@ export type Expr =
   // `target` is filled in by the resolver: 'builtin' or (step 3) 'fn'.
   | { kind: 'call'; pos: Pos; name: string; args: Expr[]; target?: 'builtin' | 'fn' };
 
-export type Stmt = { kind: 'exprStmt'; pos: Pos; expr: Expr };
+export type AssignOp = '=' | '+=' | '-=' | '*=' | '/=' | '%=';
+
+// What follows a variable in an assignment target: `[index]` or `.name`
+// (steps 5 and 6). Empty until then, but the shape is here so that a path
+// is a variable and a list of steps.
+export type Step =
+  | { kind: 'index'; pos: Pos; index: Expr }
+  | { kind: 'field'; pos: Pos; name: string };
+
+export type Target = { kind: 'target'; pos: Pos; name: string; steps: Step[]; cname?: string };
+
+// Each statement's `pos` is its first token, except an assignment's, which is
+// its operator (where a compound assignment's faults point). `condPos`,
+// `loPos` and the like are the first token of an expression: where its
+// faults point.
+export type Stmt =
+  | { kind: 'exprStmt'; pos: Pos; expr: Expr }
+  | { kind: 'let'; pos: Pos; name: string; namePos: Pos; value: Expr; cname?: string }
+  | { kind: 'assign'; pos: Pos; op: AssignOp; target: Target; value: Expr }
+  // `else` is null, a block, or (for `else if`) a block of the one `if`.
+  | { kind: 'if'; pos: Pos; cond: Expr; condPos: Pos; then: Stmt[]; else: Stmt[] | null }
+  | { kind: 'while'; pos: Pos; cond: Expr; condPos: Pos; body: Stmt[] }
+  | { kind: 'for'; pos: Pos; name: string; namePos: Pos; iter: Iter; body: Stmt[]; cname?: string }
+  | { kind: 'break'; pos: Pos }
+  | { kind: 'continue'; pos: Pos };
+
+export type Iter =
+  | { kind: 'range'; lo: Expr; loPos: Pos; hi: Expr; hiPos: Pos; inclusive: boolean }
+  | { kind: 'each'; expr: Expr; exprPos: Pos };
 
 export type Program = { kind: 'program'; body: Stmt[] };
 
@@ -130,8 +162,11 @@ export function parse(tokens: Token[]): Program {
       expect(')');
       return inner;
     }
-    // Until variables arrive (step 2) a name can only start a call.
-    if (t.kind === 'name') return call();
+    if (t.kind === 'name') {
+      if (isOp(tokens[i + 1], '(')) return call();
+      next();
+      return { kind: 'name', pos: t.pos, name: t.text };
+    }
     return expected('an expression');
   }
 
@@ -152,15 +187,97 @@ export function parse(tokens: Token[]): Program {
     t.kind === 'int' || t.kind === 'name' || isOp(t, '(') || isOp(t, '-') ||
     isKw(t, 'true') || isKw(t, 'false') || isKw(t, 'nil') || isKw(t, 'not');
 
-  function statement(): Stmt {
-    const t = peek();
-    if (!startsExpression(t)) return expected('a statement');
-    // Whether it is a call is the resolver's business: `42` parses, then is
-    // `expression statement must be a call`.
-    return { kind: 'exprStmt', pos: t.pos, expr: expr() };
+  const isSeparator = (t: Token) => t.kind === 'newline' || isOp(t, ';');
+  const ASSIGN_OPS = ['=', '+=', '-=', '*=', '/=', '%='];
+
+  // `{ statements }`: statements are separated by newlines or `;`, and a `}`
+  // ends the last one.
+  function block(): Stmt[] {
+    expect('{');
+    const stmts: Stmt[] = [];
+    for (;;) {
+      while (isSeparator(peek())) next();
+      if (isOp(peek(), '}')) { next(); return stmts; }
+      if (peek().kind === 'eof') return expected("'}'");
+      stmts.push(statement());
+      if (!isSeparator(peek()) && !isOp(peek(), '}')) {
+        if (peek().kind === 'eof') return expected("'}'");
+        expected('newline');
+      }
+    }
   }
 
-  const isSeparator = (t: Token) => t.kind === 'newline' || isOp(t, ';');
+  function ifStmt(): Stmt {
+    const kw = next();
+    const condPos = peek().pos;
+    const cond = expr();
+    const then = block();
+    let orElse: Stmt[] | null = null;
+    // `else` may be on the line after the `}`.
+    if (peek().kind === 'newline' && isKw(tokens[i + 1], 'else')) next();
+    if (isKw(peek(), 'else')) {
+      next();
+      orElse = isKw(peek(), 'if') ? [ifStmt()] : block();
+    }
+    return { kind: 'if', pos: kw.pos, cond, condPos, then, else: orElse };
+  }
+
+  function forStmt(): Stmt {
+    const kw = next();
+    const nameTok = peek();
+    if (nameTok.kind !== 'name') return expected('a name');
+    next();
+    if (!isKw(peek(), 'in')) return expected("'in'");
+    next();
+    const firstPos = peek().pos;
+    const first = expr();
+    let iter: Iter;
+    if (isOp(peek(), '..') || isOp(peek(), '..=')) {
+      const inclusive = next().text === '..=';
+      const hiPos = peek().pos;
+      iter = { kind: 'range', lo: first, loPos: firstPos, hi: expr(), hiPos, inclusive };
+    } else {
+      iter = { kind: 'each', expr: first, exprPos: firstPos };
+    }
+    return { kind: 'for', pos: kw.pos, name: nameTok.text, namePos: nameTok.pos, iter, body: block() };
+  }
+
+  function statement(): Stmt {
+    const t = peek();
+    if (isKw(t, 'let')) {
+      next();
+      const nameTok = peek();
+      if (nameTok.kind !== 'name') return expected('a name');
+      next();
+      expect('=');
+      skipNewlines();
+      return { kind: 'let', pos: t.pos, name: nameTok.text, namePos: nameTok.pos, value: expr() };
+    }
+    if (isKw(t, 'if')) return ifStmt();
+    if (isKw(t, 'while')) {
+      next();
+      const condPos = peek().pos;
+      const cond = expr();
+      return { kind: 'while', pos: t.pos, cond, condPos, body: block() };
+    }
+    if (isKw(t, 'for')) return forStmt();
+    if (isKw(t, 'break')) { next(); return { kind: 'break', pos: t.pos }; }
+    if (isKw(t, 'continue')) { next(); return { kind: 'continue', pos: t.pos }; }
+    if (!startsExpression(t)) return expected('a statement');
+    // An expression, then either the end of the statement or an assignment
+    // operator. Whether an expression statement is a call is the resolver's
+    // business: `42` parses, then is `expression statement must be a call`.
+    const e = expr();
+    if (peek().kind === 'op' && ASSIGN_OPS.includes(peek().text)) {
+      // The target is a variable and its steps (paths arrive in step 5).
+      if (e.kind !== 'name') throw compileError(t.pos, 'cannot assign to this');
+      const op = operator();
+      const target: Target = { kind: 'target', pos: t.pos, name: e.name, steps: [] };
+      return { kind: 'assign', pos: op.pos, op: op.text as AssignOp, target, value: expr() };
+    }
+    return { kind: 'exprStmt', pos: t.pos, expr: e };
+  }
+
   const body: Stmt[] = [];
   for (;;) {
     while (isSeparator(peek())) next();

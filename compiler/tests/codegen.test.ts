@@ -83,7 +83,7 @@ test('while is a C loop that tests at the top; break and continue are C ones', (
 
 test('a range loop checks both bounds after evaluating both, and cannot overflow', () => {
   const c = compile('for i in 1..=2 + 3 {\n}', 'a.ditto');
-  const at = ['dt_add(', 'dt_need_range_bound(1, 10, ', 'dt_need_range_bound(1, 15, '].map((s) => c.indexOf(s));
+  const at = ['dt_add(', 'dt_need_range_bound(1, 10, ', 'dt_need_range_bound(1, 14, '].map((s) => c.indexOf(s));
   assert.ok(at.every((n) => n > 0) && at[0] < at[1] && at[1] < at[2], String(at));
   assert.match(c, /Value v_i = dt_int\(/);
   assert.doesNotMatch(c, /\+\+/);

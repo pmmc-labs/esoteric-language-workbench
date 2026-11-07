@@ -299,6 +299,49 @@ operand's type. Rejected: a paren node to forbid `(f())` as a statement
 (machinery for a harmless case); reporting `comparisons do not chain` in
 the resolver (the parser knows at once).
 
+**D39. Step 2 details the spec left open.** *(default)* Parsing: the
+target of `=` or a compound operator is parsed as an expression first, so
+`cannot assign to this` (at the statement's first token) comes from the
+parser, before any resolver error; a parenthesized name is still a name
+(D38), so `(x) = 1` assigns. A bare name on its own line is
+`expression statement must be a call` (test 025 changed from step 0's
+`expected '(', found newline`). A bare `{ }` is not a statement
+(`expected a statement, found '{'`). `else` may start the line after a
+`}` only when nothing but that newline (and blank lines or comments)
+separates them. The new `expected X` sites: `a name` (after `let`, after
+`for`), `'='` (after `let x`), `'in'`, `'{'` (before every block,
+including after `else`, which takes `{` or `if`), `'}'` (a block that
+reaches the end of the file), and `a statement` for a keyword that can't
+start one, `fn` and `return` included until step 3. `..` and `..=` are
+tokens of the `for` header only, so elsewhere they are whatever the
+surrounding rule expected (`print(1..2)` is `expected ')', found '..'`).
+Scopes: the loop variable lives in the same scope as the body's own
+variables, so `for i in ... { let i = 1 }` is `i is already declared`; in
+`let x = ...` the name is checked before the value is resolved (leftmost
+error first, and `let x = x + 1` is `unknown variable x` only when no `x`
+is declared); in an assignment the target is resolved before the value.
+`let print = 1` is allowed (variables and functions have separate
+namespaces). A builtin's name used as a value is already
+`functions are not values` (step 3 adds user functions to it). Rejected:
+reporting `cannot assign to this` in the resolver (the parser knows at
+once, as with `comparisons do not chain`); a block statement (a second
+use of `{` that step 6's map literals would have to disambiguate).
+
+**D40. Evaluation order of `for` headers.** *(default)* Both range
+bounds are evaluated, left to right, and then checked, the low bound
+first: `for i in nil..1 / 0` is `division by zero`, not
+`range bounds must be ints, got nil`, as D38 does for an operator's two
+operands. `for x in e` evaluates `e` once and then asks it for its
+length, so `cannot iterate over T` points at `e`'s first token and comes
+after any fault inside `e`. Codegen walks a range with an inclusive
+`int64_t` counter that advances only after testing `k < hi`, so a range
+ending at the largest int neither overflows nor loops forever; a
+`for` over a collection walks it by index through `dt_iter_len` and
+`dt_iter_item`, which steps 4 to 6 fill in (until then every value
+faults). Rejected: checking each bound as it is evaluated (the order
+would depend on which is bad); `k <= hi` with `k++` (undefined behaviour
+at the largest int).
+
 ## Project
 
 **D8. Golden tests' expected output comes from an independent source,

@@ -25,7 +25,18 @@ without `else` and `in`, checked 64-bit arithmetic with truncating
 `t/models/ints.py` writes golden tests 100 to 108, faults and errors
 are 111 to 152 by hand; 75 golden tests and 62 unit tests, green under
 `cc`, clang and the sanitizers. Builder default awaiting review: D38.
-**Next:** step 2, variables and control flow.
+Step 2 (variables and control flow) is done: `let`, assignment and
+compound assignment to a variable (the target is a variable plus a list
+of steps, empty until step 5), block scopes without shadowing (D12),
+`if`/`else if`/`else` (with `else` on the next line), `while`, `for` over
+`a..b` and `a..=b` (a counter that cannot overflow at the largest int),
+`break`, `continue`, `;`, the condition, range-bound and iteration
+faults, and the scope errors; `t/models/loops.py` writes golden tests 200
+to 210 (fixed algorithms and three random programs checked against a
+small interpreter), faults 211 to 229, semantics 230 to 236 and errors
+240 to 278 are by hand; 151 golden tests and 88 unit tests, green under
+`cc`, clang and the sanitizers. Builder defaults awaiting review: D39,
+D40. **Next:** step 3, functions.
 
 ## Read first, in this order
 

@@ -7,7 +7,8 @@ planned and step 9 is held in reserve for friction the examples show.
 
 **Progress:** design done; step 0 done (scaffold, 28 golden tests, 48 unit
 tests); step 1 done (expressions on ints, bools and nil; 75 golden tests,
-62 unit tests); step 2 next.
+62 unit tests); step 2 done (variables and control flow; 151 golden tests,
+88 unit tests); step 3 next.
 
 Read [`DESIGN.md`](DESIGN.md) and [`LANGUAGE.md`](LANGUAGE.md) first.
 `LANGUAGE.md` gives every message and position; a builder that finds a
@@ -106,7 +107,19 @@ overflow checks out instead of using `__builtin_*_overflow`, an extension.
 - Leaves out: variables (a fault test is one `print` that faults).
 - **Size:** medium.
 
-### 2. Variables and control flow
+### 2. Variables and control flow **(done)**
+
+Landed as planned. Differences: tests 200 to 278 (the model writes 200 to
+210, including three random programs run through a small interpreter of
+the statement rules; faults 211 to 229, semantics 230 to 236 and compile
+errors 240 to 278 are by hand); test 025 now expects `expression
+statement must be a call` (a bare name is an expression now); parse
+errors, scope details and the order of evaluation in `for` headers are
+defaults D39 and D40; a builtin used as a value is already `functions
+are not values`. The assignment target is a variable plus a list of steps
+(empty until step 5), and codegen evaluates index temporaries, loads,
+right-hand side, operator, store in that order, so step 5 fills in the
+path cases.
 
 - `let`, assignment to a variable, compound assignment on variables,
   blocks and scopes (D12), `if`/`else if`/`else` (with `else` on the

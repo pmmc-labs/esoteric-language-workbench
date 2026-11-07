@@ -164,6 +164,26 @@ bool dt_equal(Value a, Value b) {
   }
 }
 
+/* Statements -------------------------------------------------------------- */
+
+void dt_need_cond(int line, int col, Value v) {
+  if (v.tag != T_BOOL) dt_fault(line, col, "condition must be a bool, got %s", type_name(v));
+}
+
+void dt_need_range_bound(int line, int col, Value v) {
+  if (v.tag != T_INT) dt_fault(line, col, "range bounds must be ints, got %s", type_name(v));
+}
+
+int64_t dt_iter_len(int line, int col, Value v) {
+  dt_fault(line, col, "cannot iterate over %s", type_name(v));
+}
+
+Value dt_iter_item(Value v, int64_t i) {
+  (void)v;
+  (void)i;
+  dt_fault(0, 0, "internal error: iteration over a collection arrives with steps 4 to 6");
+}
+
 /* Printing ---------------------------------------------------------------- */
 
 /* Writes the printed form of v (LANGUAGE.md, str). `quoted` is true inside a

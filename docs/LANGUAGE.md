@@ -149,6 +149,9 @@ without a value (`let x = nil` if there's nothing yet).
   shadowing; two sibling blocks can each have their own `x`.
 - The new variable is in scope after its `let`, so `let x = x + 1` with
   no earlier `x` is `unknown variable x`.
+- A loop variable belongs to the loop's block: `let` of the same name in
+  the body is `x is already declared`, and the name is free again after
+  the loop.
 
 (Step 2, D12, D13.)
 
@@ -345,7 +348,9 @@ if n % 15 == 0 {
 ```
 
 No parentheses are needed around the condition; braces are required.
-`else` may be on the line after the `}`. The condition must be a bool,
+`else` may be on the line after the `}`, and `else if` chains as often as
+needed. A block is not a statement of its own: `{` starts one only after
+a condition, `else`, or a loop header. The condition must be a bool,
 or the fault is `condition must be a bool, got int`, at the condition's
 first token. Each block is a scope. (Step 2.)
 
@@ -366,7 +371,8 @@ for c in s { ... }           // each byte, as a one-byte string
 
 `a..b` and `a..=b` exist only here, in a `for` header: from `a` up to
 but not including `b`, or up to and including `b`. Both bounds are
-evaluated once, before the loop, and must be ints
+evaluated once, before the loop, left then right, and then both
+checked, the left first: they must be ints
 (`range bounds must be ints, got string`, at the first token of the bad
 bound). When `a` is past the end there are no iterations.
 
