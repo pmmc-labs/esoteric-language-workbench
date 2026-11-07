@@ -407,7 +407,7 @@ wrong missing thing: the `}`, not a statement).
 
 ## Step 4 defaults
 
-**D39. Function details D18, D24 and D27 leave open.** *(default)* (1)
+**D39. Function details D18, D24 and D27 leave open.** *(default; kept by the designer at review of step 4)* (1)
 `fn name(a, b) { ... }` is a top-level item only; inside a block `fn` is
 `expected statement, found 'fn'`. A parameter list is `(`, names separated
 by commas, `)`; the parser's words are D33's (`expected name, found
