@@ -20,9 +20,11 @@ interpreter in TypeScript on Node, steps 0 to 5 of
 main's compiler and runtime aren't here, nor are the decisions about
 them binding (D2, D14's encoding, D26, D27): what a program prints is
 the same, and what the compiler reported before running the
-interpreter reports before evaluating (D28, exit 2). Nothing is built.
-**Next:** step 0, which starts by answering `DESIGN.md`'s "What the
-host gives". Not agreed, from main: which fault reports when one
+interpreter reports before evaluating (D28, exit 2). **Step 0 is built:** `DESIGN.md`'s "What the host gives" answered, D30
+(nesting limited to 1000, exit 3 for an interpreter fault), the reader,
+checker and evaluator for one integer, the driver, and tests 000 and
+001 green under both Nodes. **Next:** step 1, arithmetic.
+ Not agreed, from main: which fault reports when one
 operator could fault two ways.
 
 ## Read first, in this order
