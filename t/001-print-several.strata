@@ -1,0 +1,5 @@
+print 1
+print 22
+print 333
+print 9223372036854775807
+print 10

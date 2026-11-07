@@ -1,0 +1,9 @@
+; a comment first, then a blank line
+
+print 5 ; trailing comment
+   ; indented comment, with print 99 and a $ inside
+
+print 6 print 7   ; two statements on one line
+print
+  8
+; last line, no newline after this comment
