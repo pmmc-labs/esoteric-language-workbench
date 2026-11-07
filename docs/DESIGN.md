@@ -106,8 +106,34 @@ value adds its lines.
   reader keeps its own stack and has no limit of its own, and a form
   nested more than 1000 deep is an error before running, so the
   evaluator's recursion is far inside the host's. Test 010 nests 147.
-- **Not in the language yet** (strings, floats, collections, tail
-  calls, time): answered when a step brings them.
+- **Calls and the depth of calls** (D32, D34): Node's stack takes some
+  thousands of frames, at a count that differs between versions, and a
+  tree-walker spends several host frames on every call, so 10,000 calls
+  in progress would not fit and the failure would be the host's
+  `RangeError`. **Overrides**: the evaluator keeps its own stack of
+  pending work and its own count of calls in progress, and recurses on
+  the host's stack for nothing a program does; the call that would make
+  10,001 faults `stack` itself, after its charge (tests 078, 079, 085,
+  086).
+- **Tail calls** (D33): Node does not eliminate tail calls. **Overrides**:
+  a call is a tail call when the work waiting on the evaluator's stack
+  is the return to its caller, and it then replaces its caller's frame
+  and adds nothing to the depth (tests 074, 077, 088). A `within`'s body
+  is not one, as its budget is put back after it (test 080, 081).
+- **Names** (D31): a JS object answers `constructor`, `toString` and
+  `__proto__` for a name nobody defined. **Overrides**: functions and
+  parameters live in `Map`s, so only a defined name is found (a unit
+  test; the checker rejects the rest before running).
+- **The order of a call** (D25, D32): JS evaluates an argument list left
+  to right, but the interpreter doesn't lean on it: the arguments are
+  evaluated in order onto the stack, then the charge, then the depth
+  check, then the body. **Inherits** the order, written out (tests 084,
+  085, 087).
+- **Parameters** (D31): none or many, bound by name for one call and
+  visible nowhere else. Node adds no limit of its own to how many.
+  **Inherits** (tests 071, 072).
+- **Not in the language yet** (strings, floats, collections, time):
+  answered when a step brings them.
 
 ## Values and memory
 
