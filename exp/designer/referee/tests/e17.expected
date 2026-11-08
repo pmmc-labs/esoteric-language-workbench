@@ -1,0 +1,2 @@
+e17.ditto:1:14: error: duplicate key "a"
+exit: 2

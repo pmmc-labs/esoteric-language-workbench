@@ -1,0 +1,2 @@
+e14.ditto:2:1: error: f takes 2 arguments, got 3
+exit: 2

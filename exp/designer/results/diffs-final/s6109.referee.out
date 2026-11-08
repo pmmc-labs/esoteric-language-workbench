@@ -1,0 +1,2 @@
+s6109.ditto:20:1: error: print takes 0 arguments, got 6
+exit: 2

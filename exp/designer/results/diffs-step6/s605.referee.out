@@ -1,0 +1,2 @@
+s605.ditto:36:1: error: print takes 0 arguments, got 1
+exit: 2

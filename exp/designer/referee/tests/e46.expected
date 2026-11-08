@@ -1,0 +1,2 @@
+e46.ditto:1:12: fault: cannot use and on int
+exit: 1

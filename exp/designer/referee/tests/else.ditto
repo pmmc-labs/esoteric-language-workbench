@@ -1,0 +1,15 @@
+let m = {a: 1}
+let xs = [10, 20]
+print(m.b else 0, m["a"] else 0, xs[5] else -1, xs[-1] else 7)
+print(int("42") else 0, int("4x") else 0, int("-0"), int("9223372036854775808") else "big")
+print(m.b else xs[9] else "last", m["q"] else 0 + 1)
+print("{xs[3]}" else "interp")
+print(xs[m.zz] else "inner index")
+let counts = {}
+for w in words("a b  a\tc\na") {
+  counts[w] = counts[w] else 0 + 1
+}
+print(counts, keys(counts), remove(counts, "b"), remove(counts, [1]))
+fn get(xs, i) { return xs[i] }
+print([get(xs, 1)][0] else 0)
+print([get(xs, 5)][0] else 0)

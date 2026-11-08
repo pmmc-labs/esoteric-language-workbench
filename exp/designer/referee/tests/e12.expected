@@ -1,0 +1,2 @@
+e12.ditto:2:17: error: x is a top-level variable; functions see only their parameters and their own variables
+exit: 2

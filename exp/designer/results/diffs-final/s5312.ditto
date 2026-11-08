@@ -1,0 +1,148 @@
+// seed 5312
+fn rev(s) {
+  let r = ""
+  for c in s { r = c + r }
+  return r
+}
+fn collatz(n) {
+  let steps = 0
+  while n != 1 {
+    if n % 2 == 0 { n = n / 2 } else { n = 3 * n + 1 }
+    steps += 1
+  }
+  return steps
+}
+fn isEven(n) {
+  if n == 0 { return true }
+  if n < 0 { return isEven(-n) }
+  return isOdd(n - 1)
+}
+fn isOdd(n) {
+  if n == 0 { return false }
+  if n < 0 { return isOdd(-n) }
+  return isEven(n - 1)
+}
+fn rep(s, n) {
+  let r = ""
+  for i in 0..n { r += s }
+  return r
+}
+fn mutm(m) {
+  m.a = 100
+  m["zz"] = 1
+  return m
+}
+fn sumlist(xs) {
+  let t = 0
+  for x in xs { t += x }
+  return t
+}
+fn down(n) {
+  if n <= 0 { return 0 }
+  return 1 + down(n - 1)
+}
+let ws1 = words(("a,b,,c" + "10"))
+print((42 + ((-(((-9223372036854775807 - 1) / 2))) % 1000004)), str((true and true)))
+print()
+let i2 = len(sort([(((-9223372036854775807 - 1) % -1) / 1), (g0(1000, (-1)) % 1001), 3]))
+print(swap((255 + 9), (-3)))
+i2 -= ((i2 % (-7)) * ((-5) / 2))
+i2 %= 1000003
+print(i2)
+print(rep("Zebra", 4))
+print(isEven(27), isOdd(20))
+print(down(10))
+print(swap(0, 0))
+print(rev("q\"uote"), rev(""))
+for k3 in 1..=2 {
+  print("k3", k3, k3 * k3 % 7)
+  let mx4 = {}
+  mx4[-5] = ("\{braces\}" + "x")
+  mx4[007] = (i2 % (-7))
+  print(mx4, len(mx4), keys(mx4), 1 in mx4)
+}
+let b5 = ("\}\\{str("ünï ✓")}" in ["\{braces\}"])
+let lp6 = [1, 2, 3]
+for xlp6 in lp6 {
+  lp6 += [xlp6 * 10]
+  lp6[0] += 1
+}
+print(lp6)
+let xs7 = [(i2 % 1001), down(((-2)) % 60), (len("Hello, World") % 1001), (i2 % 1001), (5 + (i2 % 501))]
+let m8 = {a: down(((i2 % 1001)) % 60), b: ((-i2) % 1001), c: ((lp6[6] else 1) % 1001)}
+;
+print(([(5 - (i2 % 501)), ((i2 % 501) + 5), ((m8["c"] / 1) % 1001)] != [(9 / (fib(((m8["c"] % 1001)) % 12) % 5 + 6)), ((m8.b % 501) - ((lp6[3] else 3) % 501)), ((xs7[5] else 0) % ((((lp6[7] else 0) * (i2 % 2)) % 1001) % 5 + 6)), int("12")]), i2, ("{(lp6[0] else 1)}{str(remove(m8, "a"))}v=" + "MiXeD CaSe 123"))
+let r9 = {name: "line1\nline2", xs: [((-i2) % 1001), ((i2 % 501) - (-5)), 3], n: 255, inner: {k: (2 + (lp6[1] % 51)), tag: "t"}}
+i2 *= 0
+i2 %= 1000003
+print(i2)
+print(rep("apple", 1))
+print(isEven(5), isOdd(24))
+print(down(10))
+print(m8, mutm(m8), m8)
+print(swap(0, 7))
+print(rev("q\"uote"), rev(""))
+let m10 = m8
+let big11 = ((-9223372036854775807 - 1) / 2)
+print(big11, big11 == ((-9223372036854775807 - 1) / 2), str(big11), "{big11}")
+let cr12 = r9
+cr12.xs[1] = 99
+cr12.inner.k += 1
+print(r9, cr12)
+print(big11)
+let b13 = ("a" in m8)
+print((collatz((((i2 % 100001)) % 50 + 50) % 50 + 1) % (int("99") % 5 + 6)))
+let xs14 = xs7
+let r15 = {name: ("a,b,,c" + "back\\slash"), xs: [(cr12.inner.k % 1001), (i2 % 1001), 3], n: ((i2 % 501) + ((lp6[6] else 1) % 501)), inner: {k: (big11 % 10), tag: "t"}}
+let i16 = 9
+print(rep(" ", 0))
+print(isEven(11), isOdd(6))
+print(down(1))
+print(m8, mutm(m8), m8)
+print(swap(9, 6))
+print(rev("back\\slash"), rev(""))
+mutm(m8)
+print(slice([1,2,3,4], 0, 0), slice("hello", 1, 3), slice("abc", 3, 3))
+i16 /= 2
+i16 %= 1000003
+print(i16)
+let cr17 = r9
+cr17.xs[0] = 99
+cr17.inner.k += 1
+print(r9, cr17)
+let i18 = i16
+print("apple", -9223372036854775807, false, "x")
+for k19 in (7 + (i2 % 501))..((7 + (i2 % 501))) + 0 {
+  print("k19", k19, k19 * k19 % 7)
+  print(lp6[0], ((m10.a - 2) > (255 - 9)), 5)
+  for e20 in ["MiXeD CaSe 123"] {
+    print(e20)
+  }
+}
+i2 -= 42
+i2 %= 1000003
+print(i2)
+let i21 = ((big11 / (((-(i16)) % 1001) % 5 + 6))) % 1000003
+print(rep("abc", 2))
+print(isEven(7), isOdd(8))
+print(down(10))
+print(m10, mutm(m10), m10)
+print(swap(5, 6))
+print(rev("MiXeD CaSe 123"), rev(""))
+let i22 = (((xs14[8] else -2) - ((-(big11)) % 1000004))) % 1000003
+let i23 = len(slice([((1000 % 501) - (xs7[0] % 501)), down((9) % 60), (r15["inner"]["k"] % 1001), (1 / 3), (i21 % 1001)], 1, len([((1000 % 501) - (xs7[0] % 501)), down((9) % 60), (r15["inner"]["k"] % 1001), (1 / 3), (i21 % 1001)]) - 1))
+fn fib(n) {
+  if n < 2 { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+fn swap(a, b) {
+  let t = a
+  a = b
+  b = t
+  return [a, b]
+}
+fn g0(a, b) {
+  let b1001 = (int("007") != [])
+  let xs1002 = sort(sort([3, 1, 2]))
+  return ((int("-0") - (((xs1002[2] else -1) % 250001) + ((xs1002[4] else 0) % 250001)))) % 1000003
+}

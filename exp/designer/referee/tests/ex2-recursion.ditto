@@ -1,0 +1,13 @@
+fn fact(n) {
+  if n == 0 { return 1 }
+  return n * fact(n - 1)
+}
+
+fn fib(n) {
+  if n < 2 { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+
+for n in 0..=20 {
+  print("{n}! = {fact(n)}, fib({n}) = {fib(n)}")
+}

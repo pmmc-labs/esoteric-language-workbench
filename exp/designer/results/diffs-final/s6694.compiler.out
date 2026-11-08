@@ -1,0 +1,2 @@
+s6694.ditto:77:4: error: print is a builtin
+exit: 2

@@ -1,0 +1,2 @@
+e47.ditto:1:4: fault: condition must be a bool, got int
+exit: 1

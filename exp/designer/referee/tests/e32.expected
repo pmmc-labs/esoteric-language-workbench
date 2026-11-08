@@ -1,0 +1,2 @@
+e32.ditto:1:8: error: map key must be a name, a string or an int
+exit: 2

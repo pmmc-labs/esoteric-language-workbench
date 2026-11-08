@@ -1,0 +1,126 @@
+// seed 1838
+fn rep(s, n) {
+  let r = ""
+  for i in 0..n { r += s }
+  return r
+}
+fn collatz(n) {
+  let steps = 0
+  while n != 1 {
+    if n % 2 == 0 { n = n / 2 } else { n = 3 * n + 1 }
+    steps += 1
+  }
+  return steps
+}
+fn fact(n) {
+  if n <= 1 {
+    return 1
+  }
+  return n * fact(n - 1)
+}
+fn fib(n) {
+  if n < 2 { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+let mx1 = {}
+mx1[-5] = (9223372036854775807 / 2)
+mx1[""] = mx1
+mx1["k"] = ((-1) * (-3))
+mx1[0] = ("abc" >= "10")
+print(mx1, len(mx1), keys(mx1), "a" in mx1)
+print(10 < 0, 10 <= 0, 10 == 0, 10 != 0, 10 > 0, 10 >= 0)
+print("x" < "line1\nline2", "x" <= "line1\nline2", "x" == "line1\nline2", "x" > "line1\nline2", "x" in "line1\nline2")
+print([1, 2] < [1, 2, 0], [1, 3] < [1, 2, 9], [] < [0], [[1]] == [[1]], 1 == "1", nil == nil, [] == {}, {a: 1, b: 2} == {b: 2, a: 1})
+print(-7 / 2, -7 % 2, 7 / -2, 7 % -2, -7 / -2, -7 % -2, 0 / -5, 0 % -5, 9223372036854775807 / -1, (-9223372036854775807 - 1) % -1)
+let mx2 = {}
+mx2["k"] = mx1
+mx2[007] = slice(sort(sort([3, 1, 2])), 1, len(sort(sort([3, 1, 2]))) - 1)
+mx2[-5] = "q\"uote"
+mx2[42] = (-(7))
+print(mx2, len(mx2), keys(mx2), 0 in mx2)
+let i3 = ((((-5) * 2) / (int(str(3)) % 5 + 6)) + ((2 / 3) / 10))
+if false {
+  let people4 = [{name: "ann", age: ((i3 % 46) + 3)}, {name: "bob", age: 7}, {name: "abc", age: 0}]
+  let g5 = [[1, 2, 3], [((people4[0].age % 51) + (i3 % 51)), 5, 6]]
+}
+print(rep("Zebra", 2))
+print(fact(5))
+let lp6 = [1, 2, 3]
+for xlp6 in lp6 {
+  lp6 += [xlp6 * 10]
+  lp6[0] += 1
+}
+print(lp6)
+let m7 = {a: fib(((i3 % 1001)) % 12), b: ((-4) * (-3)), c: ((i3 * ((-4) % 2)) % 1001)}
+let people8 = [{name: "ann", age: len("héllo")}, {name: "bob", age: 7}, {name: "ünï ✓", age: 0}]
+print(i3)
+;
+let i9 = (((i3 - (1 + i3)) + collatz(((((i3 % 50001) - (-4))) % 50 + 50) % 50 + 1))) % 1000003
+let r10 = {name: str(i3), xs: [(((-9223372036854775807 - 1) + 1) % (-7)), (13 * (-1)), 3], n: (i3 % 1001), inner: {k: fib(((-3)) % 12), tag: "t"}}
+if true {
+  let people11 = [{name: "ann", age: (people8[0].age % 10)}, {name: "bob", age: 7}, {name: "a,b,,c", age: 0}]
+  print(((lp6 >= [((i3 % 501) + (r10["inner"]["k"] % 501)), ((i3 % 501) + 7), (m7.b % 1001), ((65536 % 501) + (i9 % 501)), 5]) or (i3 != mx2)))
+} else {
+  m7["c"] += 2
+  print(m7)
+  m7 = remove(m7, "z")
+  print(m7, keys(m7))
+  m7.a = 1
+  m7.b = 2
+  m7.c = 3
+}
+print(((lp6[2] % ((fact(((i3 % 1001)) % 21) % 1001) % 5 + 6)) % ((len(slice([(len(people8) % 1001), (-4), ((i3 % 501) + (people8[0].age % 501))], 1, len([(len(people8) % 1001), (-4), ((i3 % 501) + (people8[0].age % 501))]) - 1)) % 1001) % 5 + 6)), (i3 * (people8[2].age + 13)))
+print(rep("ünï ✓", 1))
+print(fact(0))
+let i12 = ((((-3) * (fact(((lp6[0] % 1001)) % 21) % 1000004)) + (int(str(((-9223372036854775807 - 1) + 1) / -1)) % 1000004))) % 1000003
+let b13 = false
+for k14 in (len("{{}}{(lp6[0] % 1000001)}") % 1001)..((len("{{}}{(lp6[0] % 1000001)}") % 1001)) + 6 {
+  print("k14", k14, k14 * k14 % 7)
+}
+let g15 = [[1, 2, 3], [((i3 % 51) - (i12 % 51)), 5, 6]]
+if (lp6 != ([((i3 / (-2)) % 1001), (i3 % 1001), (9 / 7), ((((-9223372036854775807 - 1) % 1000004) / 7) % 1001), (((9223372036854775807 - 1) / 3) % 1001)] + [(len("MiXeD CaSe 123") % 1001)])) {
+  let i16 = (-1)
+  let r17 = {name: "MiXeD CaSe 123", xs: [int(str(255)), 10, 3], n: int("-7"), inner: {k: ((-255) % 101), tag: "t"}}
+  let s18 = slice("", 0, len(""))
+} else {
+  print(b13, people8[2].name, [false, true], lp6[1])
+  let i19 = (((-(int(str(65536)))) + ((g15[0][0] * i12) + (i3 * 10)))) % 1000003
+}
+let i20 = ((((-5) - i3) - (-4)) % (((i12 % 501) - (lp6[1] % 501)) % 5 + 6))
+print(((-i12) >= (-4)), ((3 - i9) / 3), (false and (1 / (1 - 1) == 0)), (5 - ((-3) / (-2))))
+let ws21 = []
+let cg22 = g15
+cg22[1][0] = -1
+let innercg22 = g15[1]
+innercg22[2] = 77
+print(g15, cg22, innercg22)
+print(rep("line1\nline2", 0))
+print(fact(5))
+print(((-9223372036854775807 - 1) / 2), r10, ((i9 % 1) - i9), collatz((((((-9223372036854775807 - 1) % -1) / 7)) % 50 + 50) % 50 + 1))
+let mx23 = {}
+mx23[""] = ["a", "a"]
+print(mx23, len(mx23), keys(mx23), 0 in mx23)
+print(sort([]))
+let b24 = false
+let b25 = ((65536 % (((i20 % 501) - 255) % 5 + 6)) > len("héllo"))
+let g26 = [[1, 2, 3], [((i9 % 51) + 5), 5, 6]]
+let g27 = [[1, 2, 3], [int(str(((-9223372036854775807 - 1) % 7))), 5, 6]]
+for k28 in 1..=2 {
+  print("k28", k28, k28 * k28 % 7)
+}
+let k28 = 0
+let people29 = [{name: "ann", age: (g27[1][0] % 91)}, {name: "bob", age: 7}, {name: "12x", age: 0}]
+print(rep("12x", 1))
+print(fact(5))
+let people30 = [{name: "ann", age: (100 % 91)}, {name: "bob", age: 7}, {name: "12x", age: 0}]
+let cg31 = g15
+cg31[1][0] = -1
+let innercg31 = g15[1]
+innercg31[2] = 77
+print(g15, cg31, innercg31)
+let mx32 = {}
+mx32[007] = mx32
+mx32[""] = (slice("Hello, World", len("Hello, World") / 3, len("Hello, World")) in "a,b,,c")
+mx32["a"] = {1: "a", -3: true, "k": nil, 7: [1]}
+mx32[""] = (i20 / 2)
+print(mx32, len(mx32), keys(mx32), 1 in mx32)

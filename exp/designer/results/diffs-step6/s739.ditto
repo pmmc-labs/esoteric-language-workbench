@@ -1,0 +1,282 @@
+// seed 739
+fn rep(s, n) {
+  let r = ""
+  for i in 0..n { r += s }
+  return r
+}
+fn fact(n) {
+  if n <= 1 {
+    return 1
+  }
+  return n * fact(n - 1)
+}
+fn fib(n) {
+  if n < 2 { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+fn sumlist(xs) {
+  let t = 0
+  for x in xs { t += x }
+  return t
+}
+let i1 = (((((-(3037000499)) % 1000004) * (-2)) * (255 * 42))) % 1000003
+for k2 in (-2)..((-2)) + 0 {
+  print("k2", k2, k2 * k2 % 7)
+  print((gcd((-5), 65536) % ((-k2) % 5 + 6)), int(str(k2)), int("-0"), fact((((-1) / 3)) % 21))
+}
+let w3 = 0
+while w3 < 3 {
+  w3 += 1
+  if w3 % 2 == 0 {
+    continue
+  }
+  print("w3", w3)
+  print(join(words("line1\nline2"), ""))
+}
+i1 -= ((i1 % 500001) + 10)
+i1 %= 1000003
+print(i1)
+for e4 in "12x" {
+  print(e4)
+  print((not (("cr\rlf" + e4) in "")), ((42 * (-5)) - (i1 + (-1))), fact(((100 + 255)) % 21))
+}
+print(rep("line1\nline2", 1))
+print(isEven(35), isOdd(2))
+print(fact(5))
+print(swap(4, 4))
+print(rev("apple"), rev(""))
+i1 = ((-1) + (9 - (-3)))
+print(i1)
+let lp5 = [1, 2, 3]
+for xlp5 in lp5 {
+  lp5 += [xlp5 * 10]
+  lp5[0] += 1
+}
+print(lp5)
+print((not ([{k: 1}, nil, true] != true)))
+let i6 = (int(str(((i1 + i1) * (i1 % (13 % 5 + 6)))))) % 1000003
+print({}, (len({}) / (int(str(0)) % 5 + 6)), len({}))
+let r7 = {name: lower("app"), xs: [int("0"), ((i1 * (i6 % 2)) % 1001), 3], n: (1 * (i6 % 1001)), inner: {k: (1 % (int("-7") % 5 + 6)), tag: "t"}}
+let xs8 = [0, (i6 % 1001), (i1 % 1001), ((i6 % 501) + 255)]
+for k9 in 0..((i6 % 1001)) % 7 {
+  print("k9", k9, k9 * k9 % 7)
+  let cr10 = r7
+  cr10.xs[0] = 99
+  cr10.inner.k += 1
+  print(r7, cr10)
+  r7.xs[2] += (len(r7) % 1001)
+  r7.xs[2] %= 1000003
+  print(r7)
+}
+let g11 = [[1, 2, 3], [(xs8[1] % 101), 5, 6]]
+print(rep("line1\nline2", 1))
+print(isEven(27), isOdd(13))
+print(fact(-3))
+print(swap(2, 1))
+print(rev("abc"), rev(""))
+if (r7["inner"]["k"] != ((-5) * (-3))) {
+  print([((-r7.n) % 1001), (-2), ((i6 % 501) - (65536 % 501)), len({}), (fact((2) % 21) % 1001), ((-r7.xs[0]) % 1001)], (join([], " - ") + "apple"), [])
+  for k12 in 1..=6 {
+    print("k12", k12, k12 * k12 % 7)
+    let mx13 = {}
+    mx13[007] = [true, {k: 1}, {}]
+    print(mx13, len(mx13), keys(mx13), 1 in mx13)
+    let ws14 = split("a,b,,c", " ")
+  }
+  let k12 = 0
+  let w15 = 0
+  while w15 < 6 {
+    w15 += 1
+    print("w15", w15)
+    let cr16 = r7
+    cr16.xs[1] = 99
+    cr16.inner.k += 1
+    print(r7, cr16)
+  }
+} else {
+  let lp17 = [1, 2, 3]
+  for xlp17 in lp17 {
+    lp17 += [xlp17 * 10]
+    lp17[0] += 1
+  }
+  print(lp17)
+}
+let people18 = [{name: "ann", age: (5 - (i6 % 46))}, {name: "bob", age: 7}, {name: "q\"uote", age: 0}]
+let w19 = 0
+while w19 < 4 {
+  w19 += 1
+  print("w19", w19)
+}
+if (not (i1 == g11[1][0])) {
+  let people20 = [{name: "ann", age: (13 * 2)}, {name: "bob", age: 7}, {name: "abc", age: 0}]
+  if ((i6 < i1) or true) {
+    if (lp5 > xs8) {
+      let b21 = true
+      let cr22 = r7
+      cr22.xs[1] = 99
+      cr22.inner.k += 1
+      print(r7, cr22)
+      let r23 = {name: ("abc" + "apple"), xs: [(cr22.xs[2] % 1001), (lp5[0] % 1001), 3], n: ((-4) * (r7.xs[0] % 251)), inner: {k: ((i1 % 51) - (i6 % 51)), tag: "t"}}
+    } else if (i6 >= 10) {
+      i1 = (-(i6 % ((-5) % 5 + 6)))
+      print(i1)
+      let r24 = {name: ("," + "back\\slash"), xs: [((r7.inner.k * (42 % 2)) % 1001), (42 / 1), 3], n: ((g11[0][0] / 1) % 1001), inner: {k: (r7.xs[0] % 101), tag: "t"}}
+    } else {
+      let mx25 = {}
+      mx25["a"] = [[[1], [[2]]], {}, nil, "q\"t\n"]
+      mx25["k"] = "cr\rlf"
+      print(mx25, len(mx25), keys(mx25), 0 in mx25)
+      let w26 = 0
+      while w26 < 5 {
+        w26 += 1
+        print("w26", w26)
+      }
+    }
+    i1 /= (((-r7.n) % 1001) % 5 + 6)
+    i1 %= 1000003
+    print(i1)
+  } else {
+    print(people20)
+  }
+  print(str(nil), str(true), str(["a\\b", "c\nd", "e\"f", "t\tr\r"]), str({a: "x", 1: [nil]}), str("s"), str(-5))
+} else {
+  r7.xs[2] -= ((i1 * (i1 % 2)) % 1001)
+  r7.xs[2] %= 1000003
+  print(r7)
+}
+let i27 = 13
+print(int(str(1000)), "{(people18[2].age % 1000001)}{"ünï ✓"}{42}", {a: ((-4) / ((i6 % 1001) % 5 + 6)), b: (-4), c: (i27 % 1001)}, [""])
+let g28 = [[1, 2, 3], [((i1 * (65536 % 2)) % 101), 5, 6]]
+let r29 = {name: "  two  words\tand\nlines ", xs: [int(str((-1))), (3037000499 % (-2)), 3], n: (i27 % (-2)), inner: {k: (-5), tag: "t"}}
+print(int("-0"), int("007"), int("9223372036854775807"), int("-9223372036854775808"), int("0"))
+print(rep("a,b,,c", 4))
+print(isEven(6), isOdd(3))
+print(fact(20))
+print(swap(5, 5))
+print(rev("Zebra"), rev(""))
+for k30 in 1..=4 {
+  print("k30", k30, k30 * k30 % 7)
+  for k31 in 1..=5 {
+    print("k31", k31, k31 * k31 % 7)
+    let r32 = {name: " {k31}{1}", xs: [(i27 % 1001), (100 * (i1 % 11)), 3], n: (i27 % 1001), inner: {k: ((r29.n % 51) + (k31 % 51)), tag: "t"}}
+  }
+}
+let xs33 = [5, ((i27 % 501) - 2), (len("{(i27 % 1000001)}") % 1001)]
+print(int(str(len(people18[2].name))), lp5, str(false))
+let i34 = (len("") / (-7))
+let r35 = {name: ("x" + "cr\rlf"), xs: [((i1 * 1) % 1001), (r7.xs[1] % 1001), 3], n: (len("{join(words("app"), "")}") % 1001), inner: {k: (lp5[1] % 101), tag: "t"}}
+swap(len("app"), ((i34 * ((-2) % 2)) % 1000001))
+let r36 = {name: "", xs: [((r29["inner"]["k"] % 501) + (i34 % 501)), (len(r29) % 1001), 3], n: (i1 % 1001), inner: {k: 42, tag: "t"}}
+let i37 = ((((-3) * (-5)) - (7 / (-5))) % 3)
+i34 %= ((g28[1][2] % 1001) % 5 + 6)
+i34 %= 1000003
+print(i34)
+print(rep("", 2))
+print(isEven(4), isOdd(21))
+print(fact(-3))
+print(swap(2, 4))
+print(rev("Zebra"), rev(""))
+let i38 = (((-(i1 + 7)) - ((r35["inner"]["k"] / (10 % 5 + 6)) + (i37 - lp5[2])))) % 1000003
+print(2 < -1, 2 <= -1, 2 == -1, 2 != -1, 2 > -1, 2 >= -1)
+print("apple" < "Hello, World", "apple" <= "Hello, World", "apple" == "Hello, World", "apple" > "Hello, World", "apple" in "Hello, World")
+print([1, 2] < [1, 2, 0], [1, 3] < [1, 2, 9], [] < [0], [[1]] == [[1]], 1 == "1", nil == nil, [] == {}, {a: 1, b: 2} == {b: 2, a: 1})
+print(-7 / 2, -7 % 2, 7 / -2, 7 % -2, -7 / -2, -7 % -2, 0 / -5, 0 % -5, 9223372036854775807 / -1, (-9223372036854775807 - 1) % -1)
+if false {
+  if (("abc" + "ünï ✓") < "x:") {
+    let lp39 = [1, 2, 3]
+    for xlp39 in lp39 {
+      lp39 += [xlp39 * 10]
+      lp39[0] += 1
+    }
+    print(lp39)
+    let w40 = 0
+    while w40 < 3 {
+      w40 += 1
+      print("w40", w40)
+      let cp41 = xs8
+      cp41[0] = (3 + (r35.n % 501))
+      cp41 += [0]
+      print(xs8, cp41, xs8 == cp41)
+      print(mutm({a: ((r36["inner"]["k"] % 501) + (i38 % 501)), b: ((1000 % 501) + (i34 % 501)), c: ((r35.n * (r35.xs[0] % 2)) % 1001)}))
+    }
+  } else if true {
+    i6 /= (-3)
+    i6 %= 1000003
+    print(i6)
+    for e42 in {a: (1000 * (xs8[2] % 2)), b: (-4), c: (255 * (13 % 4))} {
+      print(e42)
+      let xs43 = [(255 + (-4)), ((r35.xs[2] % 501) + (i27 % 501)), ((i38 * (65536 % 2)) % 1001), ((r7.n % 501) + (g28[0][1] % 501))]
+      print(((-(5)) - (10 / 3)), ((xs33[0] + 100) >= (i6 / (-2))))
+    }
+  } else if (false and true) {
+    let xs44 = [(255 + (-2)), ((i38 % 501) + (r29.n % 501)), (42 + (65536 % 501)), (i38 % 1001), int("99")]
+    for k45 in 0..((len(people18) % 1001)) % 7 {
+      print("k45", k45, k45 * k45 % 7)
+      let ws46 = words(" {nil}")
+    }
+  } else if true {
+    if ((-(i37)) < (-3)) {
+      let r47 = {name: ("abc" + "MiXeD CaSe 123"), xs: [(int(str(r29.inner.k)) % 1001), ((-2) / (((i6 % 501) - 0) % 5 + 6)), 3], n: (5 * (i38 % 201)), inner: {k: ((xs33[2] % 51) + (100 % 51)), tag: "t"}}
+      let b48 = (("12x" + "x") > "  two  words\tand\nlines ")
+      let w49 = 0
+      while w49 < 6 {
+        w49 += 1
+        print("w49", w49)
+      }
+    }
+    let mx50 = {}
+    mx50[1] = {1: "a", -3: true, "k": nil, 7: [1]}
+    mx50[0] = (-i6)
+    print(mx50, len(mx50), keys(mx50), 1 in mx50)
+  } else {
+    let s51 = ("{7}{2}" + str(true))
+    let cr52 = r35
+    cr52.xs[1] = 99
+    cr52.inner.k += 1
+    print(r35, cr52)
+  }
+  let s53 = ("MiXeD CaSe 123" + "{(xs33[0] % 1000001)}\{")
+}
+for k54 in 0..len(lp5) {
+  print("k54", k54, k54 * k54 % 7)
+}
+fn print() {
+}
+let b55 = ("zz" in r36)
+i6 %= ((i27 % 1001) % 5 + 6)
+i6 %= 1000003
+print(i6)
+fn swap(a, b) {
+  let t = a
+  a = b
+  b = t
+  return [a, b]
+}
+fn isEven(n) {
+  if n == 0 { return true }
+  if n < 0 { return isEven(-n) }
+  return isOdd(n - 1)
+}
+fn isOdd(n) {
+  if n == 0 { return false }
+  if n < 0 { return isOdd(-n) }
+  return isEven(n - 1)
+}
+fn rev(s) {
+  let r = ""
+  for c in s { r = c + r }
+  return r
+}
+fn gcd(a, b) {
+  while b != 0 {
+    let t = b
+    b = a % b
+    a = t
+  }
+  return a
+}
+fn mutm(m) {
+  m.a = 100
+  m["zz"] = 1
+  return m
+}

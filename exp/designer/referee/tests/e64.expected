@@ -1,0 +1,2 @@
+e64.ditto:1:7: fault: join: expected a list of strings, got int
+exit: 1

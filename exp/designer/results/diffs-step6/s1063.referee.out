@@ -1,0 +1,2 @@
+s1063.ditto:32:3: error: print takes 0 arguments, got 3
+exit: 2

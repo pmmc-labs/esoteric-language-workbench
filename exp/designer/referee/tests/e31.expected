@@ -1,0 +1,2 @@
+e31.ditto:1:10: error: expected ':', found '+'
+exit: 2

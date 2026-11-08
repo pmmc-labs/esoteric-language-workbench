@@ -1,0 +1,2 @@
+e57.ditto:2:5: fault: cannot use + on string and int
+exit: 1

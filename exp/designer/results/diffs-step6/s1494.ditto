@@ -1,0 +1,140 @@
+// seed 1494
+fn isEven(n) {
+  if n == 0 { return true }
+  if n < 0 { return isEven(-n) }
+  return isOdd(n - 1)
+}
+fn isOdd(n) {
+  if n == 0 { return false }
+  if n < 0 { return isOdd(-n) }
+  return isEven(n - 1)
+}
+fn fib(n) {
+  if n < 2 { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+fn early(n) {
+  for i in 0..10 {
+    if i == n { return i * 2 }
+  }
+  return -1
+}
+fn fnl(n) {
+  if n > 0 { return }
+  print("fnl", n)
+}
+fn g0(a, b) {
+  let big1001 = (-9223372036854775807 - 1)
+  print(big1001, big1001 == (-9223372036854775807 - 1), str(big1001), "{big1001}")
+  let lp1002 = [1, 2, 3]
+  for xlp1002 in lp1002 {
+    lp1002 += [xlp1002 * 10]
+    lp1002[0] += 1
+  }
+  print(lp1002)
+  let w1003 = 0
+  while w1003 < 2 {
+    w1003 += 1
+    if w1003 % 2 == 0 {
+      continue
+    }
+    print("w1003", w1003)
+    if (b < (-3)) {
+      continue
+    }
+  }
+  let xs1004 = lp1002
+  print(len("héllo"), len([[]]), len({}), keys({b: 1, a: 2}), remove({a: 1}, "a"), remove({a: 1}, [1]), remove({a: 1}, "z"))
+  return (int("-0")) % 1000003
+}
+let b1 = true
+let i2 = (-4)
+let g3 = [[1, 2, 3], [((255 % 51) + (-4)), 5, 6]]
+for k4 in 3..3 {
+  print("k4", k4, k4 * k4 % 7)
+  print(fnl(((-9223372036854775806) % 1000001)))
+}
+print(classify(len("")))
+print(isEven(7), isOdd(0))
+print(fnl(0))
+print(classify(0))
+print(early(6))
+let xs5 = [(g3[0][2] % 1001), ((g3[1][1] * (1000 % 2)) % 1001), ((g3[0][2] / ((100 - (-4)) % 5 + 6)) % 1001), (len(sort([((i2 * (i2 % 2)) % 1001), ((i2 % 501) + (g3[0][1] % 501)), (int(str((9223372036854775807 / -1))) % 1001), (1000 / (-7)), 9])) % 1001)]
+let r6 = {name: "{("Hello, World" + "ab")[0]}{"a,b,,c"}", xs: [(-13), (10 - 0), 3], n: ((-5) + (-5)), inner: {k: (10 * (i2 % 11)), tag: "t"}}
+print(9, (-fib(((-5)) % 12)), r6["inner"]["k"], slice(("ünï ✓" + "-42"), 0, len(("ünï ✓" + "-42"))))
+i2 = (sumlist([(42 * 10), (42 + 5), 255, ((i2 % 501) - 100)]) % 1000001)
+print(i2)
+g3[1][0] = (int(str(r6.n)) % 101)
+g3[1][1] *= 2
+print(g3)
+for k7 in 1..=4 {
+  print("k7", k7, k7 * k7 % 7)
+}
+let lp8 = [1, 2, 3]
+for xlp8 in lp8 {
+  lp8 += [xlp8 * 10]
+  lp8[0] += 1
+}
+print(lp8)
+let i9 = i2
+let xs10 = [((r6.inner.k % 501) + (xs5[0] % 501)), ((i9 % 501) + (-3)), ((-2) * (-3)), (sumlist(lp8) % 1001), ((i9 * (i9 % 2)) % 1001), (-(0))]
+print(isEven(-5), isOdd(25))
+print(fnl(0))
+print(classify(0))
+print(early(10))
+for k11 in ((-5) - (i9 % 501))..(((-5) - (i9 % 501))) + 6 {
+  print("k11", k11, k11 * k11 % 7)
+}
+let k11 = 0
+print(classify(100))
+let x = 1;;
+let people12 = [{name: "ann", age: (xs10[2] % 7)}, {name: "bob", age: 7}, {name: "line1\nline2", age: 0}]
+let cg13 = g3
+cg13[1][0] = -1
+let innercg13 = g3[1]
+innercg13[2] = 77
+print(g3, cg13, innercg13)
+print((9223372036854775807 - 9223372036854775807))
+let b14 = (true or (1 % (2 * 0) == 0))
+print(2 < -1, 2 <= -1, 2 == -1, 2 != -1, 2 > -1, 2 >= -1)
+print(" " < "ünï ✓", " " <= "ünï ✓", " " == "ünï ✓", " " > "ünï ✓", " " in "ünï ✓")
+print([1, 2] < [1, 2, 0], [1, 3] < [1, 2, 9], [] < [0], [[1]] == [[1]], 1 == "1", nil == nil, [] == {}, {a: 1, b: 2} == {b: 2, a: 1})
+print(-7 / 2, -7 % 2, 7 / -2, 7 % -2, -7 / -2, -7 % -2, 0 / -5, 0 % -5, 9223372036854775807 / -1, (-9223372036854775807 - 1) % -1)
+let i15 = ((sumlist([((-1) * 13), ((i9 / (-5)) % 1001), ((r6.inner.k % 501) + (k11 % 501)), ((-1) * (i2 % 1001)), ((1000 % 501) - (r6.inner.k % 501))]) * ((r6.n % (((i9 * (people12[2].age % 2)) % 1001) % 5 + 6)) * ((-4) / 10)))) % 1000003
+print(isEven(27), isOdd(8))
+print(fnl(0))
+print(classify(1))
+print(early(8))
+for e16 in ("apple" + "apple") {
+  print(e16)
+  let cg17 = g3
+  cg17[1][0] = -1
+  let innercg17 = g3[1]
+  innercg17[2] = 77
+  print(g3, cg17, innercg17)
+  print(((-i9) - int(str(i2))), ((1000 * 255) + (r6.inner.k * xs10[0])), "{(7 / (100 % 5 + 6))}")
+}
+print((len("héllo") + 13), 10, (early(9) % (-2)))
+print(len(words("{7} ")), ((-(((-9223372036854775807 - 1) / 2))) % (-5)), nil)
+let i18 = int(str(1000))
+let people19 = [{name: "ann", age: (int(str(i15)) % 91)}, {name: "bob", age: 7}, {name: "cr\rlf", age: 0}]
+print({a: ((cg13[0][1] * (9 % 2)) % 1001), b: (len(upper("Hello, World")) % 1001), c: ((r6["inner"]["k"] * (xs5[1] % 2)) % 1001)})
+if (((-r6.inner.k) % 11) not in lp8) {
+  let i20 = i15
+} else {
+  print("{r6.name}{i2}", nil, [((i2 * (2 % 2)) % 1001), (i15 % 1001), (k11 % 1001), 0], ((xs10[0] % ((i15 % 1001) % 5 + 6)) + len(" ")))
+}
+let cg21 = g3
+cg21[1][0] = -1
+let innercg21 = g3[1]
+innercg21[2] = 77
+print(g3, cg21, innercg21)
+fn sumlist(xs) {
+  let t = 0
+  for x in xs { t += x }
+  return t
+}
+fn classify(n) {
+  if n < 0 { return "neg" } else if n == 0 { return "zero" }
+  return "pos"
+}

@@ -1,0 +1,6 @@
+DIFF t/005-layout.ditto
+DIFF t/150-err-parse-before-resolve.ditto
+DIFF t/234-semicolons.ditto
+DIFF t/597-err-newline-before-index.ditto
+DIFF t/693-err-dot-next-line.ditto
+total 572

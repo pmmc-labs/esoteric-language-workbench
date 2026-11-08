@@ -1,0 +1,10 @@
+print(sort([3, 1, 2]), sort(["b", "a"]), sort([[2, "a"], [1, "z"], [1, "b"]]))
+print(slice("hello", 1, 3), slice([1, 2, 3], 0, 0), split("a,,b", ","), join(["x", "y"], "-"))
+print(lower("AbC!"), upper("aBc"), words("  "), str(nil) + str(12), len(read()))
+let s = ""
+for c in "hi" { s = c + s }
+print(s)
+for i in 3..1 { print("never") }
+for i in 1..=3 { i += 10; print(i) }
+for k in {z: 1, y: 2} { print(k) }
+print(sort([1, "a"]))

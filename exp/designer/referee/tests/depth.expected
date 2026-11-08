@@ -1,0 +1,3 @@
+0
+depth.ditto:3:10: fault: stack overflow (more than 1000 nested calls)
+exit: 1

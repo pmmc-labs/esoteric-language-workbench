@@ -1,0 +1,2 @@
+e10.ditto:2:1: error: expression statement must be a call
+exit: 2

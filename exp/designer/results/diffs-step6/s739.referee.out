@@ -1,0 +1,2 @@
+s739.ditto:24:3: error: print takes 0 arguments, got 3
+exit: 2

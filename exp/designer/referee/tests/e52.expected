@@ -1,0 +1,2 @@
+e52.ditto:1:13: fault: map key must be an int or a string, got list
+exit: 1

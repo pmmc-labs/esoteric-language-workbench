@@ -1,0 +1,2 @@
+e67.ditto:1:7: fault: keys: expected a map, got list
+exit: 1
