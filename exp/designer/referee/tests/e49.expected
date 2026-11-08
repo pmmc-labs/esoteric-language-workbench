@@ -1,0 +1,2 @@
+e49.ditto:1:10: fault: cannot use .count on list
+exit: 1

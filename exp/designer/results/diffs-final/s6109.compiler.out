@@ -1,0 +1,2 @@
+s6109.ditto:39:4: error: print is a builtin
+exit: 2

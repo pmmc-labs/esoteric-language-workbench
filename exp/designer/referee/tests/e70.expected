@@ -1,0 +1,2 @@
+e70.ditto:2:5: fault: cannot use .x on list
+exit: 1

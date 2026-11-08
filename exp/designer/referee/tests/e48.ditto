@@ -1,0 +1,2 @@
+let m = {qty: 1}
+print(m.count)

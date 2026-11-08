@@ -1,0 +1,2 @@
+e40.ditto:1:11: fault: cannot use - on string and int
+exit: 1

@@ -1,0 +1,7 @@
+# pass 174
+# fail 0
+cc: 572 passed
+clang: 572 passed
+san: 572 passed
+checks: ok
+make exit 0

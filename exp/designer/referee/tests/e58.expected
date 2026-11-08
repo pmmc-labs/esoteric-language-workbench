@@ -1,0 +1,2 @@
+e58.ditto:1:10: fault: range bounds must be ints, got string
+exit: 1

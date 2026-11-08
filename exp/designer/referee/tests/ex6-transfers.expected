@@ -1,0 +1,7 @@
+applied 2 transfers
+rejected: carol has only 50
+rejected: no account for {"from": "bob", "to": "dave", "amount": 5}
+alice: 70 ["-30 to bob"]
+bob: 20 ["+30 from alice", "-60 to carol"]
+carol: 60 ["+60 from bob"]
+opening: {"alice": {"balance": 100, "log": []}, "bob": {"balance": 50, "log": []}, "carol": {"balance": 0, "log": []}}

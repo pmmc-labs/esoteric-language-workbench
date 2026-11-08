@@ -1,0 +1,251 @@
+// seed 605
+fn swap(a, b) {
+  let t = a
+  a = b
+  b = t
+  return [a, b]
+}
+fn collatz(n) {
+  let steps = 0
+  while n != 1 {
+    if n % 2 == 0 { n = n / 2 } else { n = 3 * n + 1 }
+    steps += 1
+  }
+  return steps
+}
+fn isEven(n) {
+  if n == 0 { return true }
+  if n < 0 { return isEven(-n) }
+  return isOdd(n - 1)
+}
+fn isOdd(n) {
+  if n == 0 { return false }
+  if n < 0 { return isOdd(-n) }
+  return isEven(n - 1)
+}
+fn early(n) {
+  for i in 0..10 {
+    if i == n { return i * 2 }
+  }
+  return -1
+}
+fn rsum(xs, i) {
+  if i >= len(xs) { return 0 }
+  return xs[i] + rsum(xs, i + 1)
+}
+print(classify((-(9223372036854775807 % 1000))))
+let lp1 = [1, 2, 3]
+for xlp1 in lp1 {
+  lp1 += [xlp1 * 10]
+  lp1[0] += 1
+}
+print(lp1)
+if (false and (1 / (1 - 1) == 0)) {
+  let m2 = {a: (100 / (-7)), b: ((-3) - 5), c: early((-2))}
+}
+swap((-5), ((-3) * 13))
+print(lower(str("back\\slash")), {}, "ünï ✓", ((2 % ((fact(((-2)) % 21) % 1001) % 5 + 6)) - (65536 - 7)))
+print(isEven(37), isOdd(0))
+print(show(6))
+print(fact(-3))
+print(swap(4, 7))
+print(classify(-1))
+print(early(11))
+let i3 = early((lp1[0] % 1000001))
+let lp4 = [1, 2, 3]
+for xlp4 in lp4 {
+  lp4 += [xlp4 * 10]
+  lp4[0] += 1
+}
+print(lp4)
+print(rsum(lp4, 0))
+let xs5 = lp1
+if ((early(255) % 11) not in (lp4 + lp4)) {
+  if false {
+    print(2 < 10, 2 <= 10, 2 == 10, 2 != 10, 2 > 10, 2 >= 10)
+    print("abc" < "tab\there", "abc" <= "tab\there", "abc" == "tab\there", "abc" > "tab\there", "abc" in "tab\there")
+    print([1, 2] < [1, 2, 0], [1, 3] < [1, 2, 9], [] < [0], [[1]] == [[1]], 1 == "1", nil == nil, [] == {}, {a: 1, b: 2} == {b: 2, a: 1})
+    print(-7 / 2, -7 % 2, 7 / -2, 7 % -2, -7 / -2, -7 % -2, 0 / -5, 0 % -5, 9223372036854775807 / -1, (-9223372036854775807 - 1) % -1)
+  } else {
+    let b6 = (len(slice("Zebra", len("Zebra") / 3, len("Zebra"))) == (i3 - (-3)))
+    if ("{(lp4[1] % 1000001)}" > "MiXeD CaSe 123") {
+      print(lower(str(xs5[0])), (((-1) % 2) % (-7)), (42 != i3))
+      let mx7 = {}
+      mx7[0] = "12x"
+      mx7["k"] = {a: (i3 % 1001), b: ((-3) % ((-2) % 5 + 6)), c: (lp1[1] % 1001)}
+      print(mx7, len(mx7), keys(mx7), 0 in mx7)
+    }
+    if ((10 * 42) >= (-(0))) {
+      for e8 in lp4 {
+        print(e8)
+      }
+      let r9 = {name: "{str("12x")}", xs: [((-4) + (i3 % 501)), (len(upper(" ")) % 1001), 3], n: (-3), inner: {k: ((i3 * (13 % 2)) % 101), tag: "t"}}
+      let s10 = "{((r9.inner.k % 500001) - (-2))}"
+    } else {
+      for k11 in ((i3 * ((-4) % 2)) % 1001)..(((i3 * ((-4) % 2)) % 1001)) + 4 {
+        print("k11", k11, k11 * k11 % 7)
+        print(1 < 1, 1 <= 1, 1 == 1, 1 != 1, 1 > 1, 1 >= 1)
+        print("abc" < "12x", "abc" <= "12x", "abc" == "12x", "abc" > "12x", "abc" in "12x")
+        print([1, 2] < [1, 2, 0], [1, 3] < [1, 2, 9], [] < [0], [[1]] == [[1]], 1 == "1", nil == nil, [] == {}, {a: 1, b: 2} == {b: 2, a: 1})
+        print(-7 / 2, -7 % 2, 7 / -2, 7 % -2, -7 / -2, -7 % -2, 0 / -5, 0 % -5, 9223372036854775807 / -1, (-9223372036854775807 - 1) % -1)
+      }
+      let xs12 = [collatz((((-2)) % 50 + 50) % 50 + 1), ((i3 * (i3 % 2)) % 1001), ((65536 % 501) - (i3 % 501))]
+      for k13 in 0..(((i3 % 501) + (i3 % 501))) % 7 {
+        print("k13", k13, k13 * k13 % 7)
+        let lp14 = [1, 2, 3]
+        for xlp14 in lp14 {
+          lp14 += [xlp14 * 10]
+          lp14[0] += 1
+        }
+        print(lp14)
+      }
+    }
+  }
+  print({1: "a", -3: true, "k": nil, 7: [1]}, true, ((7 * 13) % ((i3 % 1001) % 5 + 6)))
+  let s15 = "{((-(i3)) % 1000001)}{("app" + "x")}{i3}"
+} else if false {
+  for e16 in lp1 {
+    print(e16)
+    let mx17 = {}
+    mx17[42] = (i3 == i3)
+    mx17[0] = (-3)
+    mx17[0] = mx17
+    mx17["k"] = split(slice("Zebra", len("Zebra") / 3, len("Zebra")), ",")
+    print(mx17, len(mx17), keys(mx17), "a" in mx17)
+    let r18 = {name: "a,b,,c", xs: [(3 + (-5)), ((i3 % 501) + (-4)), 3], n: ((i3 % 501) + 13), inner: {k: ((1000 * ((-4) % 2)) % 101), tag: "t"}}
+  }
+}
+i3 /= (((-3) - (i3 % 501)) % 5 + 6)
+i3 %= 1000003
+print(i3)
+print((len([]) + (lp1[1] * (-2))), (7 != (1 + (-5))), (int(str(i3)) * i3), "{words("line1\nline2")}")
+let mx19 = {}
+mx19[42] = [{x: [1, {y: nil}]}, {x: [1, {y: nil}]}]
+mx19[1] = [{x: [1, {y: nil}]}, true, {}]
+print(mx19, len(mx19), keys(mx19), 1 in mx19)
+let xs20 = [(7 * (i3 % 143)), ((-2) / (-7)), (fact((255) % 21) % 1001)]
+let lp21 = [1, 2, 3]
+for xlp21 in lp21 {
+  lp21 += [xlp21 * 10]
+  lp21[0] += 1
+}
+print(lp21)
+print(rsum(xs20, 0))
+print(isEven(10), isOdd(27))
+print(show(9))
+print(fact(5))
+print(swap(5, 6))
+print(classify(0))
+print(early(12))
+print(((10 + i3) * 9), (("MiXeD CaSe 123" + "-42") == upper("abc")), (-((-1))))
+let big22 = (9223372036854775807 / 2)
+print(big22, big22 == (9223372036854775807 / 2), str(big22), "{big22}")
+for k23 in 3..3 {
+  print("k23", k23, k23 * k23 % 7)
+  if true {
+    let i24 = 1
+    mx19[-5] = xs5
+    print(mx19, len(mx19))
+    for mk25 in mx19 {
+      print(mk25, mx19[mk25])
+    }
+  } else if ({a: ((-1) * (-2)), b: (9 % 3), c: (-2)} != 100) {
+    mx19[99] = "{(-4)}"
+    mx19 = remove(mx19, 1)
+    print(mx19, len(mx19))
+    for mk26 in mx19 {
+      print(mk26, mx19[mk26])
+    }
+    let mx27 = {}
+    mx27[0] = str((((-9223372036854775807 - 1) * 1) % 1000004))
+    mx27[007] = [-3, true, "q\"t\n"]
+    print(mx27, len(mx27), keys(mx27), "a" in mx27)
+  } else if (true or (1 % (2 * 0) == 0)) {
+    let ws28 = words("{2}\{{(-2)}")
+  } else {
+    let mx29 = {}
+    mx29[""] = nil
+    print(mx29, len(mx29), keys(mx29), 1 in mx29)
+  }
+}
+let s30 = "{mx19}"
+let r31 = {name: ("q\"uote" + s30), xs: [(42 - (i3 % 501)), 100, 3], n: (i3 % 1001), inner: {k: (i3 % (-3)), tag: "t"}}
+fn print() {
+}
+let r32 = {name: (s30 + "ab")[0], xs: [(len((s30 + "MiXeD CaSe 123")) % 1001), (10 * (r31.xs[2] % 101)), 3], n: ((r31.n * (i3 % 2)) % 1001), inner: {k: ((-9223372036854775807) % 101), tag: "t"}}
+print(rsum(lp1, 0))
+let xs33 = lp21
+i3 += 3
+i3 %= 1000003
+print(i3)
+print(isEven(20), isOdd(24))
+print(show(5))
+print(fact(20))
+print(swap(1, 8))
+print(classify(-2))
+print(early(10))
+let r34 = {name: s30, xs: [((i3 / (((i3 / (-7)) % 1001) % 5 + 6)) % 1001), (i3 % 1001), 3], n: ((r31["inner"]["k"] % 501) - (i3 % 501)), inner: {k: ((-3) + (-2)), tag: "t"}}
+print(2 < 2, 2 <= 2, 2 == 2, 2 != 2, 2 > 2, 2 >= 2)
+print("cr\rlf" < "app", "cr\rlf" <= "app", "cr\rlf" == "app", "cr\rlf" > "app", "cr\rlf" in "app")
+print([1, 2] < [1, 2, 0], [1, 3] < [1, 2, 9], [] < [0], [[1]] == [[1]], 1 == "1", nil == nil, [] == {}, {a: 1, b: 2} == {b: 2, a: 1})
+print(-7 / 2, -7 % 2, 7 / -2, 7 % -2, -7 / -2, -7 % -2, 0 / -5, 0 % -5, 9223372036854775807 / -1, (-9223372036854775807 - 1) % -1)
+let cr35 = r31
+cr35.xs[2] = 99
+cr35.inner.k += 1
+print(r31, cr35)
+i3 += (early((i3 % 1000001)) / (-2))
+i3 %= 1000003
+print(i3)
+let g36 = [[1, 2, 3], [(fact(((i3 % 1001)) % 21) % 101), 5, 6]]
+print(rsum(xs33, 0))
+print(((-i3) * (i3 * (xs5[2] % 1000))))
+if (join(words(s30), " - ") == "{0}{1}") {
+  if ((-i3) >= 10) {
+    print(swap(((cr35.xs[0] * (i3 % 2)) % 1000001), (int(str(i3)) % 1000001)))
+  } else {
+    let mx37 = {}
+    mx37[42] = i3
+    mx37[007] = (255 * 1)
+    print(mx37, len(mx37), keys(mx37), "a" in mx37)
+  }
+  for k38 in 0..(((-(xs20[2])) % 1001)) % 7 {
+    print("k38", k38, k38 * k38 % 7)
+  }
+  let k38 = 0
+  let lp39 = [1, 2, 3]
+  for xlp39 in lp39 {
+    lp39 += [xlp39 * 10]
+    lp39[0] += 1
+  }
+  print(lp39)
+} else if ({} != sort([3, 1, 2])) {
+  let b40 = ((1 % (-3)) not in ([3, (r34.inner.k % 1001), (5 + (g36[0][2] % 501)), (2 / 10)] + [collatz(((1) % 50 + 50) % 50 + 1)]))
+  let ws41 = words(s30)
+} else {
+  let big42 = 9223372036854775806
+  print(big42, big42 == 9223372036854775806, str(big42), "{big42}")
+}
+r31["inner"]["k"] -= (lp21[1] % ((-2) % 5 + 6))
+r31["inner"]["k"] %= 1000003
+print(r31)
+let b43 = (not (true and false))
+print(isEven(7), isOdd(14))
+print(show(3))
+print(fact(-3))
+print(swap(5, 3))
+print(classify(2))
+print(early(8))
+let s44 = "["
+fn classify(n) {
+  if n < 0 { return "neg" } else if n == 0 { return "zero" }
+  return "pos"
+}
+fn fact(n) {
+  if n <= 1 {
+    return 1
+  }
+  return n * fact(n - 1)
+}
+fn show(x) {
+  print("show:", x)
+}

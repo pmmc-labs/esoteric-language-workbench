@@ -1,0 +1,2 @@
+fn get(xs, i) { return xs[i] }
+print(get([1], 0) else 0)

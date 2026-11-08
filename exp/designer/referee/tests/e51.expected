@@ -1,0 +1,2 @@
+e51.ditto:1:11: fault: string index must be an int, got bool
+exit: 1

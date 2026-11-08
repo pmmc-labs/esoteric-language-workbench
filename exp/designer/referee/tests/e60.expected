@@ -1,0 +1,2 @@
+e60.ditto:1:7: fault: int: expected a string, got int
+exit: 1

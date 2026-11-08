@@ -1,0 +1,2 @@
+s6694.ditto:32:1: error: print takes 0 arguments, got 4
+exit: 2

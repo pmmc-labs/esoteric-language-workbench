@@ -1,0 +1,27 @@
+fn clean(word) {
+  let out = ""
+  for c in lower(word) {
+    if c >= "a" and c <= "z" or c == "'" { out += c }
+  }
+  return out
+}
+
+let counts = {}
+let total = 0
+for raw in words(read()) {
+  let w = clean(raw)
+  if w != "" {
+    counts[w] = (counts[w] else 0) + 1
+    total += 1
+  }
+}
+
+let best = ""
+for w in counts {
+  if best == "" or counts[w] > counts[best] { best = w }
+}
+print("{total} words, {len(counts)} different")
+print("most common: \"{best}\", {counts[best]} times")
+for w in counts {
+  if counts[w] > 1 { print("{w}: {counts[w]}") }
+}

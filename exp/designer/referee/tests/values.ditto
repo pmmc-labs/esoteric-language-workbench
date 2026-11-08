@@ -1,0 +1,25 @@
+// the core rule: copies, never sharing
+let a = [1, 2, 3]
+let b = a
+b[0] = 99
+print(a, b)
+let m = {xs: [1], n: {k: 1}}
+let saved = m
+m.xs += [2]
+m.n.k = 5
+m["new"] = nil
+print(m)
+print(saved)
+fn bump(xs) {
+  xs[0] += 1
+  return xs
+}
+let c = [10]
+print(bump(c), c)
+for x in c { c += [x] }
+print(c)
+print({b: 1, a: 2} == {a: 2, b: 1}, [1] == [1], 1 == "1", nil == nil, [] != {})
+print(["a\"b\n", "\t\\"], "a\"b", {1: true, "x": [nil]})
+print(str([1, "x"]) + "!", "{[1, "y"]}|{"z"}|\{\}")
+print()
+print(len("héllo"), len([1, 2]), len({}))

@@ -1,0 +1,2 @@
+e59.ditto:1:10: fault: cannot iterate over int
+exit: 1

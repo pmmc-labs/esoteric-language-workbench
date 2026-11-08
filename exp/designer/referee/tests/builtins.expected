@@ -1,0 +1,11 @@
+[1, 2, 3] ["a", "b"] [[1, "b"], [1, "z"], [2, "a"]]
+el [] ["a", "", "b"] x-y
+abc! ABC [] nil12 0
+ih
+11
+12
+13
+z
+y
+builtins.ditto:10:7: fault: cannot use < on string and int
+exit: 1

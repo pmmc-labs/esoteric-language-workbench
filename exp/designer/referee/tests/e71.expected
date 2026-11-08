@@ -1,0 +1,2 @@
+e71.ditto:2:4: fault: cannot assign into int
+exit: 1

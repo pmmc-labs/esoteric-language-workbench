@@ -1,0 +1,2 @@
+else-nolookup.ditto:2:19: error: else needs a lookup on its left: an index, a field or int()
+exit: 2

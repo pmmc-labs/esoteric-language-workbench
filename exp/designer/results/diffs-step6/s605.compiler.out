@@ -1,0 +1,2 @@
+s605.ditto:173:4: error: print is a builtin
+exit: 2

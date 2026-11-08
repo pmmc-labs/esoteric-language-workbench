@@ -1,0 +1,27 @@
+fn quicksort(xs) {
+  if len(xs) < 2 { return xs }
+  let pivot = xs[0]
+  let smaller = []
+  let larger = []
+  for i in 1..len(xs) {
+    if xs[i] < pivot { smaller += [xs[i]] } else { larger += [xs[i]] }
+  }
+  return quicksort(smaller) + [pivot] + quicksort(larger)
+}
+
+fn insertion_sort(xs) {
+  for i in 1..len(xs) {
+    let j = i
+    while j > 0 and xs[j - 1] > xs[j] {
+      let t = xs[j]; xs[j] = xs[j - 1]; xs[j - 1] = t
+      j -= 1
+    }
+  }
+  return xs
+}
+
+let data = [31, 4, 15, 9, 26, 5, 35, 8, 97, 93, 2, 38, 46, 26, 43]
+print(quicksort(data))
+print(insertion_sort(data))
+print(data)                      // untouched: each function sorted a copy
+print(sort(data) == quicksort(data))
