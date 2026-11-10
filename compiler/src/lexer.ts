@@ -19,7 +19,7 @@ const isDigit = (c: string): boolean => c >= '0' && c <= '9';
 const isLetter = (c: string): boolean => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
 const isSpace = (c: string): boolean => c === ' ' || c === '\t' || c === '\r' || c === '\n';
 const isSigil = (c: string): boolean => c === '$' || c === '@' || c === '%';
-const PUNCT = '(),.;=';
+const PUNCT = '(),.;={}';
 
 const at = (s: State): string => s.src[s.i] ?? '';
 const pos = (s: State): Pos => ({ line: s.line, col: s.col });

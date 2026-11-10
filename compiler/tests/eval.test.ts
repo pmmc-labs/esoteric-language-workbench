@@ -30,3 +30,25 @@ test('a program that ends in a let has no value', () => {
 test('strings show in double quotes', () => {
     assert.equal(run('"hi"'), '"hi"');
 });
+
+test('a function captures the names bound where it is written, not later ones', () => {
+    assert.equal(run('let $x = 1; let $f = function () { $x }; let $x = 2; $f()'), '1');
+});
+
+test('a call binds its arguments to the parameters in order', () => {
+    assert.equal(run('function ($a, $b) { $b }(1, "two")'), '"two"');
+});
+
+test('a body with no value gives nil, and so does an empty body', () => {
+    assert.equal(run('function () {}()'), 'nil');
+    assert.equal(run('function () { let $y = 1 }()'), 'nil');
+});
+
+test('a function shows as <function>', () => {
+    assert.equal(run('function () { 1 }'), '<function>');
+});
+
+test('a wrong number of arguments is a fault', () => {
+    assert.throws(() => run('let $f = function ($a) { $a }; $f()'), (e: unknown) =>
+        e instanceof Failure && e.message === 'wrong number of arguments: want 1, got 0');
+});

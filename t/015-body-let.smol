@@ -1,0 +1,3 @@
+// A let inside a body binds for the rest of the body.
+let $f = function () { let $y = 5; $y };
+$f()

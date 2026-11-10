@@ -1,0 +1,2 @@
+// A function can be called where it is written.
+function ($x) { $x }(7)

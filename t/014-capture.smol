@@ -1,0 +1,5 @@
+// A function sees the names bound where it was written, not later ones.
+let $x = 1;
+let $f = function () { $x };
+let $x = 2;
+$f()

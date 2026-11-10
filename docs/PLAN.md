@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** step 0 is done. Next: step 1, closures, agreed and not started.
+**Progress:** steps 0 and 1 are done. Next: step 2, catchable faults, agreed and not started.
 
 ## Step 0 was built by a small-tier builder
 
@@ -73,13 +73,21 @@ to C (the calculator's route, with every cost above several times over).
 - Size: large, as written; built by a small-tier builder, as above.
   Referee: none.
 
-### 1. Closures (agreed)
+### 1. Closures (done)
 
-- Adds: `function (params) { ... }`, lexical capture, the trailing `%name`
-  parameter, and methods' receiver `self` (D15).
-- Tests: by hand.
+- Landed: function literals and calls, lexical capture, the arity check,
+  and a body's value. Golden tests 012 to 021, and unit tests in the parser
+  and the evaluator.
+- Differs from the plan as first written:
+  - `%name` waits for step 3. It collects the rest of the arguments into a
+    Hash, and Hash doesn't exist yet (LANGUAGE.md).
+  - `self` is an ordinary parameter for now. Its binding as the receiver
+    comes with dispatch in step 4 (D15).
+  - A function can't call itself by name, since a let binds after its value
+    is computed (DESIGN, default). Recursion goes through methods, in step 4.
 - Leaves out: anything that catches a fault.
-- Size: medium (the design is in DESIGN.md). Referee: none.
+- Size: medium, built by the same small-tier builder, with the defaults
+  listed in DESIGN.md. Referee: none.
 
 ### 2. Catchable faults (agreed)
 
@@ -140,4 +148,4 @@ to C (the calculator's route, with every cost above several times over).
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 1 |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 2 |

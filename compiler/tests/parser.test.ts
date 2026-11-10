@@ -28,6 +28,16 @@ test('a minus directly before a digit is part of the integer', () => {
     assert.deepEqual(parse('-5'), [{ kind: 'expr', expr: { kind: 'int', value: -5n } }]);
 });
 
+test('a function literal has its parameters and its body', () => {
+    assert.deepEqual(parse('function ($a, $b) { $a }'), [{ kind: 'expr', expr: {
+        kind: 'function', params: ['$a', '$b'], body: [{ kind: 'expr', expr: { kind: 'name', name: '$a' } }] } }]);
+});
+
+test('a function body may be empty, and a function can be called where it is written', () => {
+    assert.deepEqual(parse('function () {}()'), [{ kind: 'expr', expr: {
+        kind: 'call', fn: { kind: 'function', params: [], body: [] }, args: [] } }]);
+});
+
 test("a missing '=' is reported where it is", () => {
     assert.throws(() => parse('let $x 42'), at("expected '=' after $x, found 42", 1, 8));
 });
@@ -46,4 +56,20 @@ test('a sigil needs a name after it', () => {
 
 test('a plain name is not an expression statement on its own', () => {
     assert.throws(() => parse('x = 1'), at("expected ';' or the end of the program, found '='", 1, 3));
+});
+
+test('a parameter is listed once', () => {
+    assert.throws(() => parse('function ($a, $a) {}'), at('duplicate parameter $a', 1, 15));
+});
+
+test('a parameter is a name', () => {
+    assert.throws(() => parse('function (1) { 1 }'), at('expected a parameter name, found 1', 1, 11));
+});
+
+test("a function body ends with a '}'", () => {
+    assert.throws(() => parse('function () { 1'), at("expected ';' or '}', found the end of the program", 1, 16));
+});
+
+test('function is a keyword, so it is not a name', () => {
+    assert.throws(() => parse('let function = 1'), at("expected a name after 'let', found 'function'", 1, 5));
 });

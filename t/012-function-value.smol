@@ -1,0 +1,2 @@
+// A function is a value, and it prints as <function>.
+function ($x) { $x }

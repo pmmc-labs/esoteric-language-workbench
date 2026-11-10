@@ -1,0 +1,3 @@
+// A body whose last statement is a let has no value, so the call gives nil.
+let $f = function () { let $y = 1 };
+$f()

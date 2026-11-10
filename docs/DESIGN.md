@@ -39,11 +39,18 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   (default): the plan's `;` comments couldn't coexist with `;` separators.
 - **Calls and methods**: `f(a, b)`, `obj.m(a)`, `@a.push(x)` (D12).
 - **Bindings**: `let x = e` binds for the statements after it (default).
-- **Closures**: `function (params) { ... }`. A method's first parameter is
-  its receiver, `self` (D15). A trailing `%name` parameter collects the
-  remaining arguments into a Hash (default). A function's value is its
-  last expression (default). Parameters are names only: no prototypes or
-  signatures (default).
+- **Closures**: `function (params) { body }`, an expression (default).
+  Parameters are names, distinct, with no prototypes or signatures
+  (default). A function keeps the names bound where it is written, so a
+  later let is invisible to it (default; the association list makes that a
+  pointer). A body's value is its last statement if that is an expression,
+  and `nil` otherwise (default). A call must give as many arguments as there
+  are parameters (default). A method's first parameter is its receiver,
+  `self` (D15); until dispatch exists in step 4, `self` is an ordinary name.
+  A trailing `%name` parameter, which collects the remaining arguments into
+  a Hash, waits for Hash in step 3. A let binds after its value is computed,
+  so a function can't call itself by name (default); methods recurse
+  through dispatch (step 4).
 - **Truthiness**: `nil` and `false` are false; everything else is true
   (default).
 - **Output**: a program prints the value of its last statement, if that
@@ -51,9 +58,9 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   (default).
 - **Faults**: a fault is printed as `fault: MESSAGE` on stderr, and the
   program exits 1 (default). A syntax error is printed as
-  `FILE:LINE:COLUMN: MESSAGE` and also exits 1 (default). Step 0's faults
-  are an unbound name, a call of a non-function, and a method that isn't
-  found (default).
+  `FILE:LINE:COLUMN: MESSAGE` and also exits 1 (default). The faults so far
+  are an unbound name, a call of a non-function, a call with the wrong
+  number of arguments, and a method that isn't found (default).
 
 ## The core rule
 

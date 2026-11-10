@@ -1,0 +1,3 @@
+// A call binds the arguments to the parameters, in order.
+let $second = function ($a, $b) { $b };
+$second(1, "two")

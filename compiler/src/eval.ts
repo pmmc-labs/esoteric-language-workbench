@@ -1,17 +1,21 @@
 // Statements to a value, and values to text. Integers are unbounded (BigInt
 // on the host). Bindings are an association list: a let puts a new head on
-// it, so a later binding of the same name hides an earlier one, and the rest
-// of the program sees the newest.
+// it, so a later binding hides an earlier one. A function keeps the list as
+// it was where the function was written. Lists are never changed, so keeping
+// one is only keeping a pointer, and a later let is invisible to it.
 import type { Expr, Stmt } from './ast.ts';
 import { Failure } from './errors.ts';
+
+type Env = { readonly name: string; readonly value: Value; readonly next: Env } | null;
 
 export type Value =
     | { kind: 'int'; value: bigint }
     | { kind: 'str'; value: string }
     | { kind: 'nil' }
-    | { kind: 'bool'; value: boolean };
+    | { kind: 'bool'; value: boolean }
+    | { kind: 'fn'; params: readonly string[]; body: readonly Stmt[]; env: Env };
 
-type Env = { readonly name: string; readonly value: Value; readonly next: Env } | null;
+const NIL: Value = { kind: 'nil' };
 
 const fault = (message: string): never => {
     throw new Failure(message);
@@ -24,12 +28,23 @@ export const show = (v: Value): string =>
     v.kind === 'int' ? v.value.toString()
     : v.kind === 'str' ? `"${v.value}"`
     : v.kind === 'nil' ? 'nil'
+    : v.kind === 'fn' ? '<function>'
     : String(v.value);
 
 const constant = (name: 'nil' | 'true' | 'false'): Value =>
-    name === 'nil' ? { kind: 'nil' } : { kind: 'bool', value: name === 'true' };
+    name === 'nil' ? NIL : { kind: 'bool', value: name === 'true' };
 
 const values = (es: readonly Expr[], env: Env): Value[] => es.map(e => evalExpr(e, env));
+
+// A call, with the callee and the arguments already values. The arguments
+// bind to the parameters in order, on top of the list the function kept.
+const apply = (f: Value, args: Value[]): Value => {
+    if (f.kind !== 'fn') return fault(`not a function: ${show(f)}`);
+    if (args.length !== f.params.length)
+        return fault(`wrong number of arguments: want ${f.params.length}, got ${args.length}`);
+    const env = f.params.reduce<Env>((acc, name, i) => ({ name, value: args[i]!, next: acc }), f.env);
+    return run(f.body, env) ?? NIL;
+};
 
 const evalExpr = (e: Expr, env: Env): Value => {
     switch (e.kind) {
@@ -37,12 +52,10 @@ const evalExpr = (e: Expr, env: Env): Value => {
         case 'str': return { kind: 'str', value: e.value };
         case 'const': return constant(e.name);
         case 'name': return lookup(env, e.name) ?? fault(`unbound name: ${e.name}`);
+        case 'function': return { kind: 'fn', params: e.params, body: e.body, env };
         case 'call': {
-            // The arguments are evaluated before the fault, as a call would
-            // evaluate them. Nothing is callable yet: closures are step 1.
             const fn = evalExpr(e.fn, env);
-            values(e.args, env);
-            return fault(`not a function: ${show(fn)}`);
+            return apply(fn, values(e.args, env));
         }
         case 'method': {
             // No value has methods yet: dispatch is step 4.

@@ -1,0 +1,3 @@
+// Only the last statement of a body is its value.
+let $f = function () { 1; 2 };
+$f()

@@ -7,6 +7,7 @@ export type Expr =
     | { kind: 'str'; value: string }
     | { kind: 'const'; name: 'nil' | 'true' | 'false' }
     | { kind: 'name'; name: string }
+    | { kind: 'function'; params: string[]; body: Stmt[] }
     | { kind: 'call'; fn: Expr; args: Expr[] }
     | { kind: 'method'; recv: Expr; name: string; args: Expr[] };
 

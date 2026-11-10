@@ -1,0 +1,4 @@
+// Functions take functions as arguments, and calls nest.
+let $id = function ($x) { $x };
+let $twice = function ($f, $x) { $f($f($x)) };
+$twice($id, "hi")
