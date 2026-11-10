@@ -1,0 +1,2 @@
+// A call of something that isn't a function is caught like any other fault.
+catch(function () { 42(1) })

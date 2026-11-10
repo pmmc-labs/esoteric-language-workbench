@@ -52,3 +52,33 @@ test('a wrong number of arguments is a fault', () => {
     assert.throws(() => run('let $f = function ($a) { $a }; $f()'), (e: unknown) =>
         e instanceof Failure && e.message === 'wrong number of arguments: want 1, got 0');
 });
+
+test('catch gives nil when the function raises no fault', () => {
+    assert.equal(run('catch(function () { 1 })'), 'nil');
+});
+
+test('catch gives the message of a fault raised by the function, as a string', () => {
+    assert.equal(run('catch(function () { $nope })'), '"unbound name: $nope"');
+});
+
+test('a fault in the call catch makes is caught too', () => {
+    assert.equal(run('catch(function ($a) { $a })'), '"wrong number of arguments: want 1, got 0"');
+});
+
+test('a fault in the argument to catch is not caught', () => {
+    assert.throws(() => run('catch(42)'), (e: unknown) =>
+        e instanceof Failure && e.message === 'not a function: 42');
+});
+
+test('catch itself takes exactly one argument', () => {
+    assert.throws(() => run('catch()'), (e: unknown) =>
+        e instanceof Failure && e.message === 'wrong number of arguments: want 1, got 0');
+});
+
+test('a nested catch catches its own fault, and the outer one sees no fault', () => {
+    assert.equal(run('catch(function () { catch(function () { $nope }) })'), 'nil');
+});
+
+test('catch is an ordinary name, so a let can shadow it', () => {
+    assert.equal(run('let catch = 5; catch'), '5');
+});

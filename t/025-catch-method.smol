@@ -1,0 +1,2 @@
+// A method that isn't found is a fault, so catch gives its message.
+catch(function () { 42.size() })

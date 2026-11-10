@@ -92,8 +92,12 @@ Built in:
 - `opaque_instance_set_class(instance, class)`: sets an instance's class
   slot, so SMOL source can make `Class` an instance of itself (D19). The
   name is a default.
-- `catch(closure)`: runs the closure, and returns the fault's message, or
-  `nil` (D17).
+- `catch(closure)`: calls the closure with no arguments, and returns the
+  fault's message as a string, or `nil` if the call raised no fault (D17).
+  A fault in the argument itself, such as a value that isn't a function, is
+  not caught (default). `catch` is bound in the starting environment, so a
+  let can shadow it (default). Built-ins print as `<function>`, as closures
+  do (default).
 - `isa` and `can`, as methods on `Object` (D18).
 
 Everything else is SMOL source (D19).

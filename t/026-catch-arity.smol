@@ -1,0 +1,2 @@
+// The call catch makes has no arguments, so a function that takes one faults.
+catch(function ($a) { $a })

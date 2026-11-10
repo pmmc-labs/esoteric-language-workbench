@@ -1,0 +1,2 @@
+// catch gives the message of a fault the function raises, as a string.
+catch(function () { $nope })

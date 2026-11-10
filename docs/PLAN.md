@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 and 1 are done. Next: step 2, catchable faults, agreed and not started.
+**Progress:** steps 0 to 2 are done. Next: step 3, Scalar, Hash and Array, agreed and not started.
 
 ## Step 0 was built by a small-tier builder
 
@@ -89,12 +89,21 @@ to C (the calculator's route, with every cost above several times over).
 - Size: medium, built by the same small-tier builder, with the defaults
   listed in DESIGN.md. Referee: none.
 
-### 2. Catchable faults (agreed)
+### 2. Catchable faults (done)
 
-- Adds: the built-in `catch(closure)` (D17), which returns the fault's
-  message, or `nil`.
-- Tests: by hand, in the shape of the sketch's `fails_ok`.
-- Size: medium. Referee: none.
+- Landed: the built-in `catch(closure)` (D17), bound in the starting
+  environment. It calls the closure with no arguments, and returns the
+  fault's message as a string, or `nil`. Golden tests 022 to 029, and unit
+  tests in the evaluator.
+- Differs from the plan as first written:
+  - The sketch's `fails_ok` matches a regular expression. SMOL has none
+    (D13), so the tests compare the whole message. Step 4's message for a
+    missing method is the one that has to be compared, and it is `no method
+    found for NAME on VALUE`, the wording of step 0's fault.
+  - A fault in `catch`'s own argument, such as a value that isn't a function,
+    is not caught (DESIGN, default). Only a fault in the call it makes is.
+- Leaves out: anything that returns a fault as a value other than its message.
+- Size: medium, built by the same small-tier builder. Referee: none.
 
 ### 3. Scalar, Hash and Array (agreed)
 
@@ -148,4 +157,4 @@ to C (the calculator's route, with every cost above several times over).
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 2 |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 3 |

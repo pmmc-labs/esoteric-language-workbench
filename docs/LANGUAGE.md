@@ -48,6 +48,12 @@ parameters.
 
 `x.name(a, b)` calls the method `name` on `x`. No value has methods yet.
 
+`catch(f)` is a built-in function, bound before the program starts, so a
+`let` can shadow it. It calls `f` with no arguments. If that call raises a
+fault, `catch` returns the fault's message as a string; otherwise it returns
+`nil`. A fault in the argument itself, such as a value that isn't a function,
+is not caught. `catch` takes exactly one argument.
+
 A parameter that collects the remaining arguments into a Hash, written
 `%name`, waits for Hash (step 3).
 
@@ -65,4 +71,6 @@ A syntax error is reported as `FILE:LINE:COLUMN: MESSAGE` on stderr, and the
 program exits 1. A fault is `fault: MESSAGE` on stderr, and the program exits
 1; anything printed before it is kept. The faults so far are an unbound name,
 a call of something that isn't a function, a call with the wrong number of
-arguments, and a method call, since no value has methods yet.
+arguments, and a method call, since no value has methods yet. A fault that
+`catch` takes is not a fault of the program: the program carries on after the
+call to `catch`.

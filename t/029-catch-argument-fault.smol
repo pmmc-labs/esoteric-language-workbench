@@ -1,0 +1,2 @@
+// A fault in catch's own argument is not caught: 42 isn't a function.
+catch(42)

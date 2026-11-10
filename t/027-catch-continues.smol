@@ -1,0 +1,3 @@
+// A caught fault leaves the rest of the program running.
+let $message = catch(function () { $nope });
+$message

@@ -1,0 +1,2 @@
+// An inner catch takes the fault, so the outer function raises none.
+catch(function () { catch(function () { $nope }) })

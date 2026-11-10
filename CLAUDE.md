@@ -9,17 +9,18 @@ needs. It is a tree-walking interpreter in TypeScript, run by Node
 
 ## Status
 
-Steps 0 and 1 of [`docs/PLAN.md`](docs/PLAN.md) are done. Step 0: a
+Steps 0 to 2 of [`docs/PLAN.md`](docs/PLAN.md) are done. Step 0: a
 lexer, a parser, an evaluator and a runner for integers, strings, `nil`,
 `true`, `false`, names with sigils, `let`, and `//` comments. Step 1:
 function literals, calls with an arity check, lexical capture, and a body's
-value. Method calls still fault: dispatch is step 4. Golden tests 000 to 021
-and 22 unit tests pass, and `make check` is clean. The decisions are D5 to
-D7 (the process), D8 to D13 (User: the scope, the object model and the
-syntax), and D14 to D22 (User: the implementation and the open questions,
-each taken as recommended). Steps 0 and 1 were built by a small-tier
-builder, as the person accepted (PLAN.md). The `%name` parameter waits for
-Hash (step 3). **Next:** step 2, catchable faults, agreed and not started.
+value. Step 2: `catch`, a built-in that returns a caught fault's message as a
+string, or `nil`. Method calls still fault: dispatch is step 4. Golden tests
+000 to 029 and 32 unit tests pass, and `make check` is clean. The decisions
+are D5 to D7 (the process), D8 to D13 (User: the scope, the object model and
+the syntax), and D14 to D22 (User: the implementation and the open questions,
+each taken as recommended). Steps 0 to 2 were built by a small-tier builder,
+as the person accepted (PLAN.md). The `%name` parameter waits for Hash
+(step 3). **Next:** step 3, Scalar, Hash and Array, agreed and not started.
 
 ## Read first, in this order
 
