@@ -1,0 +1,2 @@
+// Only the branch taken is run. The other block would fault if it were called.
+Array.new(true.ifFalse(function () { $nope }), false.ifTrue(function () { $nope }))

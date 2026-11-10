@@ -1,0 +1,11 @@
+// The sketch's class_precedence_list assertions: a class, then its superclasses
+// up to Object. Foo is object 7, its instance 8, Bar 9 and its instance 10.
+let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(
+    "foo", function (self) { "Foo->foo" },
+    "bar", function (self) { "Foo->bar" }));
+let $iFoo = $Foo.new();
+let $Bar = Class.new("$name", "Bar", "$superclass", $Foo, "%methods", Hash.new(
+    "bar", function (self) { "Bar->bar" },
+    "baz", function (self) { "Bar->baz" }));
+let $iBar = $Bar.new();
+Array.new(Class.class_precedence_list(), Object.class_precedence_list(), $Foo.class_precedence_list(), $Bar.class_precedence_list())

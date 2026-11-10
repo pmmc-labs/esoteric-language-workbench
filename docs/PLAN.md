@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class` and `Object`. 5b (`Array` and `Hash` as classes) and 5c (`class_precedence_list`) are open, and each needs a decision first.
+**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class`, `Object`, and the Boolean classes (5c, D27, D28). 5b (`Array` and `Hash` as classes) is open, and needs a decision before it is built.
 
 ## Step 0 was built by a small-tier builder
 
@@ -182,11 +182,11 @@ points the plan left open.
 **5a, done.** The prelude in `lib/prelude.smol` runs before every program. It
 makes `Class` (object 1) and `Object` (object 2), with `name`, `superclass`
 and `get_method` on Class, and `new`, `id` and `class` on Object, plus the
-setter `opaque_instance_set_class` (D19). The prelude binds only `Class` and
-`Object`. Golden tests 085 to 093 take the
+setter `opaque_instance_set_class` (D19). The prelude binds the bootstrap's names: `Class`, `Object`, `Boolean`, `True`,
+`False` and `UndefinedObject`. Golden tests 085 to 093 take the
 sketch's assertions, each with its expected value from the sketch's own `is`
-and `is_deeply` lines, except the four about `class_precedence_list`. The
-programs' own objects start at 3, so the step 4 ids moved by two (D25).
+and `is_deeply` lines, except the four about `class_precedence_list`, which 095 takes. The
+programs' own objects started at 3 (D25), which D28 moves to 7.
 
 **5b, proposed, not agreed.** `Array` and `Hash` as SMOL classes, with their
 methods in class method tables. A method call on a host value finds no class
@@ -203,16 +203,12 @@ dispatch routes; and a class field on every array and hash value, which keeps
 the class in two places. Cost: two more bootstrap objects, so user ids shift
 again (see 5c). Golden tests 030 to 049 do not change, since their outputs don't.
 
-**5c, waiting on a decision.** Conditionals are methods of booleans, with a
-Boolean class (D27). Every class is an object with an id, so the shape moves
-the ids. Options: (A) Boolean as the abstract parent of True and False, with
-UndefinedObject for nil, as Smalltalk has them; user objects then start at 7.
-(B) one Boolean class, with the branch done by one host primitive; user objects
-start at 4. (C) the boolean methods on Object, with no new class; user objects
-stay at 3, but there is no Boolean class. Recommended: A, since it has the
-structure asked for. It revises D25's numbers. The sketch's numbers are a guide,
-not the spec (D9). `class_precedence_list` then stops at `nil` by asking it
-`isNil()`, which UndefinedObject answers.
+**5c, done.** Conditionals are methods of booleans, with a Boolean class (D27).
+Option A (D28): `Boolean`, `True`, `False` and `UndefinedObject`, the last for
+`nil`. `class_precedence_list` stops where the superclass is `nil`, by asking it
+`isNil()`, and branches with a boolean's method. Golden tests 095 to 097 take
+the sketch's cpl assertions, the conditionals and the untaken branch. The
+registry that gives the three constants their classes is D29.
 
 - Adds: `Class` and `Object` as SMOL source, with `new`, `name`,
   `superclass`, `class_precedence_list`, `get_method`, `id` and `class`,

@@ -156,7 +156,7 @@ step 4, when there was no class to hold them; doing 5b and 5c in one step,
 since each needs a decision of its own.
 
 **D25. Every program runs a prelude first, so `Class` is object 1, `Object` is
-object 2, and a program's own objects start at 3.** *(User: "D25 is fine".)*
+object 2, and a program's own objects start at 3.** *(User: "D25 is fine". D28 revises its numbers.)*
 The sketch
 numbers its objects this way, and the layout puts the prelude in every
 program. The consequence is that the id expectations of golden tests 050 to
@@ -180,6 +180,25 @@ decided. Its classes, and how they are numbered, are open (PLAN, 5c).
 Rejected: a conditional special form, which would add grammar the Smalltalk
 shape doesn't need; and a builtin that picks between two functions, which
 would make the branch a host operation, not a method.
+
+**D28. The bootstrap also makes Boolean, True, False and UndefinedObject, so a
+program's own objects start at 7.** *(User: "go with option A".)* Boolean is
+the abstract parent of True and False, and UndefinedObject is nil's class, as
+Smalltalk has them. The sketch's numbers are a guide, not the spec (D9), so
+they move: the sketch's Foo is 7, not 3. Rejected: option B, one Boolean class
+with the branch done by a host primitive (user objects at 4), which moves the
+numbers too; and option C, the boolean methods on Object with no new class
+(user objects at 3), which gives no Boolean class, and the person asked for one.
+
+**D29. A boolean or nil takes its methods from its class, through a registry
+that `set_primitive_class` fills.** *(default: the step 5c builder's choice;
+the shape is the person's, D27, and this is the mechanism it needs.)* The host
+keeps a registry from `true`, `false` and `nil` to a class. A method call on
+one of them walks that class's chain, as for an instance (D10). Only those
+three take a class so far; the other primitives come with 5b, which is still
+open. Rejected: a host table of boolean methods, which would keep the
+conditionals off the Boolean class; and a class held on each value, which the
+constants can't carry.
 
 ## Project
 

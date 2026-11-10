@@ -214,3 +214,13 @@ test("opaque_instance_set_class changes an instance's class, and only an instanc
     assert.equal(run('let $c = create_opaque_instance(nil, Hash.new()); opaque_instance_set_class($c, $c); opaque_instance_class($c)'), '<object 1>');
     faults('opaque_instance_set_class(1, nil)', 'not an opaque instance: 1');
 });
+
+test('set_primitive_class takes a class for true, false or nil only, and the class must be an instance', () => {
+    faults('set_primitive_class(1, create_opaque_instance(nil, Hash.new()))', 'only true, false and nil take a class: 1');
+    faults('set_primitive_class(nil, 1)', 'not an opaque instance: 1');
+});
+
+test('without a class, a method on nil or a boolean is a fault', () => {
+    faults('nil.foo()', 'no method found for foo on nil');
+    faults('true.foo()', 'no method found for foo on true');
+});

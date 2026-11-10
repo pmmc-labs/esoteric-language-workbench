@@ -1,16 +1,26 @@
 // The bootstrap of the object model, in SMOL, after the Perl sketch
-// (docs/prior-art/MiniMetaModel.pl). Every program runs this first, so Class
-// is object 1 and Object is object 2, and a program's own objects count from
-// 3, as they do in the sketch.
+// (docs/prior-art/MiniMetaModel.pl). Every program runs this first. Each class
+// made here is an object with an id, so the numbers run: Class is 1, Object is
+// 2, Boolean 3, True 4, False 5 and UndefinedObject 6. A program's own objects
+// start at 7 (D28, which revises D25).
 
 // Class comes first, so it is object 1. The built-in create_class makes it, and
-// it is made an instance of itself next (D19).
+// it is made an instance of itself next (D19). Its class_precedence_list stops
+// where the superclass is nil, by asking it isNil, and branches on the answer
+// with a boolean's method (D27).
 let Class = create_class(Hash.new(
     "$name", "Class",
     "%methods", Hash.new(
         "name", function (self) { opaque_instance_attrs(self).get("$name") },
         "superclass", function (self) { opaque_instance_attrs(self).get("$superclass") },
-        "get_method", function (self, $label) { opaque_instance_attrs(self).get("%methods").get($label) })));
+        "get_method", function (self, $label) { opaque_instance_attrs(self).get("%methods").get($label) },
+        "class_precedence_list", function (self) { self.cpl_into(Array.new()) },
+        "cpl_into", function (self, $acc) {
+            $acc.push(self);
+            self.superclass().isNil().ifTrueFalse(
+                function () { $acc },
+                function () { self.superclass().cpl_into($acc) })
+        })));
 
 opaque_instance_set_class(Class, Class);
 
@@ -27,7 +37,44 @@ let Object = create_class(Hash.new(
     "%methods", Hash.new(
         "new", function (self, %attrs) { create_opaque_instance(self, %attrs) },
         "id", function (self) { opaque_instance_id(self) },
-        "class", function (self) { opaque_instance_class(self) })));
+        "class", function (self) { opaque_instance_class(self) },
+        "isNil", function (self) { false })));
+
+// Conditionals are methods of booleans, as in Smalltalk (D27). Boolean is the
+// parent of True and False, which answer the conditionals. A block is a
+// function of no arguments, and only the branch taken is run.
+let Boolean = create_class(Hash.new(
+    "$name", "Boolean",
+    "$superclass", Object,
+    "%methods", Hash.new(
+        "not", function (self) { self.ifTrueFalse(function () { false }, function () { true }) })));
+
+let True = create_class(Hash.new(
+    "$name", "True",
+    "$superclass", Boolean,
+    "%methods", Hash.new(
+        "ifTrue", function (self, $block) { $block() },
+        "ifFalse", function (self, $block) { nil },
+        "ifTrueFalse", function (self, $whenTrue, $whenFalse) { $whenTrue() })));
+
+let False = create_class(Hash.new(
+    "$name", "False",
+    "$superclass", Boolean,
+    "%methods", Hash.new(
+        "ifTrue", function (self, $block) { nil },
+        "ifFalse", function (self, $block) { $block() },
+        "ifTrueFalse", function (self, $whenTrue, $whenFalse) { $whenFalse() })));
+
+let UndefinedObject = create_class(Hash.new(
+    "$name", "UndefinedObject",
+    "$superclass", Object,
+    "%methods", Hash.new(
+        "isNil", function (self) { true })));
+
+// The three constants take their classes from here on (D29).
+set_primitive_class(true, True);
+set_primitive_class(false, False);
+set_primitive_class(nil, UndefinedObject);
 
 // Class inherits from Object. This is the last statement, and an expression,
 // so it binds no name: a program can't see the bootstrap. The driver prints

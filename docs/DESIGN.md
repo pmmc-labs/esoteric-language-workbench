@@ -112,7 +112,7 @@ As built in step 4:
 
 Each new instance takes the next id from one counter. The prelude runs
 first, so `Class` is 1 and `Object` is 2, and a program's own objects start
-at 3, as in the sketch (D25). Only `create_opaque_instance` and
+at 7, after the six bootstrap objects (D25, revised by D28). Only `create_opaque_instance` and
 `create_class` take ids. The counter belongs to one run of a program, so
 each run starts again at 1 before its prelude. An
 instance holds its attrs Hash by reference; `create_class` builds a new
@@ -152,6 +152,11 @@ Built in:
   which a method call consults (step 3). Step 4 leaves the tables as they
   are. Step 5 replaces them with class method tables (D10, D16), when it
   makes `Array` and `Hash` SMOL classes that hold them.
+
+- Booleans and nil take their methods from their classes (D27, D29), through
+  a registry that `set_primitive_class` fills. A method call on one of them
+  walks that class's chain, as for an instance. Only the three constants take
+  a class so far.
 
 Everything else is SMOL source (D19).
 
