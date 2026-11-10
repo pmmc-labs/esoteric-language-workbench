@@ -1,28 +1,28 @@
-# [name]
+# SMOL
 
-[One paragraph: what the language is, what it runs on, what the compiler
-is written in and what it should become. Two or three sentences.]
+SMOL is a small JavaScript-like language for personal experimentation with
+bootstrapped object meta-models, after the Perl sketch in
+`docs/prior-art/MiniMetaModel.pl`. It is not general-purpose and not for
+speed: it exists to find the smallest runtime a bootstrapped meta-model
+needs. Nothing is built yet. The implementation is open (DESIGN.md, open
+question 1), and the recommendation is a TypeScript interpreter.
 
 ## Status
 
-[A running paragraph of what's built, by plan step and decision number,
-updated every time a step lands. This is the handoff between sessions:
-a new session reads it before anything else. Keep it as one paragraph
-per era, dense, with golden test numbers and `Dn` references, so a
-claim can be checked against a test and a decision. Say what's **Next**
-at the end, and what's a candidate but not agreed. The workbench's own:]
-
-**Step 0 of [`docs/PLAN.md`](docs/PLAN.md) is done**: a reader with
-positions, a program of one integer compiled to C and linked with
-`runtime/rt.c` (D2), integers of 63 bits, a compile error for a literal
-past them as a unit test (D4), golden tests 000 and 001 by hand, and the
-mechanical checks, `t/checks.py` (D5, D7). **Next:** step 1, to be
-proposed; nothing is agreed beyond D1 and D2.
+Nothing in SMOL runs yet. The decisions are D5 to D7 (the process) and D8
+to D13 (User: the scope, the object model and the syntax). The
+calculator's D1 to D4 were removed. The calculator's compiler, runtime and
+golden tests 000 and 001 are still in the tree, from the template, and go
+when the implementation is picked. **Next:** the open questions in
+[`docs/DESIGN.md`](docs/DESIGN.md), which the person picks; then step 0 in
+[`docs/PLAN.md`](docs/PLAN.md), which is proposed and not agreed. A larger
+model should confirm that proposal first (PLAN.md's note on sizes).
 
 ## Read first, in this order
 
 1. [`docs/LANGUAGE.md`](docs/LANGUAGE.md): the language as it is, every
-   form and builtin, for someone writing programs in it.
+   form and builtin, for someone writing programs in it. Still the
+   calculator's until step 0 lands.
 2. [`docs/DESIGN.md`](docs/DESIGN.md): the language and implementation as
    agreed. **(open)** marks proposals that haven't been confirmed.
 3. [`docs/PLAN.md`](docs/PLAN.md): the build order.
@@ -37,19 +37,19 @@ proposed; nothing is agreed beyond D1 and D2.
 - **Aggressively simple** is the main design rule. When a feature needs
   machinery, say so and offer to cut or change it.
 - **Propose before building** any change to language semantics, a new
-  special form or builtin, a change to [the core rule], or anything
-  marked (open). Give options and a recommendation. Record the outcome in
-  `docs/DECISIONS.md` (who decided, why, what was rejected) and update
-  `docs/DESIGN.md`.
+  special form or builtin, a change to the core rule (DESIGN.md), or
+  anything marked (open). Give options and a recommendation. Record the
+  outcome in `docs/DECISIONS.md` (who decided, why, what was rejected) and
+  update `docs/DESIGN.md`.
 - When a special form or builtin is added or changes, update
   `docs/LANGUAGE.md` (no tables there), and the guide where it shows it.
-- Keep a working compiler with passing tests at the end of every step
+- Keep a working interpreter with passing tests at the end of every step
   (Ghuloum). Each step adds golden tests.
 - **Examples bend to the language, not the other way round.** When an
-  example needs something the compiler or runtime doesn't do, change the
-  example, or leave it out; don't add to the language to make it pass.
+  example needs something the runtime doesn't do, change the example, or
+  leave it out; don't add to the language to make it pass.
 - Verify a reported misbehavior against an independent implementation
-  before calling it a bug.
+  before calling it a bug. The Perl sketch is one, for the meta-model.
 - When a change moves an expected output that a model in `t/models/`
   wrote, rerun the model; don't patch the file. A patched file leaves the
   model stale, and the next change finds the two disagreeing.
@@ -68,36 +68,26 @@ proposed; nothing is agreed beyond D1 and D2.
 ## Code style
 
 - [Indentation, line width, naming.]
-- [The compiler's shape. a64-slight's rule: pure functions over immutable
-  s-expressions, association lists for environments, no classes, so it
-  can be ported to the language itself line by line. Pick the shape that
-  makes self-hosting a translation rather than a rewrite.]
-- [Constraints the host platforms impose, as you learn them. Name the
-  symptom and the fix, so the lesson isn't relearned.] C doesn't order
-  a call's arguments: never pass a variable and a call that sets it in
-  the same argument list (a runtime function read `r` before the
-  builtin that set it under clang, and gcc hid it). The
-  cloud machine's `cc` is gcc; the Mac's is clang; run the suite with
-  `LANG_CC=clang` too before calling a runtime change done, and `make
-  sanitize`, which found the second one: a left shift of a negative
-  value is undefined before C23, so the tag multiplies instead. Clang
-  also stops at 256 levels of brackets, so a generated expression that
-  nests one level per term of a long chain won't compile (a model that
-  folds many terms folds them as a tree); the compiler itself nests one level per
-  operator, so a program that deep fails under clang too, and nothing
-  fixes that yet.
+- Pure functions over immutable data, association lists for environments,
+  no classes in the implementation, so the reader, parser and evaluator
+  can be ported to SMOL line by line. This is the workbench's default
+  (from a64-slight), not a decision yet. The object model itself is SMOL
+  source, not host code (D10).
+- Host constraints: none yet. The calculator's C lessons (argument order,
+  the clang bracket limit, a left shift of a negative value) are in git
+  history at `4f6563e`, for the day a C target comes back.
 - Comments explain why, not what.
 
 ## Toolchain
 
 - Node 22.18 or later (it runs the compiler's TypeScript as it is, so
   the compiler uses only erasable syntax: no parameter properties, no
-  enums) and a C compiler as `cc`.
+  enums). A C compiler as `cc` only if the implementation picks a C
+  target (DESIGN open 1).
 - [The machine cloud sessions develop on, and how a target that isn't
-  native runs there (cross-compile and an emulator, say), once there is
-  one.]
-- `t/run.sh t/000-int.lang` checks the setup; it should end
-  `1 tests, 0 failed`.
+  native runs there, once there is one.]
+- `t/run.sh t/000-int.lang` checks the setup for the calculator; it
+  changes with the implementation (PLAN.md, step 0).
 
 ## Layout
 
@@ -106,12 +96,15 @@ proposed; nothing is agreed beyond D1 and D2.
 | `bin/` | The driver |
 | `compiler/src/` | One file per pass: reader, expander, checker, codegen, targets, errors |
 | `compiler/tests/` | Unit tests, per pass |
-| `runtime/` | [C, assembly, whatever the language runs on] |
+| `runtime/` | [The host runtime, once there is one] |
 | `lib/` | The prelude, compiled into every program, and the libraries a program asks for |
 | `examples/` | Example programs; each with a `.expected` is a golden test |
 | `docs/guide/` | The guide; its code blocks are golden tests too |
+| `docs/prior-art/` | The Perl sketch the object model follows |
 | `t/` | Golden tests: `NNN-name.ext` + `NNN-name.expected`; `run.sh`; `models/`; `referee/` (an evaluator of the language from the decisions, run over every test by `checks.py`; the builder of a step doesn't read it); `data/` |
 | `build/` | Output (ignored) |
+
+The layout is the template's. It changes with the implementation pick.
 
 ## Commands
 
@@ -123,17 +116,11 @@ proposed; nothing is agreed beyond D1 and D2.
   files; `make commits` checks the subjects since origin/main; `make
   hooks` installs the commit-msg hook.
 - `make check`: `tsc --noEmit` (`npm install` once, for it).
-- `make sanitize`: the golden tests under UBSan and ASan, not part of
-  `make test` (it needs clang's sanitizer runtime).
-- `node bin/langc.ts -o out file.lang`: compile and link. It writes
-  `out.c` next to `out`. Exit codes: 0 ok, 1 compile error, 2 usage or
-  toolchain error, or a file it can't read or write; a fault in the
-  compiler itself is `langc: internal error: ...` with Node's stack.
-  `LANG_CC` overrides the C compiler.
-- [Environment variables a compiled program reads: the virtual clock,
-  the heap cap, record and replay, the scheduling seed, the GC stress
-  and poison knobs. `t/run.sh` sets the ones the tests assume.]
+- [Environment variables a SMOL program reads, once the runtime has any:
+  the virtual clock, the heap cap, the scheduling seed. `t/run.sh` sets
+  the ones the tests assume.]
 
 The runtime prints the program's value, then a newline, and exits 0. A
 fault is `fault: ...` on stderr and exit 1. The golden tests check
 stdout and stderr together, plus `exit: N` when the status isn't 0.
+This is the default proposed in `PLAN.md`, step 0, and isn't agreed.

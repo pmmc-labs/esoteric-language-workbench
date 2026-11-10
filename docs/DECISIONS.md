@@ -1,8 +1,8 @@
 # Decision log
 
 What was decided, why, and what was turned down, roughly in the order it
-came up. **User** means [the person] decided it; **default** means the
-agent proposed it and it wasn't explicitly discussed. Defaults are fair to
+came up. **User** means the person decided it; **default** means the agent
+proposed it and it wasn't explicitly discussed. Defaults are fair to
 revisit. Open questions are listed at the end of [`DESIGN.md`](DESIGN.md).
 
 An entry has: a number that's never reused, a one-line title in bold,
@@ -14,43 +14,60 @@ that changed it; the new entry says what it retires.
 Sections group entries by subject, not by time; a new entry goes in the
 section it belongs to. Number by time.
 
-The entries below are the workbench's own: a calculator, built to work
-the process out on. A language started from this template replaces
-them, keeping D5 to D7, which are the process.
+D1 to D4 were the calculator this template started as. They are removed
+now that the language is SMOL, and their numbers aren't reused. D5 to D7
+are the process and stay.
 
 ## Scope
 
-**D1. A calculator: integer expressions, compiled to a native binary
-that prints the value.** *(User: "let's make a small calculator language
-to work out these steps.")* The language exists to exercise the
-process: steps, models, checks. It grows only as far as that needs.
+**D8. SMOL is a small language for personal experimentation, to explore
+bootstrapping object meta-models.** *(User: "a small language called SMOL,
+which is just for personal experimentation ... a theoretical exercise to
+explore bootstrapping object meta models.")* The language grows only as
+far as the meta-model and the runtime it needs. Rejected: general-purpose
+use and high performance, both of which the user ruled out.
 
-**D2. The compiler is TypeScript run by Node as it is, and emits C.**
-*(Default)* C so step 0 runs wherever there's a C compiler; a native
-target through a target interface when something needs one. Node's
-type stripping, so there's no build step; the compiler uses only
-erasable syntax (no parameter properties, no enums).
+**D9. The object model borrows from Smalltalk and CLOS, and the Perl
+sketch is the guide, not the spec.** *(User: the sketch "was one of the
+first properly bootstrapped versions", and "I do not want to replicate
+the Perl, but I do want to use it as somewhat of a guide.")* The sketch is
+`docs/prior-art/MiniMetaModel.pl`. Rejected: replicating Perl.
 
-## Language
+## Object model
 
-## Language
+**D10. Every object is one opaque instance, and it dispatches its own
+methods.** *(User: "The `opaque_instance` structure, and the `Dispatchable`
+package should be one thing ... We do not need this promotion if the
+opaque_instance type can dispatch the method itself.")* An instance holds
+an id, a class and attributes. A method call looks the method up in the
+class's method table, then in each superclass in turn, and calls the
+closure it finds. Nothing is installed anywhere else, so the sketch's
+promotion of methods from meta space into user space goes. The sketch's
+`::` functions become built-ins of the runtime. Rejected: the promotion,
+which the user called an implementation detail of Perl packages.
 
-## Values and memory
+**D11. The primitive types are Scalar, Hash and Array, and methods are
+closures.** *(User: "The primitive data types are like Perl, ... Scalar,
+Hash and Array, ... along with closures for the methods.")* Sigils are
+part of a name and don't change with context, as in Perl 6, so `@a` and
+`$a` are different names. Rejected: Perl 5's context-dependent sigils.
 
-## Runtime
+## Syntax
 
-**D3. A fault ends the program: its message on stderr, exit 1, after
-whatever stdout had.** *(Default)* So a golden test checks a fault as
-two lines, the message and `exit: 1`.
+**D12. The syntax is JavaScript-like, and collection literals are
+constructor calls.** *(User: "something cleaner and more javascript like
+... converted into explicit `Array.new(...)` and `Hash.new(...)` calls, to
+make parsing less complicated ... `@array.push(...)`.")* So `[a, b]` is
+`Array.new(a, b)`, `{k => v}` is `Hash.new(...)`, and `push @array, x` is
+`@array.push(x)`. Rejected: Perl's bracket and `=>` literals and its
+list-operator calls, which the user wanted out of the parser.
 
-## Compiler
-
-**D4. A compile error can't be a golden test; it's a unit test.**
-*(Default)* `t/run.sh` calls a failed compile a failure, which is what
-it should be for a test that's meant to run. Messages and positions
-are checked in `compiler/tests/`. Rejected: a `; compile-error:` header
-line in a golden test; it would come when a language has enough
-compile errors to want it.
+**D13. No regular expressions, and no Perl features beyond what the
+meta-model needs.** *(User: "There is no need to support regular
+expressions or any other Perl features like that. We are just interested
+in the meta-model and the minimum features in the runtime needed to
+support it.")* Rejected: regular expressions and everything else the
+meta-model doesn't use.
 
 ## Project
 

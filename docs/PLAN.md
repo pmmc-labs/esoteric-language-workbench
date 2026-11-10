@@ -1,86 +1,134 @@
 # Plan
 
-Ghuloum's incremental approach: the compiler works and its tests pass at
-the end of every step, and each step adds one feature. Steps are sized to
-be a session or two each.
+SMOL's build order. **Nothing here is agreed.** It's a proposal: step 0
+waits on the implementation pick and the open questions in
+[`DESIGN.md`](DESIGN.md).
 
-**Progress:** step 0 is done, and so are the mechanical checks. Next: step 1, to be proposed.
+**Progress:** no SMOL step is built. The calculator's step 0 is still in
+the tree, from the template, and goes when the implementation is picked.
 
-Read [`DESIGN.md`](DESIGN.md) first. Where a step meets an **(open)**
-item, propose options to the user before building (see `CLAUDE.md`).
+**Sizes are a draft.** This was written by a small-tier model (Haiku 5.5).
+`docs/MODELS.md` says proposals are large-tier work, so a larger model
+should confirm this proposal and the Size lines before the person picks.
 
-## Proposed layout
+## Proposal: an interpreter, not a compiler
 
-[The tree as planned. `CLAUDE.md` has the layout as built; when they
-differ, this stays as a record of the plan.]
+Recommended: a tree-walking interpreter in TypeScript, run by Node. The
+reader, parser and evaluator are pure functions over immutable data, in
+the workbench's style.
+
+- The subject is runtime structure: instances, method tables that
+  change, closures, a class chain. A compiler to C has to build a heap, a
+  garbage collector, closure environments and a value encoding before the
+  first bootstrap test can pass. That is most of the work and none of the
+  subject.
+- Performance is out of scope (D8), so a compiler's main payoff is zero.
+- Node already provides a collector and closures, so the bootstrap runs
+  on a real object model without the plumbing.
+- The process still fits. Ghuloum's rule holds: step 0 runs end to end
+  (read, parse, evaluate, print), and each step adds one feature with its
+  golden tests.
+
+Costs:
+
+- `t/run.sh` changes shape. It runs the interpreter on each `.smol` file,
+  instead of compiling and running a binary. The rest of the golden
+  format stays: stdout and stderr together, `exit: N`, the watchdog.
+- The bootstrap sits on JavaScript's object model. A bootstrap all the way
+  down would be a later step: a SMOL evaluator written in SMOL. That is a
+  separate proposal, and the more interesting one.
+
+Alternatives:
+
+- **Bytecode VM.** An instruction set, an assembler, frames and a dispatch
+  loop, all to design. That's the work this experiment isn't about. Worth
+  proposing only if the VM's own state should be modelled with the same
+  objects.
+- **Compile to JavaScript.** The cheapest compiler: one code-generation
+  pass, with the host providing closures and the collector. It gains
+  nothing over the interpreter except an output file. Keep it in mind if
+  the interpreter gets slow.
+- **Compile to C.** The calculator's route. Every cost above applies,
+  several times over.
 
 ## Steps
 
-Each step says what it adds, what it touches, what tests it adds, and
-what it leaves out on purpose. A step marked **(done)** keeps its text,
-with a note where what landed differs.
+Each step says what it adds, what it tests, and what it leaves out on
+purpose. Each carries a Referee line and a Size line, as `docs/PROCESS.md`
+asks.
 
-### 0. Scaffold (done)
+### 0. Scaffold: reader, evaluator, runner (proposed)
 
-- The build: `bin/langc.ts` reads a file, compiles it to C next to the
-  output, and links it with `runtime/rt.c` by `cc` (`LANG_CC` overrides);
-  `make test` runs the unit tests then the golden tests. C rather than
-  assembly, so step 0 runs on any machine with a C compiler; a native
-  target comes when the language needs one, through a target interface.
-- The reader (`compiler/src/reader.ts`): integers, symbols and lists,
-  each form with its line and column; `;` comments. Unit tests in
-  `compiler/tests/`.
-- A compiler for one kind of literal (`codegen.ts`): a program that is
-  `42` compiles to a binary that prints `42`. Integers are 63 bits,
-  shifted left one, tag 0 (`runtime/rt.h`); one past the range is a
-  compile error, checked by a unit test since the golden runner calls a
-  failed compile a failure.
-- `t/run.sh`: compile each golden test, run it with the environment the
-  tests assume (none yet; the knobs go there as the runtime gains them),
-  compare stdout and stderr together with the `.expected` file, plus
-  `exit: N` when the status isn't 0, `JOBS` at a time, with a watchdog.
-- Golden tests 000 and 001, their outputs by hand.
+- Adds: `bin/smol.ts`; a reader for the JavaScript-like syntax (integers,
+  strings, `nil`, `true`, `false`, names with sigils, calls, method calls,
+  `let`, `;` comments); an evaluator; a program prints the value of its
+  last expression. A fault prints `fault: ...` on stderr and exits 1
+  (default). `t/run.sh` runs the interpreter.
+- Tests: golden tests 000 and 001, by hand: an integer, and a `let` with a
+  call.
+- Leaves out: closures, objects, catchable faults.
+- Size: large (it fixes the reader and the runner). Referee: none.
 
-Each step carries a **Referee** line, set when the step is proposed:
-`extend t/referee/NAME.py to cover this`, or `none`, with the reason
-(`docs/PROCESS.md`, "The referee"), and a **Size** line, the capability
-the step needs of the agent that builds it, by `docs/MODELS.md`'s tiers: *large* where
-there's a decision to propose, a runtime mechanism to design, or a
-model to write; *medium* where the design is agreed and the step
-describes its tests; *small* where the step is a pattern to repeat.
-A session's first move is to compare its own model with the step's size.
+### 1. Closures (proposed)
 
-### 1. [Immediates: the rest of the literals.]
+- Adds: `function (params) { ... }`, lexical capture, the trailing `%name`
+  parameter, and the receiver once DESIGN open 2 is settled.
+- Tests: by hand.
+- Leaves out: anything that catches a fault.
+- Size: medium (the design is in DESIGN.md). Referee: none.
 
-### 2. [Primitives on them.]
+### 2. Catchable faults (proposed)
 
-### 3. [Conditionals.]
+- Adds: the `catch(closure)` built-in, or the form chosen in DESIGN open 4.
+- Tests: by hand, in the shape of the sketch's `fails_ok`.
+- Size: medium. Referee: none.
 
-### 4. [Local bindings.]
+### 3. Scalar, Hash and Array (proposed)
 
-### 5. [Heap values.]
+- Adds: the three primitives, their built-in methods (`push`, `get`, `set`,
+  `size`, `keys`, and so on), `Array.new`, `Hash.new`, and `@a.push(x)`.
+  Built-in methods are host functions in the class's method table, so
+  they dispatch like any other method.
+- Tests: by hand.
+- Leaves out: objects. These are the containers the sketch's attributes
+  and method tables are built from.
+- Size: medium (it repeats one pattern across three types). Referee: none.
 
-### 6. [Procedures, calls and tail calls.]
+### 4. Opaque instances and dispatch (proposed)
 
-### 7. [Closures.]
+- Adds: the five `::` built-ins from D10; lookup through the class chain;
+  `No method found for NAME` as a fault; ids from one counter.
+- Tests: by hand, with a class built directly by `create_opaque_instance`:
+  an instance finds its class's method, finds an inherited one, faults on
+  a missing one, and gets distinct ids.
+- Leaves out: `Class` and `Object`, which are step 5.
+- Size: large (this is the core rule). Referee: none for now. Decide
+  before step 5, where the model of the definition is written.
 
-### 8. [Whatever the language is really about: its core rule.]
+### 5. The bootstrap: Class and Object, in SMOL (proposed)
 
-### 9. [The prelude, in the language.]
+- Adds: `Class` and `Object` as SMOL source, with `new`, `name`,
+  `superclass`, `class_precedence_list`, `get_method`, `id` and `class`,
+  and the class-slot setter from DESIGN open 6.
+- Tests: the sketch's 32 assertions, as a few golden tests. Their expected
+  values are the values in the sketch's own `is` and `is_deeply` lines.
+  The sketch's comments on ids are off by one, so the tests use the values
+  and not the comments.
+- Also tested: an instance can't call a method that only its class has
+  (the sketch's "metaclass calling instance method fails" and its
+  reverse). That is the meta-model working.
+- Size: large (the bootstrap is the subject, and the expected values need
+  a model's reading of the definition). Referee: none. The sketch's
+  assertions are the independent source.
 
-### 10. [Examples: ports of existing programs, each a golden test.]
+### 6. isa and can (proposed)
 
-### 11. [Tooling: the runtime cached, tests in parallel, the guide's
-code checked.]
-
-## Proposals
-
-[Agreed proposals become steps above. Proposals not yet agreed go here,
-each with its options and the agent's recommendation, marked
-**proposed** until the person picks, and the pick recorded as a `Dn`.]
+- Adds: `isa` and `can` as built-in methods on `Object` (DESIGN open 5).
+- Tests: by hand. The sketch's stubs are the reason for the step.
+- Size: small (the pattern is in place). Referee: none.
 
 ## Example-port table
 
 | Example | Needs | Status |
 |---|---|---|
-| [name] | [the features it needs, by step] | [waits on step n / ported / dropped (Dn)] |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 0 to 5, and step 6 for `isa` and `can` | waits on step 5 |
