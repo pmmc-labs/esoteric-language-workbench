@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class`, `Object`, and the Boolean classes (5c, D27, D28). 5b (`Array` and `Hash` as classes) is open, and needs a decision before it is built.
+**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class` and `Object`. 5c is done: the Boolean classes, and conditionals as their methods (D27 to D30). 5b (`Array` and `Hash` as classes) is open, and needs a decision before it is built.
 
 ## Step 0 was built by a small-tier builder
 
@@ -182,8 +182,7 @@ points the plan left open.
 **5a, done.** The prelude in `lib/prelude.smol` runs before every program. It
 makes `Class` (object 1) and `Object` (object 2), with `name`, `superclass`
 and `get_method` on Class, and `new`, `id` and `class` on Object, plus the
-setter `opaque_instance_set_class` (D19). The prelude binds the bootstrap's names: `Class`, `Object`, `Boolean`, `True`,
-`False` and `UndefinedObject`. Golden tests 085 to 093 take the
+setter `opaque_instance_set_class` (D19). The prelude binds `Class` and `Object`, and 5c added the Boolean classes. Golden tests 085 to 093 take the
 sketch's assertions, each with its expected value from the sketch's own `is`
 and `is_deeply` lines, except the four about `class_precedence_list`, which 095 takes. The
 programs' own objects started at 3 (D25), which D28 moves to 7.
@@ -200,8 +199,7 @@ number of arguments, so `Array.new(a, b, ...)` and `push(x, ...)` can be
 builtins. The same registry gives Boolean and nil their classes for 5c.
 Rejected: keeping the host tables and pointing the class at them, which is two
 dispatch routes; and a class field on every array and hash value, which keeps
-the class in two places. Cost: two more bootstrap objects, so user ids shift
-again (see 5c). Golden tests 030 to 049 do not change, since their outputs don't.
+the class in two places. Cost: two more bootstrap objects, so user ids move again (D28 records the numbering). Golden tests 030 to 049 do not change, since their outputs don't.
 
 **5c, done.** Conditionals are methods of booleans, with a Boolean class (D27).
 Option A (D28): `Boolean`, `True`, `False` and `UndefinedObject`, the last for

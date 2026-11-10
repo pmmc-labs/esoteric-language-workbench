@@ -16,10 +16,14 @@ let Class = create_class(Hash.new(
         "get_method", function (self, $label) { opaque_instance_attrs(self).get("%methods").get($label) },
         "class_precedence_list", function (self) { self.cpl_into(Array.new()) },
         "cpl_into", function (self, $acc) {
-            $acc.push(self);
-            self.superclass().isNil().ifTrueFalse(
-                function () { $acc },
-                function () { self.superclass().cpl_into($acc) })
+            $acc.includes(self).ifTrueFalse(
+                function () { fault("superclass chain loops back to", self) },
+                function () {
+                    $acc.push(self);
+                    self.superclass().isNil().ifTrueFalse(
+                        function () { $acc },
+                        function () { self.superclass().cpl_into($acc) })
+                })
         })));
 
 opaque_instance_set_class(Class, Class);

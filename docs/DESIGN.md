@@ -158,6 +158,9 @@ Built in:
   walks that class's chain, as for an instance. Only the three constants take
   a class so far.
 
+- `includes(x)` on an array, and `fault(message, value)`, which the prelude
+  uses to stop a loop in the superclass chain with the lookup's fault (D30).
+
 Everything else is SMOL source (D19).
 
 ## The implementation

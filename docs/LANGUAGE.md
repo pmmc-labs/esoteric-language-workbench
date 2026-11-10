@@ -84,11 +84,12 @@ is not caught. `catch` takes exactly one argument.
 
 ## Methods
 
-An array has four methods. `push(x, ...)` adds its arguments to the end. It
+An array has five methods. `push(x, ...)` adds its arguments to the end. It
 returns the array, so calls chain. `get(i)` gives the item at index `i`,
 counting from 0, or `nil` if `i` is past the end or negative. `set(i, x)`
 replaces the item at `i`, which must be within the array, and returns the
-array. `size()` gives the number of items.
+array. `size()` gives the number of items. `includes(x)` is true if `x` is in the
+array: scalars are equal by value, and anything else only as the same object.
 
 A hash has four methods. `get(k)` gives the value for the key `k`, or `nil`
 if there is none. `set(k, v)` stores a value under `k`, and returns the hash.
@@ -100,7 +101,9 @@ The class `new` method works as `Array.new` and `Hash.new` do.
 ## Instances
 
 Five built-in functions, bound before the program starts as `catch` is.
-A sixth, `opaque_instance_set_class`, is under Bootstrap.
+Under Bootstrap are a sixth, `opaque_instance_set_class`, and `set_primitive_class`.
+`fault(message, value)` raises a fault, whose message is the string and then
+the value shown, separated by a space.
 
 `create_opaque_instance(class, attrs)` makes an instance with that class
 and those attrs, and gives it the next id. `attrs` must be a hash. It isn't
@@ -144,7 +147,10 @@ prelude binds these names, and a program can use them.
 are `name()`, which gives its name; `superclass()`, which gives its superclass;
 `get_method(label)`, which gives the method under that label in its own
 `"%methods"`, or `nil`; and `class_precedence_list()`, which gives an array of
-the class and then its superclasses, up to `Object`.
+the class, then its superclass, and so on up the chain until a superclass is
+`nil`. If the chain loops back to a class it has already listed, that is the
+fault `superclass chain loops back to VALUE`, which `catch` can take. Its
+helper `cpl_into(acc)` adds the class to `acc` and walks on from there.
 
 `Object` is an instance of `Class`, and it has no superclass. Its methods are
 `new(key, value, ...)`, which makes an instance of the class it is called on,
@@ -156,12 +162,18 @@ as the sketch's is (D26). `opaque_instance_set_class(o, c)` sets an instance's
 class, and gives back `o`.
 
 Conditionals are methods of booleans (D27). `Boolean` is the parent of `True`
-and `False`. `true` belongs to `True`, `false` to `False`, and `nil` to
-`UndefinedObject`, which answers `isNil()` with true (D29). A boolean answers
-`ifTrue(block)`, `ifFalse(block)` and `ifTrueFalse(whenTrue, whenFalse)`: each
-runs one of its blocks, and only the branch taken is run. `not()` is on
-`Boolean`. A block is a function of no arguments. The three constants get their
-classes from `set_primitive_class(v, c)`, and only those three take one so far.
+and `False`, and both inherit from `Object`. `true` belongs to `True`, `false`
+to `False`, and `nil` to `UndefinedObject`, which also inherits from `Object`
+and answers `isNil()` with true (D29). Each conditional takes blocks, which are
+functions of no arguments. `ifTrue(block)` on `true` runs the block, and on
+`false` gives `nil` without running anything; `ifFalse(block)` is the other
+way round; `ifTrueFalse(whenTrue, whenFalse)` runs one of its two blocks, and
+only that one. `not()` is on `Boolean`.
+
+Because `Boolean` and `UndefinedObject` inherit from `Object`, they also answer
+Object's methods: `true.id()` is a fault, since `id` needs an instance, and
+`nil.new()` makes an instance whose class is `nil`. The three constants get
+their classes from `set_primitive_class(v, c)`, and only those three take one.
 
 The methods of `Array` and `Hash` are not in this section: they are still
 the host's, and move to class method tables with the rest of the bootstrap.
@@ -189,7 +201,9 @@ that has none; an index that isn't an integer; a `set` index that is out of
 range; a hash key that isn't a string; key-value arguments with a key
 and no value; attrs that aren't a hash; a value that isn't an instance where
 one is needed; and a method with no first parameter for the receiver; a superclass
-chain that loops back to a class it has already searched. A
+chain that loops back to a class it has already searched; and
+`set_primitive_class` given a value other than `true`, `false` or `nil`, or a
+class that isn't an instance. A
 method that isn't found is `no method found for NAME on VALUE`, for an
 instance as for any other value. A fault that `catch` takes is not a fault of the program: the
 program carries on after the call to `catch`.

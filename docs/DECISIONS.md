@@ -198,7 +198,19 @@ one of them walks that class's chain, as for an instance (D10). Only those
 three take a class so far; the other primitives come with 5b, which is still
 open. Rejected: a host table of boolean methods, which would keep the
 conditionals off the Boolean class; and a class held on each value, which the
-constants can't carry.
+constants can't carry. A program can call `set_primitive_class` too, so it can
+change a constant's class for the rest of its run. That is the same open
+question as `opaque_instance_set_class` (D19), and it is not settled here.
+
+**D30. A loop in the superclass chain stops `class_precedence_list` with the
+lookup's fault, through two small additions.** *(default: the review of step
+5c found the loop crashed the interpreter, and the fix needed a way to stop a
+walk.)* `includes(x)` on an array tests membership, with scalars equal by value
+and anything else only by identity. `fault(message, value)` raises a fault, the
+message and then the value shown. Rejected: a loop check in the host for this
+walk alone, which would move the object model's behaviour out of SMOL (D10);
+and a walk that quietly stops at a repeat, which would hide a loop the lookup
+reports.
 
 ## Project
 

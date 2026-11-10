@@ -140,6 +140,15 @@ const indexOf = (v: Value): number => {
     return Number(v.value);
 };
 
+// Equality for includes (D30): scalars are equal by value, and anything else
+// only by identity, so an object is in a list only as itself.
+const sameValue = (a: Value, b: Value): boolean => {
+    if (a.kind === 'int' && b.kind === 'int') return a.value === b.value;
+    if (a.kind === 'str' && b.kind === 'str') return a.value === b.value;
+    if (a.kind === 'bool' && b.kind === 'bool') return a.value === b.value;
+    return a === b || (a.kind === 'nil' && b.kind === 'nil');
+};
+
 // The methods of each kind of value. Array and Hash are the only ones with
 // any, and they change their receiver in place: push, set. Each returns the
 // receiver, so calls chain.
@@ -157,6 +166,7 @@ const ARRAY = new Map<string, Method<ArrV>>([
         return self;
     } }],
     ['size', { arity: 0, call: self => ({ kind: 'int', value: BigInt(self.items.length) }) }],
+    ['includes', { arity: 1, call: (self, args) => ({ kind: 'bool', value: self.items.some(x => sameValue(x, args[0]!)) }) }],
 ]);
 
 const HASH = new Map<string, Method<HashV>>([
@@ -203,29 +213,6 @@ const findMethod = (cls: Value, name: string, seen: Value[] = []): Value | undef
     return found ?? findMethod(cls.attrs.entries.get('$superclass') ?? NIL, name, [...seen, cls]);
 };
 
-// A method call on an instance: the search starts at the instance's class,
-// and the method found is called with the instance first, as self (D15).
-const send = (self: ObjV, name: string, args: Value[]): Value => {
-    const m = findMethod(self.cls, name);
-    if (m === undefined) return fault(`no method found for ${name} on ${show(self)}`);
-    return apply(m, [self, ...args], 1);
-};
-
-const attrsOf = (v: Value): HashV => {
-    if (v.kind !== 'hash') return fault(`attrs must be a Hash: ${show(v)}`);
-    return v;
-};
-
-const objOf = (v: Value): ObjV => {
-    if (v.kind !== 'obj') return fault(`not an opaque instance: ${show(v)}`);
-    return v;
-};
-
-const builtin = (arity: number, call: (args: Value[]) => Value): Value => ({ kind: 'builtin', arity, call });
-
-// The names every program starts with. The two built-ins that make an
-// instance share one id counter, and it belongs to the list made here, so
-// each run of a program counts from 1.
 // A method call on a value whose class is cls: the search starts at cls, and
 // the method found is called with the value first, as self (D15).
 const dispatch = (cls: Value, self: Value, name: string, args: Value[]): Value => {
@@ -249,6 +236,25 @@ const primitiveClass = (env: Env, v: Value): Value | undefined => {
     return table !== undefined && table.kind === 'hash' && key !== undefined ? table.entries.get(key) : undefined;
 };
 
+// A method call on an instance: the search starts at the instance's class,
+// and the method found is called with the instance first, as self (D15).
+const send = (self: ObjV, name: string, args: Value[]): Value => dispatch(self.cls, self, name, args);
+
+const attrsOf = (v: Value): HashV => {
+    if (v.kind !== 'hash') return fault(`attrs must be a Hash: ${show(v)}`);
+    return v;
+};
+
+const objOf = (v: Value): ObjV => {
+    if (v.kind !== 'obj') return fault(`not an opaque instance: ${show(v)}`);
+    return v;
+};
+
+const builtin = (arity: number, call: (args: Value[]) => Value): Value => ({ kind: 'builtin', arity, call });
+
+// The names every program starts with. The two built-ins that make an
+// instance share one id counter, and it belongs to the list made here, so
+// each run of a program counts from 1.
 const root = (): Env => {
     let ids = 0n;
     const create = (cls: Value, attrs: HashV): Value => ({ kind: 'obj', id: ++ids, cls, attrs });
@@ -279,6 +285,14 @@ const root = (): Env => {
             return o;
         })],
         [PRIMITIVES, primitives],
+        // fault(message, value): raises a fault, whose message is the string and
+        // then the value shown, separated by a space (D30). The prelude uses it
+        // where a loop in the superclass chain has to stop the walk.
+        ['fault', builtin(2, args => {
+            const m = args[0]!;
+            if (m.kind !== 'str') return fault(`fault needs a string message: ${show(m)}`);
+            return fault(`${m.value} ${show(args[1]!)}`);
+        })],
         // D29: makes an instance the class of true, false or nil, which then
         // answer its methods. The class is returned.
         ['set_primitive_class', builtin(2, args => {

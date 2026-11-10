@@ -1,4 +1,4 @@
-// Class.new makes Foo, object 3: an instance of Class, with its name and
+// Class.new makes Foo, object 7: an instance of Class, with its name and
 // superclass. get_method gives nil for a method it doesn't have.
 let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(
     "foo", function (self) { "Foo->foo" },

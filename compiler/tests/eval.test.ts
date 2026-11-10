@@ -224,3 +224,14 @@ test('without a class, a method on nil or a boolean is a fault', () => {
     faults('nil.foo()', 'no method found for foo on nil');
     faults('true.foo()', 'no method found for foo on true');
 });
+
+test('includes compares scalars by value and objects only as themselves', () => {
+    assert.equal(run('Array.new(1, "a").includes("a")'), 'true');
+    assert.equal(run('Array.new(1).includes(2)'), 'false');
+    assert.equal(run('let $o = create_opaque_instance(nil, Hash.new()); Array.new($o).includes(create_opaque_instance(nil, Hash.new()))'), 'false');
+});
+
+test('fault raises its message, then the value shown, and needs a string message', () => {
+    faults('fault("boom", 1)', 'boom 1');
+    faults('fault(1, 2)', 'fault needs a string message: 1');
+});

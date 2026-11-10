@@ -1,4 +1,4 @@
-// An instance of Foo is object 4, and it answers Foo's foo and bar.
+// An instance of Foo is object 8, and it answers Foo's foo and bar.
 let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(
     "foo", function (self) { "Foo->foo" },
     "bar", function (self) { "Foo->bar" }));
