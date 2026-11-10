@@ -158,10 +158,9 @@ points the plan left open.
     lets step 5 write `function ($class, %attrs) {
     create_opaque_instance($class, %attrs) }`. The instance holds that Hash
     by reference, where the sketch copies.
-  - `create_class` gives its instance the class `nil`. The sketch gives it
-    `Class`, by a reference to a variable assigned later. Step 5a settled how
-    `Class` gets its class (D19); `create_class` itself still gives `nil`, a
-    difference from the sketch that is kept for now.
+  - `create_class` gave its instance the class `nil`, where the sketch gives
+    `Class`. Step 5 settled it: the prelude's `create_class` gives instances of
+    `Class` (D26), and the built-in under it still gives `nil`.
   - `create_class`'s defaults are `"$name"`, `"$superclass"` and
     `"%methods"`, by D21's keys and without `%:attributes` (D22).
   - A method's arity counts only the arguments after `self`, and a function
@@ -189,14 +188,31 @@ sketch's assertions, each with its expected value from the sketch's own `is`
 and `is_deeply` lines, except the four about `class_precedence_list`. The
 programs' own objects start at 3, so the step 4 ids moved by two (D25).
 
-**5b, open.** `Array` and `Hash` as SMOL classes, with their methods in class
-method tables in place of the host tables (step 3). Needs a builtin that takes
-any number of arguments, for `Array.new(a, b, ...)`, and a class for array
-and hash values. A proposal first.
+**5b, proposed, not agreed.** `Array` and `Hash` as SMOL classes, with their
+methods in class method tables. A method call on a host value finds no class
+today, which is why the host tables exist. Proposed: a registry from a value to
+its class, set by a builtin, `set_primitive_class(sample, class)`, where the
+sample picks the entry: its kind, or for `true`, `false` and `nil`, the value
+itself. A method call on a value with a registered class walks that class's
+chain, as for an instance (D10). Array and Hash register their classes in the
+prelude, and their methods become builtins in `"%methods"`. Builtins take any
+number of arguments, so `Array.new(a, b, ...)` and `push(x, ...)` can be
+builtins. The same registry gives Boolean and nil their classes for 5c.
+Rejected: keeping the host tables and pointing the class at them, which is two
+dispatch routes; and a class field on every array and hash value, which keeps
+the class in two places. Cost: two more bootstrap objects, so user ids shift
+again (see 5c). Golden tests 030 to 049 do not change, since their outputs don't.
 
-**5c, open.** `class_precedence_list`. Its walk up the chain needs to stop at
-`nil`, and SMOL has no conditional. The choice is a builtin that picks between
-two functions, or a conditional special form. A decision first.
+**5c, waiting on a decision.** Conditionals are methods of booleans, with a
+Boolean class (D27). Every class is an object with an id, so the shape moves
+the ids. Options: (A) Boolean as the abstract parent of True and False, with
+UndefinedObject for nil, as Smalltalk has them; user objects then start at 7.
+(B) one Boolean class, with the branch done by one host primitive; user objects
+start at 4. (C) the boolean methods on Object, with no new class; user objects
+stay at 3, but there is no Boolean class. Recommended: A, since it has the
+structure asked for. It revises D25's numbers. The sketch's numbers are a guide,
+not the spec (D9). `class_precedence_list` then stops at `nil` by asking it
+`isNil()`, which UndefinedObject answers.
 
 - Adds: `Class` and `Object` as SMOL source, with `new`, `name`,
   `superclass`, `class_precedence_list`, `get_method`, `id` and `class`,

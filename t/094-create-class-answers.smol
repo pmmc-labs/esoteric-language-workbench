@@ -1,0 +1,4 @@
+// create_class makes instances of Class, so a class it makes answers name(),
+// and its class is Class. The first object here is 3, after the bootstrap's
+// two; the second is 4.
+Array.new(create_class(Hash.new("$name", "Foo")).name(), create_class(Hash.new()).class().id())

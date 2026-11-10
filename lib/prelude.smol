@@ -3,8 +3,8 @@
 // is object 1 and Object is object 2, and a program's own objects count from
 // 3, as they do in the sketch.
 
-// Class comes first, so it is object 1. It has no class until it can be made
-// an instance of itself, below (D19).
+// Class comes first, so it is object 1. The built-in create_class makes it, and
+// it is made an instance of itself next (D19).
 let Class = create_class(Hash.new(
     "$name", "Class",
     "%methods", Hash.new(
@@ -12,15 +12,22 @@ let Class = create_class(Hash.new(
         "superclass", function (self) { opaque_instance_attrs(self).get("$superclass") },
         "get_method", function (self, $label) { opaque_instance_attrs(self).get("%methods").get($label) })));
 
+opaque_instance_set_class(Class, Class);
+
+// From here on create_class makes instances of Class (D26). The built-in makes
+// the instance, and this wrapper gives it Class. The built-in is bound only
+// inside the function that builds the wrapper, so no program can see it.
+let create_class = function () {
+    let make = create_class;
+    function (attrs) { opaque_instance_set_class(make(attrs), Class) }
+}();
+
 let Object = create_class(Hash.new(
     "$name", "Object",
     "%methods", Hash.new(
         "new", function (self, %attrs) { create_opaque_instance(self, %attrs) },
         "id", function (self) { opaque_instance_id(self) },
         "class", function (self) { opaque_instance_class(self) })));
-
-opaque_instance_set_class(Class, Class);
-opaque_instance_set_class(Object, Class);
 
 // Class inherits from Object. This is the last statement, and an expression,
 // so it binds no name: a program can't see the bootstrap. The driver prints

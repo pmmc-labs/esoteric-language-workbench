@@ -110,9 +110,8 @@ copied, so a later change to the hash is a change to the instance's attrs.
 `opaque_instance_class(o)` its class, and `opaque_instance_attrs(o)` its
 attrs, the hash itself. Each takes an instance and nothing else.
 
-`create_class(attrs)` makes an instance to use as a class. Its class is
-`nil`, so a class made this way isn't an instance of `Class`, unlike the
-sketch's; `Class.new` makes one that is. Its attrs are a new hash with `"$name"` as `""`, `"$superclass"` as
+`create_class(attrs)` makes a class: an instance of `Class`, as the sketch's
+is (D26). Its attrs are a new hash with `"$name"` as `""`, `"$superclass"` as
 `nil` and `"%methods"` as an empty hash, and then each entry of `attrs`,
 which must be a hash, set over those.
 

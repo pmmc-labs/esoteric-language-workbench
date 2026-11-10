@@ -1,5 +1,5 @@
 // A class is an instance: it takes an id from the same counter, and its class
-// is nil for now.
+// is Class, as the sketch's create_class gives (D26).
 let $i = create_opaque_instance(nil, Hash.new());
 let $Foo = create_class(Hash.new("$name", "Foo"));
 Array.new($Foo, opaque_instance_id($Foo), opaque_instance_class($Foo))

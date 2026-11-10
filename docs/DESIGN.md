@@ -131,13 +131,12 @@ Built in:
   environment. `attrs` is one Hash value, not flat arguments. Attrs that
   aren't a Hash are the fault `attrs must be a Hash: VALUE`, and a reader
   given something else is `not an opaque instance: VALUE` (default: the
-  wording). `create_class` gives the class `nil`, so a class it makes isn't an
-  instance of `Class`, unlike the sketch's. Step 5 settled how `Class` gets
-  its class without it: the prelude sets `Class`'s own class, and `Class.new`
-  makes instances of `Class` (D19). Two differences from the sketch remain:
-  `create_class`'s `nil`, and the lookup reading `"$superclass"` directly where
-  the sketch calls the `superclass` method, which gives the same answer while
-  `Class` keeps its `superclass` method.
+  wording). The built-in `create_class` gives the class `nil`. The prelude's
+  `create_class` wraps it, so a class made by `create_class` is an instance of
+  `Class`, as the sketch's is (D26). `Class` gets its own class from the prelude
+  (D19). One difference from the sketch remains: the lookup reads
+  `"$superclass"` directly where the sketch calls the `superclass` method,
+  which gives the same answer while `Class` keeps its `superclass` method.
 - `opaque_instance_set_class(instance, class)`: sets an instance's class
   slot, so SMOL source can make `Class` an instance of itself (D19). The
   name is a default.

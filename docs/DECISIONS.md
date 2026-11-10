@@ -156,13 +156,30 @@ step 4, when there was no class to hold them; doing 5b and 5c in one step,
 since each needs a decision of its own.
 
 **D25. Every program runs a prelude first, so `Class` is object 1, `Object` is
-object 2, and a program's own objects start at 3.** *(default)* The sketch
+object 2, and a program's own objects start at 3.** *(User: "D25 is fine".)*
+The sketch
 numbers its objects this way, and the layout puts the prelude in every
 program. The consequence is that the id expectations of golden tests 050 to
 084 each moved by two, re-derived by hand. Rejected: running the prelude only
 for programs that ask for it, since no way of asking exists, and an id would
 depend on the program's text; and starting a program's objects at 1, which
 puts the sketch's numbers out of step with its Foo, the third object.
+
+**D26. `create_class` makes an instance of `Class`.** *(User: "create_class
+should return instances of Class".)* The built-in makes an instance with
+class `nil`; the prelude wraps it, so a class made by `create_class` is an
+instance of `Class`, as the sketch's is. The wrapper is bound inside the
+function that builds it, so the built-in's name is not visible to programs.
+Rejected: giving the built-in the metaclass as a second argument, which
+changes the signature the sketch gives and every test that calls it.
+
+**D27. Conditionals are methods of booleans, as in Smalltalk, with a Boolean
+class.** *(User: "lets follow smalltalk and make conditionals be a method of
+booleans. This probably means adding a Boolean class too.")* The shape is
+decided. Its classes, and how they are numbered, are open (PLAN, 5c).
+Rejected: a conditional special form, which would add grammar the Smalltalk
+shape doesn't need; and a builtin that picks between two functions, which
+would make the branch a host operation, not a method.
 
 ## Project
 
