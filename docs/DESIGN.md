@@ -110,10 +110,11 @@ As built in step 4:
 
 ## Values and memory
 
-Each new instance takes the next id from one counter, starting at 1, so
-in step 5's bootstrap, `Class` is 1 and `Object` is 2, as in the sketch
-(default). Only `create_opaque_instance` and `create_class` take ids. The
-counter belongs to one run of a program, so each run starts at 1. An
+Each new instance takes the next id from one counter. The prelude runs
+first, so `Class` is 1 and `Object` is 2, and a program's own objects start
+at 3, as in the sketch (D25). Only `create_opaque_instance` and
+`create_class` take ids. The counter belongs to one run of a program, so
+each run starts again at 1 before its prelude. An
 instance holds its attrs Hash by reference; `create_class` builds a new
 Hash, the defaults and then the given attrs, so it doesn't share the one it
 was given (default). An overridden default keeps its place in that Hash,

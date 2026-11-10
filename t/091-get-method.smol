@@ -1,0 +1,5 @@
+// get_method gives a method from a class's own table.
+let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(
+    "foo", function (self) { "Foo->foo" },
+    "bar", function (self) { "Foo->bar" }));
+Array.new($Foo.get_method("bar"), $Foo.get_method("nope"))

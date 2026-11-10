@@ -1,0 +1,2 @@
+// Object is object 2, an instance of Class, with no superclass.
+Array.new(Object.id(), Object.class().id(), Object.name(), Object.superclass())

@@ -127,6 +127,43 @@ Rejected: keeping the sketch's prefixes.
 `%:attributes` and nothing reads it. `lock_keys` seals each instance, and
 instances don't need sealing. Rejected: keeping either.
 
+## Dispatch
+
+**D23. The edges of the core rule: a method is found by key presence, a
+function with no first parameter can't be a method, and a superclass chain
+that loops is a fault.** *(default: the step 4 builder's choices, reviewed
+by the lead.)* A key present under a method name is found, even when its value
+isn't a function, and calling that value is the fault `not a function`. The
+sketch tests the value for truth instead, which would make a stored `false`
+or `nil` look like no method at all. A method with no fixed first parameter
+for `self` faults, rather than leaving the receiver to land in the arguments
+or in a `%name`. A chain that loops back to a class already searched is the
+fault `superclass chain loops back to VALUE`. The sketch would never end on
+one, and the first version of step 4 overflowed the stack, an internal error
+that `catch` couldn't take. Rejected: each of those three as the sketch has
+it.
+
+## Bootstrap
+
+**D24. The Array and Hash methods move to class method tables in step 5, and
+step 5 is split into three parts.** *(default)* A class method table needs a
+class that is an instance, and step 4 had none. So step 5 is split: 5a, the
+prelude with `Class` and `Object` (landed); 5b, `Array` and `Hash` as classes,
+which needs a builtin that takes any number of arguments and a class for array
+and hash values; 5c, `class_precedence_list`, which ends its walk at `nil` and
+needs a conditional that SMOL doesn't have. Rejected: moving the tables in
+step 4, when there was no class to hold them; doing 5b and 5c in one step,
+since each needs a decision of its own.
+
+**D25. Every program runs a prelude first, so `Class` is object 1, `Object` is
+object 2, and a program's own objects start at 3.** *(default)* The sketch
+numbers its objects this way, and the layout puts the prelude in every
+program. The consequence is that the id expectations of golden tests 050 to
+084 each moved by two, re-derived by hand. Rejected: running the prelude only
+for programs that ask for it, since no way of asking exists, and an id would
+depend on the program's text; and starting a program's objects at 1, which
+puts the sketch's numbers out of step with its Foo, the third object.
+
 ## Project
 
 **D5. Golden tests' expected output comes from an independent source,

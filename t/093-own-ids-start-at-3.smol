@@ -1,0 +1,2 @@
+// The first object a program makes is 3, after the bootstrap's Class and Object.
+Array.new(Class.id(), Object.id(), opaque_instance_id(create_opaque_instance(nil, Hash.new())))

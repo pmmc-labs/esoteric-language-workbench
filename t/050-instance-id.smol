@@ -1,4 +1,4 @@
-// Each instance takes the next id from one counter, which starts at 1.
+// Each instance takes the next id from one counter, which starts at 3, after Class and Object (1 and 2).
 let $a = create_opaque_instance(nil, Hash.new());
 let $b = create_opaque_instance(nil, Hash.new());
 Array.new(opaque_instance_id($a), opaque_instance_id($b))

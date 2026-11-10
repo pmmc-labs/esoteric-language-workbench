@@ -246,6 +246,13 @@ const root = (): Env => {
         ['opaque_instance_class', builtin(1, args => objOf(args[0]!).cls)],
         ['opaque_instance_attrs', builtin(1, args => objOf(args[0]!).attrs)],
         ['create_class', builtin(1, args => createClass(attrsOf(args[0]!)))],
+        // D19: the one place an instance's class is set after it is made, so a
+        // class can be made an instance of itself once it exists.
+        ['opaque_instance_set_class', builtin(2, args => {
+            const o = objOf(args[0]!);
+            o.cls = args[1]!;
+            return o;
+        })],
     ];
     return bindings.reduceRight<Env>((next, [name, value]) => ({ name, value, next }), null);
 };

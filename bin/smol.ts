@@ -2,7 +2,7 @@
 // The driver: read a SMOL program and run it. `node bin/smol.ts file.smol`.
 // Exit codes: 0 ok, 1 a syntax error or a fault, 2 usage or a file it can't read.
 import { readFileSync } from 'node:fs';
-import { parse } from '../compiler/src/parser.ts';
+import { program } from '../compiler/src/program.ts';
 import { evaluate, show } from '../compiler/src/eval.ts';
 import { Failure } from '../compiler/src/errors.ts';
 
@@ -19,7 +19,7 @@ const main = (argv: string[]): number => {
         return 2;
     }
     try {
-        const value = evaluate(parse(text));
+        const value = evaluate(program(text));
         if (value !== undefined) console.log(show(value));
         return 0;
     } catch (e) {

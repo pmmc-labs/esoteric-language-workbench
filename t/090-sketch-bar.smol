@@ -1,0 +1,11 @@
+// Bar inherits from Foo: it is object 5, and its instance, object 6, finds
+// Foo's foo and its own bar and baz.
+let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(
+    "foo", function (self) { "Foo->foo" },
+    "bar", function (self) { "Foo->bar" }));
+let $iFoo = $Foo.new();
+let $Bar = Class.new("$name", "Bar", "$superclass", $Foo, "%methods", Hash.new(
+    "bar", function (self) { "Bar->bar" },
+    "baz", function (self) { "Bar->baz" }));
+let $iBar = $Bar.new();
+Array.new($Bar.id(), $Bar.superclass().id(), $iBar.id(), $iBar.foo(), $iBar.bar(), $iBar.baz(), catch(function () { $iBar.name() }))

@@ -1,5 +1,5 @@
 // A method found nowhere on the chain is a fault. The instance is the second
-// one made.
+// one the program made.
 let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
     "%methods", Hash.new("foo", function (self) { "Foo->foo" })));
 let $i = create_opaque_instance($Foo, Hash.new());

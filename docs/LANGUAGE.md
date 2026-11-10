@@ -21,7 +21,8 @@ has the one method `new`, which makes an instance, so `Array.new(...)` and
 `Hash.new(...)` are the ways to write them.
 
 An instance is an id, a class and attrs. The id is an integer, and each
-instance made takes the next one, from 1. The class is any value; it may be
+instance made takes the next one. A program's own instances start at 3, after
+the two the bootstrap makes (see Bootstrap). The class is any value; it may be
 `nil`. The attrs are a hash, which the instance holds by reference. A class
 is an instance too, one whose attrs hold a method table under `"%methods"`
 and a superclass under `"$superclass"`. The built-in functions under
@@ -129,6 +130,31 @@ The method's value is the value of the call.
 
 A class's `"%methods"` are for its instances. A method call on the class
 itself starts at the class's own class, as for any instance.
+
+## Bootstrap
+
+Before every program, a prelude in `lib/prelude.smol` runs. It makes two
+classes the way a program makes any class, so they are the first two
+objects. The names `Class` and `Object` are bound by it, and a program can
+use them.
+
+`Class` is object 1. It is an instance of itself, and its superclass is
+`Object`. Its methods are `name()`, which gives its name; `superclass()`,
+which gives its superclass; and `get_method(label)`, which gives the method
+under that label in its own `"%methods"`, or `nil`.
+
+`Object` is object 2. It is an instance of `Class`, and it has no superclass.
+Its methods are `new(key, value, ...)`, which makes an instance of the class
+it is called on, with those pairs as its attrs; `id()`; and `class()`.
+
+So `Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(...))`
+makes a class. The built-in `opaque_instance_set_class(o, c)` sets an
+instance's class, and gives back `o`; the prelude uses it to make `Class` an
+instance of itself (D19). The prelude ends with a `let`, so a program with
+no statements prints nothing.
+
+The methods of `Array` and `Hash` are not in this section: they are still
+the host's, and move to class method tables with the rest of the bootstrap.
 
 ## Output
 

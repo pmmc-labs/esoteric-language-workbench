@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 4 are done. Next: step 5, the bootstrap. It is marked large, and it now also moves the Array and Hash methods into class method tables (the note under step 4).
+**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class` and `Object`. 5b (`Array` and `Hash` as classes) and 5c (`class_precedence_list`) are open, and each needs a decision first.
 
 ## Step 0 was built by a small-tier builder
 
@@ -177,7 +177,24 @@ points the plan left open.
   Referee: none. Decide before step 5, where the model of the definition
   is written.
 
-### 5. The bootstrap: Class and Object, in SMOL (agreed)
+### 5. The bootstrap: Class and Object, in SMOL (split, D24)
+
+**5a, done.** The prelude in `lib/prelude.smol` runs before every program. It
+makes `Class` (object 1) and `Object` (object 2), with `name`, `superclass`
+and `get_method` on Class, and `new`, `id` and `class` on Object, plus the
+setter `opaque_instance_set_class` (D19). Golden tests 085 to 093 take the
+sketch's assertions, each with its expected value from the sketch's own `is`
+and `is_deeply` lines, except the four about `class_precedence_list`. The
+programs' own objects start at 3, so the step 4 ids moved by two (D25).
+
+**5b, open.** `Array` and `Hash` as SMOL classes, with their methods in class
+method tables in place of the host tables (step 3). Needs a builtin that takes
+any number of arguments, for `Array.new(a, b, ...)`, and a class for array
+and hash values. A proposal first.
+
+**5c, open.** `class_precedence_list`. Its walk up the chain needs to stop at
+`nil`, and SMOL has no conditional. The choice is a builtin that picks between
+two functions, or a conditional special form. A decision first.
 
 - Adds: `Class` and `Object` as SMOL source, with `new`, `name`,
   `superclass`, `class_precedence_list`, `get_method`, `id` and `class`,
@@ -210,4 +227,4 @@ points the plan left open.
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 5 |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5 (5b and 5c open), and step 6 for `isa` and `can` | waits on 5b and 5c |

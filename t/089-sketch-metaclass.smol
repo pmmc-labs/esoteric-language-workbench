@@ -1,0 +1,7 @@
+// The sketch's two failing calls: a class can't call a method of its
+// instances, and an instance can't call a method of Class.
+let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(
+    "foo", function (self) { "Foo->foo" },
+    "bar", function (self) { "Foo->bar" }));
+let $iFoo = $Foo.new();
+Array.new(catch(function () { $Foo.bar() }), catch(function () { $iFoo.name() }))

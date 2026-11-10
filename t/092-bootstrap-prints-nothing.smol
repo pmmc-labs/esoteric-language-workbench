@@ -1,0 +1,2 @@
+// The bootstrap runs before every program, and it has no value: a program
+// with no statements prints nothing.

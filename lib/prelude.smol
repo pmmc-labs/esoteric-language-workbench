@@ -1,0 +1,28 @@
+// The bootstrap of the object model, in SMOL, after the Perl sketch
+// (docs/prior-art/MiniMetaModel.pl). Every program runs this first, so Class
+// is object 1 and Object is object 2, and a program's own objects count from
+// 3, as they do in the sketch.
+
+// Class comes first, so it is object 1. It has no class until it can be made
+// an instance of itself, below (D19).
+let Class = create_class(Hash.new(
+    "$name", "Class",
+    "%methods", Hash.new(
+        "name", function (self) { opaque_instance_attrs(self).get("$name") },
+        "superclass", function (self) { opaque_instance_attrs(self).get("$superclass") },
+        "get_method", function (self, $label) { opaque_instance_attrs(self).get("%methods").get($label) })));
+
+let Object = create_class(Hash.new(
+    "$name", "Object",
+    "%methods", Hash.new(
+        "new", function (self, %attrs) { create_opaque_instance(self, %attrs) },
+        "id", function (self) { opaque_instance_id(self) },
+        "class", function (self) { opaque_instance_class(self) })));
+
+opaque_instance_set_class(Class, Class);
+opaque_instance_set_class(Object, Class);
+
+// Class inherits from Object. This is a let, not an expression, so the
+// bootstrap has no value of its own: a program with no statements prints
+// nothing.
+let bootstrapped = opaque_instance_attrs(Class).set("$superclass", Object);

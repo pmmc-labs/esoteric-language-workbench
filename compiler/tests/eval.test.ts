@@ -209,3 +209,8 @@ test('arrays and hashes keep their own methods, and an instance has none of them
     faults('create_opaque_instance(nil, Hash.new()).size()', 'no method found for size on <object 1>');
     assert.equal(run('Hash.new("a", 1).size()'), '1');
 });
+
+test("opaque_instance_set_class changes an instance's class, and only an instance's", () => {
+    assert.equal(run('let $c = create_opaque_instance(nil, Hash.new()); opaque_instance_set_class($c, $c); opaque_instance_class($c)'), '<object 1>');
+    faults('opaque_instance_set_class(1, nil)', 'not an opaque instance: 1');
+});
