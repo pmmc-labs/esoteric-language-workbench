@@ -1,0 +1,2 @@
+// Hash.new takes key and value pairs, and prints them in braces.
+Hash.new("a", 1, "b", "two")

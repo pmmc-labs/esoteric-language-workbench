@@ -1,0 +1,2 @@
+// A hash key must be a string.
+Hash.new(42, 1)

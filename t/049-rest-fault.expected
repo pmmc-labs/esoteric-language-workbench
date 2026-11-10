@@ -1,0 +1,2 @@
+fault: %rest needs key and value pairs: an even number of arguments
+exit: 1

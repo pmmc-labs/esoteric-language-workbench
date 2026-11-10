@@ -73,3 +73,7 @@ test("a function body ends with a '}'", () => {
 test('function is a keyword, so it is not a name', () => {
     assert.throws(() => parse('let function = 1'), at("expected a name after 'let', found 'function'", 1, 5));
 });
+
+test('a %name parameter collects the rest, so it must be last', () => {
+    assert.throws(() => parse('function (%a, $b) {}'), at('a %a parameter collects the rest, so it must be last', 1, 11));
+});

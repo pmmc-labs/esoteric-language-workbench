@@ -1,0 +1,2 @@
+// Array.new makes an array of its arguments, which prints in brackets.
+Array.new(1, "two", nil)

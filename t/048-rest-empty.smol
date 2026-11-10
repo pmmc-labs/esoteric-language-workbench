@@ -1,0 +1,2 @@
+// With no arguments for it, a %name parameter is an empty Hash.
+function (%rest) { %rest }()

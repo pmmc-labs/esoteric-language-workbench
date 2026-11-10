@@ -1,0 +1,6 @@
+// An array is a reference: a let copies it, not its items, so a change through
+// one name is seen through the other.
+let @a = Array.new();
+let @b = @a;
+@b.push(1);
+@a.size()

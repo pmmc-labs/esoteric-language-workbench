@@ -1,0 +1,4 @@
+// set replaces an item in place.
+let @a = Array.new(1, 2);
+@a.set(0, "x");
+@a

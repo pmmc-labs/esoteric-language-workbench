@@ -24,9 +24,14 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
 ## The language
 
 - **Values**: integers, unbounded (BigInt on the host) (default); strings,
-  with no escapes yet (default); `nil`, `true` and `false` (default); the
-  primitives Hash and Array (D11); Scalar, a value bound to a name (D20);
-  closures (D11); opaque instances (D10).
+  with no escapes yet (default); `nil`, `true` and `false` (default). These
+  are the Scalar values: a name is bound to one, and there is no box type
+  (D20). The primitives Hash and Array (D11) are references, and they change
+  in place (default). Closures (D11), opaque instances (D10), and the
+  classes `Array` and `Hash` (default) are values too. Methods that change
+  their receiver return it, so calls chain (default). A missing key or
+  index gives `nil`, and `set` won't grow an array (default). An array or
+  hash that holds itself prints its cycle as `[...]` or `{...}` (default).
 - **Names**: a sigil is part of the name and never changes with context:
   `$a` and `@a` are different names (D11). There is no element syntax;
   reading an element is a method call, `@a.get(0)` (default).
@@ -47,8 +52,9 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   and `nil` otherwise (default). A call must give as many arguments as there
   are parameters (default). A method's first parameter is its receiver,
   `self` (D15); until dispatch exists in step 4, `self` is an ordinary name.
-  A trailing `%name` parameter, which collects the remaining arguments into
-  a Hash, waits for Hash in step 3. A let binds after its value is computed,
+  A trailing `%name` parameter collects the remaining arguments as a Hash,
+  in pairs, and must be the last parameter (default; step 3). A let binds
+  after its value is computed,
   so a function can't call itself by name (default); methods recurse
   through dispatch (step 4).
 - **Truthiness**: `nil` and `false` are false; everything else is true
@@ -60,7 +66,9 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   program exits 1 (default). A syntax error is printed as
   `FILE:LINE:COLUMN: MESSAGE` and also exits 1 (default). The faults so far
   are an unbound name, a call of a non-function, a call with the wrong
-  number of arguments, and a method that isn't found (default).
+  number of arguments, a method that isn't found, an index that isn't an
+  integer, a `set` index out of range, a hash key that isn't a string, and
+  a key with no value (default).
 
 ## The core rule
 
@@ -99,6 +107,11 @@ Built in:
   let can shadow it (default). Built-ins print as `<function>`, as closures
   do (default).
 - `isa` and `can`, as methods on `Object` (D18).
+
+- Array and Hash methods, one table of host functions per kind of value,
+  which a method call consults (step 3). Step 4 replaces the tables with
+  class method tables (D10, D16), and step 5 makes `Array` and `Hash` SMOL
+  classes that hold them.
 
 Everything else is SMOL source (D19).
 

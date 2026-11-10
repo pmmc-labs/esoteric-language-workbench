@@ -1,0 +1,2 @@
+// Hash.new needs its arguments in pairs: a key without a value is a fault.
+Hash.new("a")

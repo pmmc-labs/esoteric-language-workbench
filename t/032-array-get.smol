@@ -1,0 +1,3 @@
+// get takes an index from 0.
+let @a = Array.new(10, 20);
+@a.get(1)

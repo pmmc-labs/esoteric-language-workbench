@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 2 are done. Next: step 3, Scalar, Hash and Array, agreed and not started.
+**Progress:** steps 0 to 3 are done. Next: step 4, opaque instances and dispatch. It is marked large, so it waits on the size check in the notes after step 3.
 
 ## Step 0 was built by a small-tier builder
 
@@ -105,22 +105,37 @@ to C (the calculator's route, with every cost above several times over).
 - Leaves out: anything that returns a fault as a value other than its message.
 - Size: medium, built by the same small-tier builder. Referee: none.
 
-### 3. Scalar, Hash and Array (agreed)
+### 3. Scalar, Hash and Array (done)
 
-- Adds: the three primitives (Scalar as a value bound to a name, D20), their
-  built-in methods (`push`, `get`, `set`, `size`, `keys`, and so on),
-  `Array.new`, `Hash.new`, and `@a.push(x)`. Built-in methods are host
-  functions in the class's method table, so they dispatch like any other
-  method.
-- Tests: by hand.
-- Leaves out: objects. These are the containers the sketch's attributes and
-  method tables are built from.
-- Size: medium (it repeats one pattern across three types). Referee: none.
+- Landed: Array and Hash values, which are references and change in place;
+  the classes `Array` and `Hash`, with `new`; the methods push, get, set and
+  size on Array, and get, set, keys and size on Hash; and the trailing
+  `%name` parameter that step 1 deferred, since it collects into a Hash.
+  Golden tests 030 to 049, and unit tests in the parser and the evaluator.
+- Scalar is the values integers, strings, `nil` and the booleans, each bound
+  to a name (D20). They have no methods yet, so `42.size()` is still a fault.
+- Differs from the plan as first written:
+  - The plan said the built-in methods dispatch "like any other method", but
+    dispatch is step 4, which comes after this step. So each kind of value
+    has a host table of methods, which a method call consults (DESIGN,
+    default). Step 4 replaces the tables with class method tables (D10,
+    D16), and step 5 makes `Array` and `Hash` SMOL classes that hold the same
+    methods. This was a gap in the plan, and it is recorded here.
+  - The plan didn't say arrays and hashes are references. A `let` copies the
+    reference (default; golden test 040).
+- Leaves out: objects.
+- Size: medium as written, built by the same small-tier builder, as the
+  person accepted for step 0. Referee: none.
+
+**Step 4 needs a size check.** Step 4 is marked large, and the builder for
+this session is small-tier. The process says to stop before building a
+large step with a small builder, and to ask. So step 4 is not started.
 
 ### 4. Opaque instances and dispatch (agreed)
 
 - Adds: the five built-ins from D10; lookup through the single class chain
-  (D16); `No method found for NAME` as a fault; ids from one counter.
+  (D16); `No method found for NAME` as a fault; ids from one counter. It
+  replaces the host tables from step 3 with class method tables.
 - Tests: by hand, with a class built directly by `create_opaque_instance`:
   an instance finds its class's method, finds an inherited one, faults on a
   missing one, and gets distinct ids.
@@ -157,4 +172,4 @@ to C (the calculator's route, with every cost above several times over).
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 3 |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 4 |

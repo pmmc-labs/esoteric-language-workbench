@@ -1,0 +1,2 @@
+// keys lists the keys in the order they were added.
+Hash.new("b", 1, "a", 2).keys()

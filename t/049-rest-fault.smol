@@ -1,0 +1,2 @@
+// The arguments collected by a %name parameter come in pairs, like Hash.new's.
+function (%rest) { %rest }("a")

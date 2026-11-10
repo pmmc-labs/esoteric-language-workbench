@@ -1,0 +1,2 @@
+// set won't grow an array: an index past its end is a fault.
+Array.new(1).set(1, 2)

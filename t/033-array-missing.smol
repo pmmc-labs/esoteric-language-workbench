@@ -1,0 +1,2 @@
+// An index past the end gives nil.
+Array.new(10).get(5)

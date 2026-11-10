@@ -1,0 +1,4 @@
+// An array can hold itself. Its printed form stops where the cycle starts.
+let @a = Array.new();
+@a.push(@a);
+@a

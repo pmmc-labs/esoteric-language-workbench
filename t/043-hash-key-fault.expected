@@ -1,0 +1,2 @@
+fault: a hash key must be a string: 42
+exit: 1

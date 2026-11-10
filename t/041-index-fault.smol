@@ -1,0 +1,2 @@
+// An index that isn't an integer is a fault.
+Array.new(1).get("x")

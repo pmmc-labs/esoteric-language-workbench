@@ -49,6 +49,7 @@ const moreParams = (acc: string[], toks: readonly Token[], i: number): [string[]
     const n = toks[i + 1]!;
     if (isPunct(n, ')')) return [all, i + 2];
     if (!isPunct(n, ',')) throw fail(`expected ',' or ')' after a parameter, found ${describe(n)}`, n);
+    if (t.name.startsWith('%')) throw fail(`a ${t.name} parameter collects the rest, so it must be last`, t);
     return moreParams(all, toks, i + 2);
 };
 

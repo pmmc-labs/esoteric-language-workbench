@@ -1,0 +1,2 @@
+// A key that isn't in the hash gives nil.
+Hash.new().get("nope")

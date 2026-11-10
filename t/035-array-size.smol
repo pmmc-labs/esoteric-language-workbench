@@ -1,0 +1,2 @@
+// size counts the items.
+Array.new(1, 2, 3).size()

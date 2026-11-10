@@ -1,0 +1,2 @@
+fault: index must be an integer: "x"
+exit: 1

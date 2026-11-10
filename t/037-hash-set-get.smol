@@ -1,0 +1,4 @@
+// A hash bound to a %name is set and read by its methods.
+let %h = Hash.new();
+%h.set("k", 1);
+%h.get("k")

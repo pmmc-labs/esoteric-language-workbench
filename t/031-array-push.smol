@@ -1,0 +1,4 @@
+// push adds to the array and returns it, so calls chain.
+let @a = Array.new();
+@a.push(1).push(2);
+@a

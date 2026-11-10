@@ -1,0 +1,3 @@
+// A trailing %name parameter collects the rest of the arguments as a Hash.
+let $f = function ($first, %rest) { %rest };
+$f(1, "a", 2)
