@@ -100,6 +100,7 @@ The class `new` method works as `Array.new` and `Hash.new` do.
 ## Instances
 
 Five built-in functions, bound before the program starts as `catch` is.
+A sixth, `opaque_instance_set_class`, is under Bootstrap.
 
 `create_opaque_instance(class, attrs)` makes an instance with that class
 and those attrs, and gives it the next id. `attrs` must be a hash. It isn't
@@ -110,7 +111,8 @@ copied, so a later change to the hash is a change to the instance's attrs.
 attrs, the hash itself. Each takes an instance and nothing else.
 
 `create_class(attrs)` makes an instance to use as a class. Its class is
-`nil`. Its attrs are a new hash with `"$name"` as `""`, `"$superclass"` as
+`nil`, so a class made this way isn't an instance of `Class`, unlike the
+sketch's; `Class.new` makes one that is. Its attrs are a new hash with `"$name"` as `""`, `"$superclass"` as
 `nil` and `"%methods"` as an empty hash, and then each entry of `attrs`,
 which must be a hash, set over those.
 
@@ -150,8 +152,9 @@ it is called on, with those pairs as its attrs; `id()`; and `class()`.
 So `Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(...))`
 makes a class. The built-in `opaque_instance_set_class(o, c)` sets an
 instance's class, and gives back `o`; the prelude uses it to make `Class` an
-instance of itself (D19). The prelude ends with a `let`, so a program with
-no statements prints nothing.
+instance of itself (D19). The prelude binds no name of its own, and its last
+statement is an expression whose value is never printed: a program with no
+statements prints nothing.
 
 The methods of `Array` and `Hash` are not in this section: they are still
 the host's, and move to class method tables with the rest of the bootstrap.

@@ -3,6 +3,7 @@
 // Exit codes: 0 ok, 1 a syntax error or a fault, 2 usage or a file it can't read.
 import { readFileSync } from 'node:fs';
 import { program } from '../compiler/src/program.ts';
+import { parse } from '../compiler/src/parser.ts';
 import { evaluate, show } from '../compiler/src/eval.ts';
 import { Failure } from '../compiler/src/errors.ts';
 
@@ -20,7 +21,10 @@ const main = (argv: string[]): number => {
     }
     try {
         const value = evaluate(program(text));
-        if (value !== undefined) console.log(show(value));
+        // The prelude's last statement is an expression, so a program with no
+        // statements of its own would print its value. Only a program with
+        // statements of its own prints one.
+        if (value !== undefined && parse(text).length > 0) console.log(show(value));
         return 0;
     } catch (e) {
         if (e instanceof Failure) {

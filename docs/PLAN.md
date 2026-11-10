@@ -159,8 +159,9 @@ points the plan left open.
     create_opaque_instance($class, %attrs) }`. The instance holds that Hash
     by reference, where the sketch copies.
   - `create_class` gives its instance the class `nil`. The sketch gives it
-    `Class`, by a reference to a variable assigned later. Step 5 decides
-    how `Class` gets set (D19).
+    `Class`, by a reference to a variable assigned later. Step 5a settled how
+    `Class` gets its class (D19); `create_class` itself still gives `nil`, a
+    difference from the sketch that is kept for now.
   - `create_class`'s defaults are `"$name"`, `"$superclass"` and
     `"%methods"`, by D21's keys and without `%:attributes` (D22).
   - A method's arity counts only the arguments after `self`, and a function
@@ -182,7 +183,8 @@ points the plan left open.
 **5a, done.** The prelude in `lib/prelude.smol` runs before every program. It
 makes `Class` (object 1) and `Object` (object 2), with `name`, `superclass`
 and `get_method` on Class, and `new`, `id` and `class` on Object, plus the
-setter `opaque_instance_set_class` (D19). Golden tests 085 to 093 take the
+setter `opaque_instance_set_class` (D19). The prelude binds only `Class` and
+`Object`. Golden tests 085 to 093 take the
 sketch's assertions, each with its expected value from the sketch's own `is`
 and `is_deeply` lines, except the four about `class_precedence_list`. The
 programs' own objects start at 3, so the step 4 ids moved by two (D25).

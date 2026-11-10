@@ -22,7 +22,7 @@ let Object = create_class(Hash.new(
 opaque_instance_set_class(Class, Class);
 opaque_instance_set_class(Object, Class);
 
-// Class inherits from Object. This is a let, not an expression, so the
-// bootstrap has no value of its own: a program with no statements prints
-// nothing.
-let bootstrapped = opaque_instance_attrs(Class).set("$superclass", Object);
+// Class inherits from Object. This is the last statement, and an expression,
+// so it binds no name: a program can't see the bootstrap. The driver prints
+// only a program with statements of its own, so this value is never printed.
+opaque_instance_attrs(Class).set("$superclass", Object);

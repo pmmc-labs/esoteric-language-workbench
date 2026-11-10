@@ -1,5 +1,6 @@
 // Bar inherits from Foo: it is object 5, and its instance, object 6, finds
-// Foo's foo and its own bar and baz.
+// Foo's foo and its own bar and baz. Bar's class is Class, its name is "Bar",
+// and its instance's class is Bar: the sketch's three assertions that remain.
 let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(
     "foo", function (self) { "Foo->foo" },
     "bar", function (self) { "Foo->bar" }));
@@ -8,4 +9,4 @@ let $Bar = Class.new("$name", "Bar", "$superclass", $Foo, "%methods", Hash.new(
     "bar", function (self) { "Bar->bar" },
     "baz", function (self) { "Bar->baz" }));
 let $iBar = $Bar.new();
-Array.new($Bar.id(), $Bar.superclass().id(), $iBar.id(), $iBar.foo(), $iBar.bar(), $iBar.baz(), catch(function () { $iBar.name() }))
+Array.new($Bar.id(), $Bar.class().id(), $Bar.name(), $Bar.superclass().id(), $iBar.id(), $iBar.class().id(), $iBar.foo(), $iBar.bar(), $iBar.baz(), catch(function () { $iBar.name() }))

@@ -230,7 +230,8 @@ const root = (): Env => {
     let ids = 0n;
     const create = (cls: Value, attrs: HashV): Value => ({ kind: 'obj', id: ++ids, cls, attrs });
     // create_class: the defaults, then the given attrs over them, in a Hash
-    // of the class's own. Its class is nil until step 5 has a Class to give.
+    // of the class's own. Its class is nil: a class made this way isn't an
+    // instance of Class. Class.new makes one that is (LANGUAGE.md, Bootstrap).
     const createClass = (given: HashV): Value => create(NIL, { kind: 'hash', entries: new Map<string, Value>([
         ['$name', { kind: 'str', value: '' }],
         ['$superclass', NIL],
