@@ -1,0 +1,10 @@
+// The class is searched before its superclass, so its own method wins (the
+// sketch's "$iBar calls overridden bar"). An instance of the superclass
+// still gets the superclass's.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("bar", function (self) { "Foo->bar" })));
+let $Bar = create_opaque_instance(nil, Hash.new("$superclass", $Foo,
+    "%methods", Hash.new("bar", function (self) { "Bar->bar" })));
+let $iFoo = create_opaque_instance($Foo, Hash.new());
+let $iBar = create_opaque_instance($Bar, Hash.new());
+Array.new($iFoo.bar(), $iBar.bar())

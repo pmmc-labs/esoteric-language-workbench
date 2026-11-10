@@ -1,0 +1,8 @@
+// A method calls another through self, and the search starts again at the
+// receiver's class: Foo's hello finds Bar's name.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("hello", function (self) { self.name() },
+                         "name", function (self) { "Foo" })));
+let $Bar = create_opaque_instance(nil, Hash.new("$superclass", $Foo,
+    "%methods", Hash.new("name", function (self) { "Bar" })));
+create_opaque_instance($Bar, Hash.new()).hello()

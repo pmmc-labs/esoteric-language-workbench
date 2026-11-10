@@ -1,0 +1,6 @@
+// A class with no "%methods" has none of its own, and the search goes on to
+// its superclass.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("foo", function (self) { "Foo->foo" })));
+let $Bar = create_opaque_instance(nil, Hash.new("$superclass", $Foo));
+create_opaque_instance($Bar, Hash.new()).foo()

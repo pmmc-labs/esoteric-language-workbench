@@ -8,7 +8,11 @@
 // Arrays and hashes are the one kind of value that changes. A method on one
 // changes it, and a let copies the reference, so every name for it sees the
 // change. Each kind's methods are a table on the host, which a method call
-// consults; step 4 moves them into class method tables.
+// consults; step 5 moves them into class method tables, when Array and Hash
+// become SMOL classes.
+//
+// An opaque instance is an id, a class and attrs (D10). Its methods are not
+// on the host: a method call on one walks its class's chain, below.
 import type { Expr, Stmt } from './ast.ts';
 import { Failure } from './errors.ts';
 
@@ -23,11 +27,13 @@ export type Value =
     | { kind: 'builtin'; arity: number; call: (args: Value[]) => Value }
     | { kind: 'arr'; items: Value[] }
     | { kind: 'hash'; entries: Map<string, Value> }
-    | { kind: 'class'; name: string; make: (args: Value[]) => Value };
+    | { kind: 'class'; name: string; make: (args: Value[]) => Value }
+    | { kind: 'obj'; id: bigint; cls: Value; attrs: HashV };
 
 type ArrV = Extract<Value, { kind: 'arr' }>;
 type HashV = Extract<Value, { kind: 'hash' }>;
 type ClassV = Extract<Value, { kind: 'class' }>;
+type ObjV = Extract<Value, { kind: 'obj' }>;
 
 // A method: how many arguments it takes (null for any number), and what it
 // does with its receiver.
@@ -38,6 +44,8 @@ const NIL: Value = { kind: 'nil' };
 const fault = (message: string): never => {
     throw new Failure(message);
 };
+
+const NO_SELF = 'a method needs a first parameter for self';
 
 const lookup = (env: Env, name: string): Value | undefined =>
     env === null ? undefined : env.name === name ? env.value : lookup(env.next, name);
@@ -52,6 +60,7 @@ const render = (v: Value, open: Value[]): string => {
         case 'bool': return String(v.value);
         case 'fn': case 'builtin': return '<function>';
         case 'class': return `<class ${v.name}>`;
+        case 'obj': return `<object ${v.id}>`;
         case 'arr': return open.includes(v) ? '[...]'
             : `[${v.items.map(x => render(x, [...open, v])).join(', ')}]`;
         case 'hash': return open.includes(v) ? '{...}'
@@ -83,17 +92,25 @@ const hashOf = (args: Value[], who: string): Value => {
 // A call, with the callee and the arguments already values. The arguments
 // bind to the parameters in order, on top of the list the function kept. A
 // trailing %name parameter takes the rest of them as a Hash.
-const apply = (f: Value, args: Value[]): Value => {
+//
+// A method call passes its receiver as the first argument (D15), and says so
+// with `hidden` = 1. The caller didn't write that argument, so an arity fault
+// leaves it out of both counts, and a function with no parameter to take it
+// can't be a method.
+const apply = (f: Value, args: Value[], hidden: number = 0): Value => {
     if (f.kind !== 'fn' && f.kind !== 'builtin') return fault(`not a function: ${show(f)}`);
     if (f.kind === 'builtin') {
-        if (args.length !== f.arity) return fault(`wrong number of arguments: want ${f.arity}, got ${args.length}`);
+        if (f.arity < hidden) return fault(NO_SELF);
+        if (args.length !== f.arity)
+            return fault(`wrong number of arguments: want ${f.arity - hidden}, got ${args.length - hidden}`);
         return f.call(args);
     }
     const last = f.params[f.params.length - 1];
     const rest = last !== undefined && last.startsWith('%') ? last : null;
     const fixed = rest === null ? f.params : f.params.slice(0, -1);
+    if (fixed.length < hidden) return fault(NO_SELF);
     const wrong = rest === null ? args.length !== fixed.length : args.length < fixed.length;
-    if (wrong) return fault(`wrong number of arguments: want ${rest === null ? '' : 'at least '}${fixed.length}, got ${args.length}`);
+    if (wrong) return fault(`wrong number of arguments: want ${rest === null ? '' : 'at least '}${fixed.length - hidden}, got ${args.length - hidden}`);
     const bound = fixed.reduce<Env>((acc, name, i) => ({ name, value: args[i]!, next: acc }), f.env);
     const env = rest === null ? bound : { name: rest, value: hashOf(args.slice(fixed.length), rest), next: bound };
     return run(f.body, env) ?? NIL;
@@ -171,10 +188,67 @@ const invoke = <S extends Value>(table: ReadonlyMap<string, Method<S>>, self: S,
     return m.call(self, args);
 };
 
-const ROOT: Env = {
-    name: 'catch', value: CATCH, next: {
-        name: 'Array', value: ARRAY_CLASS, next: {
-            name: 'Hash', value: HASH_CLASS, next: null } } };
+// The core rule (DESIGN.md). The method is looked for in the class's
+// "%methods", then in its "$superclass", along the one chain (D16), until
+// the chain ends at nil. A class that isn't an instance, or has no Hash under
+// "%methods", has no methods; one that isn't an instance has no superclass
+// either, so the chain ends there.
+// A chain that loops back to a class already searched is a fault, not a
+// crash: the walk would otherwise never end.
+const findMethod = (cls: Value, name: string, seen: Value[] = []): Value | undefined => {
+    if (cls.kind !== 'obj') return undefined;
+    if (seen.includes(cls)) return fault(`superclass chain loops back to ${show(cls)}`);
+    const table = cls.attrs.entries.get('%methods');
+    const found = table !== undefined && table.kind === 'hash' ? table.entries.get(name) : undefined;
+    return found ?? findMethod(cls.attrs.entries.get('$superclass') ?? NIL, name, [...seen, cls]);
+};
+
+// A method call on an instance: the search starts at the instance's class,
+// and the method found is called with the instance first, as self (D15).
+const send = (self: ObjV, name: string, args: Value[]): Value => {
+    const m = findMethod(self.cls, name);
+    if (m === undefined) return fault(`no method found for ${name} on ${show(self)}`);
+    return apply(m, [self, ...args], 1);
+};
+
+const attrsOf = (v: Value): HashV => {
+    if (v.kind !== 'hash') return fault(`attrs must be a Hash: ${show(v)}`);
+    return v;
+};
+
+const objOf = (v: Value): ObjV => {
+    if (v.kind !== 'obj') return fault(`not an opaque instance: ${show(v)}`);
+    return v;
+};
+
+const builtin = (arity: number, call: (args: Value[]) => Value): Value => ({ kind: 'builtin', arity, call });
+
+// The names every program starts with. The two built-ins that make an
+// instance share one id counter, and it belongs to the list made here, so
+// each run of a program counts from 1.
+const root = (): Env => {
+    let ids = 0n;
+    const create = (cls: Value, attrs: HashV): Value => ({ kind: 'obj', id: ++ids, cls, attrs });
+    // create_class: the defaults, then the given attrs over them, in a Hash
+    // of the class's own. Its class is nil until step 5 has a Class to give.
+    const createClass = (given: HashV): Value => create(NIL, { kind: 'hash', entries: new Map<string, Value>([
+        ['$name', { kind: 'str', value: '' }],
+        ['$superclass', NIL],
+        ['%methods', { kind: 'hash', entries: new Map() }],
+        ...given.entries,
+    ]) });
+    const bindings: [string, Value][] = [
+        ['catch', CATCH],
+        ['Array', ARRAY_CLASS],
+        ['Hash', HASH_CLASS],
+        ['create_opaque_instance', builtin(2, args => create(args[0]!, attrsOf(args[1]!)))],
+        ['opaque_instance_id', builtin(1, args => ({ kind: 'int', value: objOf(args[0]!).id }))],
+        ['opaque_instance_class', builtin(1, args => objOf(args[0]!).cls)],
+        ['opaque_instance_attrs', builtin(1, args => objOf(args[0]!).attrs)],
+        ['create_class', builtin(1, args => createClass(attrsOf(args[0]!)))],
+    ];
+    return bindings.reduceRight<Env>((next, [name, value]) => ({ name, value, next }), null);
+};
 
 const evalExpr = (e: Expr, env: Env): Value => {
     switch (e.kind) {
@@ -194,6 +268,7 @@ const evalExpr = (e: Expr, env: Env): Value => {
                 case 'arr': return invoke(ARRAY, recv, e.name, args);
                 case 'hash': return invoke(HASH, recv, e.name, args);
                 case 'class': return invoke(CLASS, recv, e.name, args);
+                case 'obj': return send(recv, e.name, args);
                 default: return invoke(NONE, recv, e.name, args);
             }
         }
@@ -209,4 +284,4 @@ const run = (stmts: readonly Stmt[], env: Env): Value | undefined => {
     return rest.length === 0 ? v : run(rest, env);
 };
 
-export const evaluate = (stmts: readonly Stmt[]): Value | undefined => run(stmts, ROOT);
+export const evaluate = (stmts: readonly Stmt[]): Value | undefined => run(stmts, root());

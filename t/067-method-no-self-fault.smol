@@ -1,0 +1,4 @@
+// A function with no parameter for self can't be called as a method.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("m", function () { 1 })));
+create_opaque_instance($Foo, Hash.new()).m()

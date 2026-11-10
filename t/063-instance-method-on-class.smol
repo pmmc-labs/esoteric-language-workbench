@@ -1,0 +1,7 @@
+// And the reverse: a method in $Foo's "%methods" is for $Foo's instances, so
+// $Foo itself doesn't answer it (the sketch's "metaclass calling instance
+// method fails").
+let $Meta = create_opaque_instance(nil, Hash.new("$superclass", nil, "%methods", Hash.new()));
+let $Foo = create_opaque_instance($Meta, Hash.new("$superclass", nil,
+    "%methods", Hash.new("bar", function (self) { "Foo->bar" })));
+$Foo.bar()

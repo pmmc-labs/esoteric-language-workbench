@@ -1,0 +1,4 @@
+// A method's %name parameter takes the arguments after self, in pairs.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("m", function (self, %rest) { %rest })));
+create_opaque_instance($Foo, Hash.new()).m("k", 1)

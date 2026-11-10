@@ -1,0 +1,10 @@
+// Classes made by create_class dispatch like any other: the sketch's Foo and
+// Bar, with an instance of Bar.
+let $Foo = create_class(Hash.new("$name", "Foo",
+    "%methods", Hash.new("foo", function (self) { "Foo->foo" },
+                         "bar", function (self) { "Foo->bar" })));
+let $Bar = create_class(Hash.new("$name", "Bar", "$superclass", $Foo,
+    "%methods", Hash.new("bar", function (self) { "Bar->bar" },
+                         "baz", function (self) { "Bar->baz" })));
+let $iBar = create_opaque_instance($Bar, Hash.new());
+Array.new($iBar.foo(), $iBar.bar(), $iBar.baz())

@@ -1,0 +1,2 @@
+// create_class gives a class its default attrs.
+opaque_instance_attrs(create_class(Hash.new()))

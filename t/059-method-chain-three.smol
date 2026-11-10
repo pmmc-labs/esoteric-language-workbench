@@ -1,0 +1,6 @@
+// The search goes on up the chain, past more than one superclass.
+let $A = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("top", function (self) { "A->top" })));
+let $B = create_opaque_instance(nil, Hash.new("$superclass", $A, "%methods", Hash.new()));
+let $C = create_opaque_instance(nil, Hash.new("$superclass", $B, "%methods", Hash.new()));
+create_opaque_instance($C, Hash.new()).top()

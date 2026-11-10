@@ -1,0 +1,2 @@
+// The three readers take an instance, and nothing else.
+opaque_instance_id(Hash.new())

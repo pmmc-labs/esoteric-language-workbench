@@ -1,0 +1,4 @@
+// The call's arguments follow self, in order.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("pair", function (self, $a, $b) { Array.new($b, $a) })));
+create_opaque_instance($Foo, Hash.new()).pair(1, "two")

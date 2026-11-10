@@ -1,0 +1,2 @@
+// A class that isn't an instance has no methods, so the call is a fault.
+create_opaque_instance(42, Hash.new()).foo()

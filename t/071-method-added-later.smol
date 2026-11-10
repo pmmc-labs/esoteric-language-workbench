@@ -1,0 +1,7 @@
+// The method table is a Hash held by reference, so a method added after the
+// instance was made is found.
+let %m = Hash.new();
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil, "%methods", %m));
+let $i = create_opaque_instance($Foo, Hash.new());
+%m.set("late", function (self) { "late" });
+$i.late()

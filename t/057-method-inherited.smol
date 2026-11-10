@@ -1,0 +1,8 @@
+// A method the class doesn't have is found in its "$superclass" (the sketch's
+// "$iBar calls superclass foo").
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("foo", function (self) { "Foo->foo" })));
+let $Bar = create_opaque_instance(nil, Hash.new("$superclass", $Foo,
+    "%methods", Hash.new("baz", function (self) { "Bar->baz" })));
+let $i = create_opaque_instance($Bar, Hash.new());
+Array.new($i.foo(), $i.baz())

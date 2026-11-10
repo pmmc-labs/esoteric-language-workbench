@@ -1,0 +1,3 @@
+// A value in "%methods" that isn't a function is found, and can't be called.
+let $Foo = create_class(Hash.new("%methods", Hash.new("m", 42)));
+create_opaque_instance($Foo, Hash.new()).m()

@@ -1,0 +1,9 @@
+// A class's own methods come from its class, not from itself. So $Foo answers
+// name, which its class $Meta has, and an instance of $Foo doesn't (the
+// sketch's "instance calling metaclass method fails").
+let $Meta = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("name", function (self) { opaque_instance_attrs(self).get("$name") })));
+let $Foo = create_opaque_instance($Meta, Hash.new("$name", "Foo", "$superclass", nil,
+    "%methods", Hash.new("foo", function (self) { "Foo->foo" })));
+let $i = create_opaque_instance($Foo, Hash.new());
+Array.new($Foo.name(), catch(function () { $i.name() }))

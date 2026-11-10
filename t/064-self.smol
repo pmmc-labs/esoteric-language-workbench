@@ -1,0 +1,5 @@
+// The receiver arrives as the first parameter, self.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("me", function (self) { self })));
+let $i = create_opaque_instance($Foo, Hash.new());
+Array.new($i.me(), opaque_instance_id($i.me()))

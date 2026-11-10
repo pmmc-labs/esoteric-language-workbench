@@ -1,0 +1,3 @@
+// The given attrs override the defaults, which keep their places; a new key
+// goes after them.
+opaque_instance_attrs(create_class(Hash.new("$extra", 1, "$name", "Foo")))

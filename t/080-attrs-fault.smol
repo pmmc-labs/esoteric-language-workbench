@@ -1,0 +1,2 @@
+// The attrs of an instance must be a Hash.
+create_opaque_instance(nil, 42)

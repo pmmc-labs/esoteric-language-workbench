@@ -1,0 +1,3 @@
+// An instance prints as <object ID>. This one is the second made.
+let $a = create_opaque_instance(nil, Hash.new());
+create_opaque_instance(nil, Hash.new())

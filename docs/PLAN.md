@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 3 are done. Next: step 4, opaque instances and dispatch. It is marked large, so it waits on the size check in the notes after step 3.
+**Progress:** steps 0 to 4 are done. Next: step 5, the bootstrap. It is marked large, and it now also moves the Array and Hash methods into class method tables (the note under step 4).
 
 ## Step 0 was built by a small-tier builder
 
@@ -127,21 +127,55 @@ to C (the calculator's route, with every cost above several times over).
 - Size: medium as written, built by the same small-tier builder, as the
   person accepted for step 0. Referee: none.
 
-**Step 4 needs a size check.** Step 4 is marked large, and the builder for
-this session is small-tier. The process says to stop before building a
-large step with a small builder, and to ask. So step 4 is not started.
+**Step 4 needed a size check.** Step 4 is marked large, and the builder of
+steps 0 to 3 was small-tier. The process says to stop before building a
+large step with a small builder, and to ask. So step 4 waited, and was
+built by a large-tier builder, to decisions the lead had made for the
+points the plan left open.
 
-### 4. Opaque instances and dispatch (agreed)
+### 4. Opaque instances and dispatch (done)
 
-- Adds: the five built-ins from D10; lookup through the single class chain
-  (D16); `No method found for NAME` as a fault; ids from one counter. It
-  replaces the host tables from step 3 with class method tables.
-- Tests: by hand, with a class built directly by `create_opaque_instance`:
-  an instance finds its class's method, finds an inherited one, faults on a
-  missing one, and gets distinct ids.
-- Leaves out: `Class` and `Object`, which are step 5.
-- Size: large (this is the core rule). Referee: none for now. Decide
-  before step 5, where the model of the definition is written.
+- Landed: the five built-ins from D10, `create_opaque_instance`,
+  `opaque_instance_id`, `opaque_instance_class`, `opaque_instance_attrs`
+  and `create_class`, as plain names in the starting environment; the
+  instance value, shown as `<object ID>`; a method call on an instance,
+  which looks through the single class chain (D16) and passes the receiver
+  as `self` (D15); ids from one counter, from 1 for each run. Golden tests
+  050 to 083, and unit tests in the evaluator.
+- Differs from the plan as first written:
+  - The host tables of step 3 stay. The plan said this step "replaces the
+    host tables from step 3 with class method tables". A class method table
+    is a Hash in the attrs of a class that is an instance, and `Array` and
+    `Hash` aren't instances until step 5 makes them SMOL classes. Moving
+    their methods now would mean building those classes on the host, and
+    then again in SMOL. So arrays, hashes and the class values `Array` and
+    `Hash` dispatch as in step 3, and take no ids. Step 5 replaces the
+    tables.
+  - The fault for a missing method is `no method found for NAME on VALUE`,
+    the wording of step 0 that the notes on step 2 fixed, and not the
+    plan's `No method found for NAME`.
+  - `attrs` is one Hash value. The sketch takes flat arguments; a Hash
+    lets step 5 write `function ($class, %attrs) {
+    create_opaque_instance($class, %attrs) }`. The instance holds that Hash
+    by reference, where the sketch copies.
+  - `create_class` gives its instance the class `nil`. The sketch gives it
+    `Class`, by a reference to a variable assigned later. Step 5 decides
+    how `Class` gets set (D19).
+  - `create_class`'s defaults are `"$name"`, `"$superclass"` and
+    `"%methods"`, by D21's keys and without `%:attributes` (D22).
+  - A method's arity counts only the arguments after `self`, and a function
+    with no parameter for `self` is a fault when called as a method. The
+    plan didn't say.
+  - The tests go past the plan's four: the receiver as `self`, a method
+    that calls another through `self`, a class's method not reachable from
+    its own instances and the reverse (the sketch's two `fails_ok` cases,
+    with a hand-made metaclass), attrs by reference, `create_class`, and
+    the faults.
+- Leaves out: `Class` and `Object`, `opaque_instance_set_class` and any
+  prelude, which are step 5; `isa` and `can`, which are step 6.
+- Size: large (this is the core rule), built by a large-tier builder.
+  Referee: none. Decide before step 5, where the model of the definition
+  is written.
 
 ### 5. The bootstrap: Class and Object, in SMOL (agreed)
 
@@ -149,6 +183,10 @@ large step with a small builder, and to ask. So step 4 is not started.
   `superclass`, `class_precedence_list`, `get_method`, `id` and `class`,
   and the setter `opaque_instance_set_class` (D19), which makes `Class` an
   instance of itself.
+- Also adds, moved here from step 4: `Array` and `Hash` as SMOL classes,
+  with their methods in class method tables in place of the host tables of
+  step 3. Step 4 left the tables, since a class method table needs a class
+  that is an instance (the note under step 4).
 - Method tables and attributes use the keys D21 gives (`"%methods"`,
   `"$name"`). `%:attributes` and `lock_keys` are gone (D22).
 - Tests: the sketch's 32 assertions, as a few golden tests. Their expected
@@ -172,4 +210,4 @@ large step with a small builder, and to ask. So step 4 is not started.
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 4 |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 5 |

@@ -1,0 +1,4 @@
+// That fault is one catch takes, as the sketch's fails_ok does.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil, "%methods", Hash.new()));
+let $i = create_opaque_instance($Foo, Hash.new());
+catch(function () { $i.nope() })

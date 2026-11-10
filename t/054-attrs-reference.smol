@@ -1,0 +1,6 @@
+// The attrs are held by reference: a key set through the instance is seen
+// through the name the Hash was bound to.
+let %a = Hash.new();
+let $i = create_opaque_instance(nil, %a);
+opaque_instance_attrs($i).set("$x", 1);
+%a.get("$x")

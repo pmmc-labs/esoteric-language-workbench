@@ -1,0 +1,5 @@
+// A method's arity doesn't count self: this one wants 1 and gets 2.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("m", function (self, $x) { $x })));
+let $i = create_opaque_instance($Foo, Hash.new());
+$i.m(1, 2)

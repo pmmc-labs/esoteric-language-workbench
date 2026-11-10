@@ -20,6 +20,13 @@ The classes `Array` and `Hash` are bound before the program starts. Each
 has the one method `new`, which makes an instance, so `Array.new(...)` and
 `Hash.new(...)` are the ways to write them.
 
+An instance is an id, a class and attrs. The id is an integer, and each
+instance made takes the next one, from 1. The class is any value; it may be
+`nil`. The attrs are a hash, which the instance holds by reference. A class
+is an instance too, one whose attrs hold a method table under `"%methods"`
+and a superclass under `"$superclass"`. The built-in functions under
+Instances, below, make instances and read them.
+
 ## Names
 
 A name is a letter or `_`, then letters, digits and `_`. It may begin with
@@ -50,7 +57,8 @@ as in a program, and it may be empty. The function's value is the value of
 the last statement of its body, if that statement is an expression. A body
 with no such statement gives `nil`. A function sees the names bound where it
 is written, and not the names bound after it. A parameter is an ordinary
-name, so `self` is one too until methods exist.
+name, and so is `self`: a method is a function whose first parameter takes
+the receiver, and `self` is the name used for it.
 
 The last parameter may be `%name`, which takes the rest of the arguments as
 a hash, in pairs of key and value as for `Hash.new`. Those arguments must
@@ -63,8 +71,9 @@ parameters. If its last parameter is `%name`, it needs at least as many as
 it has before that.
 
 `x.name(a, b)` calls the method `name` on `x`. Arrays, hashes and the
-classes have methods, listed below. Every other value has none, so a method
-call on it is a fault.
+classes `Array` and `Hash` have methods, listed below. An instance has the
+methods of its class, as Instances says. Every other value has none, so a
+method call on it is a fault.
 
 `catch(f)` is a built-in function, bound before the program starts, so a
 `let` can shadow it. It calls `f` with no arguments. If that call raises a
@@ -87,6 +96,40 @@ if there is none. `set(k, v)` stores a value under `k`, and returns the hash.
 
 The class `new` method works as `Array.new` and `Hash.new` do.
 
+## Instances
+
+Five built-in functions, bound before the program starts as `catch` is.
+
+`create_opaque_instance(class, attrs)` makes an instance with that class
+and those attrs, and gives it the next id. `attrs` must be a hash. It isn't
+copied, so a later change to the hash is a change to the instance's attrs.
+
+`opaque_instance_id(o)` gives the id of the instance `o`,
+`opaque_instance_class(o)` its class, and `opaque_instance_attrs(o)` its
+attrs, the hash itself. Each takes an instance and nothing else.
+
+`create_class(attrs)` makes an instance to use as a class. Its class is
+`nil`. Its attrs are a new hash with `"$name"` as `""`, `"$superclass"` as
+`nil` and `"%methods"` as an empty hash, and then each entry of `attrs`,
+which must be a hash, set over those.
+
+`o.name(a, b)` on an instance looks for the method, starting at the
+instance's class. It takes the hash under `"%methods"` in that class's
+attrs, and looks up `name` there; the keys of a method table are plain
+method names. If the name isn't there, it goes on to the class under
+`"$superclass"`, and so on up until that is `nil`, where the method isn't
+found. A class that has no hash under `"%methods"` has no methods of its
+own. A class that isn't an instance has no methods and no superclass.
+
+The method found is called with `o` as its first argument, then `a` and
+`b`. So a method is written `function (self, $a, $b) { ... }`, and it must
+have a first parameter to take the receiver. The check on the number of
+arguments, and its message, count only the arguments after the receiver.
+The method's value is the value of the call.
+
+A class's `"%methods"` are for its instances. A method call on the class
+itself starts at the class's own class, as for any instance.
+
 ## Output
 
 The program prints the value of its last statement, if that statement is an
@@ -95,6 +138,7 @@ quotes, functions as `<function>`, and the constants as `nil`, `true` and
 `false`. An array prints as `[1, "two"]` and a hash as `{"a": 1}`, with keys
 in the order they were added. An array or hash that holds itself prints as
 `[...]` or `{...}` where the cycle starts. A class prints as `<class Array>`.
+An instance prints as `<object ID>`, where ID is its id: `<object 1>`.
 A program whose last statement is a `let` prints nothing. The program then
 exits 0.
 
@@ -106,6 +150,10 @@ program exits 1. A fault is `fault: MESSAGE` on stderr, and the program exits
 name; a call of something that isn't a function; a call with the wrong number
 of arguments; a method that isn't found, including any method on a value
 that has none; an index that isn't an integer; a `set` index that is out of
-range; a hash key that isn't a string; and key-value arguments with a key
-and no value. A fault that `catch` takes is not a fault of the program: the
+range; a hash key that isn't a string; key-value arguments with a key
+and no value; attrs that aren't a hash; a value that isn't an instance where
+one is needed; and a method with no first parameter for the receiver; a superclass
+chain that loops back to a class it has already searched. A
+method that isn't found is `no method found for NAME on VALUE`, for an
+instance as for any other value. A fault that `catch` takes is not a fault of the program: the
 program carries on after the call to `catch`.

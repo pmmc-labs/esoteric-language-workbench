@@ -1,0 +1,5 @@
+// Arrays, hashes and functions take no id, so the next instance is still 2.
+let $a = create_opaque_instance(nil, Hash.new());
+let @x = Array.new(1, 2);
+let $f = function () { 1 };
+opaque_instance_id(create_opaque_instance(nil, Hash.new()))

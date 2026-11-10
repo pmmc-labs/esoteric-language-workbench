@@ -1,0 +1,2 @@
+// An instance whose class is nil has no methods.
+create_opaque_instance(nil, Hash.new()).foo()

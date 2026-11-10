@@ -1,0 +1,5 @@
+// A method call on an instance finds the method in its class's "%methods".
+let %m = Hash.new("foo", function (self) { "Foo->foo" });
+let $Foo = create_opaque_instance(nil, Hash.new("$name", "Foo", "$superclass", nil, "%methods", %m));
+let $i = create_opaque_instance($Foo, Hash.new());
+$i.foo()

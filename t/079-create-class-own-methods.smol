@@ -1,0 +1,6 @@
+// Each class gets a "%methods" of its own: a method set on one isn't on the
+// other.
+let $A = create_class(Hash.new());
+let $B = create_class(Hash.new());
+opaque_instance_attrs($A).get("%methods").set("a", function (self) { "a" });
+opaque_instance_attrs($B).get("%methods").size()

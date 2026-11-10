@@ -51,7 +51,10 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   pointer). A body's value is its last statement if that is an expression,
   and `nil` otherwise (default). A call must give as many arguments as there
   are parameters (default). A method's first parameter is its receiver,
-  `self` (D15); until dispatch exists in step 4, `self` is an ordinary name.
+  `self` (D15). `self` is an ordinary name, and dispatch passes the receiver
+  as the first argument (step 4). A method's arity counts only the
+  arguments after the receiver, and a function with no parameter to take
+  the receiver can't be called as a method (default).
   A trailing `%name` parameter collects the remaining arguments as a Hash,
   in pairs, and must be the last parameter (default; step 3). A let binds
   after its value is computed,
@@ -68,7 +71,9 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   are an unbound name, a call of a non-function, a call with the wrong
   number of arguments, a method that isn't found, an index that isn't an
   integer, a `set` index out of range, a hash key that isn't a string, and
-  a key with no value (default).
+  a key with no value (default). Step 4 adds attrs that aren't a Hash, a
+  value that isn't an instance given to one of the `opaque_instance_`
+  readers, and a method with no parameter for `self` (default).
 
 ## The core rule
 
@@ -81,13 +86,38 @@ changes how lookup works is a proposal about this rule.
 
 The primitives are opaque instances too, and their methods, such as
 `push`, are built-in closures in their class's method table, so they
-dispatch by the same rule (default).
+dispatch by the same rule (default). That is step 5: until then arrays,
+hashes and the class values `Array` and `Hash` keep the host tables of
+step 3, and take no ids.
+
+As built in step 4:
+
+- The method table is the Hash under `"%methods"` in the class's attrs,
+  keyed by plain method names, and the superclass is the value under
+  `"$superclass"` (D21). The chain ends at `nil`.
+- A class that isn't an instance, or has no Hash under `"%methods"`, has no
+  methods. One that isn't an instance has no superclass either, so the
+  chain ends there, as it does at a class with no `"$superclass"` key
+  (default).
+- A method is found when its name is a key of the table. A value there that
+  isn't a function is found, and calling it is the fault `not a function`
+  (default). The sketch tests the value for truth instead.
+- A superclass chain that loops back to a class already searched is the
+  fault `superclass chain loops back to VALUE` (default). The sketch would
+  never end on one.
+- A missing method is `no method found for NAME on VALUE`, and an instance
+  is shown as `<object ID>`.
 
 ## Values and memory
 
 Each new instance takes the next id from one counter, starting at 1, so
-in the bootstrap `Class` is 1 and `Object` is 2, as in the sketch
-(default). Memory is Node's: the collector and the closures of the
+in step 5's bootstrap, `Class` is 1 and `Object` is 2, as in the sketch
+(default). Only `create_opaque_instance` and `create_class` take ids. The
+counter belongs to one run of a program, so each run starts at 1. An
+instance holds its attrs Hash by reference; `create_class` builds a new
+Hash, the defaults and then the given attrs, so it doesn't share the one it
+was given (default). An overridden default keeps its place in that Hash,
+and a new key follows the three defaults (default). Memory is Node's: the collector and the closures of the
 interpreter's host (D14).
 
 ## The runtime
@@ -96,7 +126,12 @@ Built in:
 
 - From the sketch's `::` functions (D10): `create_opaque_instance`,
   `opaque_instance_id`, `opaque_instance_class`, `opaque_instance_attrs`,
-  and `create_class`.
+  and `create_class` (step 4). They are plain names in the starting
+  environment. `attrs` is one Hash value, not flat arguments. Attrs that
+  aren't a Hash are the fault `attrs must be a Hash: VALUE`, and a reader
+  given something else is `not an opaque instance: VALUE` (default: the
+  wording). `create_class` gives the class `nil` for now; step 5 decides
+  how `Class` gets set.
 - `opaque_instance_set_class(instance, class)`: sets an instance's class
   slot, so SMOL source can make `Class` an instance of itself (D19). The
   name is a default.
@@ -109,9 +144,9 @@ Built in:
 - `isa` and `can`, as methods on `Object` (D18).
 
 - Array and Hash methods, one table of host functions per kind of value,
-  which a method call consults (step 3). Step 4 replaces the tables with
-  class method tables (D10, D16), and step 5 makes `Array` and `Hash` SMOL
-  classes that hold them.
+  which a method call consults (step 3). Step 4 leaves the tables as they
+  are. Step 5 replaces them with class method tables (D10, D16), when it
+  makes `Array` and `Hash` SMOL classes that hold them.
 
 Everything else is SMOL source (D19).
 

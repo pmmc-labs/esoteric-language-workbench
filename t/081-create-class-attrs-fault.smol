@@ -1,0 +1,2 @@
+// And so must the attrs given to create_class.
+create_class("Foo")

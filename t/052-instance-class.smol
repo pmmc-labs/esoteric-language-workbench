@@ -1,0 +1,4 @@
+// An instance's class is the value it was made with: nil, or another instance.
+let $Foo = create_opaque_instance(nil, Hash.new());
+let $i = create_opaque_instance($Foo, Hash.new());
+Array.new(opaque_instance_class($Foo), opaque_instance_class($i))

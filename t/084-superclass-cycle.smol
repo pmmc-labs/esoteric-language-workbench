@@ -1,0 +1,6 @@
+// A superclass chain that loops back on itself is a fault, not a crash. The
+// class A is the first instance made, so it is object 1.
+let $A = create_opaque_instance(nil, Hash.new("$superclass", nil, "%methods", Hash.new()));
+opaque_instance_attrs($A).set("$superclass", $A);
+let $i = create_opaque_instance($A, Hash.new());
+$i.missing()

@@ -1,0 +1,4 @@
+// A method reads its receiver's attrs.
+let $Foo = create_opaque_instance(nil, Hash.new("$superclass", nil,
+    "%methods", Hash.new("x", function (self) { opaque_instance_attrs(self).get("$x") })));
+create_opaque_instance($Foo, Hash.new("$x", 42)).x()

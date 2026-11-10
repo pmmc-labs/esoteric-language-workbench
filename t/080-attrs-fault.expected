@@ -1,0 +1,2 @@
+fault: attrs must be a Hash: 42
+exit: 1
