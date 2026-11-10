@@ -1,0 +1,3 @@
+// A let binds a name for the statements after it.
+let $x = 42;
+$x

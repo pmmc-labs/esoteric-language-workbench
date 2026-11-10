@@ -1,0 +1,2 @@
+// Calling something that isn't a function is a fault.
+42(1)

@@ -1,0 +1,2 @@
+// No value has methods yet, so a method call is a fault.
+42.size()

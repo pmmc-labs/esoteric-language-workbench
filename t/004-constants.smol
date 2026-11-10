@@ -1,0 +1,4 @@
+// Only the last statement's value is printed.
+nil;
+true;
+false

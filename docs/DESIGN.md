@@ -3,8 +3,8 @@
 This is the design as agreed. [`DECISIONS.md`](DECISIONS.md) has the
 reasons and the alternatives that were turned down, and
 [`PLAN.md`](PLAN.md) has the build order. **(default)** marks something
-the agent took without discussion, which is fair to change. Nothing here
-is built yet.
+the agent took without discussion, which is fair to change. What is built
+so far is in [`LANGUAGE.md`](LANGUAGE.md).
 
 ## Goals
 
@@ -23,7 +23,8 @@ is built yet.
 
 ## The language
 
-- **Values**: integers, strings, `nil`, `true` and `false` (default); the
+- **Values**: integers, unbounded (BigInt on the host) (default); strings,
+  with no escapes yet (default); `nil`, `true` and `false` (default); the
   primitives Hash and Array (D11); Scalar, a value bound to a name (D20);
   closures (D11); opaque instances (D10).
 - **Names**: a sigil is part of the name and never changes with context:
@@ -33,8 +34,11 @@ is built yet.
   `Hash.new(...)` (D12). `Hash.new` takes flat alternating keys and values,
   as the sketch's `%attrs` does (default). Keys are strings, sigils
   included (D21).
+- **Statements and comments**: statements are separated by `;`, and the
+  last may omit it (default). `//` runs a comment to the end of the line
+  (default): the plan's `;` comments couldn't coexist with `;` separators.
 - **Calls and methods**: `f(a, b)`, `obj.m(a)`, `@a.push(x)` (D12).
-- **Bindings**: `let x = e` (default).
+- **Bindings**: `let x = e` binds for the statements after it (default).
 - **Closures**: `function (params) { ... }`. A method's first parameter is
   its receiver, `self` (D15). A trailing `%name` parameter collects the
   remaining arguments into a Hash (default). A function's value is its
@@ -42,6 +46,14 @@ is built yet.
   signatures (default).
 - **Truthiness**: `nil` and `false` are false; everything else is true
   (default).
+- **Output**: a program prints the value of its last statement, if that
+  statement is an expression, and then a newline. A let prints nothing
+  (default).
+- **Faults**: a fault is printed as `fault: MESSAGE` on stderr, and the
+  program exits 1 (default). A syntax error is printed as
+  `FILE:LINE:COLUMN: MESSAGE` and also exits 1 (default). Step 0's faults
+  are an unbound name, a call of a non-function, and a method that isn't
+  found (default).
 
 ## The core rule
 
@@ -61,8 +73,7 @@ dispatch by the same rule (default).
 Each new instance takes the next id from one counter, starting at 1, so
 in the bootstrap `Class` is 1 and `Object` is 2, as in the sketch
 (default). Memory is Node's: the collector and the closures of the
-interpreter's host, since the implementation is a TypeScript interpreter
-(D14).
+interpreter's host (D14).
 
 ## The runtime
 
@@ -82,11 +93,13 @@ Everything else is SMOL source (D19).
 
 ## The implementation
 
-A tree-walking interpreter in TypeScript, run by Node (D14). The reader,
-parser and evaluator are pure functions over immutable data. The object
-model is SMOL source running on that interpreter.
+A tree-walking interpreter in TypeScript, run by Node (D14). In
+`compiler/src/`: `lexer.ts` turns text into tokens, `parser.ts` turns
+tokens into statements, `eval.ts` runs them, and `ast.ts` and `errors.ts`
+hold the shapes and the one error class. `bin/smol.ts` is the driver. The
+object model is SMOL source running on that interpreter.
 
 ## Open questions
 
-None. The ten questions from the first draft are settled in D14 to D22,
-and the defaults marked above are fair to revisit.
+None. The ten questions from the first draft are settled in D14 to D22.
+The defaults marked above are fair to revisit.

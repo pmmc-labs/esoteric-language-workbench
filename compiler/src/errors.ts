@@ -1,12 +1,11 @@
-// The one class in the compiler: it plays the part of `raise`. Everything
-// else is functions over immutable data, so it can be ported to the
-// language itself line by line.
-export class CompileError extends Error {
-    readonly line: number;
-    readonly col: number;
-    constructor(message: string, line: number, col: number) {
+// The one class in the interpreter: it plays the part of `raise`. A syntax
+// error carries its position; a fault doesn't, because the program has run.
+import type { Pos } from './ast.ts';
+
+export class Failure extends Error {
+    readonly pos: Pos | undefined;
+    constructor(message: string, pos?: Pos) {
         super(message);
-        this.line = line;
-        this.col = col;
+        this.pos = pos;
     }
 }

@@ -2,31 +2,26 @@
 
 SMOL's build order. The proposal is agreed: the implementation is an
 interpreter (D14), and the open questions are settled (D15 to D22). Each
-step below says what it adds, what it tests, and what it leaves out on
-purpose. Each carries a Referee line and a Size line, as
-`docs/PROCESS.md` asks.
+step says what it adds, what it tests, and what it leaves out on purpose.
+Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** no SMOL step is built. Step 0 is agreed and is next, but it
-hasn't started. The note below says why.
+**Progress:** step 0 is done. Next: step 1, closures, agreed and not started.
 
-## Step 0 waits on a size check
+## Step 0 was built by a small-tier builder
 
-Step 0 is marked large, and the builder in this session is Haiku 5.5. The
-workbench's `docs/MODELS.md` puts that model in the small tier, as an
-executor rather than a decider. `docs/PROCESS.md` says a step marked large
-that meets a small builder is a reason to stop before building, and to ask.
-So step 0 is not started. Two ways forward:
-
-- **A larger model writes step 0 and builds it,** or splits it into
-  sub-steps, each sized for the builder who takes it. This is what the
-  process asks for.
-- **The person accepts a small builder for step 0,** with the mismatch
-  recorded in the commit that lands it.
+Step 0 was marked large, and this session's builder is a small-tier model.
+`docs/MODELS.md` says a small model shouldn't decide anything, and that it
+builds what a pattern and a check already settle. The process asks for a
+larger model to write or split a large step first. The person accepted a
+small builder for step 0 instead, and the commit that landed it records the
+mismatch. Step 0 had no pattern to repeat, so the golden tests and the unit
+tests were the check to satisfy. The steps after it are sized against those
+tests.
 
 ## Decided: an interpreter, not a compiler (D14)
 
 The interpreter is a tree-walking one in TypeScript, run by Node, with the
-reader, parser and evaluator as pure functions over immutable data.
+lexer, parser and evaluator as pure functions over immutable data.
 
 - The subject is runtime structure: instances, method tables that change,
   closures, a class chain. A compiler to C has to build a heap, a garbage
@@ -56,18 +51,27 @@ to C (the calculator's route, with every cost above several times over).
 
 ## Steps
 
-### 0. Scaffold: reader, evaluator, runner (agreed, not started)
+### 0. Scaffold: reader, evaluator, runner (done)
 
-- Adds: `bin/smol.ts`; a reader for the JavaScript-like syntax (integers,
-  strings, `nil`, `true`, `false`, names with sigils, calls, method calls,
-  `let`, `;` comments); an evaluator; a program prints the value of its
-  last expression. A fault prints `fault: ...` on stderr and exits 1
-  (default). `t/run.sh` runs the interpreter.
-- Tests: golden tests 000 and 001, by hand: an integer, and a `let` with a
-  call.
+- Landed: `bin/smol.ts`; `compiler/src/` with `ast.ts`, `lexer.ts`,
+  `parser.ts`, `eval.ts` and `errors.ts`; `t/run.sh`, which runs the
+  interpreter; unit tests in `compiler/tests/`; golden tests 000 to 011.
+- Differs from the plan as first written:
+  - Comments are `//`. `;` separates statements (DESIGN, default), so it
+    can't also begin a comment.
+  - Golden tests 000 and 001 are kept, with the same programs. 002 to 011
+    are added. The plan's "a let with a call" is `002-let`: no call can
+    succeed before step 1, so calls and method calls are tested by their
+    faults (007 and 008).
+  - Integers are unbounded, not 63-bit. 011 checks that one more than 2^62
+    is exact.
+  - The calculator's C runtime, its compiler passes, and the compile step in
+    `t/run.sh` are gone (D14).
+- Tests: the golden tests above, by hand; the unit tests in
+  `compiler/tests/`.
 - Leaves out: closures, objects, catchable faults.
-- Size: large. This is the step the size check above is about. Referee:
-  none.
+- Size: large, as written; built by a small-tier builder, as above.
+  Referee: none.
 
 ### 1. Closures (agreed)
 
@@ -104,8 +108,8 @@ to C (the calculator's route, with every cost above several times over).
   an instance finds its class's method, finds an inherited one, faults on a
   missing one, and gets distinct ids.
 - Leaves out: `Class` and `Object`, which are step 5.
-- Size: large (this is the core rule). Referee: none for now. Decide before
-  step 5, where the model of the definition is written.
+- Size: large (this is the core rule). Referee: none for now. Decide
+  before step 5, where the model of the definition is written.
 
 ### 5. The bootstrap: Class and Object, in SMOL (agreed)
 
@@ -136,4 +140,4 @@ to C (the calculator's route, with every cost above several times over).
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 0 to 5, and step 6 for `isa` and `can` | waits on step 0 |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5, and step 6 for `isa` and `can` | waits on step 1 |

@@ -8,7 +8,7 @@ what the models write.
             must equal the file. A file that was patched by hand, or a
             model that was changed without rerunning it, fails here.
             `--write` writes the files instead (make models).
-  tests     Every t/*.lang, examples/*.lang and docs/guide/code/*.lang
+  tests     Every t/*.smol, examples/*.smol and docs/guide/code/*.smol
             has a .expected and the other way round; a test that names a
             model (`t/models/x.py` in its comments) names one that
             exists and that lists the test's files.
@@ -17,7 +17,7 @@ what the models write.
             every golden test, and must print the .expected, or say the
             program is outside what it covers (exit 3), which is skipped.
   commits   Every commit in a range (BASE..HEAD, default origin/main..HEAD)
-            that touches compiler/, runtime/ or lib/ names a decision
+            that touches compiler/, lib/ or bin/ names a decision
             (D12) or a plan step (step 3) in its subject, so that the
             change can be found from the log and the log from the
             change. `commit-msg FILE [--staged]` checks one message, for
@@ -31,9 +31,9 @@ import subprocess
 import sys
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-IMPL = ('compiler/', 'runtime/', 'lib/', 'bin/')
+IMPL = ('compiler/', 'lib/', 'bin/')
 TEST_DIRS = ['t', 'examples', 'docs/guide/code']
-EXT = '.lang'
+EXT = '.smol'
 
 def model_commands():
     """(model, args, path) for every regenerating command in every model."""

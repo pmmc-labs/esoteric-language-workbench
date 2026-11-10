@@ -1,12 +1,9 @@
 #!/bin/sh
-# Golden tests: compile each t/NNN-name.lang, examples/name.lang and
-# docs/guide/code/name.lang that has a .expected next to it (or the files
-# given), run it, and diff what it prints against the .expected: stdout
-# and stderr together, then "exit: N" if it exits with N other than 0.
-# A line "; stdin: bytes" is what the test reads from stdin, written with
-# printf %b's escapes (\n, \t, \\, \0nnn in octal; \033 is ESC); without
-# one, stdin is empty. "; args: words" gives the program its arguments,
-# split at spaces, and "; env: NAME=value ..." sets variables for it.
+# Golden tests: run each t/NNN-name.smol, examples/name.smol and
+# docs/guide/code/name.smol that has a .expected next to it (or the files
+# given) through the interpreter, and diff what it prints against the
+# .expected: stdout and stderr together, then "exit: N" if it exits with N
+# other than 0.
 # $JOBS tests run at once (default: one per CPU). Each says ok or FAIL as
 # it finishes; what each failure printed comes at the end, in order.
 cd "$(dirname "$0")/.." || exit 2
@@ -15,43 +12,30 @@ cd "$(dirname "$0")/.." || exit 2
 TIMEOUT=${TIMEOUT-60}
 export TIMEOUT
 
-# What every test assumes of the runtime. Add each knob here as the
-# runtime gains it, so that no test depends on the machine it runs on:
-# the virtual clock, the random seed, the epoch, the heap cap, the
-# collector's poison. (None exist at step 0.)
-# export LANG_CLOCK=virtual
-# export LANG_SEED=1
-
-# The watchdog leaves a file to say it killed the test, since its own
-# output can't go down the pipe to diff: diff would wait for it.
-output() {
-    rm -f "$1.killed"
-    set -f                                  # $3 and $4 are split into words, not globbed
-    env $4 "./$1" $3 <"$2" 2>&1 &
-    set +f
-    pid=$!
-    ( sleep "$TIMEOUT" && : >"$1.killed" && kill "$pid" ) >/dev/null 2>&1 &
-    watchdog=$!
-    wait "$pid" 2>/dev/null
-    status=$?
-    kill "$watchdog" 2>/dev/null
-    [ -f "$1.killed" ] && echo "killed after ${TIMEOUT}s"
-    [ $status -eq 0 ] || echo "exit: $status"
-}
+# What every test assumes of the runtime: a virtual clock, a seed, a heap cap,
+# as the runtime gains them. None exist yet, so nothing is set here.
 
 # One test, run by xargs below: its status line, and what went wrong in
-# $bin.fail.
+# build/t/$name.fail.
 if [ "$1" = "--one" ]; then
     src=$2
     name=$(basename "$src")
     name=${name%.*}
-    bin=build/t/$name
-    printf '%b' "$(sed -n 's#^; stdin: ##p' "$src")" >"$bin.stdin"
-    if ! node bin/langc.ts -o "$bin" "$src" >"$bin.fail" 2>&1; then
-        echo "FAIL $name (compile)"
-        exit 1
-    elif output "$bin" "$bin.stdin" "$(sed -n 's#^; args: ##p' "$src")" "$(sed -n 's#^; env: ##p' "$src")" | diff -u "${src%.*}.expected" - >"$bin.fail"; then
-        rm -f "$bin.fail"
+    out=build/t/$name.out
+    # The watchdog leaves a file to say it killed the test, since the test's
+    # output can't go down a pipe to diff: diff would wait for it.
+    rm -f "$out.killed"
+    node bin/smol.ts "$src" >"$out" 2>&1 &
+    pid=$!
+    ( sleep "$TIMEOUT" && : >"$out.killed" && kill "$pid" ) >/dev/null 2>&1 &
+    watchdog=$!
+    wait "$pid" 2>/dev/null
+    status=$?
+    kill "$watchdog" 2>/dev/null
+    [ -f "$out.killed" ] && echo "killed after ${TIMEOUT}s" >>"$out"
+    [ $status -eq 0 ] || echo "exit: $status" >>"$out"
+    if diff -u "${src%.*}.expected" "$out" >"build/t/$name.fail"; then
+        rm -f "build/t/$name.fail"
         echo "ok   $name"
     else
         echo "FAIL $name"
@@ -62,7 +46,7 @@ fi
 
 if [ $# -eq 0 ]; then
     set --
-    for src in t/*.lang examples/*.lang docs/guide/code/*.lang; do
+    for src in t/*.smol examples/*.smol docs/guide/code/*.smol; do
         [ -f "${src%.*}.expected" ] && set -- "$@" "$src"
     done
 fi

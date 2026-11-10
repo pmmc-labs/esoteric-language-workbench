@@ -1,3 +1,0 @@
-; The smallest and largest integers, as 63 bits hold them: expected
-; output by hand, -(2^62) and 2^62 - 1.
--4611686018427387904

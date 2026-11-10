@@ -1,0 +1,2 @@
+// Comments run to the end of the line; a ; inside one ends nothing.
+42 // the value, printed

@@ -1,0 +1,2 @@
+// A program whose last statement is a let prints nothing.
+let $x = 42;
