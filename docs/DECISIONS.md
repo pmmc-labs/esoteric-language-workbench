@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means the person decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed. Defaults are fair to
-revisit. Open questions are listed at the end of [`DESIGN.md`](DESIGN.md).
+revisit. The open questions are settled; the record of each is below.
 
 An entry has: a number that's never reused, a one-line title in bold,
 the attribution in italics (quote the person where the words matter),
@@ -33,6 +33,19 @@ first properly bootstrapped versions", and "I do not want to replicate
 the Perl, but I do want to use it as somewhat of a guide.")* The sketch is
 `docs/prior-art/MiniMetaModel.pl`. Rejected: replicating Perl.
 
+## Implementation
+
+**D14. The implementation is a tree-walking interpreter in TypeScript,
+run by Node.** *(User: "Let's go with your recommendations.")* The reader,
+parser and evaluator are pure functions over immutable data. Each step
+runs end to end, and `t/run.sh` runs the interpreter on each `.smol` file.
+Rejected: a bytecode VM, which needs an instruction set and frames the
+experiment doesn't need; compiling to JavaScript, which gains nothing over
+the interpreter but an output file; compiling to C, the calculator's
+route, which needs a heap, a collector and a value encoding before the
+first bootstrap test can pass. Retires the calculator's C runtime and its
+`langc` pipeline, when step 0 lands.
+
 ## Object model
 
 **D10. Every object is one opaque instance, and it dispatches its own
@@ -52,6 +65,41 @@ Hash and Array, ... along with closures for the methods.")* Sigils are
 part of a name and don't change with context, as in Perl 6, so `@a` and
 `$a` are different names. Rejected: Perl 5's context-dependent sigils.
 
+**D15. A method's receiver is its first parameter, `self`, which the
+dispatch binds.** *(User: "Let's go with your recommendations.")* A method
+is `function (self, ...) { ... }`, and a call passes the receiver in.
+Rejected: `this`, which brings JavaScript's binding rules (detached calls,
+arrow functions) that the design doesn't need.
+
+**D16. Inheritance is single. A class has one superclass, and its
+precedence list is its superclass chain.** *(User: "Let's go with your
+recommendations.")* Rejected: multiple inheritance with a CLOS-style
+precedence list. It is parked until a proposal wants it.
+
+**D18. `isa` and `can` are built-in methods on `Object`.** *(User: "Let's go
+with your recommendations.")* Rejected: dropping them. The sketch names
+them; its stubs that die (they route to AUTOLOAD) are a gap, not a
+decision.
+
+**D19. Bootstrapping is done in SMOL. A built-in setter gives an instance
+its class, so `Class` can be made an instance of itself after it exists.**
+*(User: "Let's go with your recommendations.")* The setter is
+`opaque_instance_set_class` (the name is a default). Rejected: the runtime
+building `Class` natively, which would move the bootstrap out of the
+language being explored. The sketch's reference to a variable that is
+assigned later is replaced by this setter.
+
+**D20. Scalar is a value bound to a name, with no box type.** *(User:
+"Let's go with your recommendations.")* Rejected: a Scalar box. Its one
+use in the sketch, `\$Class`, is replaced by D19.
+
+## Runtime
+
+**D17. A fault can be caught by a built-in `catch(closure)`, which returns
+the fault's message, or `nil`.** *(User: "Let's go with your
+recommendations.")* Rejected: a `try`/`catch` form. It is one more form to
+parse, and its only use is the meta-model's tests.
+
 ## Syntax
 
 **D12. The syntax is JavaScript-like, and collection literals are
@@ -68,6 +116,16 @@ expressions or any other Perl features like that. We are just interested
 in the meta-model and the minimum features in the runtime needed to
 support it.")* Rejected: regular expressions and everything else the
 meta-model doesn't use.
+
+**D21. Hash keys keep their sigils as part of the name.** *(User: "Let's go
+with your recommendations.")* The keys are `"$name"` and `"%methods"`, not
+the sketch's `"$:name"` and `"%:methods"`: in SMOL the colon has no job.
+Rejected: keeping the sketch's prefixes.
+
+**D22. The sketch's `%:attributes` and `lock_keys` are dropped.** *(User:
+"Let's go with your recommendations.")* `create_class` sets
+`%:attributes` and nothing reads it. `lock_keys` seals each instance, and
+instances don't need sealing. Rejected: keeping either.
 
 ## Project
 

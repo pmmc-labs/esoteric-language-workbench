@@ -4,19 +4,20 @@ SMOL is a small JavaScript-like language for personal experimentation with
 bootstrapped object meta-models, after the Perl sketch in
 `docs/prior-art/MiniMetaModel.pl`. It is not general-purpose and not for
 speed: it exists to find the smallest runtime a bootstrapped meta-model
-needs. Nothing is built yet. The implementation is open (DESIGN.md, open
-question 1), and the recommendation is a TypeScript interpreter.
+needs. Nothing is built yet. It is a tree-walking interpreter in TypeScript,
+run by Node (DECISIONS D14).
 
 ## Status
 
-Nothing in SMOL runs yet. The decisions are D5 to D7 (the process) and D8
-to D13 (User: the scope, the object model and the syntax). The
+Nothing in SMOL runs yet. The decisions are D5 to D7 (the process), D8 to
+D13 (User: the scope, the object model and the syntax), and D14 to D22 (User:
+the implementation and the open questions, each taken as recommended). The
 calculator's D1 to D4 were removed. The calculator's compiler, runtime and
-golden tests 000 and 001 are still in the tree, from the template, and go
-when the implementation is picked. **Next:** the open questions in
-[`docs/DESIGN.md`](docs/DESIGN.md), which the person picks; then step 0 in
-[`docs/PLAN.md`](docs/PLAN.md), which is proposed and not agreed. A larger
-model should confirm that proposal first (PLAN.md's note on sizes).
+golden tests 000 and 001 are still in the tree and go when step 0 lands.
+**Next:** step 0 in [`docs/PLAN.md`](docs/PLAN.md), which is agreed but not
+started. It is marked large, and this session's builder is small-tier, so it
+waits: a larger model writes or splits it first, or the person accepts a
+small builder for it (PLAN.md, "Step 0 waits on a size check").
 
 ## Read first, in this order
 
@@ -24,7 +25,7 @@ model should confirm that proposal first (PLAN.md's note on sizes).
    form and builtin, for someone writing programs in it. Still the
    calculator's until step 0 lands.
 2. [`docs/DESIGN.md`](docs/DESIGN.md): the language and implementation as
-   agreed. **(open)** marks proposals that haven't been confirmed.
+   agreed. **(default)** marks something taken without discussion.
 3. [`docs/PLAN.md`](docs/PLAN.md): the build order.
 4. [`docs/DECISIONS.md`](docs/DECISIONS.md): why, and what was turned
    down. Check it before "improving" something; it may have been decided
@@ -70,8 +71,7 @@ model should confirm that proposal first (PLAN.md's note on sizes).
 - [Indentation, line width, naming.]
 - Pure functions over immutable data, association lists for environments,
   no classes in the implementation, so the reader, parser and evaluator
-  can be ported to SMOL line by line. This is the workbench's default
-  (from a64-slight), not a decision yet. The object model itself is SMOL
+  can be ported to SMOL line by line (D14). The object model itself is SMOL
   source, not host code (D10).
 - Host constraints: none yet. The calculator's C lessons (argument order,
   the clang bracket limit, a left shift of a negative value) are in git
@@ -82,12 +82,11 @@ model should confirm that proposal first (PLAN.md's note on sizes).
 
 - Node 22.18 or later (it runs the compiler's TypeScript as it is, so
   the compiler uses only erasable syntax: no parameter properties, no
-  enums). A C compiler as `cc` only if the implementation picks a C
-  target (DESIGN open 1).
-- [The machine cloud sessions develop on, and how a target that isn't
-  native runs there, once there is one.]
+  enums). No C compiler is needed by the interpreter (D14); the
+  calculator's C runtime goes when step 0 lands.
+- [The machine cloud sessions develop on, once there is one.]
 - `t/run.sh t/000-int.lang` checks the setup for the calculator; it
-  changes with the implementation (PLAN.md, step 0).
+  changes with the interpreter (PLAN.md, step 0).
 
 ## Layout
 
@@ -96,7 +95,7 @@ model should confirm that proposal first (PLAN.md's note on sizes).
 | `bin/` | The driver |
 | `compiler/src/` | One file per pass: reader, expander, checker, codegen, targets, errors |
 | `compiler/tests/` | Unit tests, per pass |
-| `runtime/` | [The host runtime, once there is one] |
+| `runtime/` | The calculator's C runtime, to go at step 0 |
 | `lib/` | The prelude, compiled into every program, and the libraries a program asks for |
 | `examples/` | Example programs; each with a `.expected` is a golden test |
 | `docs/guide/` | The guide; its code blocks are golden tests too |
@@ -104,7 +103,7 @@ model should confirm that proposal first (PLAN.md's note on sizes).
 | `t/` | Golden tests: `NNN-name.ext` + `NNN-name.expected`; `run.sh`; `models/`; `referee/` (an evaluator of the language from the decisions, run over every test by `checks.py`; the builder of a step doesn't read it); `data/` |
 | `build/` | Output (ignored) |
 
-The layout is the template's. It changes with the implementation pick.
+The layout is the template's. It changes at step 0.
 
 ## Commands
 
