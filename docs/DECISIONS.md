@@ -238,6 +238,30 @@ are built.)*
 
 **D37. A program may change a primitive's class at run time, and D34 and D35 stay for now.** *(User: "Yes, lets allow that at runtime"; "This is fine for now, once the other primitive classes are we can revisit it"; "D35 is fine for now, once we've built more classes we can revisit.")* D29 left open whether a program may call `set_primitive_class` and `opaque_instance_set_class`. It may. So a program can make every integer an instance of a subclass of Integer for the rest of its run (golden test 130). The metaclasses of D34 and the host `isa` and `can` of D35 are kept, and each is to be revisited once the other primitive classes are built. Rejected: limiting the two builtins to the bootstrap, which would stop a program from giving a primitive a class of its own.
 
+## After the examples
+
+These answer the gaps in `docs/ISSUES.md`, which the examples found. The person
+delegated each decision to the lead, so each is marked as the lead's answer
+under that delegation, and each can be revisited by the person.
+
+**D38. `print(x)` writes a line, and the last-value rule stays.** *(delegated by the person; the lead's answer.)* The examples gathered their results into one array, since a program prints only its last value. `print(x)` is a builtin that writes `x` as the last value is written (LANGUAGE.md's Output rules) and a newline, then gives `x`, so it can sit inside an expression. The last value is still printed at the end, after anything printed before it. All output goes through one writer, so the order is the order of the calls. Rejected: a return value that carries lines, since the program's text would no longer say what it prints; and a `print` without a newline, since a line is the unit the examples need.
+
+**D39. A super call is `superclass().find_method(name)`, a method of Class in the prelude. There is no `super` form.** *(delegated; the lead's answer.)* Example 02 fetched Dog's `speak` from Dog's own table, which fails for a method that Dog inherits. `find_method(label)` walks the class and then its superclasses, and gives the first method it finds, or nil. A super call is then `Puppy.superclass().find_method("speak")(self)`: the method is found from the superclass and called with `self`, as any method call is. `get_method` keeps its meaning, the own table (the sketch's). Rejected: a `super` form, since it needs the class a method was written in, and a closure carries its environment, not its class, so `super` would need a new hidden binding for every method. Rejected too: a builtin that takes a class as an argument, which would be a second route to a method beside the core rule (D10, D16).
+
+**D40. Iteration is three host builtins on Array: `each(block)`, `inject(acc, block)` and `indexOf(x)`.** *(delegated; the lead's answer.)* SMOL has no loop, and example 05 recursed over an index, which makes one method call per item and would run out of the host's stack for a long array. `each` calls `block(item)` for each item, in order, and gives the array. `inject` calls `block(acc, item)` and gives the last accumulator, or the start value for an empty array. `indexOf(x)` gives the index of the first item equal to `x`, by the rule `includes` uses (D30), or -1, and it stops there. A block is called as any function is, so its arity is checked, and a fault inside it is a fault of the call. Rejected: a loop form, which is grammar for something a method can do; and the same three in SMOL, for the stack reason above.
+
+**D41. Three missing halves of pairs: `pop()` on Array, `has(k)` on Hash, `divBy(n)` on Integer.** *(delegated; the lead's answer.)* `pop()` removes the last item and gives it, or nil for an empty array: the pair of `push`. `has(k)` is true if the key is there, so a key stored with nil is told from a missing one, which `get` and `isNil` cannot do (example 06). `divBy(n)` is integer division that truncates toward zero, as the host's integers divide. `n` must be an integer, and zero is the fault `divBy by zero`. Rejected: floor division (Smalltalk's `//`), which needs a rule for negatives the host does not have; and a remainder, which no example asked for.
+
+**D42. Three library methods in the prelude: `define(name, fn)` on Class, and `attr(name)` and `setAttr(name, value)` on Object.** *(delegated; the lead's answer.)* Examples 01, 04 and 05 wrote `opaque_instance_attrs(...)` and `.get("%methods").set(...)` by hand. These are SMOL source in `lib/prelude.smol`, with no new builtin. `define` puts the method in the class's own table and gives the class back. `attr` reads an attr of the instance, and `setAttr` writes one and gives the instance back. Rejected: `self.count` syntax, which is grammar and gives the dot a second meaning; and a new form for methods.
+
+**D43. Decided against, with the reasons: operators; a function that names itself; string escapes; grouping by parentheses; and a default superclass of Object.** *(delegated; the lead's answer. Nothing here is built.)*
+- Operators are not added. Every example reads well with `plus`, `lessThan` and the rest. Operators would be grammar for sugar over the same methods, and the person hasn't asked for them. Revisit if an example needs them.
+- A function does not call itself by name. A `let` binds after its value is made (DESIGN, default), and methods recurse through `self` (examples 04 and 05). Example 07 passes a function to itself as an argument. Rejected: a `let rec` form, which is grammar; and a `let` that binds first for functions only, which is a special case.
+- Strings have no escapes. `print` gives line breaks, and `"\n"` would be a lexer rule for a single use.
+- Parentheses do not group. A literal receiver needs none: `1.plus(2)` works. `(1).plus(2)` is a syntax error, and it stays one.
+- `create_class` still defaults `"$superclass"` to nil. Object is the root, and it is made by the same call, so an Object default would need a special case for Object itself, and every test of the default would change. The examples set `"$superclass", Object`, and LANGUAGE.md says why.
+
+
 ## Project
 
 **D5. Golden tests' expected output comes from an independent source,
