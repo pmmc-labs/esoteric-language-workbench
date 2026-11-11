@@ -1,0 +1,92 @@
+%YAML 1.2
+---
+# Syntax highlighting for SMOL (.smol) in Sublime Text. The token rules follow
+# compiler/src/lexer.ts and parser.ts: `//` comments, double-quoted strings
+# with no escapes, integers with an optional `-`, names with an optional sigil
+# ($, @ or %) that is part of the name, five keywords, and a few punctuators.
+name: SMOL
+file_extensions: [smol]
+scope: source.smol
+version: 2
+
+contexts:
+  main:
+    - include: comments
+    - include: strings
+    - include: numbers
+    - include: keywords
+    - include: sigil-names
+    - include: method-calls
+    - include: builtins
+    - include: classes
+    - include: call-names
+    - include: punctuation
+
+  comments:
+    - match: //
+      scope: punctuation.definition.comment.smol
+      push:
+        - meta_scope: comment.line.double-slash.smol
+        - match: $\n?
+          pop: true
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.smol
+      push:
+        - meta_scope: string.quoted.double.smol
+        - match: '"'
+          scope: punctuation.definition.string.end.smol
+          pop: true
+
+  numbers:
+    - match: '(?<![A-Za-z0-9_$@%])-?[0-9]+'
+      scope: constant.numeric.integer.smol
+
+  keywords:
+    - match: '\b(let)\b'
+      scope: keyword.declaration.let.smol
+    - match: '\b(function)\b'
+      scope: storage.type.function.smol
+    - match: '\b(nil|true|false)\b'
+      scope: constant.language.smol
+
+  # A sigil is part of the name (D11): $a, @a and %a are three names.
+  sigil-names:
+    - match: '\$[A-Za-z_][A-Za-z0-9_]*'
+      scope: variable.other.scalar.smol
+    - match: '@[A-Za-z_][A-Za-z0-9_]*'
+      scope: variable.other.array.smol
+    - match: '%[A-Za-z_][A-Za-z0-9_]*'
+      scope: variable.other.hash.smol
+
+  # x.name(...): the dot is punctuation, the name is a method.
+  method-calls:
+    - match: '(\.)\s*([A-Za-z_][A-Za-z0-9_]*)'
+      captures:
+        1: punctuation.accessor.smol
+        2: entity.name.function.method.smol
+
+  # The built-in functions of the starting environment (LANGUAGE.md).
+  builtins:
+    - match: '\b(catch|print|fault|create_opaque_instance|opaque_instance_id|opaque_instance_class|opaque_instance_attrs|opaque_instance_set_class|create_class|set_primitive_class|host_method|reserve_ids)\b'
+      scope: support.function.builtin.smol
+
+  # The classes the bootstrap makes (LANGUAGE.md, Bootstrap).
+  classes:
+    - match: '\b(Class|Object|Boolean|True|False|UndefinedObject|Array|Hash|Integer|String)\b'
+      scope: support.class.smol
+
+  call-names:
+    - match: '\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()'
+      scope: entity.name.function.smol
+
+  punctuation:
+    - match: ';'
+      scope: punctuation.terminator.statement.smol
+    - match: ','
+      scope: punctuation.separator.smol
+    - match: '[(){}]'
+      scope: punctuation.section.smol
+    - match: '='
+      scope: keyword.operator.assignment.smol
