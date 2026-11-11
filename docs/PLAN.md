@@ -187,7 +187,7 @@ sketch's assertions, each with its expected value from the sketch's own `is`
 and `is_deeply` lines, except the four about `class_precedence_list`, which 095 takes. The
 programs' own objects started at 3 (D25), which D28 moves to 7.
 
-**5b, proposed, not agreed.** `Array` and `Hash` as SMOL classes, with their
+**5b, agreed (D31, D32, D33).** The proposal below is the record; the numbers in it are superseded by D32. `Array` and `Hash` as SMOL classes, with their
 methods in class method tables. A method call on a host value finds no class
 today, which is why the host tables exist. Proposed: a registry from a value to
 its class, set by a builtin, `set_primitive_class(sample, class)`, where the
