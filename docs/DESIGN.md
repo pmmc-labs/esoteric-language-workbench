@@ -194,6 +194,9 @@ Built in:
 - `includes(x)` on an array, and `fault(message, value)`, which the prelude
   uses to stop a loop in the superclass chain with the lookup's fault (D30).
 
+- `isa(cls)` and `can(name)` on Object, host builtins reached through
+  `host_method` (D18, D35). `can` is the lookup dispatch uses.
+
 Everything else is SMOL source (D19).
 
 ## The implementation

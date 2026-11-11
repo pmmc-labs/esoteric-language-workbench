@@ -220,6 +220,17 @@ reports.
 
 **D34. Array and Hash each have a metaclass, because `new` is found through the receiver's class.** *(default: the builder's choice in step 5b, reviewed and accepted by the lead. It refines D31's wording; the reason in D31 stands.)* Under the core rule, `Array.new(...)` looks in Array's class, not in Array's own `"%methods"`. So `new` lives in a class of Array's, a metaclass named "Array class" under Class, and Hash has one too. The other bootstrap classes have no class-side methods, so they have none. Rejected: a metaclass for every class now, which adds objects with no behaviour behind them; and a `new` in Object that checks the receiver's name, which special-cases the object model.
 
+**D35. `isa` and `can` are host builtins in Object's table, reached through
+`host_method`, and `can` is the lookup dispatch uses.** *(default: the lead's
+choice in step 6. D18 fixes that they are built-in methods of Object.)*
+`isa(cls)` walks the value's class and the superclasses above it, and it stops
+with the lookup's loop fault (D23). `can(name)` is the lookup itself, so the
+two can't disagree. A value with no class is an instance of nothing, and it
+answers false to both. Rejected: SMOL definitions, since they need a loop over
+the chain, and SMOL has no loop, while Array has no test for membership; and a
+`can` that looks only at the class's own table, which would disagree with
+dispatch for an inherited method.
+
 ## Project
 
 **D5. Golden tests' expected output comes from an independent source,

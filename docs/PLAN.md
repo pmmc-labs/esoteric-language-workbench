@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class` and `Object`. 5c is done: the Boolean classes, and conditionals as their methods (D27 to D30). 5b is done: `Array` and `Hash` as classes, and ids reserved below 100 (D31 to D33). Step 5 is complete. Step 6 is next.
+**Progress:** steps 0 to 6 are done, which is the plan as written. Step 5 is complete (5a, 5b and 5c, D24). The sketch's assertions are golden tests 085 to 097, and the rest of the sketch's behaviour is covered by steps 0 to 6.
 
 ## Step 0 was built by a small-tier builder
 
@@ -249,14 +249,17 @@ registry that gives the three constants their classes is D29.
   model's reading of the definition). Referee: none. The sketch's
   assertions are the independent source.
 
-### 6. isa and can (agreed)
+### 6. isa and can (done)
 
-- Adds: `isa` and `can` as built-in methods on `Object` (D18).
-- Tests: by hand. The sketch's stubs are the reason for the step.
-- Size: small (the pattern is in place). Referee: none.
+- Landed: `isa(cls)` and `can(name)` as built-in methods on `Object` (D18),
+  host builtins reached through `host_method` (D35). Golden tests 110 to 115,
+  and unit tests in the evaluator.
+- Differs from the plan as first written: the methods are host builtins, not
+  SMOL, because `isa` needs a walk of the chain and SMOL has no loop (D35).
+- Size: small, built by the lead. Referee: none.
 
 ## Example-port table
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5 (done), and step 6 for `isa` and `can` | waits on step 6 |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 0 to 6 | ported: its assertions are golden tests 085 to 097, and its `isa` and `can` stubs are built (D18, D35) |

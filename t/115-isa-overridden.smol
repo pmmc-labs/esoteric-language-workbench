@@ -1,0 +1,4 @@
+// A class's own method wins over the one on Object, so a class can have its own isa.
+let $Q = Class.new("$name", "Q", "$superclass", Object, "%methods", Hash.new(
+    "isa", function (self, $x) { "mine" }));
+$Q.new().isa(1)

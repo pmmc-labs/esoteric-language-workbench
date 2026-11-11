@@ -1,0 +1,5 @@
+// can is true when a method of that name is found for the value, as dispatch
+// would find it. Foo's own method foo is for its instances, not for Foo.
+let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new("foo", function (self) { 1 }));
+let $i = $Foo.new();
+Array.new($i.can("foo"), $i.can("isa"), $i.can("nope"), $Foo.can("foo"), $Foo.can("name"), Array.new(1).can("push"), Array.new(1).can("nope"), true.can("not"), nil.can("isNil"))

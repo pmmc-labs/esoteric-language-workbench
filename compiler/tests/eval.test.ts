@@ -269,3 +269,9 @@ test('fault raises its message, then the value shown, and needs a string message
     faults('fault("boom", 1)', 'boom 1');
     faults('fault(1, 2)', 'fault needs a string message: 1');
 });
+
+test('isa and can answer false for a value with no class, and can wants a string name', () => {
+    assert.equal(run('host_method("Object", "can")(create_opaque_instance(nil, Hash.new()), "id")'), 'false');
+    assert.equal(run('host_method("Object", "isa")(42, Object)'), 'false');
+    faults('host_method("Object", "can")(1, 2)', 'can needs a method name as a string: 2');
+});

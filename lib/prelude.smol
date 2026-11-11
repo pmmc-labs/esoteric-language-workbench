@@ -48,7 +48,9 @@ let Object = create_class(Hash(
         "new", function (self, %attrs) { create_opaque_instance(self, %attrs) },
         "id", function (self) { opaque_instance_id(self) },
         "class", function (self) { opaque_instance_class(self) },
-        "isNil", function (self) { false })));
+        "isNil", function (self) { false },
+        "isa", host_method("Object", "isa"),
+        "can", host_method("Object", "can"))));
 
 // Conditionals are methods of booleans, as in Smalltalk (D27). Boolean is the
 // parent of True and False, which answer the conditionals. A block is a

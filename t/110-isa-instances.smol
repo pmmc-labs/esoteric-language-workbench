@@ -1,0 +1,6 @@
+// isa is true for an instance's class and for each superclass above it, and
+// false for anything else. Foo is object 100, Bar 101, and the instance of Bar 102.
+let $Foo = Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new());
+let $Bar = Class.new("$name", "Bar", "$superclass", $Foo, "%methods", Hash.new());
+let $iBar = $Bar.new();
+Array.new($iBar.isa($Bar), $iBar.isa($Foo), $iBar.isa(Object), $iBar.isa(Class), $Foo.isa($Bar))

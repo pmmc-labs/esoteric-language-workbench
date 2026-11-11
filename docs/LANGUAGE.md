@@ -171,7 +171,11 @@ helper `cpl_into(acc)` adds the class to `acc` and walks on from there.
 
 `Object` is an instance of `Class`, and it has no superclass. Its methods are
 `new(key, value, ...)`, which makes an instance of the class it is called on,
-with those pairs as its attrs; `id()`; `class()`; and `isNil()`, which is false.
+with those pairs as its attrs; `id()`; `class()`; `isNil()`, which is false;
+`isa(cls)`, which is true if `cls` is the value's class or a class above it on
+its superclass chain; and `can(name)`, which is true if a method of that name
+is found for the value, by the same lookup dispatch uses. A value with no class
+answers false to both.
 
 `Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(...))`
 makes a class. `create_class(attrs)` also makes a class, an instance of `Class`,
@@ -247,5 +251,6 @@ or a hash, or a class that isn't an instance; a host method given a receiver
 of the wrong kind; `host_method` given anything but a method of `Array` or
 `Hash`; and `reserve_ids` given something other than an integer. A
 method that isn't found is `no method found for NAME on VALUE`, for an
-instance as for any other value. A fault that `catch` takes is not a fault of the program: the
-program carries on after the call to `catch`.
+instance as for any other value. `can` given a name that isn't a string is a fault. A fault that `catch` takes
+is not a fault of the program: the program carries on after the call to
+`catch`.

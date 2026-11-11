@@ -1,0 +1,3 @@
+// A method name for can is a string, so a number is a fault, which catch takes.
+let $i = Class.new("$name", "A", "$superclass", Object, "%methods", Hash.new()).new();
+catch(function () { $i.can(1) })

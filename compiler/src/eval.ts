@@ -196,11 +196,12 @@ const HOST_METHODS = new Map<string, Map<string, Value>>([
     ])],
 ]);
 
-// host_method(class, method): the builtin for a method of Array or Hash.
-const hostMethod = (args: Value[]): Value => {
+// host_method(class, method): the builtin for a method of one of the host's
+// classes, from the table the starting environment builds (D33, D35).
+const hostMethod = (table: ReadonlyMap<string, Map<string, Value>>, args: Value[]): Value => {
     const [cls, name] = [args[0]!, args[1]!];
     const text = (v: Value): string => v.kind === 'str' ? v.value : show(v);
-    const found = cls.kind === 'str' && name.kind === 'str' ? HOST_METHODS.get(cls.value)?.get(name.value) : undefined;
+    const found = cls.kind === 'str' && name.kind === 'str' ? table.get(cls.value)?.get(name.value) : undefined;
     return found ?? fault(`no host method ${text(name)} for ${text(cls)}`);
 };
 
@@ -267,6 +268,29 @@ const objOf = (v: Value): ObjV => {
 
 const builtin = (arity: number, call: (args: Value[]) => Value): Value => ({ kind: 'builtin', arity, call });
 
+// isa(target): the value's class, or a class above it on the superclass chain,
+// is target (D18). A value with no class is an instance of nothing. The chain
+// is walked the way the lookup walks it, so a loop is the same fault (D23).
+const isaClass = (cls: Value | undefined, target: Value): boolean => {
+    const seen: Value[] = [];
+    let c = cls;
+    while (c !== undefined && c.kind === 'obj') {
+        if (sameValue(c, target)) return true;
+        if (seen.includes(c)) return fault(`superclass chain loops back to ${show(c)}`);
+        seen.push(c);
+        c = c.attrs.entries.get('$superclass');
+    }
+    return false;
+};
+
+// can(name): a method of that name is found for the value, by the same lookup
+// dispatch uses, so the two can't disagree (D18). A name that isn't a string
+// is a fault.
+const canName = (cls: Value | undefined, name: Value): boolean => {
+    if (name.kind !== 'str') return fault(`can needs a method name as a string: ${show(name)}`);
+    return cls !== undefined && findMethod(cls, name.value) !== undefined;
+};
+
 // The names every program starts with. The two built-ins that make an
 // instance share one id counter, and it belongs to the list made here, so
 // each run of a program counts from 1.
@@ -283,6 +307,14 @@ const root = (): Env => {
         ...given.entries,
     ]) });
     const primitives: HashV = { kind: 'hash', entries: new Map<string, Value>() };
+    // The class of a value: an instance's, or the one registered for a primitive.
+    const classOf = (v: Value): Value | undefined => v.kind === 'obj' ? v.cls : registered(primitives, v);
+    // Object's built-in methods (D18), which every value with a class answers.
+    const objectMethods = new Map<string, Value>([
+        ['isa', builtin(2, args => ({ kind: 'bool', value: isaClass(classOf(args[0]!), args[1]!) }))],
+        ['can', builtin(2, args => ({ kind: 'bool', value: canName(classOf(args[0]!), args[1]!) }))],
+    ]);
+    const hostMethods = new Map<string, Map<string, Value>>([...HOST_METHODS, ['Object', objectMethods]]);
     const bindings: [string, Value][] = [
         ['catch', CATCH],
         ['create_opaque_instance', builtin(2, args => create(args[0]!, attrsOf(args[1]!)))],
@@ -323,7 +355,7 @@ const root = (): Env => {
             return cls;
         })],
         // D33: the prelude takes the methods of Array and Hash from here.
-        ['host_method', builtin(2, hostMethod)],
+        ['host_method', builtin(2, args => hostMethod(hostMethods, args))],
         // D32: makes the next id at least n, and never lower, so the
         // bootstrap can keep the ids below n for itself.
         ['reserve_ids', builtin(1, args => {

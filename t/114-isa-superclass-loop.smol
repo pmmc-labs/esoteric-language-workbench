@@ -1,0 +1,7 @@
+// An instance of a class whose superclass chain loops: the lookup for isa
+// finds the loop first, and the fault is the one the lookup gives (D23). A is
+// object 100, and its instance 101.
+let $A = Class.new("$name", "A", "$superclass", Object, "%methods", Hash.new());
+opaque_instance_attrs($A).set("$superclass", $A);
+let $i = create_opaque_instance($A, Hash.new());
+catch(function () { $i.isa(Object) })
