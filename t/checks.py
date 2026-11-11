@@ -16,6 +16,11 @@ what the models write.
             written from the decisions, not the runtime) is run over
             every golden test, and must print the .expected, or say the
             program is outside what it covers (exit 3), which is skipped.
+  docs      Every ```smol block in docs/LANGUAGE.md and docs/guide/*.md is
+            run, and the ```output block right after it must be what it
+            prints: stdout and stderr together, then `exit: N` when the
+            status isn't 0, as the golden tests show. A smol block with no
+            output block after it fails here.
   commits   Every commit in a range (BASE..HEAD, default origin/main..HEAD)
             that touches compiler/, lib/ or bin/ names a decision
             (D12) or a plan step (step 3) in its subject, so that the
@@ -111,6 +116,62 @@ def check_referee():
     print(f'referee: {len(referees)} referees, {ran} tests agree, {skipped} outside them')
     return bad
 
+# The code in the docs is checked, so it can't drift from the interpreter
+# (D44). docs/LANGUAGE.md and the guide, if there is one, are read from the
+# repository root, since main() has changed directory by the time it runs.
+FENCE = re.compile(r'^```(\S*)\s*$')
+
+def doc_files():
+    return ['docs/LANGUAGE.md'] + sorted(glob.glob('docs/guide/*.md'))
+
+def doc_blocks(lines):
+    """(lang, body, opening line, closing line) for each fenced block that has
+    a language. An unlabelled block is skipped, as prose is."""
+    out, i = [], 0
+    while i < len(lines):
+        m = FENCE.match(lines[i])
+        if not m:
+            i += 1
+            continue
+        j = i + 1
+        while j < len(lines) and lines[j] != '```':
+            j += 1
+        body = '\n'.join(lines[i + 1:j]) + '\n' if j > i + 1 else ''
+        if m.group(1):
+            out.append((m.group(1), body, i, j))
+        i = j + 1
+    return out
+
+def check_docs():
+    bad, ran = [], 0
+    os.makedirs('build/docs', exist_ok=True)
+    files = doc_files()
+    for doc in files:
+        lines = open(doc).read().split('\n')
+        blocks = doc_blocks(lines)
+        for k, (lang, body, start, end) in enumerate(blocks):
+            where = f'{doc}:{start + 1}'
+            if lang == 'output':
+                prev = blocks[k - 1] if k else None
+                if not (prev and prev[0] == 'smol' and not any(l.strip() for l in lines[prev[3] + 1:start])):
+                    bad.append(f'{where}: an output block must directly follow a smol block')
+                continue
+            if lang != 'smol':
+                continue
+            nxt = blocks[k + 1] if k + 1 < len(blocks) else None
+            if nxt is None or nxt[0] != 'output' or any(l.strip() for l in lines[end + 1:nxt[2]]):
+                bad.append(f'{where}: a smol block must be followed by an output block')
+                continue
+            path = f'build/docs/{os.path.basename(doc)[:-3]}-{start + 1}.smol'
+            open(path, 'w').write(body)
+            r = subprocess.run(['node', 'bin/smol.ts', path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            got = r.stdout + (f'exit: {r.returncode}\n' if r.returncode != 0 else '')
+            ran += 1
+            if got != nxt[1]:
+                bad.append(f'{where}: the program prints\n{got}but the output block says\n{nxt[1]}')
+    print(f'docs: {ran} programs run in {len(files)} files')
+    return bad
+
 SUBJECT_OK = re.compile(r'\bD\d+\b|\bstep \d+\b', re.I)
 
 def touches_impl(files):
@@ -146,13 +207,15 @@ def main(argv):
         bad = check_tests()
     elif what == 'referee':
         bad = check_referee()
+    elif what == 'docs':
+        bad = check_docs()
     elif what == 'commits':
         upstream = subprocess.run(['git', 'rev-parse', '--verify', '-q', 'origin/main'], capture_output=True).returncode == 0
         bad = check_commits(argv[1] if len(argv) > 1 else 'origin/main..HEAD' if upstream else 'HEAD')
     elif what == 'commit-msg':
         bad = check_commit_msg(argv[1], '--staged' in argv)
     elif what == 'all':
-        bad = check_models() + check_tests() + check_referee()
+        bad = check_models() + check_tests() + check_referee() + check_docs()
     else:
         sys.exit(__doc__)
     for b in bad:

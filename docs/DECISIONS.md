@@ -262,6 +262,8 @@ under that delegation, and each can be revisited by the person.
 - `create_class` still defaults `"$superclass"` to nil. Object is the root, and it is made by the same call, so an Object default would need a special case for Object itself, and every test of the default would change. The examples set `"$superclass", Object`, and LANGUAGE.md says why.
 
 
+**D44. The code in the language doc is run by the mechanical checks.** *(default: the lead's choice, for the request to add code examples to the docs.)* Each ```smol block in `docs/LANGUAGE.md`, and in `docs/guide/*.md`, is run, and the ```output block right after it must be what the program prints: stdout and stderr together, then `exit: N` when the status isn't 0, as the golden tests show. So a doc example can't drift from the interpreter, and a change in behaviour fails `make checks` in the doc that describes it. Rejected: examples kept only in `docs/guide/code/` and linked from the doc, since a reader would have to leave the page, and a link can rot; and examples typed in with no check, which is how docs drift.
+
 ## Project
 
 **D5. Golden tests' expected output comes from an independent source,
