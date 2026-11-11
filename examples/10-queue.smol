@@ -1,0 +1,42 @@
+// A FIFO queue on an Array, driving a round-robin scheduler. Array has no
+// shift and no way to remove from the front, so the queue keeps a head
+// index and reads with get; dequeued items stay in the array behind it.
+// A dequeue on an empty queue gives nil because ifTrue does, when it runs
+// no block.
+let Queue = create_class(Hash.new(
+  "$name", "Queue",
+  "$superclass", Object,
+  "%methods", Hash.new(
+    "enqueue", function (self, x) { self.attr("items").push(x); self },
+    "size", function (self) { self.attr("items").size().minus(self.attr("head")) },
+    "dequeue", function (self) {
+      let head = self.attr("head");
+      head.lessThan(self.attr("items").size()).ifTrue(function () {
+        self.setAttr("head", head.plus(1));
+        self.attr("items").get(head)
+      })
+    },
+    // There is no loop, so run recurses through self until the queue is
+    // empty. A job goes to the back of the queue while step says it has
+    // work left.
+    "run", function (self, step) {
+      let job = self.dequeue();
+      job.isNil().ifFalse(function () {
+        step(job).ifTrue(function () { self.enqueue(job) });
+        self.run(step)
+      })
+    })));
+
+let step = function (job) {
+  print(job.get("name"));
+  let left = job.get("left").minus(1);
+  job.set("left", left);
+  0.lessThan(left)
+};
+
+let q = Queue.new("items", Array.new(), "head", 0);
+q.enqueue(Hash.new("name", "mail", "left", 2)).enqueue(Hash.new("name", "backup", "left", 1)).enqueue(Hash.new("name", "index", "left", 3));
+print(q.size());
+q.run(step);
+// Six jobs went through the array, and all six are still in it.
+Array.new(q.size(), q.attr("items").size(), q.dequeue())

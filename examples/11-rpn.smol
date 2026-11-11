@@ -1,0 +1,40 @@
+// A dispatch table: a Hash from operator names to functions, for a small
+// reverse-Polish calculator. A token is looked up with get and the
+// function found is called on the stack. binary makes a stack operation
+// from a function of two integers, so it returns a function.
+// There is no split and no way to read an integer from a string, so a
+// program is an array of integers and operator names, not a line of text.
+let binary = function (op) {
+  function (stack) {
+    let b = stack.pop();
+    let a = stack.pop();
+    stack.push(op(a, b))
+  }
+};
+let ops = Hash.new(
+  "add", binary(function (a, b) { a.plus(b) }),
+  "sub", binary(function (a, b) { a.minus(b) }),
+  "mul", binary(function (a, b) { a.times(b) }),
+  "dup", function (stack) { stack.push(stack.get(stack.size().minus(1))) },
+  "swap", function (stack) { let b = stack.pop(); let a = stack.pop(); stack.push(b, a) });
+
+// isa tells a number from a name, since every value has a class.
+let run = function (tokens) {
+  let stack = Array.new();
+  tokens.each(function (t) {
+    t.isa(Integer).ifTrueFalse(
+      function () { stack.push(t) },
+      function () {
+        ops.has(t).ifTrueFalse(
+          function () { ops.get(t)(stack) },
+          function () { print("unknown op ".concat(t)) })
+      })
+  });
+  stack
+};
+
+print(ops.keys());
+print(run(Array.new(3, 4, "add", 5, "mul")));
+print(run(Array.new(10, 3, "sub", "dup", "mul")));
+print(run(Array.new(1, 2, "swap", "sub")));
+Array.new(run(Array.new(1, "nop", 2)), ops.get("add"))

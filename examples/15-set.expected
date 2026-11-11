@@ -1,0 +1,6 @@
+["red", "green", "blue"]
+["red", "green", "blue", "yellow"]
+["red", "blue"]
+["blue", "red"]
+["green"]
+[3, true, false]

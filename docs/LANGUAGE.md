@@ -150,12 +150,15 @@ receiver: VALUE`. The others say `a hash`, `an integer` or `a string`.
 
 ## Instances
 
-Five built-in functions make and read instances. Like `catch`, they are bound
-before the program starts, and they are the five named below. The bootstrap adds
-`opaque_instance_set_class`, `set_primitive_class`, `host_method` and
-`reserve_ids`, which Bootstrap describes.
-`fault(message, value)` raises a fault, whose message is the string and then
-the value shown, separated by a space.
+Five built-in functions make and read instances: `create_opaque_instance`,
+`opaque_instance_id`, `opaque_instance_class`, `opaque_instance_attrs` and
+`create_class`, described below. Like `catch`, they are bound before the program
+starts. The bootstrap adds `opaque_instance_set_class`, `set_primitive_class`,
+`host_method` and `reserve_ids`, which Bootstrap describes.
+
+`fault(message, value)` is a separate built-in. It raises a fault, whose message
+is the string and then the value shown, separated by a space. The value is shown
+as Output shows it, so a string value is in quotes.
 
 `create_opaque_instance(class, attrs)` makes an instance with that class
 and those attrs, and gives it the next id. `attrs` must be a hash. It isn't
@@ -233,9 +236,10 @@ with those pairs as its attrs; `id()`; `class()`; `isNil()`, which is false;
 and gives the instance back, so calls chain (D42);
 `isa(cls)`, which is true if `cls` is the value's class or a class above it on
 its superclass chain; and `can(name)`, which is true if a method of that name
-is found for the value, by the same lookup dispatch uses. A value with no class answers false to both when `host_method` gives the method,
-since a method call on such a value finds nothing and is a fault. That is a
-function, or an instance whose class is `nil`.
+is found for the value, by the same lookup dispatch uses. A value with no class
+answers false to both when `host_method` gives the method. A method call on such
+a value finds nothing, so it is a fault. Such a value is a function, or an
+instance whose class is `nil`.
 
 `Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(...))`
 makes a class. `create_class(attrs)` also makes a class, an instance of `Class`,

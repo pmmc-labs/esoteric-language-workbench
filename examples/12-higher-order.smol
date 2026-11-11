@@ -1,0 +1,30 @@
+// Functions that take and make functions. map and filter are written with
+// each and push on a new array; compose and adder return closures.
+// They are plain functions rather than methods on Array, to show
+// functions as values; 05 shows the other way, with define.
+let map = function (xs, f) {
+  let out = Array.new();
+  xs.each(function (x) { out.push(f(x)) });
+  out
+};
+let filter = function (xs, keep) {
+  let out = Array.new();
+  xs.each(function (x) { keep(x).ifTrue(function () { out.push(x) }) });
+  out
+};
+let compose = function (f, g) { function (x) { f(g(x)) } };
+let adder = function (n) { function (x) { x.plus(n) } };
+let square = function (x) { x.times(x) };
+// There is no remainder, so evenness is a round trip through divBy.
+let even = function (x) { x.equals(x.divBy(2).times(2)) };
+// A method is a function whose first parameter is the receiver, so the
+// one find_method gives can be composed like any other: not(even(x)).
+let odd = compose(Boolean.find_method("not"), even);
+
+let xs = Array.new(1, 2, 3, 4, 5, 6);
+print(map(xs, square));
+print(filter(xs, even));
+print(map(xs, compose(square, adder(1))));
+print(map(xs, compose(adder(1), square)));
+let sumOfOddSquares = map(filter(xs, odd), square).inject(0, function (acc, x) { acc.plus(x) });
+Array.new(sumOfOddSquares, map(Array.new(), square))

@@ -1,0 +1,34 @@
+// A batch of transfers, each run under catch, so a failing one is logged
+// and the rest carry on. A transfer works out both new balances before it
+// stores either, so a fault leaves the accounts as they were: there is no
+// rollback, only an order of steps.
+// Faults raised here carry integers; an unknown account is caught as the
+// fault a method call on nil gives, since get gives nil for a missing key.
+let balances = Hash.new("ann", 100, "bob", 50, "cy", 0);
+let transfer = function (t) {
+  let from = t.get(0);
+  let to = t.get(1);
+  let amount = t.get(2);
+  amount.lessThan(1).ifTrue(function () { fault("amount must be positive, got", amount) });
+  let fromBal = balances.get(from);
+  fromBal.lessThan(amount).ifTrue(function () { fault("insufficient funds, short by", amount.minus(fromBal)) });
+  let toBal = balances.get(to).plus(amount);
+  balances.set(from, fromBal.minus(amount)).set(to, toBal)
+};
+
+let transfers = Array.new(
+  Array.new("ann", "bob", 30),
+  Array.new("bob", "cy", 100),
+  Array.new("cy", "ann", -5),
+  Array.new("ann", "dee", 10),
+  Array.new("bob", "cy", 80),
+  Array.new("zed", "ann", 1));
+let failures = Array.new();
+transfers.each(function (t) {
+  let route = t.get(0).concat(" -> ").concat(t.get(1));
+  let err = catch(function () { transfer(t) });
+  err.isNil().ifTrueFalse(
+    function () { print(route.concat(" ok")) },
+    function () { failures.push(err); print(route.concat(": ").concat(err)) })
+});
+Array.new(balances, failures.size())

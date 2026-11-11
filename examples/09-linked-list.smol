@@ -1,0 +1,32 @@
+// A linked list of Hash nodes, each with a "head" and a "tail", and nil
+// for the empty list. The recursion needs no base-case test: nil has a
+// class, UndefinedObject, so the empty list answers the same methods as a
+// node, and dispatch picks the case. A function can't call itself by
+// name, so the list functions are methods, and recurse through self.
+// The cost is that every hash in the program answers them.
+let cons = function (h, t) { Hash.new("head", h, "tail", t) };
+
+UndefinedObject.define("sumList", function (self) { 0 });
+Hash.define("sumList", function (self) {
+  self.get("head").plus(self.get("tail").sumList())
+});
+
+// Reversing carries the reversed part along, and makes new nodes, so the
+// list it started from is unchanged.
+UndefinedObject.define("revOnto", function (self, acc) { acc });
+Hash.define("revOnto", function (self, acc) {
+  self.get("tail").revOnto(cons(self.get("head"), acc))
+});
+
+// An array is the readable way to print a long list; push gives the array.
+UndefinedObject.define("toArrayInto", function (self, acc) { acc });
+Hash.define("toArrayInto", function (self, acc) {
+  self.get("tail").toArrayInto(acc.push(self.get("head")))
+});
+
+let xs = cons(1, cons(2, cons(3, cons(4, nil))));
+let ys = xs.revOnto(nil);
+print(cons(1, cons(2, nil)));
+print(xs.sumList());
+print(ys.toArrayInto(Array.new()));
+Array.new(xs.toArrayInto(Array.new()), ys.get("head"), nil.sumList())

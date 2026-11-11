@@ -8,7 +8,47 @@ the result. The doc passages that were unclear are at the end, and fixed.
 
 ## Open
 
-None. The gaps the examples found are answered by D38 to D43, below.
+These came from examples 09 to 16, which the person has not yet answered. Each says
+what was wanted, the options, and a recommendation. None is built: each needs a
+decision, because most touch the language's surface or a decision already made.
+
+- **Functions have no class, so a nil test can't see what find_method gives.**
+  Example 13 can't call `isNil()` on a method that `get_method` or `find_method`
+  returns, since a function has no methods. Options: (a) give functions a class,
+  Function, registered by kind as Integer and String are; (b) keep it, and test
+  identity with `includes`, as example 13 does. Recommendation: (a). This reopens
+  D36, which left Function out for want of a method. Needs a decision.
+- **Hash has no remove.** Example 15 leaves `remove` out of a set. Option:
+  `remove(k)` on Hash, which gives the value removed, or nil, as `pop` does for an
+  Array. Recommendation: add it. Needs a decision.
+- **Array has no shift.** Example 10 keeps a head index, so dequeued items stay in
+  the array. Option: `shift()`, which copies the rest. Recommendation: leave it;
+  the head index is the pattern. Needs a decision.
+- **Strings have no split, no character access, no substring, and no string to
+  integer.** Examples 11 and 16 wanted `split` and a number from a string. Options:
+  add `split(sep)` and `toInteger()`; or none, with text given as arrays of words.
+  Recommendation: decide when a text example needs more. Needs a decision.
+- **Booleans have no `and` or `or`.** Example 15 folds with `ifTrueFalse`. Option:
+  `and(block)` and `or(block)`, in the style of the conditionals, whose blocks run
+  only when needed. Recommendation: add them. Needs a decision.
+- **A rest parameter takes pairs only.** Example 15 wanted `setOf("red", ...)`.
+  Option: a rest parameter that takes a plain list. Recommendation: leave it; an
+  Array argument does the job. Needs a decision.
+- **No array or hash literal.** D12 promised `[a, b]` and `{k => v}`. The build has
+  only `Array.new` and `Hash.new`, as LANGUAGE.md says, and DESIGN.md still lists
+  the literals. Options: build them as sugar for those two; or revise D12.
+  Example 14 nests `Array.new` calls. Needs a decision.
+- **No remainder.** Example 12 tests evenness as `x.equals(x.divBy(2).times(2))`.
+  D41 left remainder out, since no example asked. Option: `remainder(n)`, which
+  matches `divBy`. Recommendation: add it, since parity tests are common. Needs a
+  decision.
+- **No map or filter on Array.** Example 12 writes them by hand with `each` and
+  `push`. Option: prelude methods in SMOL, built on `inject`, as `define` is.
+  Recommendation: add them, with no new builtin. Needs a decision.
+- **A recursive method is added to every instance of its class.** Example 09's
+  `sumList` is on Hash and UndefinedObject, since a function can't name itself
+  (D43). A note, not a proposal: it comes back with the question of a recursive
+  `let`.
 
 ## Resolved
 
@@ -52,3 +92,8 @@ None. The gaps the examples found are answered by D38 to D43, below.
 - A printed string needs no escaping, since no string can contain a `"`. Output
   now says so.
 - DESIGN.md's truthiness and its host_method fault were stale. Both are fixed.
+- The five built-in functions were listed together with `fault`, which is not
+  one of them. The five are named, and `fault` is its own built-in.
+- The message of `fault` showed a string value without saying how. It now says
+  a string is in quotes, as Output shows it.
+- The sentence on a value with no class was hard to follow. It is reworded.

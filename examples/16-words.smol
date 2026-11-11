@@ -1,0 +1,42 @@
+// A little text work on a list of words: counts, the longest, a join, and
+// a greedy wrap to a width. A string has only size, concat and equals, so
+// the text starts as an array of words (there is no split), and nothing
+// here looks inside a word (there is no character-at or substring).
+let words = Array.new("the", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog");
+let join = function (xs, sep) {
+  xs.inject("", function (acc, w) {
+    acc.size().equals(0).ifTrueFalse(function () { w }, function () { acc.concat(sep).concat(w) })
+  })
+};
+// The fold carries the line being built; a full line is pushed when the
+// next word won't fit, and the last line is pushed after the fold.
+let wrap = function (xs, width) {
+  let lines = Array.new();
+  let last = xs.inject("", function (line, w) {
+    line.size().equals(0).ifTrueFalse(
+      function () { w },
+      function () {
+        let longer = line.concat(" ").concat(w);
+        width.lessThan(longer.size()).ifTrueFalse(
+          function () { lines.push(line); w },
+          function () { longer })
+      })
+  });
+  lines.push(last)
+};
+
+let letters = words.inject(0, function (n, w) { n.plus(w.size()) });
+// lessThan is strict, so the first of the five-letter words is kept.
+let longest = words.inject("", function (best, w) {
+  best.size().lessThan(w.size()).ifTrueFalse(function () { w }, function () { best })
+});
+let long = Array.new();
+words.each(function (w) { 4.lessThan(w.size()).ifTrue(function () { long.push(w) }) });
+let counts = Hash.new();
+words.each(function (w) {
+  counts.set(w, counts.has(w).ifTrueFalse(function () { counts.get(w).plus(1) }, function () { 1 }))
+});
+
+wrap(words, 15).each(function (line) { print(line) });
+print(counts);
+Array.new(letters, longest, join(long, ", "), counts.size())

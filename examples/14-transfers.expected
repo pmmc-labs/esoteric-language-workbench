@@ -1,0 +1,7 @@
+"ann -> bob ok"
+"bob -> cy: insufficient funds, short by 20"
+"cy -> ann: amount must be positive, got -5"
+"ann -> dee: no method found for plus on nil"
+"bob -> cy ok"
+"zed -> ann: no method found for lessThan on nil"
+[{"ann": 70, "bob": 0, "cy": 80}, 4]

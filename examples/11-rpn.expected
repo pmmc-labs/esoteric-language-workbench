@@ -1,0 +1,6 @@
+["add", "sub", "mul", "dup", "swap"]
+[35]
+[49]
+[1]
+"unknown op nop"
+[[1, 2], <function>]

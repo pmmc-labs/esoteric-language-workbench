@@ -1,0 +1,6 @@
+["IconButton", "Button", "Widget", "Object"]
+["label", "draw"]
+["Button", "Widget", "Object", nil]
+"<OK>"
+"check <OK>"
+[true, false, true, false, true]

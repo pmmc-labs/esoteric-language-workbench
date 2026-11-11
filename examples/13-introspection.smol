@@ -1,0 +1,46 @@
+// Asking classes about themselves. A class is an instance whose attrs hold
+// its method table, so attr("%methods").keys() lists the methods it
+// defines, and class_precedence_list gives the chain that lookup walks.
+// The classes are built at run time with define, which gives the class
+// back, so calls chain.
+let Widget = create_class(Hash.new("$name", "Widget", "$superclass", Object));
+Widget.define("label", function (self) { self.attr("text") }).define("draw", function (self) {
+  "[".concat(self.label()).concat("]")
+});
+let Button = create_class(Hash.new("$name", "Button", "$superclass", Widget));
+Button.define("draw", function (self) { "<".concat(self.label()).concat(">") });
+let IconButton = create_class(Hash.new("$name", "IconButton", "$superclass", Button));
+IconButton.define("icon", function (self) { self.attr("icon") });
+
+let names = function (classes) {
+  let out = Array.new();
+  classes.each(function (c) { out.push(c.name()) });
+  out
+};
+// The name of the first class on the chain whose own table has the method.
+// It asks has of the table, not isNil of get_method's answer: a function
+// has no methods, so isNil can't be asked of one.
+let owner = function (cls, label) {
+  cls.class_precedence_list().inject(nil, function (found, c) {
+    found.isNil().ifTrueFalse(
+      function () { c.attr("%methods").has(label).ifTrue(function () { c.name() }) },
+      function () { found })
+  })
+};
+
+let ok = IconButton.new("text", "OK", "icon", "check");
+print(names(IconButton.class_precedence_list()));
+print(Widget.attr("%methods").keys());
+print(Array.new(owner(IconButton, "draw"), owner(IconButton, "label"), owner(IconButton, "attr"), owner(IconButton, "fly")));
+print(ok.draw());
+// Lookup happens at each call, so an instance made before a method was
+// added answers it at once.
+IconButton.define("draw", function (self) {
+  self.icon().concat(" ").concat(IconButton.superclass().find_method("draw")(self))
+});
+print(ok.draw());
+// includes compares a function as the same object, so the last item says
+// that find_method gives the very function Widget holds.
+let plain = Button.new("text", "x");
+Array.new(ok.isa(Widget), plain.isa(IconButton), ok.can("icon"), plain.can("icon"),
+  Array.new(Widget.get_method("label")).includes(IconButton.find_method("label")))

@@ -1,0 +1,51 @@
+// A set of strings on a Hash: the elements are the keys, and has is
+// membership. Keys keep the order they were first added, so a set lists
+// its elements in insertion order, and a repeat changes nothing.
+// The methods that make a set ask self.class() for it, since the name Set
+// isn't bound inside the create_class call that makes it.
+let Set = create_class(Hash.new(
+  "$name", "Set",
+  "$superclass", Object,
+  "%methods", Hash.new(
+    "add", function (self, x) { self.attr("items").set(x, true); self },
+    "has", function (self, x) { self.attr("items").has(x) },
+    "elements", function (self) { self.attr("items").keys() },
+    "size", function (self) { self.attr("items").size() },
+    "empty", function (self) { self.class().new("items", Hash.new()) },
+    "union", function (self, other) {
+      let out = self.empty();
+      self.elements().each(function (x) { out.add(x) });
+      other.elements().each(function (x) { out.add(x) });
+      out
+    },
+    "intersection", function (self, other) {
+      let out = self.empty();
+      self.elements().each(function (x) { other.has(x).ifTrue(function () { out.add(x) }) });
+      out
+    },
+    "minus", function (self, other) {
+      let out = self.empty();
+      self.elements().each(function (x) { other.has(x).ifFalse(function () { out.add(x) }) });
+      out
+    },
+    // There is no and, so the fold carries false once it has one.
+    "isSubsetOf", function (self, other) {
+      self.elements().inject(true, function (ok, x) {
+        ok.ifTrueFalse(function () { other.has(x) }, function () { false })
+      })
+    })));
+// A %rest parameter takes pairs, so a list of elements comes as an array.
+let setOf = function (xs) {
+  let s = Set.new("items", Hash.new());
+  xs.each(function (x) { s.add(x) });
+  s
+};
+
+let a = setOf(Array.new("red", "green", "blue", "green"));
+let b = setOf(Array.new("blue", "yellow", "red"));
+print(a.elements());
+print(a.union(b).elements());
+print(a.intersection(b).elements());
+print(b.intersection(a).elements());
+print(a.minus(b).elements());
+Array.new(a.size(), a.intersection(b).isSubsetOf(a), a.isSubsetOf(b))

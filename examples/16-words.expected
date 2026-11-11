@@ -1,0 +1,5 @@
+"the quick brown"
+"fox jumps over"
+"the lazy dog"
+{"the": 2, "quick": 1, "brown": 1, "fox": 1, "jumps": 1, "over": 1, "lazy": 1, "dog": 1}
+[35, "quick", "quick, brown, jumps", 8]
