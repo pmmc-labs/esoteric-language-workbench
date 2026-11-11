@@ -22,17 +22,18 @@ if [ "$1" = "--one" ]; then
     name=$(basename "$src")
     name=${name%.*}
     out=build/t/$name.out
-    # The watchdog leaves a file to say it killed the test, since the test's
-    # output can't go down a pipe to diff: diff would wait for it.
-    rm -f "$out.killed"
-    node bin/smol.ts "$src" >"$out" 2>&1 &
-    pid=$!
-    ( sleep "$TIMEOUT" && : >"$out.killed" && kill "$pid" ) >/dev/null 2>&1 &
-    watchdog=$!
-    wait "$pid" 2>/dev/null
+    # The test runs in the foreground, under an alarm. A watchdog in the
+    # background was killed when the test finished, and bash on macOS (where
+    # /bin/sh is bash) reports every killed job as "Terminated". perl ships with
+    # macOS and Linux, and its alarm survives exec: an alarm that goes off
+    # ends the program with status 142, which is reported as a timeout.
+    if command -v perl >/dev/null 2>&1; then
+        perl -e 'alarm shift @ARGV; exec @ARGV or die "exec: $!\n"' "$TIMEOUT" node bin/smol.ts "$src" >"$out" 2>&1
+    else
+        node bin/smol.ts "$src" >"$out" 2>&1
+    fi
     status=$?
-    kill "$watchdog" 2>/dev/null
-    [ -f "$out.killed" ] && echo "killed after ${TIMEOUT}s" >>"$out"
+    [ $status -eq 142 ] && echo "killed after ${TIMEOUT}s" >>"$out"
     [ $status -eq 0 ] || echo "exit: $status" >>"$out"
     if diff -u "${src%.*}.expected" "$out" >"build/t/$name.fail"; then
         rm -f "build/t/$name.fail"
