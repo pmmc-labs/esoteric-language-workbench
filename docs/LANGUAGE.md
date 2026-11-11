@@ -7,7 +7,7 @@ added here in the same commit that adds it.
 
 An integer, of any size, written in decimal with a `-` directly before the
 digits for a negative. A string, in double quotes; it can't contain a `"`,
-and it has no escapes yet. The constants `nil`, `true` and `false`. A
+and it has no escapes (D43). The constants `nil`, `true` and `false`. A
 function, which prints as `<function>`.
 
 An array is a list of values, written `Array.new(a, b, ...)`. A hash maps
@@ -88,6 +88,10 @@ fault, `catch` returns the fault's message as a string; otherwise it returns
 `nil`. A fault in the argument itself, such as a value that isn't a function,
 is not caught. `catch` takes exactly one argument.
 
+`print(x)` is a built-in function too. It writes `x` and a newline, as Output
+says the last value is written, and gives `x` back, so it can sit inside an
+expression: `print(3).plus(4)` writes `3` and is 7 (D38).
+
 ## Methods
 
 The methods below are the host's, in the method tables of the classes `Array`,
@@ -96,25 +100,42 @@ there as it finds any method, so it also finds the methods of `Object`, which
 these classes inherit from, and a method added to `Array`'s table is one every
 array answers.
 
-An array has five methods. `push(x, ...)` adds its arguments to the end. It
+An array has nine methods. `push(x, ...)` adds its arguments to the end. It
 returns the array, so calls chain. `get(i)` gives the item at index `i`,
 counting from 0, or `nil` if `i` is past the end or negative. `set(i, x)`
 replaces the item at `i`, which must be within the array, and returns the
 array. `size()` gives the number of items. `includes(x)` is true if `x` is in the
 array: scalars are equal by value, and anything else only as the same object.
+`pop()` removes the last item and gives it, or `nil` if the array is empty.
+`indexOf(x)` gives the index of the first item equal to `x`, as `includes`
+compares them, or -1 if there is none.
 
-A hash has four methods. `get(k)` gives the value for the key `k`, or `nil`
+SMOL has no loop: two of an array's methods take a block, which is a function,
+and call it for each item in order (D40). `each(block)` calls `block(item)`,
+and gives the array. `inject(acc, block)` calls `block(acc, item)` with `acc`
+for the first item and with the last call's value for each one after, and gives
+the value of the last call, or `acc` itself for an empty array. Both walk the
+items the array had when the method was called, so a block may change the
+array. A block is called as any function is: it must be a function that takes
+that many arguments, and a fault inside it is a fault of the call.
+
+A hash has five methods. `get(k)` gives the value for the key `k`, or `nil`
 if there is none. `set(k, v)` stores a value under `k`, and returns the hash.
 `keys()` gives an array of the keys, in the order they were first added.
-`size()` gives the number of entries. A key is always a string.
+`size()` gives the number of entries. `has(k)` is true if there is an entry
+under `k`, even one whose value is `nil`, which `get` can't tell from a missing
+key. A key is always a string.
 
-An integer has six methods. `plus(n)`, `minus(n)` and `times(n)` give the sum,
+An integer has seven methods. `plus(n)`, `minus(n)` and `times(n)` give the sum,
 the difference and the product of the integer and `n`. `n` must be an integer:
 otherwise the fault is `plus needs an integer as its argument: VALUE`, with the
-name of the method that was called. `lessThan(n)` is true if the integer is less
+name of the method that was called. `divBy(n)` gives the quotient of the integer
+by `n`, truncated toward zero, so `-7.divBy(2)` is -3 (D41). `n` must be an
+integer, and if it is zero the fault is `divBy by zero`. There is no remainder.
+`lessThan(n)` is true if the integer is less
 than `n`, which must be an integer. `equals(n)` is true if `n` is the same
 integer, and false for any other value, which is not a fault. `toString()` gives
-the integer as a string of its decimal digits. There is no division yet.
+the integer as a string of its decimal digits.
 
 A string has three methods. `size()` gives the number of characters, which are
 Unicode code points, so an emoji counts as one. `concat(s)` gives the string
@@ -185,15 +206,31 @@ classes, and a program can use them.
 `Class` is an instance of itself, and its superclass is `Object`. Its methods
 are `name()`, which gives its name; `superclass()`, which gives its superclass;
 `get_method(label)`, which gives the method under that label in its own
-`"%methods"`, or `nil`; and `class_precedence_list()`, which gives an array of
+`"%methods"`, or `nil`; `find_method(label)`, which gives the method under that
+label in its own `"%methods"` or, if it has none there, in its superclass's and
+so on up the chain, or `nil` if no class on the chain has it; `define(label,
+fn)`, which puts `fn` under that label in its own `"%methods"`, and gives the
+class back; and `class_precedence_list()`, which gives an array of
 the class, then its superclass, and so on up the chain until a superclass is
 `nil`. If the chain loops back to a class it has already listed, that is the
 fault `superclass chain loops back to VALUE`, which `catch` can take. Its
 helper `cpl_into(acc)` adds the class to `acc` and walks on from there.
+`find_method` gives the same fault when its walk comes back to a class it has
+searched, and its helper is `find_method_from(label, seen)`.
+
+There is no `super` form (D39). A method calls the one above it by asking the
+superclass of the class it is written for: `Puppy.superclass().find_method("speak")(self)`.
+The method found is a function, and it is called with `self` as its first
+argument, as a method call would call it. The name `Puppy` must be bound where
+the method is written, so such a method is added with `Puppy.define(...)`,
+after the `let` that binds the class.
 
 `Object` is an instance of `Class`, and it has no superclass. Its methods are
 `new(key, value, ...)`, which makes an instance of the class it is called on,
 with those pairs as its attrs; `id()`; `class()`; `isNil()`, which is false;
+`attr(name)`, which gives the value under `name` in the instance's attrs, or
+`nil` if there is none; `setAttr(name, value)`, which stores the value there
+and gives the instance back, so calls chain (D42);
 `isa(cls)`, which is true if `cls` is the value's class or a class above it on
 its superclass chain; and `can(name)`, which is true if a method of that name
 is found for the value, by the same lookup dispatch uses. A value with no class answers false to both when `host_method` gives the method,
@@ -220,8 +257,8 @@ Object's methods: `true.class()` is `True`, `true.id()` is a fault, since `id`
 needs an instance, and `nil.new()` makes an instance whose class is `nil`.
 
 `Array` and `Hash` inherit from `Object`. Their `"%methods"` hold the methods
-under Methods: `push`, `get`, `set`, `size` and `includes` for `Array`, and
-`get`, `set`, `keys` and `size` for `Hash`. `new` is not a method of an array
+under Methods: `push`, `get`, `set`, `size`, `includes`, `pop`, `each`, `inject`
+and `indexOf` for `Array`, and `get`, `set`, `keys`, `size` and `has` for `Hash`. `new` is not a method of an array
 but of the class, so it is in the table of the class's own class: `Array`'s
 class is a class named `"Array class"`, whose superclass is `Class` and whose
 one method is `new`, and the same for `Hash`. So `Array.name()` is `"Array"`,
@@ -260,8 +297,13 @@ in the order they were added. An array or hash that holds itself prints as
 A program whose last statement is a `let` prints nothing. The program then
 exits 0.
 
+`print(x)` writes `x` in the same way, and a newline, when it is called. So a
+program's output is a line for each call of `print`, in the order of the calls,
+and then the last value. A string is written in its quotes by `print` too.
+
 A string can't contain a `"`: a literal can't hold one, and no method makes one.
-So a printed string needs no escaping.
+So a printed string needs no escaping. A string can't hold a newline either:
+`print` is the way to start a new line.
 
 ## Faults
 
@@ -278,7 +320,7 @@ chain that loops back to a class it has already searched;
 `set_primitive_class` given a value other than `true`, `false`, `nil`, an
 integer, a string, an array or a hash, or a class that isn't an instance; a host
 method given a receiver of the wrong kind; an integer or string method given an
-argument of the wrong kind; `host_method` given anything but a method of
+argument of the wrong kind; `divBy` given zero, which is `divBy by zero`; `host_method` given anything but a method of
 `Array`, `Hash`, `Integer`, `String` or `Object`; and `reserve_ids` given
 something other than an integer. A
 method that isn't found is `no method found for NAME on VALUE`, for an

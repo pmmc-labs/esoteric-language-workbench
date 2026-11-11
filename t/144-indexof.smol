@@ -1,0 +1,4 @@
+// indexOf gives the index of the first item equal to its argument, as
+// includes compares them (D30), or -1.
+let $xs = Array.new("a", "b", "c", "b");
+Array.new($xs.indexOf("b"), $xs.indexOf("z"), Array.new(Array.new()).indexOf(Array.new()))

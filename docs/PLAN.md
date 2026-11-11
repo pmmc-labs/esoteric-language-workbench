@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 7 are done. Step 5 is complete (5a, 5b and 5c, D24). Step 7 gives integers and strings their classes (D36, D37). Step 8, the examples, is done; its gaps are in `docs/ISSUES.md`, and none is built.
+**Progress:** steps 0 to 9 are done. Step 5 is complete (5a, 5b and 5c, D24). Step 7 gives integers and strings their classes (D36, D37). Step 8, the examples, found the gaps in `docs/ISSUES.md`. Step 9 answers every one of them (D38 to D43), and no entry is open.
 
 ## Step 0 was built by a small-tier builder
 
@@ -273,7 +273,7 @@ registry that gives the three constants their classes is D29.
 - Leaves out: operators and division (ISSUES.md), string indexing, and string
   escapes.
 - Size: medium, as a mirror of step 3's Array methods on the registry of D29
-  and D31. Built by the lead, which is small-tier (Haiku 5.5), so the design
+  and D31. Built by the lead, which is small-tier, so the design
   and its method list are the risk: D36 is marked default for the person to
   look at. The process has a large model write a step, and this one wasn't, so
   the mismatch is recorded in the commit. Referee: none.
@@ -290,11 +290,29 @@ registry that gives the three constants their classes is D29.
   out by hand from LANGUAGE.md alone, before the interpreter ran. They pass on
   the first run. `examples/README.md` indexes them. The gaps are in
   `docs/ISSUES.md`, each waiting for a proposal.
-- Differs from the plan as first written: a larger model (Opus) designed and
+- Differs from the plan as first written: a larger model designed and
   wrote the examples, as the person allowed. It ran no SMOL, so no expected
   output came from the interpreter. The lead ran them, and fixed the doc
   passages the report found unclear.
 - Size: large to design, medium to write. Referee: none.
+
+### 9. The examples' gaps (done)
+
+- Landed: `print(x)` (D38); `find_method` on Class, and so a super call as
+  `superclass().find_method(name)(self)` (D39); `each`, `inject` and `indexOf`
+  on Array (D40); `pop`, `has` and `divBy` (D41); `define` on Class, and `attr`
+  and `setAttr` on Object (D42). Five gaps are decided against, with reasons
+  (D43). Golden tests 132 to 151; examples 01 to 07 use the new features, and
+  05 and 07 have new expected outputs; 71 unit tests.
+- Changed: `t/106` asked for `pop` as its missing host method, and `pop` exists
+  now, so it asks for `shift`. This is the same kind of change as 107 and 111.
+- Differs from the plan as first written: `find_method` has a helper,
+  `find_method_from(label, seen)`, which carries the loop guard. It is a method
+  of Class, and it is documented. Example 02 adds Puppy's `speak` with
+  `define` after the `let`, since a function can't name the class it is inside.
+- Size: medium, built by a low-effort builder to the lead's answers in D38 to
+  D43. The lead re-derived the new expected outputs by hand and read the diff.
+  Referee: none.
 
 ## Example-port table
 

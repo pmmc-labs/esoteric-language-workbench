@@ -21,14 +21,13 @@ let row = function (name, amount) {
 // size counts code points, so the apple is one character and its row
 // lines up with the others.
 let apple = "🍎";
-// There are no string escapes, so a row can't end in a newline: the rows
-// are printed as an array instead of as one block of text.
+// There are no string escapes, so a row can't end in a newline: print
+// writes each row on a line of its own, in quotes, as any string is shown.
+// The last value, the two sizes, is printed after them.
 let apples = 3;
 let figs = 12;
-Array.new(
-  row("apples", apples.times(4)),
-  row("figs", figs.times(25)),
-  row(apple, 7),
-  row("total", 319),
-  row(apple, 7).size(),
-  apple.size())
+print(row("apples", apples.times(4)));
+print(row("figs", figs.times(25)));
+print(row(apple, 7));
+print(row("total", 319));
+Array.new(row(apple, 7).size(), apple.size())

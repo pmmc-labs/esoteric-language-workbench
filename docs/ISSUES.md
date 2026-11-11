@@ -1,58 +1,43 @@
 # Issues
 
-Gaps in the language that the steps and the examples have found. Each is a
-candidate for a proposal, and none is built. Under "Examples bend to the
-language" (D6), a gap is recorded and the example changes, until the person
-picks a proposal. Each entry says what was wanted, where it showed, and what is
-open. The doc passages that were unclear are at the end, and fixed.
+Gaps in the language that the steps and the examples have found. Under
+"Examples bend to the language" (D6), a gap is recorded and the example changes,
+until a proposal is picked. An open entry says what was wanted, where it showed,
+and what is open. A resolved one names its decision in `docs/DECISIONS.md` and
+the result. The doc passages that were unclear are at the end, and fixed.
 
 ## Open
 
-- **Operators.** `1 + 2` is not SMOL, so arithmetic is `1.plus(2)`. Left out of
-  step 7 on purpose. Open: whether operators are wanted, and if so, whether they
-  are method sugar or grammar. Not proposed.
-- **Division.** There is no `divBy`, so no integer quotient or remainder. Left
-  out of step 7 on purpose. Open: the rounding of a negative quotient, and what a
-  zero divisor does. Not proposed.
-- **Only the last value is printed.** Examples 01 to 08 gather their results into
-  one array at the end, because a program prints one value and there is no print
-  builtin. Open: a print builtin, or the rule stays. Needs a proposal.
-- **No super call.** Example 02 fetches Dog's `speak` with
-  `Dog.get_method("speak")` and calls it with `self`. That works only because Dog
-  defines `speak` itself: `get_method` reads one class's own table, so an
-  inherited method would come back as nil. Open: a `super` form (grammar), a
-  builtin that calls the method above the receiver's class, or `get_method`
-  walking the chain. Needs a proposal.
-- **No iteration on Array.** There is no `each`, `map` or `inject`, and no loop.
-  Example 05 writes `inject` and `indexOf` as methods of Array's table, recursing
-  over an index. Open: library methods in the prelude, written in SMOL (no new
-  builtin), or a host builtin that calls a closure. The first needs no change to
-  the language. Needs a choice.
-- **A function can't call itself by name.** A `let` binds after its value is made
-  (DESIGN, default). Example 07 passes the function to itself as `me`. Methods
-  recurse through `self` (examples 04 and 05). Open: a recursive `let`, or keep
-  it. Needs a proposal.
-- **No newline or escape in strings.** A string has no `\n`, so text can't span
-  lines, and example 07 returns an array of rows. Open: escapes, tied to the
-  print question above. Needs a proposal.
-- **No `pop` or remove on Array.** Example 03 keeps its own `top` index. Open:
-  `pop` as a host builtin. Nice to have.
-- **No "has key" on Hash.** `get` gives nil for a missing key, and a key stored
-  with nil looks the same. Example 06 uses `isNil()`, which is right only because
-  it never stores nil. Open: `has(k)`. Nice to have.
-- **Verbose attributes.** Each method reads and writes state through
-  `opaque_instance_attrs(self).get("count")`. Open: an accessor, such as
-  `attr(name)` on Object. Nice to have; a library choice.
-- **Verbose addition of a method to an existing class.** Examples 04 and 05 use
-  `opaque_instance_attrs(Integer).get("%methods").set(...)`. Open: a
-  `define(name, function)` on Class. Nice to have; a library choice.
-- **No grouping.** `(1).plus(2)` is a syntax error. The examples name the
-  intermediate values with `let`. Open: whether parentheses are wanted. Nice to
-  have.
-- **create_class's default superclass is nil.** A class made without
-  `"$superclass"` has none of Object's methods, so `class()` or `isa` on its
-  instances is a fault. Every example sets `"$superclass", Object`. Open: whether
-  the default should be Object. Needs a choice.
+None. The gaps the examples found are answered by D38 to D43, below.
+
+## Resolved
+
+- **Only the last value is printed.** D38: `print(x)` writes a line and gives
+  `x`; the last value is still printed, after it. Example 07 prints its rows.
+- **No super call.** D39: `find_method(label)` on Class walks the chain, and a
+  super call is `C.superclass().find_method(name)(self)`. Example 02 uses it.
+- **No iteration on Array.** D40: `each`, `inject` and `indexOf` are host
+  builtins on Array. Example 05 uses them.
+- **Division.** D41: `divBy(n)` truncates toward zero, and zero is the fault
+  `divBy by zero`. There is no remainder.
+- **No `pop` or remove on Array.** D41: `pop()` removes the last item and gives
+  it, or nil. Example 03 uses it, and its `top` index is gone.
+- **No "has key" on Hash.** D41: `has(k)` is true for a key that is there, even
+  with nil under it. Example 06 uses it.
+- **Verbose attributes.** D42: `attr(name)` and `setAttr(name, value)` on
+  Object, in the prelude. Example 01 uses them.
+- **Verbose addition of a method to an existing class.** D42: `define(name,
+  fn)` on Class, in the prelude. Examples 02, 04 and 05 use it.
+- **Operators.** D43: decided against. Arithmetic stays `1.plus(2)`; revisit if
+  an example needs them.
+- **A function can't call itself by name.** D43: decided against. Methods
+  recurse through `self`, and example 07 passes the function to itself.
+- **No newline or escape in strings.** D43: decided against. `print` gives the
+  line breaks.
+- **No grouping.** D43: decided against. `(1).plus(2)` stays a syntax error; a
+  literal receiver needs no parentheses.
+- **create_class's default superclass is nil.** D43: decided against. The
+  default stays nil, and a class sets `"$superclass", Object`.
 
 ## Unclear in LANGUAGE.md, now fixed
 

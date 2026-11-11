@@ -65,7 +65,10 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   `false` are false, and everything else true, was not built.
 - **Output**: a program prints the value of its last statement, if that
   statement is an expression, and then a newline. A let prints nothing
-  (default).
+  (default). `print(x)` writes `x` the same way, with a newline, when it is
+  called, and gives `x` (D38). The evaluator is given one writer, a function
+  that takes a line; `print` and the driver's last-value print both use it, so
+  the lines come out in the order of the calls.
 - **Faults**: a fault is printed as `fault: MESSAGE` on stderr, and the
   program exits 1 (default). A syntax error is printed as
   `FILE:LINE:COLUMN: MESSAGE` and also exits 1 (default). The faults so far
@@ -78,7 +81,9 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   adds a host method's receiver of the wrong kind, `host_method` given
   anything but a method of `Array`, `Hash`, `Integer`, `String` or `Object`
   (D33, D35, D36), and `reserve_ids` given
-  something other than an integer (default: the wording).
+  something other than an integer (default: the wording). D41 adds `divBy by
+  zero`. A fault inside a block given to `each` or `inject` is a fault of that
+  call (D40).
 
 ## The core rule
 
@@ -164,8 +169,9 @@ Built in:
   for an instance. `opaque_instance_class` answers the registered class for one,
   so `[1].class()` is `Array`, and `id()` still needs an instance (D31).
 - `Integer` and `String` (D36, default): the methods listed in LANGUAGE.md, as
-  host builtins. Integer has `plus`, `minus`, `times`, `lessThan`, `equals` and
-  `toString`; String has `size`, `concat` and `equals`. The prelude makes them
+  host builtins. Integer has `plus`, `minus`, `times`, `divBy`, `lessThan`,
+  `equals` and `toString`; `divBy` truncates toward zero, as BigInt division
+  does (D41); String has `size`, `concat` and `equals`. The prelude makes them
   after `Array` and `Hash`, as objects 11 and 12. SMOL has no operators, so
   arithmetic is by method; ISSUES.md records that.
 
@@ -196,14 +202,29 @@ Built in:
   `Hash` to `function (%pairs) { %pairs }` and writes `Hash(...)`; the class
   takes the name over, so no extra name is left for programs. `Class`'s
   `class_precedence_list` needs `Array.new()`, and a function sees only the
-  names bound before it, so the prelude puts `nil` under that key and sets the
-  method once `Array` exists, which keeps the table's order.
+  names bound before it, so the prelude adds the method in a later statement,
+  once `Array` exists.
 
 - `includes(x)` on an array, and `fault(message, value)`, which the prelude
   uses to stop a loop in the superclass chain with the lookup's fault (D30).
 
 - `isa(cls)` and `can(name)` on Object, host builtins reached through
   `host_method` (D18, D35). `can` is the lookup dispatch uses.
+
+- `pop()`, `each(block)`, `inject(acc, block)` and `indexOf(x)` on Array, and
+  `has(k)` on Hash, host builtins in `HOST_METHODS` (D40, D41). `each` and
+  `inject` call their block through the interpreter's `apply`, over a copy of
+  the items. `indexOf` compares as `includes` does (D30).
+
+- `find_method(label)` and `define(label, fn)` on Class, and `attr(name)` and
+  `setAttr(name, value)` on Object, SMOL source in the prelude with no builtin
+  of their own (D39, D42). `find_method` tests a table with `has`, since a
+  method is a function and answers no `isNil`. Its helper
+  `find_method_from(label, seen)` keeps the classes searched, so a chain that
+  loops is the lookup's fault, as for `cpl_into`. It needs `Array.new()`, so the
+  prelude adds `find_method` once `Array` exists, as it does
+  `class_precedence_list`. A super call is
+  `C.superclass().find_method(name)(self)`; there is no `super` form.
 
 Everything else is SMOL source (D19).
 

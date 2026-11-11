@@ -1,0 +1,3 @@
+// has tells a key stored with nil from a missing one, which get can't (D41).
+let $h = Hash.new("a", nil);
+Array.new($h.get("a"), $h.get("b"), $h.has("a"), $h.has("b"))

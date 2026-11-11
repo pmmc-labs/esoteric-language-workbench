@@ -1,0 +1,2 @@
+// print gives its argument back, so it can sit inside an expression.
+print(3).plus(4)

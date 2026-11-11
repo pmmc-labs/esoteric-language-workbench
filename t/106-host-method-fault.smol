@@ -1,2 +1,2 @@
 // host_method has the methods of Array and Hash, and no others.
-Array.new(catch(function () { host_method("Array", "pop") }), catch(function () { host_method("Object", "new") }))
+Array.new(catch(function () { host_method("Array", "shift") }), catch(function () { host_method("Object", "new") }))

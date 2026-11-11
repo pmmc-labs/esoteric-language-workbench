@@ -19,12 +19,15 @@ const main = (argv: string[]): number => {
         console.error(`smol: can't read ${file}: ${(e as Error).message}`);
         return 2;
     }
+    // The one writer of the program's output: print's lines and the last
+    // value both go through it, so they come out in order (D38).
+    const write = (line: string): void => console.log(line);
     try {
-        const value = evaluate(program(text));
+        const value = evaluate(program(text), write);
         // The prelude's last statement is an expression, so a program with no
         // statements of its own would print its value. Only a program with
         // statements of its own prints one.
-        if (value !== undefined && parse(text).length > 0) console.log(show(value));
+        if (value !== undefined && parse(text).length > 0) write(show(value));
         return 0;
     } catch (e) {
         if (e instanceof Failure) {

@@ -1,0 +1,3 @@
+// find_method gives nil for a method no class on the chain has.
+let $A = create_class(Hash.new("$name", "A", "$superclass", Object));
+$A.find_method("nope")

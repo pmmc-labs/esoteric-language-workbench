@@ -22,6 +22,30 @@ let Class = create_class(Hash(
         "name", function (self) { opaque_instance_attrs(self).get("$name") },
         "superclass", function (self) { opaque_instance_attrs(self).get("$superclass") },
         "get_method", function (self, $label) { opaque_instance_attrs(self).get("%methods").get($label) },
+        // define puts a method in the class's own table (D42).
+        "define", function (self, $label, $fn) {
+            opaque_instance_attrs(self).get("%methods").set($label, $fn);
+            self
+        },
+        // find_method's walk (D39): the class's own table, then its superclass.
+        // The table is asked has, not get and isNil, since a method is a
+        // function, and a function answers no methods. $seen holds the classes
+        // already searched, so a chain that loops is the fault dispatch gives.
+        "find_method_from", function (self, $label, $seen) {
+            $seen.includes(self).ifTrueFalse(
+                function () { fault("superclass chain loops back to", self) },
+                function () {
+                    $seen.push(self);
+                    let $methods = opaque_instance_attrs(self).get("%methods");
+                    $methods.has($label).ifTrueFalse(
+                        function () { $methods.get($label) },
+                        function () {
+                            self.superclass().isNil().ifTrueFalse(
+                                function () { nil },
+                                function () { self.superclass().find_method_from($label, $seen) })
+                        })
+                })
+        },
         "cpl_into", function (self, $acc) {
             $acc.includes(self).ifTrueFalse(
                 function () { fault("superclass chain loops back to", self) },
@@ -51,7 +75,13 @@ let Object = create_class(Hash(
         "class", function (self) { opaque_instance_class(self) },
         "isNil", function (self) { false },
         "isa", host_method("Object", "isa"),
-        "can", host_method("Object", "can"))));
+        "can", host_method("Object", "can"),
+        // attr and setAttr read and write the receiver's own attrs (D42).
+        "attr", function (self, $name) { opaque_instance_attrs(self).get($name) },
+        "setAttr", function (self, $name, $value) {
+            opaque_instance_attrs(self).set($name, $value);
+            self
+        })));
 
 // Conditionals are methods of booleans, as in Smalltalk (D27). Boolean is the
 // parent of True and False, which answer the conditionals. A block is a
@@ -102,7 +132,11 @@ let Array = create_class(Hash(
         "get", host_method("Array", "get"),
         "set", host_method("Array", "set"),
         "size", host_method("Array", "size"),
-        "includes", host_method("Array", "includes"))));
+        "includes", host_method("Array", "includes"),
+        "pop", host_method("Array", "pop"),
+        "each", host_method("Array", "each"),
+        "inject", host_method("Array", "inject"),
+        "indexOf", host_method("Array", "indexOf"))));
 
 // The hashes made here are still made by the function above, which this let
 // hides once it has run.
@@ -114,7 +148,8 @@ let Hash = function (make) {
             "get", host_method("Hash", "get"),
             "set", host_method("Hash", "set"),
             "keys", host_method("Hash", "keys"),
-            "size", host_method("Hash", "size"))));
+            "size", host_method("Hash", "size"),
+            "has", host_method("Hash", "has"))));
     opaque_instance_set_class(Array, create_class(make(
         "$name", "Array class",
         "$superclass", Class,
@@ -139,6 +174,7 @@ let Integer = create_class(Hash.new(
         "plus", host_method("Integer", "plus"),
         "minus", host_method("Integer", "minus"),
         "times", host_method("Integer", "times"),
+        "divBy", host_method("Integer", "divBy"),
         "lessThan", host_method("Integer", "lessThan"),
         "equals", host_method("Integer", "equals"),
         "toString", host_method("Integer", "toString"))));
@@ -156,6 +192,10 @@ set_primitive_class("", String);
 
 opaque_instance_attrs(Class).get("%methods").set("class_precedence_list",
     function (self) { self.cpl_into(Array.new()) });
+
+// find_method needs an Array too, for the classes it has searched (D39).
+Class.define("find_method",
+    function (self, $label) { self.find_method_from($label, Array.new()) });
 
 // The ids up to 99 stay the bootstrap's, so a class added here later doesn't
 // move a program's numbers (D32).

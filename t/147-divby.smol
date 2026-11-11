@@ -1,0 +1,2 @@
+// divBy is integer division, and it truncates toward zero (D41).
+Array.new(7.divBy(2), -7.divBy(2), 7.divBy(-2), -7.divBy(-2), 0.divBy(5))

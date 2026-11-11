@@ -1,0 +1,2 @@
+// each calls its block with each item, in order, and gives the array (D40).
+Array.new(1, 2, 3).each(function ($x) { print($x.times(10)) })

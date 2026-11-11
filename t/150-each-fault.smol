@@ -1,0 +1,6 @@
+// A fault inside each's block is a fault of the program, and what was printed
+// before it is kept.
+Array.new(1, 2, 3).each(function ($x) {
+    print($x);
+    $x.equals(2).ifTrue(function () { fault("stopped at", $x) })
+})

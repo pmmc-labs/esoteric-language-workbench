@@ -1,0 +1,6 @@
+// find_method walks the superclass chain, where get_method reads only the
+// class's own table (D39).
+let $A = create_class(Hash.new("$name", "A", "$superclass", Object,
+    "%methods", Hash.new("hello", function (self) { "hello from A" })));
+let $B = create_class(Hash.new("$name", "B", "$superclass", $A));
+Array.new($B.get_method("hello"), $B.find_method("hello")($B.new()))

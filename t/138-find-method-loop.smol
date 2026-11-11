@@ -1,0 +1,5 @@
+// A superclass chain that loops makes find_method fault, as it does a method
+// lookup (t/084) and class_precedence_list (t/098). The class is object 100.
+let $A = Class.new("$name", "A", "%methods", Hash.new());
+opaque_instance_attrs($A).set("$superclass", $A);
+catch(function () { $A.find_method("missing") })

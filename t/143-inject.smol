@@ -1,0 +1,6 @@
+// inject folds the items into an accumulator, from the start value. An empty
+// array gives the start value (D40).
+Array.new(
+    Array.new(1, 2, 3, 4).inject(0, function ($acc, $x) { $acc.plus($x) }),
+    Array.new("a", "b").inject("", function ($acc, $x) { $acc.concat($x) }),
+    Array.new().inject("start", function ($acc, $x) { $acc }))

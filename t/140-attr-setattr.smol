@@ -1,0 +1,4 @@
+// attr reads an attr of the receiver, or nil if there is none. setAttr writes
+// one and gives the receiver back (D42).
+let $o = Object.new("x", 1);
+Array.new($o.attr("x"), $o.attr("y"), $o.setAttr("x", 5).attr("x"), opaque_instance_attrs($o))

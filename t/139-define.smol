@@ -1,0 +1,6 @@
+// define puts a method in the class's own table, where a later call finds it,
+// and gives the class back (D42).
+let $C = create_class(Hash.new("$name", "C", "$superclass", Object));
+let $c = $C.new();
+let $r = $C.define("double", function (self, $n) { $n.times(2) });
+Array.new($c.double(21), $r.name())

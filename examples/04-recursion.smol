@@ -1,16 +1,15 @@
 // Recursion through dispatch. A function can't call itself by name (its
 // let binds only after it is made), but a method can call itself through
 // self. Integers have a class, Integer, so factorial and fib are added to
-// its method table and every integer answers them.
+// it with define, and every integer answers them.
 // The base case is a method of a boolean: ifTrueFalse runs one block, and
 // the method's value is the value of the block it ran.
-let intMethods = opaque_instance_attrs(Integer).get("%methods");
-intMethods.set("factorial", function (self) {
+Integer.define("factorial", function (self) {
   self.lessThan(2).ifTrueFalse(
     function () { 1 },
     function () { self.times(self.minus(1).factorial()) })
 });
-intMethods.set("fib", function (self) {
+Integer.define("fib", function (self) {
   self.lessThan(2).ifTrueFalse(
     function () { self },
     function () { self.minus(1).fib().plus(self.minus(2).fib()) })

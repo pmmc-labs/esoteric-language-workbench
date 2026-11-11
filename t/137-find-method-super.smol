@@ -1,0 +1,7 @@
+// find_method gives the class's own method first. Asked of the superclass, it
+// gives the method above, which is a super call (D39).
+let $A = create_class(Hash.new("$name", "A", "$superclass", Object,
+    "%methods", Hash.new("speak", function (self) { "A" })));
+let $B = create_class(Hash.new("$name", "B", "$superclass", $A,
+    "%methods", Hash.new("speak", function (self) { "B" })));
+Array.new($B.find_method("speak")(nil), $B.superclass().find_method("speak")(nil))

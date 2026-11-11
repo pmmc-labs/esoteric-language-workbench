@@ -198,6 +198,19 @@ const HOST_METHODS = new Map<string, Map<string, Value>>([
         }),
         arrayMethod('size', 1, self => ({ kind: 'int', value: BigInt(self.items.length) })),
         arrayMethod('includes', 2, (self, args) => ({ kind: 'bool', value: self.items.some(x => sameValue(x, args[0]!)) })),
+        arrayMethod('pop', 1, self => self.items.pop() ?? NIL),
+        // each, inject and indexOf are the host's because SMOL has no loop: in
+        // SMOL each item would cost a frame of the host's stack (D40). A block
+        // is called through apply, so it faults as any call does. The walk is
+        // over a copy, so a block that changes the array doesn't move it.
+        arrayMethod('each', 2, (self, args) => {
+            for (const x of [...self.items]) apply(args[0]!, [x]);
+            return self;
+        }),
+        arrayMethod('inject', 3, (self, args) =>
+            [...self.items].reduce((acc, x) => apply(args[1]!, [acc, x]), args[0]!)),
+        arrayMethod('indexOf', 2, (self, args) =>
+            ({ kind: 'int', value: BigInt(self.items.findIndex(x => sameValue(x, args[0]!))) })),
     ])],
     ['Hash', new Map([
         classMethod(args => hashOf(args, 'Hash.new')),
@@ -205,11 +218,18 @@ const HOST_METHODS = new Map<string, Map<string, Value>>([
         hashMethod('set', 3, (self, args) => { self.entries.set(keyOf(args[0]!), args[1]!); return self; }),
         hashMethod('keys', 1, self => ({ kind: 'arr', items: [...self.entries.keys()].map((k): Value => ({ kind: 'str', value: k })) })),
         hashMethod('size', 1, self => ({ kind: 'int', value: BigInt(self.entries.size) })),
+        // has tells a key stored with nil from a missing one, which get can't (D41).
+        hashMethod('has', 2, (self, args) => ({ kind: 'bool', value: self.entries.has(keyOf(args[0]!)) })),
     ])],
     ['Integer', new Map([
         intMethod('plus', 2, (self, args) => ({ kind: 'int', value: self.value + intArg('plus', args[0]!) })),
         intMethod('minus', 2, (self, args) => ({ kind: 'int', value: self.value - intArg('minus', args[0]!) })),
         intMethod('times', 2, (self, args) => ({ kind: 'int', value: self.value * intArg('times', args[0]!) })),
+        // BigInt division truncates toward zero, which is the rule (D41).
+        intMethod('divBy', 2, (self, args) => {
+            const n = intArg('divBy', args[0]!);
+            return n === 0n ? fault('divBy by zero') : { kind: 'int', value: self.value / n };
+        }),
         intMethod('lessThan', 2, (self, args) => ({ kind: 'bool', value: self.value < intArg('lessThan', args[0]!) })),
         // equals is by value, and false for any other kind, as includes is (D30).
         intMethod('equals', 2, (self, args) => ({ kind: 'bool', value: sameValue(self, args[0]!) })),
@@ -320,8 +340,9 @@ const canName = (cls: Value | undefined, name: Value): boolean => {
 
 // The names every program starts with. The two built-ins that make an
 // instance share one id counter, and it belongs to the list made here, so
-// each run of a program counts from 1.
-const root = (): Env => {
+// each run of a program counts from 1. `write` takes each line of output: print
+// is given it here, so the evaluator itself never writes (D38).
+const root = (write: (line: string) => void): Env => {
     let ids = 0n;  // the last id given; the next is one more
     const create = (cls: Value, attrs: HashV): Value => ({ kind: 'obj', id: ++ids, cls, attrs });
     // create_class: the defaults, then the given attrs over them, in a Hash
@@ -344,6 +365,8 @@ const root = (): Env => {
     const hostMethods = new Map<string, Map<string, Value>>([...HOST_METHODS, ['Object', objectMethods]]);
     const bindings: [string, Value][] = [
         ['catch', CATCH],
+        // print(x): a line of output, x as the last value is shown, and x back.
+        ['print', builtin(1, args => { write(show(args[0]!)); return args[0]!; })],
         ['create_opaque_instance', builtin(2, args => create(args[0]!, attrsOf(args[1]!)))],
         ['opaque_instance_id', builtin(1, args => ({ kind: 'int', value: objOf(args[0]!).id }))],
         // A primitive with a registered class answers that class (D31), so
@@ -426,4 +449,8 @@ const run = (stmts: readonly Stmt[], env: Env): Value | undefined => {
     return rest.length === 0 ? v : run(rest, env);
 };
 
-export const evaluate = (stmts: readonly Stmt[]): Value | undefined => run(stmts, root());
+// `write` is the one writer of the program's output, a line at a time. The
+// caller prints the last value through the same one, so the order of the
+// lines is the order of the calls (D38).
+export const evaluate = (stmts: readonly Stmt[], write: (line: string) => void): Value | undefined =>
+    run(stmts, root(write));

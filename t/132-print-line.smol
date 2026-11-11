@@ -1,0 +1,4 @@
+// print writes its argument and a newline, and the last value is still
+// printed after it (D38).
+print(1);
+2

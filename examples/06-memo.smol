@@ -1,6 +1,6 @@
 // A memo table in a Hash. Hash keys are strings, so an integer argument
-// becomes a key through toString(). A missing key gives nil, and isNil()
-// is answered by every value, so it tells a miss from a hit.
+// becomes a key through toString(). has(key) tells a hit from a miss,
+// whatever value is stored.
 // The table is made outside and given to new, so the program can look at
 // it afterwards: an instance holds its attrs, and their values, by reference.
 let Fib = create_class(Hash.new(
@@ -8,18 +8,17 @@ let Fib = create_class(Hash.new(
   "$superclass", Object,
   "%methods", Hash.new(
     "fib", function (self, n) {
-      let memo = opaque_instance_attrs(self).get("memo");
+      let memo = self.attr("memo");
       let key = n.toString();
-      let known = memo.get(key);
-      known.isNil().ifTrueFalse(
+      memo.has(key).ifTrueFalse(
+        function () { memo.get(key) },
         function () {
           let value = n.lessThan(2).ifTrueFalse(
             function () { n },
             function () { self.fib(n.minus(1)).plus(self.fib(n.minus(2))) });
           memo.set(key, value);
           value
-        },
-        function () { known })
+        })
     })));
 
 let memo = Hash.new();

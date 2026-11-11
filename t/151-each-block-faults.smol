@@ -1,0 +1,5 @@
+// A block is called as any function is: its arity is checked, and a value
+// that isn't a function can't be called.
+Array.new(
+    catch(function () { Array.new(1).each(function ($a, $b) { $a }) }),
+    catch(function () { Array.new(1).inject(0, 5) }))

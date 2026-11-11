@@ -1,8 +1,9 @@
 // Inheritance and override. describe is written once, on Animal, and
 // calls self.speak(), which dispatch finds on the receiver's own class
-// first. Puppy extends Dog's speak; SMOL has no super, so it fetches
-// Dog's method from Dog's own table with get_method and calls it with
-// self as its first argument, which is all a method call does.
+// first. Puppy extends the speak above it. SMOL has no super form: a
+// super call asks the superclass for the method with find_method, which
+// walks the chain from there, and calls it with self as its first
+// argument, which is all a method call does.
 let Animal = create_class(Hash.new(
   "$name", "Animal",
   "$superclass", Object,
@@ -15,11 +16,12 @@ let Dog = create_class(Hash.new(
   "$name", "Dog",
   "$superclass", Animal,
   "%methods", Hash.new("speak", function (self) { "Woof" })));
-let Puppy = create_class(Hash.new(
-  "$name", "Puppy",
-  "$superclass", Dog,
-  "%methods", Hash.new(
-    "speak", function (self) { Dog.get_method("speak")(self).concat("!") })));
+// The method names Puppy, and a function sees only the names bound before
+// it, so it is added with define once Puppy is bound.
+let Puppy = create_class(Hash.new("$name", "Puppy", "$superclass", Dog));
+Puppy.define("speak", function (self) {
+  Puppy.superclass().find_method("speak")(self).concat("!")
+});
 
 let thing = Animal.new("name", "Thing");
 let rex = Dog.new("name", "Rex");

@@ -1,0 +1,3 @@
+// pop removes the last item and gives it, or nil for an empty array (D41).
+let $a = Array.new(1, 2);
+Array.new($a.pop(), $a.size(), $a.pop(), $a.pop(), $a)

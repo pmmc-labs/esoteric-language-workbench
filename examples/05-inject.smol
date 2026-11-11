@@ -1,29 +1,22 @@
-// Iterating without a loop. SMOL has no loop and Array has no each, so
-// inject is written here, in SMOL, as a method added to Array's table: it
-// recurses over an index through self. The index has to be a parameter,
-// so each walk is a public method and a helper that takes the index.
-let arrayMethods = opaque_instance_attrs(Array).get("%methods");
-arrayMethods.set("injectFrom", function (self, i, acc, block) {
-  i.lessThan(self.size()).ifTrueFalse(
-    function () { self.injectFrom(i.plus(1), block(acc, self.get(i)), block) },
-    function () { acc })
-});
-arrayMethods.set("inject", function (self, acc, block) { self.injectFrom(0, acc, block) });
-
-// A search stops at the first match, which inject can't do, so it has its
-// own walk. It answers -1 for a value that isn't there.
-arrayMethods.set("indexOfFrom", function (self, x, i) {
-  i.lessThan(self.size()).ifTrueFalse(
-    function () {
-      self.get(i).equals(x).ifTrueFalse(
-        function () { i },
-        function () { self.indexOfFrom(x, i.plus(1)) })
-    },
-    function () { -1 })
-});
-arrayMethods.set("indexOf", function (self, x) { self.indexOfFrom(x, 0) });
-
+// Iterating without a loop. SMOL has no loop form: an Array's each and
+// inject call a block, a function, with every item in order, and indexOf
+// searches and stops at the first match.
 let xs = Array.new(4, 8, 15, 16, 23, 42);
 let sum = xs.inject(0, function (acc, x) { acc.plus(x) });
 let product = Array.new(1, 2, 3, 4).inject(1, function (acc, x) { acc.times(x) });
-Array.new(sum, product, xs.indexOf(15), xs.indexOf(7))
+
+// each gives the array back, so its block is run for what it changes:
+// here it pushes each double onto another array.
+let doubles = Array.new();
+xs.each(function (x) { doubles.push(x.times(2)) });
+
+// A method built on inject, added to Array with define, so every array
+// answers it. The fold starts from the first item.
+Array.define("max", function (self) {
+  self.inject(self.get(0), function (best, x) {
+    best.lessThan(x).ifTrueFalse(function () { x }, function () { best })
+  })
+});
+
+// indexOf answers -1 for a value that isn't there.
+Array.new(sum, product, doubles, xs.max(), xs.indexOf(15), xs.indexOf(7))

@@ -9,7 +9,7 @@ import { Failure } from '../src/errors.ts';
 // hashes take their methods from the classes the prelude makes (D31). So a
 // program's own objects start at 100 (D32).
 const run = (src: string): string => {
-    const v = evaluate(program(src));
+    const v = evaluate(program(src), () => {});
     return v === undefined ? '' : show(v);
 };
 
@@ -227,7 +227,7 @@ test('set_primitive_class takes a class for true, false, nil, integers, strings,
 
 test('without a class, a method on nil or a boolean is a fault', () => {
     // Without the prelude, nothing has registered a class.
-    const bare = (src: string, message: string) => assert.throws(() => evaluate(parse(src)), (e: unknown) =>
+    const bare = (src: string, message: string) => assert.throws(() => evaluate(parse(src), () => {}), (e: unknown) =>
         e instanceof Failure && e.message === message);
     bare('nil.foo()', 'no method found for foo on nil');
     bare('true.foo()', 'no method found for foo on true');
@@ -281,4 +281,32 @@ test('integers and strings take the classes Integer and String (D36)', () => {
     assert.equal(run('host_method("Object", "isa")(42, Integer)'), 'true');
     assert.equal(run('host_method("Integer", "equals")(42, 42)'), 'true');
     assert.equal(run('host_method("String", "size")("a😀")'), '2');
+});
+
+// The lines a program writes, and its last value, as the driver would see them.
+const output = (src: string): { lines: string[]; last: string } => {
+    const lines: string[] = [];
+    const v = evaluate(program(src), line => { lines.push(line); });
+    return { lines, last: v === undefined ? '' : show(v) };
+};
+
+test('print writes each line through the writer it was given, in order (D38)', () => {
+    assert.deepEqual(output('print(1); print("two"); 3'), { lines: ['1', '"two"'], last: '3' });
+    assert.deepEqual(output('print(print(1).plus(1))'), { lines: ['1', '2'], last: '2' });
+    assert.deepEqual(output('1'), { lines: [], last: '1' });
+});
+
+test('print takes one argument, and what it wrote before a fault is kept', () => {
+    faults('print()', 'wrong number of arguments: want 1, got 0');
+    const lines: string[] = [];
+    assert.throws(() => evaluate(program('print(1); $nope'), line => { lines.push(line); }));
+    assert.deepEqual(lines, ['1']);
+});
+
+test('the new host methods check their receiver (D40, D41)', () => {
+    faults('host_method("Array", "pop")(1)', 'pop needs an array as its receiver: 1');
+    faults('host_method("Array", "each")(nil, 1)', 'each needs an array as its receiver: nil');
+    faults('host_method("Hash", "has")(Array.new(), "a")', 'has needs a hash as its receiver: []');
+    faults('host_method("Integer", "divBy")("a", 1)', 'divBy needs an integer as its receiver: "a"');
+    faults('Hash.new().has(1)', 'a hash key must be a string: 1');
 });

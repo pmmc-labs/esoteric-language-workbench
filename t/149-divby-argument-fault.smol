@@ -1,0 +1,2 @@
+// divBy needs an integer as its argument, as plus does.
+catch(function () { 6.divBy("2") })

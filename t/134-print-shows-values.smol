@@ -1,0 +1,5 @@
+// print writes a value as the last value is written: a string in quotes, an
+// array in brackets. A program that ends in a let prints no last value.
+print("a");
+print(Array.new(1, "two"));
+let $x = print(nil)

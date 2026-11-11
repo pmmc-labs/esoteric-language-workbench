@@ -1,0 +1,4 @@
+// each walks the items the array had when it was called, so a block that
+// adds to the array is not called for what it adds.
+let $xs = Array.new(1, 2);
+$xs.each(function ($x) { $xs.push($x) })
