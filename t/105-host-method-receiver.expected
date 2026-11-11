@@ -1,0 +1,2 @@
+fault: size needs an array as its receiver: <object 100>
+exit: 1

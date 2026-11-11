@@ -1,0 +1,2 @@
+fault: reserve_ids needs an integer: "a"
+exit: 1

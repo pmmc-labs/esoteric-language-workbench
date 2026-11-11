@@ -1,0 +1,2 @@
+// reserve_ids needs an integer.
+reserve_ids("a")

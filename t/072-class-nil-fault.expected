@@ -1,2 +1,2 @@
-fault: no method found for foo on <object 7>
+fault: no method found for foo on <object 100>
 exit: 1

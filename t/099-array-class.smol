@@ -1,0 +1,2 @@
+// An array's class is Array, which the bootstrap makes as object 7 (D31, D32).
+Array.new(Array.new(1).class().name(), Array.new(1).class().id())

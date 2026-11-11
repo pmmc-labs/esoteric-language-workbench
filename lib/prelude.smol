@@ -1,20 +1,26 @@
 // The bootstrap of the object model, in SMOL, after the Perl sketch
 // (docs/prior-art/MiniMetaModel.pl). Every program runs this first. Each class
 // made here is an object with an id, so the numbers run: Class is 1, Object is
-// 2, Boolean 3, True 4, False 5 and UndefinedObject 6. A program's own objects
-// start at 7 (D28, which revises D25).
+// 2, Boolean 3, True 4, False 5, UndefinedObject 6, Array 7 and Hash 8, then
+// the metaclasses of Array and Hash, 9 and 10. The ids up to 99 are kept for
+// the bootstrap, so a program's own objects start at 100 (D32).
+
+// Hash is a class made below, after UndefinedObject, so that its number is 8.
+// The classes before it need hashes, so until then Hash is a function that
+// makes a hash of its arguments, in pairs. The class takes the name over.
+let Hash = function (%pairs) { %pairs };
 
 // Class comes first, so it is object 1. The built-in create_class makes it, and
 // it is made an instance of itself next (D19). Its class_precedence_list stops
 // where the superclass is nil, by asking it isNil, and branches on the answer
-// with a boolean's method (D27).
-let Class = create_class(Hash.new(
+// with a boolean's method (D27). It needs an Array, which doesn't exist yet,
+// so it is nil here and set once Array is made, below.
+let Class = create_class(Hash(
     "$name", "Class",
-    "%methods", Hash.new(
+    "%methods", Hash(
         "name", function (self) { opaque_instance_attrs(self).get("$name") },
         "superclass", function (self) { opaque_instance_attrs(self).get("$superclass") },
         "get_method", function (self, $label) { opaque_instance_attrs(self).get("%methods").get($label) },
-        "class_precedence_list", function (self) { self.cpl_into(Array.new()) },
         "cpl_into", function (self, $acc) {
             $acc.includes(self).ifTrueFalse(
                 function () { fault("superclass chain loops back to", self) },
@@ -36,9 +42,9 @@ let create_class = function () {
     function (attrs) { opaque_instance_set_class(make(attrs), Class) }
 }();
 
-let Object = create_class(Hash.new(
+let Object = create_class(Hash(
     "$name", "Object",
-    "%methods", Hash.new(
+    "%methods", Hash(
         "new", function (self, %attrs) { create_opaque_instance(self, %attrs) },
         "id", function (self) { opaque_instance_id(self) },
         "class", function (self) { opaque_instance_class(self) },
@@ -47,38 +53,85 @@ let Object = create_class(Hash.new(
 // Conditionals are methods of booleans, as in Smalltalk (D27). Boolean is the
 // parent of True and False, which answer the conditionals. A block is a
 // function of no arguments, and only the branch taken is run.
-let Boolean = create_class(Hash.new(
+let Boolean = create_class(Hash(
     "$name", "Boolean",
     "$superclass", Object,
-    "%methods", Hash.new(
+    "%methods", Hash(
         "not", function (self) { self.ifTrueFalse(function () { false }, function () { true }) })));
 
-let True = create_class(Hash.new(
+let True = create_class(Hash(
     "$name", "True",
     "$superclass", Boolean,
-    "%methods", Hash.new(
+    "%methods", Hash(
         "ifTrue", function (self, $block) { $block() },
         "ifFalse", function (self, $block) { nil },
         "ifTrueFalse", function (self, $whenTrue, $whenFalse) { $whenTrue() })));
 
-let False = create_class(Hash.new(
+let False = create_class(Hash(
     "$name", "False",
     "$superclass", Boolean,
-    "%methods", Hash.new(
+    "%methods", Hash(
         "ifTrue", function (self, $block) { nil },
         "ifFalse", function (self, $block) { $block() },
         "ifTrueFalse", function (self, $whenTrue, $whenFalse) { $whenFalse() })));
 
-let UndefinedObject = create_class(Hash.new(
+let UndefinedObject = create_class(Hash(
     "$name", "UndefinedObject",
     "$superclass", Object,
-    "%methods", Hash.new(
+    "%methods", Hash(
         "isNil", function (self) { true })));
 
 // The three constants take their classes from here on (D29).
 set_primitive_class(true, True);
 set_primitive_class(false, False);
 set_primitive_class(nil, UndefinedObject);
+
+// Array and Hash are classes, and their methods are the host's, taken by
+// host_method (D31, D33). An array or a hash finds its class through the
+// registry, as the constants do. new is not a method of arrays but of the
+// class Array, so it goes in Array's own class, a metaclass under Class, which
+// keeps Class's methods for Array: Array.name() is "Array". The same for Hash.
+let Array = create_class(Hash(
+    "$name", "Array",
+    "$superclass", Object,
+    "%methods", Hash(
+        "push", host_method("Array", "push"),
+        "get", host_method("Array", "get"),
+        "set", host_method("Array", "set"),
+        "size", host_method("Array", "size"),
+        "includes", host_method("Array", "includes"))));
+
+// The hashes made here are still made by the function above, which this let
+// hides once it has run.
+let Hash = function (make) {
+    let Hash = create_class(make(
+        "$name", "Hash",
+        "$superclass", Object,
+        "%methods", make(
+            "get", host_method("Hash", "get"),
+            "set", host_method("Hash", "set"),
+            "keys", host_method("Hash", "keys"),
+            "size", host_method("Hash", "size"))));
+    opaque_instance_set_class(Array, create_class(make(
+        "$name", "Array class",
+        "$superclass", Class,
+        "%methods", make("new", host_method("Array", "new")))));
+    opaque_instance_set_class(Hash, create_class(make(
+        "$name", "Hash class",
+        "$superclass", Class,
+        "%methods", make("new", host_method("Hash", "new")))));
+    Hash
+}(Hash);
+
+set_primitive_class(Array.new(), Array);
+set_primitive_class(Hash.new(), Hash);
+
+opaque_instance_attrs(Class).get("%methods").set("class_precedence_list",
+    function (self) { self.cpl_into(Array.new()) });
+
+// The ids up to 99 stay the bootstrap's, so a class added here later doesn't
+// move a program's numbers (D32).
+reserve_ids(100);
 
 // Class inherits from Object. This is the last statement, and an expression,
 // so it binds no name: a program can't see the bootstrap. The driver prints

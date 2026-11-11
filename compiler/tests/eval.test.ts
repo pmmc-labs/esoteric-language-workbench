@@ -1,11 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from '../src/parser.ts';
+import { program } from '../src/program.ts';
 import { evaluate, show } from '../src/eval.ts';
 import { Failure } from '../src/errors.ts';
 
+// A program runs after the prelude, as the driver runs it, since arrays and
+// hashes take their methods from the classes the prelude makes (D31). So a
+// program's own objects start at 100 (D32).
 const run = (src: string): string => {
-    const v = evaluate(parse(src));
+    const v = evaluate(program(src));
     return v === undefined ? '' : show(v);
 };
 
@@ -110,8 +114,9 @@ test('an array can hold itself, and the printed form stops at the cycle', () => 
     assert.equal(run('let @a = Array.new(); @a.push(@a); @a'), '[[...]]');
 });
 
-test('a class shows as <class NAME>', () => {
-    assert.equal(run('Array'), '<class Array>');
+test('a class is an object, and shows as one', () => {
+    assert.equal(run('Array'), '<object 7>');
+    assert.equal(run('Hash'), '<object 8>');
 });
 
 test('a scalar has no methods yet', () => {
@@ -131,18 +136,18 @@ test('with a %name parameter, the fixed parameters still need their arguments', 
     faults('function ($a, %rest) { $a }()', 'wrong number of arguments: want at least 1, got 0');
 });
 
-test('ids come from one counter, which starts again at 1 for each run', () => {
+test('ids come from one counter, which starts again for each run', () => {
     const src = 'let $a = create_opaque_instance(nil, Hash.new()); opaque_instance_id(create_class(Hash.new()))';
-    assert.equal(run(src), '2');
-    assert.equal(run(src), '2');
+    assert.equal(run(src), '101');
+    assert.equal(run(src), '101');
 });
 
 test('only instances take ids: arrays, hashes and functions do not', () => {
-    assert.equal(run('let @a = Array.new(); let $f = function () { 1 }; opaque_instance_id(create_opaque_instance(nil, Hash.new()))'), '1');
+    assert.equal(run('let @a = Array.new(); let $f = function () { 1 }; opaque_instance_id(create_opaque_instance(nil, Hash.new()))'), '100');
 });
 
 test('an instance shows as <object ID>, and its class may be nil', () => {
-    assert.equal(run('create_opaque_instance(nil, Hash.new())'), '<object 1>');
+    assert.equal(run('create_opaque_instance(nil, Hash.new())'), '<object 100>');
     assert.equal(run('opaque_instance_class(create_opaque_instance(nil, Hash.new()))'), 'nil');
 });
 
@@ -154,7 +159,7 @@ test('attrs that are not a Hash are a fault', () => {
 
 test('the readers fault on a value that is not an instance', () => {
     faults('opaque_instance_id(1)', 'not an opaque instance: 1');
-    faults('opaque_instance_class(nil)', 'not an opaque instance: nil');
+    faults('opaque_instance_class(1)', 'not an opaque instance: 1');
     faults('opaque_instance_attrs("a")', 'not an opaque instance: "a"');
 });
 
@@ -183,16 +188,16 @@ test('a class with no "%methods", or one that is not a Hash, has no methods and 
 });
 
 test('the walk ends at nil, at a class with no "$superclass", and at a class that is not an instance', () => {
-    faults(`${FOO} create_opaque_instance($Foo, Hash.new()).nope()`, 'no method found for nope on <object 2>');
-    faults('create_opaque_instance(create_opaque_instance(nil, Hash.new()), Hash.new()).m()', 'no method found for m on <object 2>');
-    faults('create_opaque_instance("Foo", Hash.new()).m()', 'no method found for m on <object 1>');
+    faults(`${FOO} create_opaque_instance($Foo, Hash.new()).nope()`, 'no method found for nope on <object 101>');
+    faults('create_opaque_instance(create_opaque_instance(nil, Hash.new()), Hash.new()).m()', 'no method found for m on <object 101>');
+    faults('create_opaque_instance("Foo", Hash.new()).m()', 'no method found for m on <object 100>');
     faults(`${FOO} let $Bar = create_opaque_instance(nil, Hash.new("$superclass", 42));
-        create_opaque_instance($Bar, Hash.new()).foo()`, 'no method found for foo on <object 3>');
+        create_opaque_instance($Bar, Hash.new()).foo()`, 'no method found for foo on <object 102>');
 });
 
 test('the receiver is self, and an arity fault counts only the arguments after it', () => {
     const cls = 'let $C = create_class(Hash.new("%methods", Hash.new("m", function (self, $x) { self }, "r", function (self, $x, %rest) { %rest })));';
-    assert.equal(run(`${cls} create_opaque_instance($C, Hash.new()).m(1)`), '<object 2>');
+    assert.equal(run(`${cls} create_opaque_instance($C, Hash.new()).m(1)`), '<object 101>');
     faults(`${cls} create_opaque_instance($C, Hash.new()).m(1, 2)`, 'wrong number of arguments: want 1, got 2');
     faults(`${cls} create_opaque_instance($C, Hash.new()).r()`, 'wrong number of arguments: want at least 1, got 0');
 });
@@ -200,29 +205,58 @@ test('the receiver is self, and an arity fault counts only the arguments after i
 test('a method with no parameter for self is a fault, and so is a built-in that takes none', () => {
     faults('let $C = create_class(Hash.new("%methods", Hash.new("m", function (%rest) { 1 }))); create_opaque_instance($C, Hash.new()).m()',
         'a method needs a first parameter for self');
-    assert.equal(run('let $C = create_class(Hash.new("%methods", Hash.new("id", opaque_instance_id))); create_opaque_instance($C, Hash.new()).id()'), '2');
+    assert.equal(run('let $C = create_class(Hash.new("%methods", Hash.new("id", opaque_instance_id))); create_opaque_instance($C, Hash.new()).id()'), '101');
     faults('let $C = create_class(Hash.new("%methods", Hash.new("id", opaque_instance_id))); create_opaque_instance($C, Hash.new()).id(1)',
         'wrong number of arguments: want 0, got 1');
 });
 
-test('arrays and hashes keep their own methods, and an instance has none of them', () => {
-    faults('create_opaque_instance(nil, Hash.new()).size()', 'no method found for size on <object 1>');
+test('arrays and hashes have their classes\' methods, and an instance of no class has none of them', () => {
+    faults('create_opaque_instance(nil, Hash.new()).size()', 'no method found for size on <object 100>');
     assert.equal(run('Hash.new("a", 1).size()'), '1');
 });
 
 test("opaque_instance_set_class changes an instance's class, and only an instance's", () => {
-    assert.equal(run('let $c = create_opaque_instance(nil, Hash.new()); opaque_instance_set_class($c, $c); opaque_instance_class($c)'), '<object 1>');
+    assert.equal(run('let $c = create_opaque_instance(nil, Hash.new()); opaque_instance_set_class($c, $c); opaque_instance_class($c)'), '<object 100>');
     faults('opaque_instance_set_class(1, nil)', 'not an opaque instance: 1');
 });
 
-test('set_primitive_class takes a class for true, false or nil only, and the class must be an instance', () => {
-    faults('set_primitive_class(1, create_opaque_instance(nil, Hash.new()))', 'only true, false and nil take a class: 1');
+test('set_primitive_class takes a class for true, false, nil, arrays and hashes only, and the class must be an instance', () => {
+    faults('set_primitive_class(1, create_opaque_instance(nil, Hash.new()))', 'only true, false, nil, arrays and hashes take a class: 1');
     faults('set_primitive_class(nil, 1)', 'not an opaque instance: 1');
 });
 
 test('without a class, a method on nil or a boolean is a fault', () => {
+    // Without the prelude, nothing has registered a class.
+    const bare = (src: string, message: string) => assert.throws(() => evaluate(parse(src)), (e: unknown) =>
+        e instanceof Failure && e.message === message);
+    bare('nil.foo()', 'no method found for foo on nil');
+    bare('true.foo()', 'no method found for foo on true');
+});
+
+test('a method that a constant\'s class chain lacks is a fault', () => {
     faults('nil.foo()', 'no method found for foo on nil');
     faults('true.foo()', 'no method found for foo on true');
+});
+
+test('opaque_instance_class gives a registered primitive its class', () => {
+    assert.equal(run('opaque_instance_class(Array.new())'), '<object 7>');
+    assert.equal(run('opaque_instance_class(nil)'), '<object 6>');
+    faults('opaque_instance_class("a")', 'not an opaque instance: "a"');
+});
+
+test('host_method gives a builtin that takes the receiver first, and checks it', () => {
+    assert.equal(run('host_method("Array", "push")(Array.new(1), 2, 3)'), '[1, 2, 3]');
+    assert.equal(run('host_method("Hash", "new")(nil, "a", 1)'), '{"a": 1}');
+    faults('host_method("Hash", "get")(Array.new(), "a")', 'get needs a hash as its receiver: []');
+    faults('host_method("Array", "push")()', 'wrong number of arguments: want at least 1, got 0');
+    faults('host_method("Array", 1)', 'no host method 1 for Array');
+});
+
+test('reserve_ids moves the next id forward only, and gives nil', () => {
+    assert.equal(run('reserve_ids(200); opaque_instance_id(create_opaque_instance(nil, Hash.new()))'), '200');
+    assert.equal(run('reserve_ids(5); opaque_instance_id(create_opaque_instance(nil, Hash.new()))'), '100');
+    assert.equal(run('reserve_ids(5)'), 'nil');
+    faults('reserve_ids(nil)', 'reserve_ids needs an integer: nil');
 });
 
 test('includes compares scalars by value and objects only as themselves', () => {

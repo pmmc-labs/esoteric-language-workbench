@@ -1,2 +1,3 @@
-// The name Array is bound to a class, which prints as <class Array>.
+// The name Array is bound to a class, an object made by the bootstrap, so it
+// prints as <object 7> (D31).
 Array

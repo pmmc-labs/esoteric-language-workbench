@@ -1,4 +1,4 @@
-// Each instance takes the next id from one counter, which starts at 7, after the six bootstrap objects (1 to 6).
+// Each instance takes the next id from one counter, which starts at 100: the bootstrap keeps the ids below it (D32).
 let $a = create_opaque_instance(nil, Hash.new());
 let $b = create_opaque_instance(nil, Hash.new());
 Array.new(opaque_instance_id($a), opaque_instance_id($b))

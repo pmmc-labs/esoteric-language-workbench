@@ -1,0 +1,3 @@
+// The constants answer class() with their classes. An integer has no class,
+// so it has no methods at all.
+Array.new(true.class().name(), nil.class().name(), catch(function () { 42.class() }))

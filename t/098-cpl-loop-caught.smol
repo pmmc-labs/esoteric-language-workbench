@@ -1,5 +1,5 @@
 // A superclass chain that loops makes class_precedence_list fault, and catch
-// takes the fault, as it does for a method lookup (t/084). The class is object 7,
+// takes the fault, as it does for a method lookup (t/084). The class is object 100,
 // the first the program makes.
 let $A = Class.new("$name", "A", "%methods", Hash.new());
 opaque_instance_attrs($A).set("$superclass", $A);

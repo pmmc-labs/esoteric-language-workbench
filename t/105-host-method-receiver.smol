@@ -1,0 +1,3 @@
+// A host method checks its receiver: an instance whose class is Array finds
+// size, but it isn't an array.
+create_opaque_instance(Array, Hash.new()).size()

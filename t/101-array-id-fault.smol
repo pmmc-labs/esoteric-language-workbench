@@ -1,0 +1,2 @@
+// An array has a class, but it isn't an instance, so it has no id.
+Array.new(1).id()

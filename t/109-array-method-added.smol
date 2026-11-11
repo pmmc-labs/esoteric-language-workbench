@@ -1,0 +1,4 @@
+// Array's methods are a class's method table, so a method added there is one
+// every array answers.
+opaque_instance_attrs(Array).get("%methods").set("first", function (self) { self.get(0) });
+Array.new(5, 6).first()

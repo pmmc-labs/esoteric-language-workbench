@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class` and `Object`. 5c is done: the Boolean classes, and conditionals as their methods (D27 to D30). 5b (`Array` and `Hash` as classes) is open, and needs a decision before it is built.
+**Progress:** steps 0 to 4 are done, and step 5 is split (D24). 5a is done: the prelude, with `Class` and `Object`. 5c is done: the Boolean classes, and conditionals as their methods (D27 to D30). 5b is done: `Array` and `Hash` as classes, and ids reserved below 100 (D31 to D33). Step 5 is complete. Step 6 is next.
 
 ## Step 0 was built by a small-tier builder
 
@@ -185,9 +185,29 @@ and `get_method` on Class, and `new`, `id` and `class` on Object, plus the
 setter `opaque_instance_set_class` (D19). The prelude binds `Class` and `Object`, and 5c added the Boolean classes. Golden tests 085 to 093 take the
 sketch's assertions, each with its expected value from the sketch's own `is`
 and `is_deeply` lines, except the four about `class_precedence_list`, which 095 takes. The
-programs' own objects started at 3 (D25), which D28 moves to 7.
+programs' own objects started at 3 (D25), which D28 moves to 7, and D32 to 100.
 
-**5b, agreed (D31, D32, D33).** The proposal below is the record; the numbers in it are superseded by D32. `Array` and `Hash` as SMOL classes, with their
+**5b, done (D31, D32, D33).** The prelude makes `Array` (7) and `Hash` (8), with
+the host's methods in their `"%methods"`, taken by `host_method` (D33), and
+registers them as the classes of arrays and hashes (D31). It then calls
+`reserve_ids(100)`, so a program's own objects start at 100 (D32). The host
+method tables and the host class value are gone, and `Array` prints as
+`<object 7>`. Golden tests 099 to 109, and the user ids in 046 to 098 moved by
+93, each re-derived by hand; 093 is renamed `093-own-ids-start-at-100`. Differs
+from the proposal:
+
+- `new` is a method of the class, and the core rule looks for `Array.new` in
+  `Array`'s class. So each of `Array` and `Hash` has a metaclass, `"Array
+  class"` and `"Hash class"` (9 and 10), under `Class`, which holds `new`
+  (DESIGN, default). The bootstrap has ten objects, not eight; the ids they
+  take are reserved, so a program's numbers don't move.
+- The prelude needs hashes before `Hash` exists, and `class_precedence_list`
+  needs `Array.new()` before `Array` exists. Both are worked around in the
+  prelude, with no new builtin (DESIGN, default).
+- `opaque_instance_class` answers a primitive's registered class, so
+  `true.class()` is `True` too.
+
+The proposal below is the record; the numbers in it are superseded by D32. `Array` and `Hash` as SMOL classes, with their
 methods in class method tables. A method call on a host value finds no class
 today, which is why the host tables exist. Proposed: a registry from a value to
 its class, set by a builtin, `set_primitive_class(sample, class)`, where the
@@ -239,4 +259,4 @@ registry that gives the three constants their classes is D29.
 
 | Example | Needs | Status |
 |---|---|---|
-| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5 (5b and 5c open), and step 6 for `isa` and `can` | waits on 5b and 5c |
+| `docs/prior-art/MiniMetaModel.pl` (the sketch) | steps 1 to 5 (done), and step 6 for `isa` and `can` | waits on step 6 |

@@ -1,2 +1,2 @@
-// The first object a program makes is 7, after the six the bootstrap makes.
+// The first object a program makes is 100: the bootstrap keeps the ids below it.
 Array.new(Class.id(), Object.id(), opaque_instance_id(create_opaque_instance(nil, Hash.new())))

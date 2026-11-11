@@ -1,0 +1,2 @@
+// A hash's class is Hash, object 8, and it answers Class's methods.
+Array.new(Hash.new("a", 1).class().name(), Hash.id())

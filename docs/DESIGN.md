@@ -27,8 +27,8 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   with no escapes yet (default); `nil`, `true` and `false` (default). These
   are the Scalar values: a name is bound to one, and there is no box type
   (D20). The primitives Hash and Array (D11) are references, and they change
-  in place (default). Closures (D11), opaque instances (D10), and the
-  classes `Array` and `Hash` (default) are values too. Methods that change
+  in place (default). Closures (D11) and opaque instances (D10) are values
+  too. `Array` and `Hash` are classes, and so instances (D31). Methods that change
   their receiver return it, so calls chain (default). A missing key or
   index gives `nil`, and `set` won't grow an array (default). An array or
   hash that holds itself prints its cycle as `[...]` or `{...}` (default).
@@ -73,7 +73,10 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   integer, a `set` index out of range, a hash key that isn't a string, and
   a key with no value (default). Step 4 adds attrs that aren't a Hash, a
   value that isn't an instance given to one of the `opaque_instance_`
-  readers, and a method with no parameter for `self` (default).
+  readers, and a method with no parameter for `self` (default). Step 5b
+  adds a host method's receiver of the wrong kind, `host_method` given
+  anything but a method of `Array` or `Hash`, and `reserve_ids` given
+  something other than an integer (default: the wording).
 
 ## The core rule
 
@@ -84,11 +87,12 @@ closure it finds, passing the receiver as `self` (D15). Nothing is
 installed anywhere else, so there is no promotion step. A proposal that
 changes how lookup works is a proposal about this rule.
 
-The primitives are opaque instances too, and their methods, such as
-`push`, are built-in closures in their class's method table, so they
-dispatch by the same rule (default). That is step 5: until then arrays,
-hashes and the class values `Array` and `Hash` keep the host tables of
-step 3, and take no ids.
+The primitives are not instances, but an array, a hash, `true`, `false` and
+`nil` have a class, which a registry holds (D29, D31). A method call on one of
+them walks that class's chain by the same rule, with the value as `self`. The
+methods of `Array` and `Hash`, such as `push`, are host builtins in their
+class's method table (D31, D33). Integers, strings and functions have no class,
+and so no methods.
 
 As built in step 4:
 
@@ -111,9 +115,12 @@ As built in step 4:
 ## Values and memory
 
 Each new instance takes the next id from one counter. The prelude runs
-first, so `Class` is 1 and `Object` is 2, and a program's own objects start
-at 7, after the six bootstrap objects (D25, revised by D28). Only `create_opaque_instance` and
-`create_class` take ids. The counter belongs to one run of a program, so
+first, so `Class` is 1, `Object` 2, `Boolean` 3, `True` 4, `False` 5,
+`UndefinedObject` 6, `Array` 7 and `Hash` 8 (D32), and the classes of `Array`
+and `Hash` are 9 and 10 (default, below). The prelude then reserves the ids
+below 100 with `reserve_ids(100)`, so a program's own objects start at 100,
+whatever the bootstrap adds (D32, which revises D25 and D28). Only
+`create_opaque_instance` and `create_class` take ids. The counter belongs to one run of a program, so
 each run starts again at 1 before its prelude. An
 instance holds its attrs Hash by reference; `create_class` builds a new
 Hash, the defaults and then the given attrs, so it doesn't share the one it
@@ -148,15 +155,41 @@ Built in:
   do (default).
 - `isa` and `can`, as methods on `Object` (D18).
 
-- Array and Hash methods, one table of host functions per kind of value,
-  which a method call consults (step 3). Step 4 leaves the tables as they
-  are. Step 5 replaces them with class method tables (D10, D16), when it
-  makes `Array` and `Hash` SMOL classes that hold them.
+- Booleans, nil, arrays and hashes take their methods from their classes
+  (D27, D29, D31), through a registry that `set_primitive_class` fills: by the
+  value for the three constants, and by the kind for arrays and hashes. A
+  method call on one of them walks that class's chain, as for an instance.
+  `opaque_instance_class` answers the registered class for one, so
+  `[1].class()` is `Array`, and `id()` still needs an instance (D31).
 
-- Booleans and nil take their methods from their classes (D27, D29), through
-  a registry that `set_primitive_class` fills. A method call on one of them
-  walks that class's chain, as for an instance. Only the three constants take
-  a class so far.
+- `host_method(class, method)`: the host builtin for a method of `Array` or
+  `Hash`, which the prelude puts in the classes' `"%methods"` (D33). A
+  builtin's arity counts its receiver, and is null for one that takes any
+  number (`new`, `push`). Each checks the kind of its receiver; the fault is
+  `NAME needs an array as its receiver: VALUE`, or `a hash` (default: the
+  wording). `new` ignores its receiver, the class. A missing receiver, when a
+  builtin of any arity is called as a function with no arguments, is `wrong
+  number of arguments: want at least 1, got 0` (default).
+
+- `reserve_ids(n)`: makes the next id at least `n`, never lower, and gives
+  `nil` (D32).
+
+- **The classes of `Array` and `Hash` (default).** `Array.new(...)` searches
+  `Array`'s class, not `Array`'s own table, by the core rule. So `new` sits in
+  a metaclass for each, `"Array class"` and `"Hash class"`, objects 9 and 10,
+  each with the superclass `Class` and `new` as its one method. `Array` and
+  `Hash` keep `Class`'s methods, so `Array.name()` is `"Array"`. Rejected:
+  `new` in `Array`'s own table, which `Array.new` would not find (it would find
+  `Object`'s `new`, and make an instance); a special case in the lookup for
+  classes, which changes the core rule.
+
+- **The prelude's first hashes (default).** `Hash` is object 8, after the
+  classes that need hashes to be made. Until it exists, the prelude binds
+  `Hash` to `function (%pairs) { %pairs }` and writes `Hash(...)`; the class
+  takes the name over, so no extra name is left for programs. `Class`'s
+  `class_precedence_list` needs `Array.new()`, and a function sees only the
+  names bound before it, so the prelude puts `nil` under that key and sets the
+  method once `Array` exists, which keeps the table's order.
 
 - `includes(x)` on an array, and `fault(message, value)`, which the prelude
   uses to stop a loop in the superclass chain with the lookup's fault (D30).

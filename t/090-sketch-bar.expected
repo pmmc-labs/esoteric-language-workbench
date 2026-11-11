@@ -1,1 +1,1 @@
-[9, 1, "Bar", 7, 10, 9, "Foo->foo", "Bar->bar", "Bar->baz", "no method found for name on <object 10>"]
+[102, 1, "Bar", 100, 103, 102, "Foo->foo", "Bar->bar", "Bar->baz", "no method found for name on <object 103>"]

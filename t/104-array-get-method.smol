@@ -1,0 +1,3 @@
+// Array's own methods are for arrays, so push is in its table. new is a method
+// of the class Array, so it is in the table of Array's class.
+Array.new(Array.get_method("push"), Array.get_method("new"), Array.class().get_method("new"))

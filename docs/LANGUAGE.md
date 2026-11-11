@@ -16,13 +16,14 @@ pairs in turn. Arrays and hashes change in place, through their methods. A
 name holds a reference to one: a `let` copies the reference, not the
 contents, so a change made through one name is seen through every other.
 
-The classes `Array` and `Hash` are bound before the program starts. Each
-has the one method `new`, which makes an instance, so `Array.new(...)` and
-`Hash.new(...)` are the ways to write them.
+The classes `Array` and `Hash` are made by the bootstrap, and each has the
+method `new`, so `Array.new(...)` and `Hash.new(...)` are the ways to write
+them. An array or a hash is not an instance, but it has a class: `Array` or
+`Hash`, whose methods it answers (see Methods and Bootstrap).
 
 An instance is an id, a class and attrs. The id is an integer, and each
-instance made takes the next one. A program's own instances start at 7, after the six the bootstrap makes
-(see Bootstrap). The class is any value; it may be
+instance made takes the next one. A program's own instances start at 100: the
+bootstrap makes its objects first, and keeps the ids below 100 (see Bootstrap). The class is any value; it may be
 `nil`. The attrs are a hash, which the instance holds by reference. A class
 is an instance too, one whose attrs hold a method table under `"%methods"`
 and a superclass under `"$superclass"`. The built-in functions under
@@ -71,10 +72,10 @@ parameter must be the last one.
 parameters. If its last parameter is `%name`, it needs at least as many as
 it has before that.
 
-`x.name(a, b)` calls the method `name` on `x`. Arrays, hashes and the
-classes `Array` and `Hash` have methods, listed below. An instance has the
-methods of its class, as Instances says. Every other value has none, so a
-method call on it is a fault.
+`x.name(a, b)` calls the method `name` on `x`. An instance has the methods of
+its class, as Instances says. An array, a hash, `true`, `false` and `nil` have
+the methods of their classes in the same way (see Bootstrap). Every other value
+has none, so a method call on it is a fault.
 
 `catch(f)` is a built-in function, bound before the program starts, so a
 `let` can shadow it. It calls `f` with no arguments. If that call raises a
@@ -83,6 +84,11 @@ fault, `catch` returns the fault's message as a string; otherwise it returns
 is not caught. `catch` takes exactly one argument.
 
 ## Methods
+
+The methods below are the host's, in the method tables of the classes `Array`
+and `Hash`. A method call on an array or a hash finds them there as it finds any
+method, so it also finds the methods of `Object`, which `Array` and `Hash`
+inherit from, and a method added to `Array`'s table is one every array answers.
 
 An array has five methods. `push(x, ...)` adds its arguments to the end. It
 returns the array, so calls chain. `get(i)` gives the item at index `i`,
@@ -96,12 +102,17 @@ if there is none. `set(k, v)` stores a value under `k`, and returns the hash.
 `keys()` gives an array of the keys, in the order they were first added.
 `size()` gives the number of entries. A key is always a string.
 
-The class `new` method works as `Array.new` and `Hash.new` do.
+`Array.new(a, b, ...)` and `Hash.new(k, v, ...)` are methods of the classes
+`Array` and `Hash`, and they make an array or a hash. The other methods check
+that their receiver is an array, or a hash: one called on anything else, such as
+an instance whose class is `Array`, is the fault `NAME needs an array as its
+receiver: VALUE`, or `a hash`.
 
 ## Instances
 
 Five built-in functions, bound before the program starts as `catch` is.
-Under Bootstrap are a sixth, `opaque_instance_set_class`, and `set_primitive_class`.
+Under Bootstrap are a sixth, `opaque_instance_set_class`, and
+`set_primitive_class`, `host_method` and `reserve_ids`.
 `fault(message, value)` raises a fault, whose message is the string and then
 the value shown, separated by a space.
 
@@ -111,7 +122,11 @@ copied, so a later change to the hash is a change to the instance's attrs.
 
 `opaque_instance_id(o)` gives the id of the instance `o`,
 `opaque_instance_class(o)` its class, and `opaque_instance_attrs(o)` its
-attrs, the hash itself. Each takes an instance and nothing else.
+attrs, the hash itself. Each takes an instance and nothing else, except that
+`opaque_instance_class` also gives the class of a value that has one without
+being an instance: an array, a hash, `true`, `false` or `nil`. So
+`Array.new(1).class()` is `Array`, but `Array.new(1).id()` is the fault
+`not an opaque instance: [1]`.
 
 `create_class(attrs)` makes a class: an instance of `Class`, as the sketch's
 is (D26). Its attrs are a new hash with `"$name"` as `""`, `"$superclass"` as
@@ -140,8 +155,10 @@ itself starts at the class's own class, as for any instance.
 Before every program, a prelude in `lib/prelude.smol` runs. It makes the
 classes below the way a program makes any class, so they are the first
 objects, numbered in this order: `Class` 1, `Object` 2, `Boolean` 3, `True` 4,
-`False` 5 and `UndefinedObject` 6. A program's own objects start at 7. The
-prelude binds these names, and a program can use them.
+`False` 5, `UndefinedObject` 6, `Array` 7 and `Hash` 8, and then the classes of
+`Array` and `Hash`, 9 and 10. It then calls `reserve_ids(100)`, so a program's
+own objects start at 100, however many objects the bootstrap makes below that.
+The prelude binds the names of the eight classes, and a program can use them.
 
 `Class` is an instance of itself, and its superclass is `Object`. Its methods
 are `name()`, which gives its name; `superclass()`, which gives its superclass;
@@ -171,12 +188,34 @@ way round; `ifTrueFalse(whenTrue, whenFalse)` runs one of its two blocks, and
 only that one. `not()` is on `Boolean`.
 
 Because `Boolean` and `UndefinedObject` inherit from `Object`, they also answer
-Object's methods: `true.id()` is a fault, since `id` needs an instance, and
-`nil.new()` makes an instance whose class is `nil`. The three constants get
-their classes from `set_primitive_class(v, c)`, and only those three take one.
+Object's methods: `true.class()` is `True`, `true.id()` is a fault, since `id`
+needs an instance, and `nil.new()` makes an instance whose class is `nil`.
 
-The methods of `Array` and `Hash` are not in this section: they are still
-the host's, and move to class method tables with the rest of the bootstrap.
+`Array` and `Hash` inherit from `Object`. Their `"%methods"` hold the methods
+under Methods: `push`, `get`, `set`, `size` and `includes` for `Array`, and
+`get`, `set`, `keys` and `size` for `Hash`. `new` is not a method of an array
+but of the class, so it is in the table of the class's own class: `Array`'s
+class is a class named `"Array class"`, whose superclass is `Class` and whose
+one method is `new`, and the same for `Hash`. So `Array.name()` is `"Array"`,
+and `Array.get_method("push")` is a function.
+
+A constant, an array or a hash gets its class from `set_primitive_class(v, c)`,
+which makes the instance `c` the class of `v`: of `true`, `false` or `nil`
+itself, or of every array or every hash, by its kind. It gives back `c`. Any
+other `v` is the fault `only true, false, nil, arrays and hashes take a class:
+VALUE`, and a `c` that isn't an instance is `not an opaque instance: VALUE`.
+
+`host_method(class, method)` gives the host's built-in function for a method of
+`Array` or `Hash`, both named by strings: `host_method("Array", "push")`.
+Anything else is the fault `no host method METHOD for CLASS`. The function takes
+the receiver as its first argument, so it takes one more argument than the
+method: `host_method("Array", "size")(Array.new(1, 2))` is 2. Called as a
+method, the receiver is passed for it, and a wrong number of arguments counts
+only the ones after it. `push` and `new` take any number.
+
+`reserve_ids(n)` makes the next id at least `n`. It never moves the next id
+back, and it gives `nil`. An `n` that isn't an integer is the fault
+`reserve_ids needs an integer: VALUE`.
 
 ## Output
 
@@ -185,8 +224,9 @@ expression, and then a newline. Integers print in decimal, strings in double
 quotes, functions as `<function>`, and the constants as `nil`, `true` and
 `false`. An array prints as `[1, "two"]` and a hash as `{"a": 1}`, with keys
 in the order they were added. An array or hash that holds itself prints as
-`[...]` or `{...}` where the cycle starts. A class prints as `<class Array>`.
-An instance prints as `<object ID>`, where ID is its id: `<object 1>`.
+`[...]` or `{...}` where the cycle starts. An instance prints as
+`<object ID>`, where ID is its id: `<object 1>`. A class is an instance, so
+`Array` prints as `<object 7>`.
 A program whose last statement is a `let` prints nothing. The program then
 exits 0.
 
@@ -201,9 +241,11 @@ that has none; an index that isn't an integer; a `set` index that is out of
 range; a hash key that isn't a string; key-value arguments with a key
 and no value; attrs that aren't a hash; a value that isn't an instance where
 one is needed; and a method with no first parameter for the receiver; a superclass
-chain that loops back to a class it has already searched; and
-`set_primitive_class` given a value other than `true`, `false` or `nil`, or a
-class that isn't an instance. A
+chain that loops back to a class it has already searched;
+`set_primitive_class` given a value other than `true`, `false`, `nil`, an array
+or a hash, or a class that isn't an instance; a host method given a receiver
+of the wrong kind; `host_method` given anything but a method of `Array` or
+`Hash`; and `reserve_ids` given something other than an integer. A
 method that isn't found is `no method found for NAME on VALUE`, for an
 instance as for any other value. A fault that `catch` takes is not a fault of the program: the
 program carries on after the call to `catch`.

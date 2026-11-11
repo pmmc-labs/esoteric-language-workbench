@@ -1,0 +1,5 @@
+// reserve_ids moves the next id forward, and never back.
+reserve_ids(500);
+let $a = create_opaque_instance(nil, Hash.new());
+let $r = reserve_ids(10);
+Array.new(opaque_instance_id($a), opaque_instance_id(create_opaque_instance(nil, Hash.new())), $r)
