@@ -1,0 +1,2 @@
+// size counts characters, which are code points, so the emoji is one.
+Array.new("hello".size(), "a😀".size(), "".size())

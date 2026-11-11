@@ -5,7 +5,7 @@ interpreter (D14), and the open questions are settled (D15 to D22). Each
 step says what it adds, what it tests, and what it leaves out on purpose.
 Each carries a Referee line and a Size line, as `docs/PROCESS.md` asks.
 
-**Progress:** steps 0 to 6 are done, which is the plan as written. Step 5 is complete (5a, 5b and 5c, D24). The sketch's assertions are golden tests 085 to 097, and the rest of the sketch's behaviour is covered by steps 0 to 6.
+**Progress:** steps 0 to 7 are done. Step 5 is complete (5a, 5b and 5c, D24). Step 7 gives integers and strings their classes (D36, D37). Step 8, the examples, is next; its gaps go to `docs/ISSUES.md` for proposals.
 
 ## Step 0 was built by a small-tier builder
 
@@ -257,6 +257,37 @@ registry that gives the three constants their classes is D29.
 - Differs from the plan as first written: the methods are host builtins, not
   SMOL, because `isa` needs a walk of the chain and SMOL has no loop (D35).
 - Size: small, built by the lead. Referee: none.
+
+### 7. Primitive classes for integers and strings (done)
+
+- Landed: `Integer` and `String`, made by the prelude after `Array` and `Hash`,
+  with their methods as host builtins in their `"%methods"` (D36). Integers and
+  strings register by kind, so `set_primitive_class` gives them a class as it
+  does arrays and hashes (D31), and a program may reassign it (D37). Golden
+  tests 116 to 131, and unit tests in the evaluator.
+- Golden tests 008, 096, 107 and 111 assumed an integer has no class. Their
+  programs or comments changed where they did, and their expected output was
+  worked out again by hand.
+- Differs from the plan as first written: the plan didn't name the methods.
+  D36 names them, as defaults for review. Functions still have no class.
+- Leaves out: operators and division (ISSUES.md), string indexing, and string
+  escapes.
+- Size: medium, as a mirror of step 3's Array methods on the registry of D29
+  and D31. Built by the lead, which is small-tier (Haiku 5.5), so the design
+  and its method list are the risk: D36 is marked default for the person to
+  look at. The process has a large model write a step, and this one wasn't, so
+  the mismatch is recorded in the commit. Referee: none.
+
+### 8. Examples, and the gaps they show (in progress)
+
+- Plan: write example programs in `examples/`, each with an `.expected` golden
+  test, as CLAUDE.md's layout says. A larger model designs and writes them. Their
+  expected output is worked out from LANGUAGE.md, not run through the
+  interpreter, so a mismatch is a fact to investigate. An example that needs a
+  feature the language lacks is changed or left out (D6); the gap goes to
+  `docs/ISSUES.md` for a proposal.
+- Size: large to design, medium to write, with the examples' outputs checked by
+  hand. Referee: none.
 
 ## Example-port table
 

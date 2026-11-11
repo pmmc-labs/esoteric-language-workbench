@@ -1,0 +1,3 @@
+// concat gives a new string. equals compares by value, and is false for a
+// value that isn't a string.
+Array.new("ab".concat("cd"), "ab".equals("abcd"), "x".equals(1), "abcd".equals("abcd"))

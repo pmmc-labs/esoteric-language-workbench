@@ -1,0 +1,3 @@
+// catch takes the message of a fault in an Integer method, with the value
+// shown as nil.
+catch(function () { 1.plus(nil) })

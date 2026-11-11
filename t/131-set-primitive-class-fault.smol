@@ -1,0 +1,3 @@
+// Only the constants, integers, strings, arrays and hashes take a class. A
+// function doesn't, and the fault shows what it was given.
+catch(function () { set_primitive_class(function () { 1 }, Integer) })

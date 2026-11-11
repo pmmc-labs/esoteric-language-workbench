@@ -1,3 +1,3 @@
-// A boolean, an array and nil answer isa for their classes. An integer has no
-// class, so it has no methods, isa included.
-Array.new(true.isa(True), true.isa(Boolean), Array.new(1).isa(Array), Array.new(1).isa(Hash), nil.isa(UndefinedObject), catch(function () { 42.isa(Object) }))
+// A boolean, an array and nil answer isa for their classes, and so does an
+// integer, for Integer.
+Array.new(true.isa(True), true.isa(Boolean), Array.new(1).isa(Array), Array.new(1).isa(Hash), nil.isa(UndefinedObject), 42.isa(Integer))

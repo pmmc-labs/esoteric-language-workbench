@@ -1,0 +1,3 @@
+// An integer answers isa for Integer, and for the classes above it, Object
+// included. A string is not an integer.
+Array.new(42.isa(Integer), "x".isa(String), "x".isa(Integer), 42.isa(Object))

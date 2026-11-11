@@ -1,0 +1,2 @@
+// Integer has its own methods and Object's, and no others. push is neither.
+catch(function () { 42.push(1) })

@@ -1,0 +1,2 @@
+// concat wants a string, and says so.
+"a".concat(1)

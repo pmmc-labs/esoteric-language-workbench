@@ -1,0 +1,2 @@
+// An argument of the wrong kind is a fault, and it names the method called.
+1.plus("2")

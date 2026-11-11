@@ -1,0 +1,2 @@
+// toString gives the decimal digits, which concat joins to a string.
+"n=".concat(42.toString())

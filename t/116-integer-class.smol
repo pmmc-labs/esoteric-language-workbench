@@ -1,0 +1,2 @@
+// An integer has the class Integer, which the bootstrap makes.
+42.class().name()

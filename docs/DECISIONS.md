@@ -200,7 +200,8 @@ open. Rejected: a host table of boolean methods, which would keep the
 conditionals off the Boolean class; and a class held on each value, which the
 constants can't carry. A program can call `set_primitive_class` too, so it can
 change a constant's class for the rest of its run. That is the same open
-question as `opaque_instance_set_class` (D19), and it is not settled here.
+question as `opaque_instance_set_class` (D19), and it is not settled here. D37
+settles it: a program may change a class at run time.
 
 **D30. A loop in the superclass chain stops `class_precedence_list` with the
 lookup's fault, through two small additions.** *(default: the review of step
@@ -218,7 +219,8 @@ reports.
 
 **D33. The prelude reaches the host methods through `host_method(class, method)`, and each host method takes its receiver as its first argument.** *(default: the mechanism D31 needs, chosen by the lead.)* `host_method` returns the builtin for a method of Array or Hash, and faults for any other name. A builtin's arity counts its receiver, so the existing hidden-argument rule still applies. A builtin checks that its receiver is the kind it expects. Rejected: names for the host methods in the starting environment, which would put more names in front of programs.
 
-**D34. Array and Hash each have a metaclass, because `new` is found through the receiver's class.** *(default: the builder's choice in step 5b, reviewed and accepted by the lead. It refines D31's wording; the reason in D31 stands.)* Under the core rule, `Array.new(...)` looks in Array's class, not in Array's own `"%methods"`. So `new` lives in a class of Array's, a metaclass named "Array class" under Class, and Hash has one too. The other bootstrap classes have no class-side methods, so they have none. Rejected: a metaclass for every class now, which adds objects with no behaviour behind them; and a `new` in Object that checks the receiver's name, which special-cases the object model.
+**D34. Array and Hash each have a metaclass, because `new` is found through the receiver's class.** *(default: the builder's choice in step 5b, reviewed and accepted by the lead. It refines D31's wording; the reason in D31 stands.)* Under the core rule, `Array.new(...)` looks in Array's class, not in Array's own `"%methods"`. So `new` lives in a class of Array's, a metaclass named "Array class" under Class, and Hash has one too. The other bootstrap classes have no class-side methods, so they have none. Rejected: a metaclass for every class now, which adds objects with no behaviour behind them; and a `new` in Object that checks the receiver's name, which special-cases the object model. *(D37: kept for now; revisit once the other
+primitive classes are built.)*
 
 **D35. `isa` and `can` are host builtins in Object's table, reached through
 `host_method`, and `can` is the lookup dispatch uses.** *(default: the lead's
@@ -229,7 +231,12 @@ two can't disagree. A value with no class is an instance of nothing, and it
 answers false to both. Rejected: SMOL definitions, since they need a loop over
 the chain, and SMOL has no loop, while Array has no test for membership; and a
 `can` that looks only at the class's own table, which would disagree with
-dispatch for an inherited method.
+dispatch for an inherited method. *(D37: kept for now; revisit once more classes
+are built.)*
+
+**D36. Integers and strings have the classes `Integer` and `String`, whose methods are host builtins reached through `host_method`, as Array's are.** *(default: the lead's choice in step 7, from the person's "fill out the primitive classes". Each method is named here so that it can be changed.)* The methods are `plus`, `minus`, `times`, `lessThan`, `equals` and `toString` on Integer, and `size`, `concat` and `equals` on String: the smallest set that the examples are likely to need. A method that takes an integer or a string faults when given another kind, and the fault names the method, as in `plus needs an integer as its argument: "2"`. `equals` is by value, and false for another kind with no fault, as `includes` is (D30). `size` counts code points, so an emoji is one character. Integers and strings register by kind, as arrays and hashes do (D31), so every integer and every string takes its class. The prelude makes the two classes after `Array` and `Hash`, so they are objects 11 and 12, and a program's own objects still start at 100 (D32). Both inherit from `Object`. Functions still have no class. Rejected: operators, which are grammar and need a proposal of their own, so they are recorded in ISSUES.md rather than added; a `Number` class above Integer, since there is one kind of integer; and a `Function` class, since no method is needed on a function yet.
+
+**D37. A program may change a primitive's class at run time, and D34 and D35 stay for now.** *(User: "Yes, lets allow that at runtime"; "This is fine for now, once the other primitive classes are we can revisit it"; "D35 is fine for now, once we've built more classes we can revisit.")* D29 left open whether a program may call `set_primitive_class` and `opaque_instance_set_class`. It may. So a program can make every integer an instance of a subclass of Integer for the rest of its run (golden test 130). The metaclasses of D34 and the host `isa` and `can` of D35 are kept, and each is to be revisited once the other primitive classes are built. Rejected: limiting the two builtins to the bootstrap, which would stop a program from giving a primitive a class of its own.
 
 ## Project
 

@@ -1,1 +1,1 @@
-["yes", nil, 2, false, true, true, "no method found for isNil on 42"]
+["yes", nil, 2, false, true, true, "no method found for push on 42"]

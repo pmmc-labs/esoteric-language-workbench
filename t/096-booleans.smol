@@ -1,4 +1,4 @@
 // Conditionals are methods of booleans (D27): true runs a block given to
 // ifTrue, false doesn't; ifTrueFalse runs one of two; not inverts. nil answers
-// isNil, and a number has no methods at all.
-Array.new(true.ifTrue(function () { "yes" }), false.ifTrue(function () { "yes" }), false.ifTrueFalse(function () { 1 }, function () { 2 }), true.not(), false.not(), nil.isNil(), catch(function () { 42.isNil() }))
+// isNil, and a number has Object's methods and Integer's, but no push.
+Array.new(true.ifTrue(function () { "yes" }), false.ifTrue(function () { "yes" }), false.ifTrueFalse(function () { 1 }, function () { 2 }), true.not(), false.not(), nil.isNil(), catch(function () { 42.push(1) }))

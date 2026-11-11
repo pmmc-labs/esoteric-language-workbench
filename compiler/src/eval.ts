@@ -8,7 +8,8 @@
 // Arrays and hashes are the one kind of value that changes. A method on one
 // changes it, and a let copies the reference, so every name for it sees the
 // change. Their methods are host builtins, but they live in the method tables
-// of the SMOL classes Array and Hash, which the prelude makes (D31).
+// of the SMOL classes Array and Hash, which the prelude makes (D31). Integers
+// and strings have classes the same way, Integer and String (D36).
 //
 // An opaque instance is an id, a class and attrs (D10). Its methods are not
 // on the host: a method call on one walks its class's chain, below. So does a
@@ -29,7 +30,6 @@ export type Value =
     | { kind: 'hash'; entries: Map<string, Value> }
     | { kind: 'obj'; id: bigint; cls: Value; attrs: HashV };
 
-type ArrV = Extract<Value, { kind: 'arr' }>;
 type HashV = Extract<Value, { kind: 'hash' }>;
 type ObjV = Extract<Value, { kind: 'obj' }>;
 
@@ -143,8 +143,8 @@ const sameValue = (a: Value, b: Value): boolean => {
     return a === b || (a.kind === 'nil' && b.kind === 'nil');
 };
 
-// The methods of Array and Hash, as builtins that host_method hands to the
-// prelude, which puts them in the classes' "%methods" (D33). A builtin's
+// The methods of Array, Hash, Integer and String, as builtins that host_method
+// hands to the prelude, which puts them in the classes' "%methods" (D33). A builtin's
 // arity counts its receiver, which comes first, and is null for a method that
 // takes any number of arguments. Each checks that its receiver is the kind
 // the class expects, since a method table can be reached from anything whose
@@ -157,11 +157,23 @@ const receiver = <K extends Value['kind']>(kind: K, what: string, name: string, 
     return self as Extract<Value, { kind: K }>;
 };
 
-const arrayMethod = (name: string, arity: number | null, call: (self: ArrV, args: Value[]) => Value): [string, Value] =>
-    [name, { kind: 'builtin', arity, call: args => call(receiver('arr', 'an array', name, args), args.slice(1)) }];
+// A method of one kind of value. Its receiver is checked, and the builtin is
+// called without it.
+const kindMethod = <K extends Value['kind']>(kind: K, what: string) =>
+    (name: string, arity: number | null, call: (self: Extract<Value, { kind: K }>, args: Value[]) => Value): [string, Value] =>
+        [name, { kind: 'builtin', arity, call: args => call(receiver(kind, what, name, args), args.slice(1)) }];
 
-const hashMethod = (name: string, arity: number | null, call: (self: HashV, args: Value[]) => Value): [string, Value] =>
-    [name, { kind: 'builtin', arity, call: args => call(receiver('hash', 'a hash', name, args), args.slice(1)) }];
+const arrayMethod = kindMethod('arr', 'an array');
+const hashMethod = kindMethod('hash', 'a hash');
+const intMethod = kindMethod('int', 'an integer');
+const strMethod = kindMethod('str', 'a string');
+
+// The arguments of the Integer and String methods are checked by the method
+// that takes them, so a fault names the method that was called (D36).
+const intArg = (name: string, v: Value): bigint =>
+    v.kind === 'int' ? v.value : fault(`${name} needs an integer as its argument: ${show(v)}`);
+const strArg = (name: string, v: Value): string =>
+    v.kind === 'str' ? v.value : fault(`${name} needs a string as its argument: ${show(v)}`);
 
 // new is a method of the class, and its receiver is the class, which it
 // ignores. Array.new(a, b) is an array of its arguments; Hash.new takes key
@@ -193,6 +205,21 @@ const HOST_METHODS = new Map<string, Map<string, Value>>([
         hashMethod('set', 3, (self, args) => { self.entries.set(keyOf(args[0]!), args[1]!); return self; }),
         hashMethod('keys', 1, self => ({ kind: 'arr', items: [...self.entries.keys()].map((k): Value => ({ kind: 'str', value: k })) })),
         hashMethod('size', 1, self => ({ kind: 'int', value: BigInt(self.entries.size) })),
+    ])],
+    ['Integer', new Map([
+        intMethod('plus', 2, (self, args) => ({ kind: 'int', value: self.value + intArg('plus', args[0]!) })),
+        intMethod('minus', 2, (self, args) => ({ kind: 'int', value: self.value - intArg('minus', args[0]!) })),
+        intMethod('times', 2, (self, args) => ({ kind: 'int', value: self.value * intArg('times', args[0]!) })),
+        intMethod('lessThan', 2, (self, args) => ({ kind: 'bool', value: self.value < intArg('lessThan', args[0]!) })),
+        // equals is by value, and false for any other kind, as includes is (D30).
+        intMethod('equals', 2, (self, args) => ({ kind: 'bool', value: sameValue(self, args[0]!) })),
+        intMethod('toString', 1, self => ({ kind: 'str', value: self.value.toString() })),
+    ])],
+    ['String', new Map([
+        // The size counts code points, not UTF-16 units, so an emoji is one (D36).
+        strMethod('size', 1, self => ({ kind: 'int', value: BigInt([...self.value].length) })),
+        strMethod('concat', 2, (self, args) => ({ kind: 'str', value: self.value + strArg('concat', args[0]!) })),
+        strMethod('equals', 2, (self, args) => ({ kind: 'bool', value: sameValue(self, args[0]!) })),
     ])],
 ]);
 
@@ -233,10 +260,10 @@ const dispatch = (cls: Value, self: Value, name: string, args: Value[]): Value =
 const PRIMITIVES = ' primitive classes';
 
 // The key a value's class is registered under: the constant itself for true,
-// false and nil, and the kind for an array or a hash.
+// false and nil, and the kind for an integer, a string, an array or a hash (D36).
 const primitiveKey = (v: Value): string | undefined =>
     v.kind === 'nil' ? 'nil' : v.kind === 'bool' ? (v.value ? 'true' : 'false')
-    : v.kind === 'arr' || v.kind === 'hash' ? v.kind : undefined;
+    : v.kind === 'arr' || v.kind === 'hash' || v.kind === 'int' || v.kind === 'str' ? v.kind : undefined;
 
 const registered = (table: HashV, v: Value): Value | undefined => {
     const key = primitiveKey(v);
@@ -248,8 +275,8 @@ const primitiveClass = (env: Env, v: Value): Value | undefined => {
     return table !== undefined && table.kind === 'hash' ? registered(table, v) : undefined;
 };
 
-// A value with no class (an integer, a string, a function, or a primitive
-// before the prelude registers its class) has no methods.
+// A value with no class (a function, or a primitive before the prelude
+// registers its class) has no methods.
 const noMethod = (self: Value, name: string): never => fault(`no method found for ${name} on ${show(self)}`);
 
 // A method call on an instance: the search starts at the instance's class,
@@ -343,14 +370,15 @@ const root = (): Env => {
             if (m.kind !== 'str') return fault(`fault needs a string message: ${show(m)}`);
             return fault(`${m.value} ${show(args[1]!)}`);
         })],
-        // D29, D31: makes an instance the class of true, false or nil, or of
-        // every array or every hash, which then answer its methods. The class
-        // is returned.
+        // D29, D31, D36: makes an instance the class of true, false or nil, or of
+        // every integer, string, array or hash, which then answer its methods.
+        // The class is returned. A program may call it too, and change a class
+        // for the rest of its run (D37).
         ['set_primitive_class', builtin(2, args => {
             const cls = args[1]!;
             if (cls.kind !== 'obj') return fault(`not an opaque instance: ${show(cls)}`);
             const key = primitiveKey(args[0]!);
-            if (key === undefined) return fault(`only true, false, nil, arrays and hashes take a class: ${show(args[0]!)}`);
+            if (key === undefined) return fault(`only true, false, nil, integers, strings, arrays and hashes take a class: ${show(args[0]!)}`);
             primitives.entries.set(key, cls);
             return cls;
         })],

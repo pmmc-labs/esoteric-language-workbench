@@ -159,7 +159,7 @@ test('attrs that are not a Hash are a fault', () => {
 
 test('the readers fault on a value that is not an instance', () => {
     faults('opaque_instance_id(1)', 'not an opaque instance: 1');
-    faults('opaque_instance_class(1)', 'not an opaque instance: 1');
+    faults('opaque_instance_class(function () { 1 })', 'not an opaque instance: <function>');
     faults('opaque_instance_attrs("a")', 'not an opaque instance: "a"');
 });
 
@@ -220,8 +220,8 @@ test("opaque_instance_set_class changes an instance's class, and only an instanc
     faults('opaque_instance_set_class(1, nil)', 'not an opaque instance: 1');
 });
 
-test('set_primitive_class takes a class for true, false, nil, arrays and hashes only, and the class must be an instance', () => {
-    faults('set_primitive_class(1, create_opaque_instance(nil, Hash.new()))', 'only true, false, nil, arrays and hashes take a class: 1');
+test('set_primitive_class takes a class for true, false, nil, integers, strings, arrays and hashes only, and the class must be an instance', () => {
+    faults('set_primitive_class(function () { 1 }, create_opaque_instance(nil, Hash.new()))', 'only true, false, nil, integers, strings, arrays and hashes take a class: <function>');
     faults('set_primitive_class(nil, 1)', 'not an opaque instance: 1');
 });
 
@@ -241,7 +241,8 @@ test('a method that a constant\'s class chain lacks is a fault', () => {
 test('opaque_instance_class gives a registered primitive its class', () => {
     assert.equal(run('opaque_instance_class(Array.new())'), '<object 7>');
     assert.equal(run('opaque_instance_class(nil)'), '<object 6>');
-    faults('opaque_instance_class("a")', 'not an opaque instance: "a"');
+    assert.equal(run('opaque_instance_class("a").name()'), '"String"');
+    faults('opaque_instance_class(function () { 1 })', 'not an opaque instance: <function>');
 });
 
 test('host_method gives a builtin that takes the receiver first, and checks it', () => {
@@ -272,6 +273,12 @@ test('fault raises its message, then the value shown, and needs a string message
 
 test('isa and can answer false for a value with no class, and can wants a string name', () => {
     assert.equal(run('host_method("Object", "can")(create_opaque_instance(nil, Hash.new()), "id")'), 'false');
-    assert.equal(run('host_method("Object", "isa")(42, Object)'), 'false');
+    assert.equal(run('host_method("Object", "isa")(function () { 1 }, Object)'), 'false');
     faults('host_method("Object", "can")(1, 2)', 'can needs a method name as a string: 2');
+});
+
+test('integers and strings take the classes Integer and String (D36)', () => {
+    assert.equal(run('host_method("Object", "isa")(42, Integer)'), 'true');
+    assert.equal(run('host_method("Integer", "equals")(42, 42)'), 'true');
+    assert.equal(run('host_method("String", "size")("a😀")'), '2');
 });

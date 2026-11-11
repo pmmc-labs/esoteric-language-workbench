@@ -87,12 +87,12 @@ closure it finds, passing the receiver as `self` (D15). Nothing is
 installed anywhere else, so there is no promotion step. A proposal that
 changes how lookup works is a proposal about this rule.
 
-The primitives are not instances, but an array, a hash, `true`, `false` and
-`nil` have a class, which a registry holds (D29, D31). A method call on one of
-them walks that class's chain by the same rule, with the value as `self`. The
-methods of `Array` and `Hash`, such as `push`, are host builtins in their
-class's method table (D31, D33). Integers, strings and functions have no class,
-and so no methods.
+The primitives are not instances, but an array, a hash, an integer, a string,
+`true`, `false` and `nil` have a class, which a registry holds (D29, D31, D36).
+A method call on one of them walks that class's chain by the same rule, with
+the value as `self`. The methods of `Array`, `Hash`, `Integer` and `String`,
+such as `push` and `plus`, are host builtins in their class's method table
+(D31, D33, D36). Functions have no class, and so no methods.
 
 As built in step 4:
 
@@ -155,15 +155,21 @@ Built in:
   do (default).
 - `isa` and `can`, as methods on `Object` (D18).
 
-- Booleans, nil, arrays and hashes take their methods from their classes
-  (D27, D29, D31), through a registry that `set_primitive_class` fills: by the
-  value for the three constants, and by the kind for arrays and hashes. A
-  method call on one of them walks that class's chain, as for an instance.
-  `opaque_instance_class` answers the registered class for one, so
-  `[1].class()` is `Array`, and `id()` still needs an instance (D31).
+- Booleans, nil, integers, strings, arrays and hashes take their methods from
+  their classes (D27, D29, D31, D36), through a registry that
+  `set_primitive_class` fills: by the value for the three constants, and by the
+  kind for the others. A method call on one of them walks that class's chain, as
+  for an instance. `opaque_instance_class` answers the registered class for one,
+  so `[1].class()` is `Array`, and `id()` still needs an instance (D31).
+- `Integer` and `String` (D36, default): the methods listed in LANGUAGE.md, as
+  host builtins. Integer has `plus`, `minus`, `times`, `lessThan`, `equals` and
+  `toString`; String has `size`, `concat` and `equals`. The prelude makes them
+  after `Array` and `Hash`, as objects 11 and 12. SMOL has no operators, so
+  arithmetic is by method; ISSUES.md records that.
 
-- `host_method(class, method)`: the host builtin for a method of `Array` or
-  `Hash`, which the prelude puts in the classes' `"%methods"` (D33). A
+- `host_method(class, method)`: the host builtin for a method of `Array`,
+  `Hash`, `Integer`, `String` or `Object`, which the prelude puts in the classes'
+  `"%methods"` (D33, D36). A
   builtin's arity counts its receiver, and is null for one that takes any
   number (`new`, `push`). Each checks the kind of its receiver; the fault is
   `NAME needs an array as its receiver: VALUE`, or `a hash` (default: the

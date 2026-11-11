@@ -1,0 +1,10 @@
+// A program may change the class of a primitive while it runs (D37). Here
+// every integer takes Doubler, a subclass of Integer: it keeps Integer's
+// methods, and has one more.
+let Doubler = create_class(Hash.new(
+    "$name", "Doubler",
+    "$superclass", Integer,
+    "%methods", Hash.new(
+        "double", function (self) { self.plus(self) })));
+set_primitive_class(0, Doubler);
+Array.new(42.double(), 42.plus(1), 42.class().name())

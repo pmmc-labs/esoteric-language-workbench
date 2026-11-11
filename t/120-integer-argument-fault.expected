@@ -1,0 +1,2 @@
+fault: plus needs an integer as its argument: "2"
+exit: 1

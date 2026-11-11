@@ -1,0 +1,2 @@
+// opaque_instance_class gives a string its class, as it does an array.
+opaque_instance_class("x").name()

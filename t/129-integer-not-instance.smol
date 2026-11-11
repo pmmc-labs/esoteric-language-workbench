@@ -1,0 +1,2 @@
+// An integer is not an instance, so it has no id, as true has none.
+catch(function () { 42.id() })

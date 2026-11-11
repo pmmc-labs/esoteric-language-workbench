@@ -2,8 +2,9 @@
 // (docs/prior-art/MiniMetaModel.pl). Every program runs this first. Each class
 // made here is an object with an id, so the numbers run: Class is 1, Object is
 // 2, Boolean 3, True 4, False 5, UndefinedObject 6, Array 7 and Hash 8, then
-// the metaclasses of Array and Hash, 9 and 10. The ids up to 99 are kept for
-// the bootstrap, so a program's own objects start at 100 (D32).
+// the metaclasses of Array and Hash, 9 and 10, then Integer and String, 11 and
+// 12 (D36). The ids up to 99 are kept for the bootstrap, so a program's own
+// objects start at 100 (D32).
 
 // Hash is a class made below, after UndefinedObject, so that its number is 8.
 // The classes before it need hashes, so until then Hash is a function that
@@ -127,6 +128,31 @@ let Hash = function (make) {
 
 set_primitive_class(Array.new(), Array);
 set_primitive_class(Hash.new(), Hash);
+
+// Integers and strings are primitives too (D36). Their methods are the host's,
+// as Array's are, and every integer and every string takes its class from the
+// registry, by kind. Hash is the real class now, so Hash.new makes the tables.
+let Integer = create_class(Hash.new(
+    "$name", "Integer",
+    "$superclass", Object,
+    "%methods", Hash.new(
+        "plus", host_method("Integer", "plus"),
+        "minus", host_method("Integer", "minus"),
+        "times", host_method("Integer", "times"),
+        "lessThan", host_method("Integer", "lessThan"),
+        "equals", host_method("Integer", "equals"),
+        "toString", host_method("Integer", "toString"))));
+
+let String = create_class(Hash.new(
+    "$name", "String",
+    "$superclass", Object,
+    "%methods", Hash.new(
+        "size", host_method("String", "size"),
+        "concat", host_method("String", "concat"),
+        "equals", host_method("String", "equals"))));
+
+set_primitive_class(0, Integer);
+set_primitive_class("", String);
 
 opaque_instance_attrs(Class).get("%methods").set("class_precedence_list",
     function (self) { self.cpl_into(Array.new()) });

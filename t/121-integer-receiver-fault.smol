@@ -1,0 +1,3 @@
+// A builtin checks its receiver as well. host_method hands it out, and the
+// receiver is its first argument, so this call goes past the class.
+host_method("Integer", "plus")("1", 2)
