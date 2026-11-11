@@ -10,7 +10,7 @@ let Animal = create_class(Hash.new(
   "%methods", Hash.new(
     "speak", function (self) { "..." },
     "describe", function (self) {
-      opaque_instance_attrs(self).get("name").concat(" says ").concat(self.speak())
+      self.attr("name").concat(" says ").concat(self.speak())
     })));
 let Dog = create_class(Hash.new(
   "$name", "Dog",

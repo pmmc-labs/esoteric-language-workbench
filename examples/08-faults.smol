@@ -9,17 +9,15 @@ let Account = create_class(Hash.new(
   "$name", "Account",
   "$superclass", Object,
   "%methods", Hash.new(
-    "balance", function (self) { opaque_instance_attrs(self).get("balance") },
+    "balance", function (self) { self.attr("balance") },
     "deposit", function (self, amount) {
       amount.isa(Integer).ifFalse(function () { fault("deposit needs an integer, got", amount) });
       amount.lessThan(1).ifTrue(function () { fault("deposit needs a positive amount, got", amount) });
-      opaque_instance_attrs(self).set("balance", self.balance().plus(amount));
-      self
+      self.setAttr("balance", self.balance().plus(amount))
     },
     "withdraw", function (self, amount) {
       self.balance().lessThan(amount).ifTrue(function () { fault("insufficient funds, balance is", self.balance()) });
-      opaque_instance_attrs(self).set("balance", self.balance().minus(amount));
-      self
+      self.setAttr("balance", self.balance().minus(amount))
     })));
 
 let acct = Account.new("balance", 0);
