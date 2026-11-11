@@ -78,6 +78,10 @@ its class, as Instances says. An array, a hash, an integer, a string, `true`,
 `false` and `nil` have the methods of their classes in the same way (see
 Bootstrap). A function has none, so a method call on it is a fault.
 
+The receiver `x` is any expression that is a name, a literal, a call or a method
+call, so `42.size()` and `f(1).plus(2)` are both calls. There is no parenthesised
+expression, and `(1).plus(2)` is a syntax error.
+
 `catch(f)` is a built-in function, bound before the program starts, so a
 `let` can shadow it. It calls `f` with no arguments. If that call raises a
 fault, `catch` returns the fault's message as a string; otherwise it returns
@@ -125,9 +129,10 @@ receiver: VALUE`. The others say `a hash`, `an integer` or `a string`.
 
 ## Instances
 
-Five built-in functions, bound before the program starts as `catch` is.
-Under Bootstrap are a sixth, `opaque_instance_set_class`, and
-`set_primitive_class`, `host_method` and `reserve_ids`.
+Five built-in functions make and read instances. Like `catch`, they are bound
+before the program starts, and they are the five named below. The bootstrap adds
+`opaque_instance_set_class`, `set_primitive_class`, `host_method` and
+`reserve_ids`, which Bootstrap describes.
 `fault(message, value)` raises a fault, whose message is the string and then
 the value shown, separated by a space.
 
@@ -191,8 +196,9 @@ helper `cpl_into(acc)` adds the class to `acc` and walks on from there.
 with those pairs as its attrs; `id()`; `class()`; `isNil()`, which is false;
 `isa(cls)`, which is true if `cls` is the value's class or a class above it on
 its superclass chain; and `can(name)`, which is true if a method of that name
-is found for the value, by the same lookup dispatch uses. A value with no class
-answers false to both.
+is found for the value, by the same lookup dispatch uses. A value with no class answers false to both when `host_method` gives the method,
+since a method call on such a value finds nothing and is a fault. That is a
+function, or an instance whose class is `nil`.
 
 `Class.new("$name", "Foo", "$superclass", Object, "%methods", Hash.new(...))`
 makes a class. `create_class(attrs)` also makes a class, an instance of `Class`,
@@ -206,7 +212,8 @@ and answers `isNil()` with true (D29). Each conditional takes blocks, which are
 functions of no arguments. `ifTrue(block)` on `true` runs the block, and on
 `false` gives `nil` without running anything; `ifFalse(block)` is the other
 way round; `ifTrueFalse(whenTrue, whenFalse)` runs one of its two blocks, and
-only that one. `not()` is on `Boolean`.
+only that one. Each conditional's value is the value of the block it runs, or
+`nil` when `ifTrue` or `ifFalse` runs no block. `not()` is on `Boolean`.
 
 Because `Boolean` and `UndefinedObject` inherit from `Object`, they also answer
 Object's methods: `true.class()` is `True`, `true.id()` is a fault, since `id`
@@ -252,6 +259,9 @@ in the order they were added. An array or hash that holds itself prints as
 `Array` prints as `<object 7>`.
 A program whose last statement is a `let` prints nothing. The program then
 exits 0.
+
+A string can't contain a `"`: a literal can't hold one, and no method makes one.
+So a printed string needs no escaping.
 
 ## Faults
 

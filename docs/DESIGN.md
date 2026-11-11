@@ -60,8 +60,9 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   after its value is computed,
   so a function can't call itself by name (default); methods recurse
   through dispatch (step 4).
-- **Truthiness**: `nil` and `false` are false; everything else is true
-  (default).
+- **Truthiness**: there is none. Conditionals are methods of booleans (D27), so
+  `nil.ifTrue(...)` is a fault, a method not found. The default that `nil` and
+  `false` are false, and everything else true, was not built.
 - **Output**: a program prints the value of its last statement, if that
   statement is an expression, and then a newline. A let prints nothing
   (default).
@@ -75,7 +76,8 @@ so far is in [`LANGUAGE.md`](LANGUAGE.md).
   value that isn't an instance given to one of the `opaque_instance_`
   readers, and a method with no parameter for `self` (default). Step 5b
   adds a host method's receiver of the wrong kind, `host_method` given
-  anything but a method of `Array` or `Hash`, and `reserve_ids` given
+  anything but a method of `Array`, `Hash`, `Integer`, `String` or `Object`
+  (D33, D35, D36), and `reserve_ids` given
   something other than an integer (default: the wording).
 
 ## The core rule

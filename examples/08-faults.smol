@@ -1,0 +1,34 @@
+// Faults and catch. deposit and withdraw check their arguments and raise
+// a fault with fault(message, value), which joins the two with a space.
+// catch runs a block and gives the fault's message, or nil if there was
+// none; the program goes on either way.
+// Every value answers isa, nil included, so isa(Integer) is the type check.
+// The faulting values are integers and nil, which print the same in a
+// message whatever the quoting rule for a string or an instance is.
+let Account = create_class(Hash.new(
+  "$name", "Account",
+  "$superclass", Object,
+  "%methods", Hash.new(
+    "balance", function (self) { opaque_instance_attrs(self).get("balance") },
+    "deposit", function (self, amount) {
+      amount.isa(Integer).ifFalse(function () { fault("deposit needs an integer, got", amount) });
+      amount.lessThan(1).ifTrue(function () { fault("deposit needs a positive amount, got", amount) });
+      opaque_instance_attrs(self).set("balance", self.balance().plus(amount));
+      self
+    },
+    "withdraw", function (self, amount) {
+      self.balance().lessThan(amount).ifTrue(function () { fault("insufficient funds, balance is", self.balance()) });
+      opaque_instance_attrs(self).set("balance", self.balance().minus(amount));
+      self
+    })));
+
+let acct = Account.new("balance", 0);
+acct.deposit(50);
+Array.new(
+  catch(function () { acct.deposit(-5) }),
+  catch(function () { acct.deposit(nil) }),
+  catch(function () { acct.withdraw(80) }),
+  catch(function () { acct.withdraw(20) }),
+  // A fault from a host method is caught the same way.
+  catch(function () { acct.balance().plus(nil) }),
+  acct.balance())

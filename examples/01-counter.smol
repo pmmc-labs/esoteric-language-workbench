@@ -1,0 +1,29 @@
+// A class with state. The count lives in the instance's attrs, the hash
+// that new(key, value, ...) is given, and a method reads and writes it
+// through opaque_instance_attrs: SMOL has no instance-variable syntax.
+// The superclass is Object, so instances answer class(), isa and can;
+// create_class alone would leave it nil.
+// SMOL prints only the value of the last statement, so the results are
+// gathered into one array at the end.
+let Counter = create_class(Hash.new(
+  "$name", "Counter",
+  "$superclass", Object,
+  "%methods", Hash.new(
+    "count", function (self) { opaque_instance_attrs(self).get("count") },
+    // inc returns self, so calls chain, as Array's push does.
+    "inc", function (self) {
+      let attrs = opaque_instance_attrs(self);
+      attrs.set("count", attrs.get("count").plus(1));
+      self
+    },
+    "incBy", function (self, n) {
+      let attrs = opaque_instance_attrs(self);
+      attrs.set("count", attrs.get("count").plus(n));
+      self
+    })));
+
+let a = Counter.new("count", 0);
+let b = Counter.new("count", 10);
+a.inc().inc().inc();
+b.incBy(5).inc();
+Array.new(a.count(), b.count(), a.class().name())

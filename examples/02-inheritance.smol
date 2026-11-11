@@ -1,0 +1,34 @@
+// Inheritance and override. describe is written once, on Animal, and
+// calls self.speak(), which dispatch finds on the receiver's own class
+// first. Puppy extends Dog's speak; SMOL has no super, so it fetches
+// Dog's method from Dog's own table with get_method and calls it with
+// self as its first argument, which is all a method call does.
+let Animal = create_class(Hash.new(
+  "$name", "Animal",
+  "$superclass", Object,
+  "%methods", Hash.new(
+    "speak", function (self) { "..." },
+    "describe", function (self) {
+      opaque_instance_attrs(self).get("name").concat(" says ").concat(self.speak())
+    })));
+let Dog = create_class(Hash.new(
+  "$name", "Dog",
+  "$superclass", Animal,
+  "%methods", Hash.new("speak", function (self) { "Woof" })));
+let Puppy = create_class(Hash.new(
+  "$name", "Puppy",
+  "$superclass", Dog,
+  "%methods", Hash.new(
+    "speak", function (self) { Dog.get_method("speak")(self).concat("!") })));
+
+let thing = Animal.new("name", "Thing");
+let rex = Dog.new("name", "Rex");
+let pip = Puppy.new("name", "Pip");
+// A class is an object too: its class is Class, and Class is its own class.
+// The chain Puppy, Dog, Animal, Object is shown by its length, since
+// printing the classes would print their ids.
+Array.new(
+  thing.describe(), rex.describe(), pip.describe(),
+  pip.isa(Animal), rex.isa(Puppy), pip.can("describe"), pip.can("fetch"),
+  Puppy.superclass().name(), Puppy.class().name(), Class.class().name(),
+  Puppy.class_precedence_list().size())

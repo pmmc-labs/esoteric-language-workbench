@@ -1,0 +1,31 @@
+// A memo table in a Hash. Hash keys are strings, so an integer argument
+// becomes a key through toString(). A missing key gives nil, and isNil()
+// is answered by every value, so it tells a miss from a hit.
+// The table is made outside and given to new, so the program can look at
+// it afterwards: an instance holds its attrs, and their values, by reference.
+let Fib = create_class(Hash.new(
+  "$name", "Fib",
+  "$superclass", Object,
+  "%methods", Hash.new(
+    "fib", function (self, n) {
+      let memo = opaque_instance_attrs(self).get("memo");
+      let key = n.toString();
+      let known = memo.get(key);
+      known.isNil().ifTrueFalse(
+        function () {
+          let value = n.lessThan(2).ifTrueFalse(
+            function () { n },
+            function () { self.fib(n.minus(1)).plus(self.fib(n.minus(2))) });
+          memo.set(key, value);
+          value
+        },
+        function () { known })
+    })));
+
+let memo = Hash.new();
+let f = Fib.new("memo", memo);
+// Without the table, fib(90) would take some 10^19 calls.
+// fib(1) is stored first: fib(90) recurses down its n - 1 side before any
+// result is known, so the keys are in the order "1", "0", "2", ... "90".
+let big = f.fib(90);
+Array.new(big, memo.size(), memo.keys().get(0), memo.get("10"))

@@ -1,0 +1,35 @@
+// A stack around an Array. Array has push, get, set, size and includes,
+// and nothing that removes an item, so pop can't shrink the array: the
+// stack keeps its own "top" and reuses the slots above it, with set,
+// before it grows the array with push.
+let Stack = create_class(Hash.new(
+  "$name", "Stack",
+  "$superclass", Object,
+  "%methods", Hash.new(
+    "push", function (self, x) {
+      let attrs = opaque_instance_attrs(self);
+      let items = attrs.get("items");
+      let top = attrs.get("top");
+      top.lessThan(items.size()).ifTrueFalse(
+        function () { items.set(top, x) },
+        function () { items.push(x) });
+      attrs.set("top", top.plus(1));
+      self
+    },
+    // Popping an empty stack is not guarded: top would go to -1.
+    "pop", function (self) {
+      let attrs = opaque_instance_attrs(self);
+      let top = attrs.get("top").minus(1);
+      attrs.set("top", top);
+      attrs.get("items").get(top)
+    },
+    "isEmpty", function (self) { opaque_instance_attrs(self).get("top").equals(0) })));
+
+let s = Stack.new("items", Array.new(), "top", 0);
+s.push(1).push(2).push(3);
+let first = s.pop();
+let second = s.pop();
+s.push(4);
+let third = s.pop();
+let fourth = s.pop();
+Array.new(first, second, third, fourth, s.isEmpty())

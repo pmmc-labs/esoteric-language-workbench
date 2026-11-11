@@ -1,0 +1,34 @@
+// Building a line of text: a receipt row, a name padded with dots and a
+// right-aligned amount. concat is the only way to build a string, and
+// toString turns the amount into one.
+// Padding repeats, so it recurses. A function can't call itself by name,
+// so each padder takes itself as its first argument, me, and passes it on.
+// (Adding a method to String, as 04 does to Integer, is the other way.)
+let padRight = function (me, s, width, filler) {
+  s.size().lessThan(width).ifTrueFalse(
+    function () { me(me, s.concat(filler), width, filler) },
+    function () { s })
+};
+let padLeft = function (me, s, width, filler) {
+  s.size().lessThan(width).ifTrueFalse(
+    function () { me(me, filler.concat(s), width, filler) },
+    function () { s })
+};
+let row = function (name, amount) {
+  padRight(padRight, name, 8, ".").concat(padLeft(padLeft, amount.toString(), 5, " "))
+};
+
+// size counts code points, so the apple is one character and its row
+// lines up with the others.
+let apple = "🍎";
+// There are no string escapes, so a row can't end in a newline: the rows
+// are printed as an array instead of as one block of text.
+let apples = 3;
+let figs = 12;
+Array.new(
+  row("apples", apples.times(4)),
+  row("figs", figs.times(25)),
+  row(apple, 7),
+  row("total", 319),
+  row(apple, 7).size(),
+  apple.size())

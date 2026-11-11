@@ -1,0 +1,29 @@
+// Iterating without a loop. SMOL has no loop and Array has no each, so
+// inject is written here, in SMOL, as a method added to Array's table: it
+// recurses over an index through self. The index has to be a parameter,
+// so each walk is a public method and a helper that takes the index.
+let arrayMethods = opaque_instance_attrs(Array).get("%methods");
+arrayMethods.set("injectFrom", function (self, i, acc, block) {
+  i.lessThan(self.size()).ifTrueFalse(
+    function () { self.injectFrom(i.plus(1), block(acc, self.get(i)), block) },
+    function () { acc })
+});
+arrayMethods.set("inject", function (self, acc, block) { self.injectFrom(0, acc, block) });
+
+// A search stops at the first match, which inject can't do, so it has its
+// own walk. It answers -1 for a value that isn't there.
+arrayMethods.set("indexOfFrom", function (self, x, i) {
+  i.lessThan(self.size()).ifTrueFalse(
+    function () {
+      self.get(i).equals(x).ifTrueFalse(
+        function () { i },
+        function () { self.indexOfFrom(x, i.plus(1)) })
+    },
+    function () { -1 })
+});
+arrayMethods.set("indexOf", function (self, x) { self.indexOfFrom(x, 0) });
+
+let xs = Array.new(4, 8, 15, 16, 23, 42);
+let sum = xs.inject(0, function (acc, x) { acc.plus(x) });
+let product = Array.new(1, 2, 3, 4).inject(1, function (acc, x) { acc.times(x) });
+Array.new(sum, product, xs.indexOf(15), xs.indexOf(7))

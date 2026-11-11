@@ -1,0 +1,1 @@
+["deposit needs a positive amount, got -5", "deposit needs an integer, got nil", "insufficient funds, balance is 50", nil, "plus needs an integer as its argument: nil", 30]
