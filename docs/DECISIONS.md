@@ -2,9 +2,12 @@
 
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
-proposed it and it wasn't explicitly discussed. Defaults are fair to
-revisit, and every default here is also listed under Open questions at
-the end of [`DESIGN.md`](DESIGN.md), so they can be settled in a batch.
+proposed it and it wasn't explicitly discussed, and is fair to revisit.
+D1 to D32 are all Stevan's: D1 to D9 from the first conversation, and
+D10 to D32 on 2026-11-24, each either picked from options laid out for
+it or accepted as the agent proposed it, which the attribution says.
+What a decision leaves for a step to settle is listed under Open
+questions at the end of [`DESIGN.md`](DESIGN.md).
 
 An entry has: a number that's never reused, a one-line title in bold,
 the attribution in italics (the person's words quoted where they
@@ -98,6 +101,15 @@ aside as the producer of its IR); self-hosting as a goal (it stays
 possible, since D4's subset is the one a compiler is written in, but
 nothing is bent toward it).
 
+**D32. The language is Curly.** *(User: picked, 2026-11-24.)* From
+Opal's notes: "The name `curly` is the natural successor to `moe` and
+Perl is known for having a lot of curly braces `{{{}}}` so it kinda
+works." The driver is `curlyc`, and the oracle's variable
+`CURLY_PERL`. A program is a `.pl` file, since it is Perl (D2); what a
+file that carries type annotations is called waits for step 25.
+Rejected: Opal (the 2025 attempt's name; this is a different design);
+no name yet.
+
 ## Project
 
 **D7. Golden tests' expected output comes from an independent source,
@@ -116,7 +128,7 @@ plan step in its subject.** *(User; the workbench's D10, carried.)*
 
 **D10. perl 5.42 is the independent source for every test in which the
 language and perl agree, and a script holds the suite to it.**
-*(Default)* A golden test is a `.pl` file that perl runs as it is. Each
+*(User: accepted as proposed, 2026-11-24.)* A golden test is a `.pl` file that perl runs as it is. Each
 has a kind, in a header comment, and `t/checks.py oracle` checks each
 kind against perl:
 
@@ -142,7 +154,7 @@ kind against perl:
 - `new`: an exception to D2. The decision that makes the exception
   names the model or referee the output comes from.
 
-The perl is pinned (`LANG_PERL`, 5.42.x, with 64-bit integers and
+The perl is pinned (`CURLY_PERL`, 5.42.x, with 64-bit integers and
 doubles, which `make doctor` checks), and the checks fail, not skip,
 without it. The compiler is given the same path perl is, from the same
 directory, since a `die`'s message carries it. How `warn` is tested,
@@ -155,11 +167,11 @@ faulted, D15, and a seed dependence means the test proves nothing);
 two seeds (the first draft; measured, above).
 
 **D11. A census of other people's probes, run at every step, with a
-ratchet.** *(Default; importing the files needs perigrin's agreement,
-which is open.)* Chalk and perl5-son hold about 3,000 one-line Perl
+ratchet.** *(User, 2026-11-24: "Use them, perigrin already said it
+was okay.")* Chalk and perl5-son hold about 3,000 one-line Perl
 programs written to find wrong answers, each with perl's own output,
-and a graded corpus of 441 more (`BACKGROUND.md`). From step 11 they
-are run as the workbench's interpreter experiment ran its probes: not
+and a graded corpus of 441 more (`BACKGROUND.md`); perigrin has agreed
+to their use. From step 11 they are copied into `t/census/` and run as the workbench's interpreter experiment ran its probes: not
 golden tests, but a judge. Each gets a verdict: **SAME** (agrees with
 perl), **REFUSED** (compile error), **LOUD** (a fault, having printed
 only the start of what perl prints), or **WRONG** (anything else:
@@ -177,7 +189,7 @@ answers).
 
 **D12. What agreement means: when a program ends normally, its stdout
 and exit status are perl's; when it faults, its stdout up to the fault
-is the start of perl's.** *(Default)* Ending normally is falling off
+is the start of perl's.** *(User: accepted as proposed, 2026-11-24.)* Ending normally is falling off
 the end, or `exit`. The second half is the whole rule in one line: the
 language may stop early and loudly, and may not say anything perl
 wouldn't have said. stderr is the language's own: a fault's text and a
@@ -188,7 +200,7 @@ Rejected: matching stderr (perl's messages are not a language, and
 most of them become faults); matching the status of a `die` (it would
 drag in `$!` after every system call).
 
-**D13. Three ways to stop, and only one can be caught.** *(Default)*
+**D13. Three ways to stop, and only one can be caught.** *(User: picked from three options, 2026-11-24.)*
 
 - A **refusal** is a compile error: `FILE:LINE:COL: message`, and no
   binary. Everything the language cuts from Perl that can be seen in
@@ -205,13 +217,16 @@ faults. So `try { 1 / 0 } catch ($e) { ... }` faults where perl would
 run the `catch`. Rejected: perl's runtime errors as catchable
 exceptions carrying perl's text (every message perl has would become
 part of the language, to the byte, since a program can print `$e`);
-faults catchable with their own text (breaks D12). To revisit with
+catchable with a value that faults when printed (sound, and no
+catalogue of messages, but a kind of value perl doesn't have); faults
+catchable with their own text (breaks D12). To revisit with
 concurrency (D5): a fault ending the task it happened in, not the
 program, with a supervisor told, is where this wants to go.
 
 **D14. Where perl's answer changes from run to run, the language pins
 its own. Where perl's answer only looks arbitrary, the language
-follows it.** *(Default)* The first kind is outside the agreement: the
+follows it.** *(User: accepted as proposed, 2026-11-24.)* The first kind is outside the
+agreement: the
 order of a hash's keys (D27); a reference's address, and so what a
 reference prints as, numbers as, or sorts as; the real time, an
 unseeded `rand`, the process id; the text of a system error. Where
@@ -248,7 +263,7 @@ once, the first of which is above. Also rejected: perl's hash order
 for a fixed seed (D27).
 
 **D15. Where perl would warn at run time, the language faults; where
-perl would warn at compile time, it refuses.** *(Default)* `"abc" +
+perl would warn at compile time, it refuses.** *(User: picked from three options, 2026-11-24.)* `"abc" +
 1`, `my $u; $u + 1`, `"x: $u"`, `substr` past the end: perl warns and
 carries on with a guess; the language stops. `say (1 + 2) * 3;` and
 `my $x; my $x;` draw a warning before the program runs, and are
@@ -263,13 +278,18 @@ a list. What perl does silently stays: `"12" + 1` is 13, `"3 " + 1` is
 4, `$count{$word}++` on a missing key is 1, `$total{$k} += 5` and
 `$s .= "x"` on undef don't warn and work. Exceptions, each for its
 reason: the recursion warning at 100 calls deep (how deep a program may go is
-step 8's to propose), and warnings about experimental features. Rejected: perl's guesses (the
-cruft D1 is about); a new, stricter rule of the language's own for
-what converts to what (it would have to be modelled; perl's warnings
-are already the line a careful Perl programmer holds).
+step 8's to propose), and warnings about experimental features. Rejected: perl's guesses, with a warning (the
+cruft D1 is about, and every guess would then have to be implemented
+exactly); undef as an empty string in silence, with only the numeric
+guesses faulting (friendlier to code that prints, but two rules, and
+tests that have to tolerate perl's warning); a new, stricter rule of
+the language's own for what converts to what (it would have to be
+modelled; perl's warnings are already the line a careful Perl
+programmer holds).
 
 **D16. A program begins `use v5.42;`, and the pragmas are a closed
-list.** *(Default)* That line is what makes the file mean the same
+list.** *(User: accepted as proposed, 2026-11-24.)* That line is what makes the file
+mean the same
 thing to perl: strict, warnings, `say`, signatures, `try`, the Unicode
 string rules, and a source that is ASCII unless `use utf8` follows.
 Accepted besides: `use utf8`, `use experimental 'class'` (and the other
@@ -281,7 +301,7 @@ mean something else to perl, and D2 is about the file).
 
 ## The language: what the cleanup cuts
 
-**D17. Values flow; containers don't.** *(Default)* Perl passes and
+**D17. Values flow; containers don't.** *(User: picked from three options, 2026-11-24.)* Perl passes and
 iterates over containers, so a write can reach back through an
 argument, a loop variable, `$_`, or a `map`. That is the largest class
 of wrong answers in perl5-son's audits (52 of 111 in the last one)
@@ -324,10 +344,14 @@ read-only bindings, and it is this language's:
 
 Rejected: aliasing as perl has it (every element becomes a box with an
 address, which is how perl is built and why it is hard to compile);
-copying without freezing (silently differs from perl, against D2).
+writes through the variable of a `foreach` over one named array,
+compiled as a loop over indexes (it keeps the commonest idiom, `$x *=
+2 for` an array, and is a special case to explain: `@a = map { $_ * 2
+} @a` says it without one); copying without freezing (silently differs
+from perl, against D2).
 
 **D18. Context is syntax. A sub can't see how it was called, and a
-list-shaped `return` reached from a scalar call faults.** *(Default)*
+list-shaped `return` reached from a scalar call faults.** *(User: picked from three options, 2026-11-24.)*
 Whether an expression is in list, scalar or void position is read off
 the source, as in perl: `my $n = @a` is the count and `my ($f) = @a`
 the first. What goes is context leaking through a call. In perl a
@@ -359,21 +383,35 @@ values, list, scalar and void, and:
 - `wantarray` is refused.
 
 Rejected: perl's rule (a sub with two meanings; Chalk compiles a sub
-once per caller context for it); a list-shaped return giving its
+once per caller context for it); agreeing where perl's answer is a
+count or a last element and faulting only on the strange ones (more of
+Perl kept, and every list builtin then needs its scalar meaning built
+and tested, to carry something types will forbid); a list-shaped
+return giving its
 single value when it has exactly one (differs from perl, which gives
 the count: the case above); refusing scalar calls of such subs at
 compile time (needs the types of step 25, which will then turn this
 fault into a refusal).
 
-**D19. One object system: `class`, `field`, `method`, `ADJUST`,
-`:isa`, `:param`, `:reader`.** *(Default)* `package`, `bless`, `@ISA`,
-`AUTOLOAD`, `DESTROY`, `can` as a way to find code, and anything that
-reaches the symbol table are refused. It is what Chalk kept, the one
-part of Perl it kept unmodified. Roles and the metaobject protocol
-come by proposal (D5). Rejected: both object systems (two ways to do
-everything, and `bless` changes what a value is after others hold it).
+**D19. One object system, `class`, `field`, `method`, `ADJUST`,
+`:isa`, `:param`, `:reader`; and `package`, only as a namespace for
+subs.** *(User: picked from three options, 2026-11-24; the agent had
+recommended `class` alone.)* A file may say `package Name;` to name
+the subs it defines, which is how most Perl is written and is what
+`use Name;` then loads (step 18). That is all a package is: no
+`bless`, no `@ISA`, no `our` and no package variables, no `AUTOLOAD`,
+no `DESTROY`, no `can` as a way to find code, and nothing that reaches
+the symbol table. A sub in another package is called by its full name,
+`Name::f($x)`, until step 18 proposes imports. Objects are `class`'s
+alone, which is what Chalk kept, the one part of Perl it kept
+unmodified. Roles and the metaobject protocol come by proposal (D5).
+Rejected: `class` alone (it leaves the question of how a file of plain
+subs is named to step 18, and the answers there were a class of subs,
+as Chalk writes them, or this); both object systems (two ways to do
+everything, and `bless` changes what a value is after others hold
+it).
 
-**D20. A closed world, in two phases.** *(Default)* The compiler sees
+**D20. A closed world, in two phases.** *(User: accepted as proposed, 2026-11-24.)* The compiler sees
 the whole program before any of it runs. String `eval`, `do FILE`, a
 `require` at run time, `BEGIN` and the other phase blocks, source
 filters and `__DATA__` are refused. Block `eval` is refused in favour
@@ -383,7 +421,7 @@ Prohibited, and a closed world is what D3's compiler needs. Rejected: `BEGIN` as
 idea, Chalk's "fold only what cannot differ between build and run",
 and a proposal for later, not a default).
 
-**D21. Where perl's parser guesses, the language doesn't.** *(Default)*
+**D21. Where perl's parser guesses, the language doesn't.** *(User: picked from three options, 2026-11-24.)*
 The parser never needs to know what has been declared to know how to
 read a line.
 
@@ -421,10 +459,12 @@ rollbacks, and its lesson was that being a builtin is a fact about
 names, not grammar. Opal had dropped bracketless calls in its last
 commits for the same reason. Rejected: perl's rule that a predeclared
 sub may be called without brackets (parsing would depend on the order
-of declarations).
+of declarations); brackets on the builtins too, `say($x)` and
+`push(@a, $x)` (it removes list-operator parsing and its traps
+outright, and no longer reads as Perl).
 
 **D22. The core is small, and the rest is libraries or gone.**
-*(Default)* The core: values, variables, control, subs, classes,
+*(User: accepted as proposed, 2026-11-24.)* The core: values, variables, control, subs, classes,
 strings, lists, hashes, references, regexes, `say`, `print`, `die`.
 Files, directories, the environment and processes are libraries with
 perl's own names (`open`, `close`, `readline`), each brought by a step
@@ -444,8 +484,9 @@ default and each item is cheap to argue.
 **D23. Numbers are Int, 64 bits signed, and Num, a double; an Int
 result that doesn't fit faults; and which of the two a result is
 follows perl, by a rule step 2 has to pin down against perl before it
-builds.** *(Default; the last part is open in a way the others
-aren't.)* The first three parts are simple, and a review checked the
+builds.** *(User: picked from three options, 2026-11-24: fault where a
+number's history would show. Step 2 confirms the exact line with a
+model before building.)* The first three parts are simple, and a review checked the
 Int half: Python's integers and perl agree on 6,286 edge cases of `+`,
 `-`, `*`, `%` and unary minus. Where perl moves an integer past 2^63
 into an unsigned or a float (`9223372036854775807 + 1` prints
@@ -481,15 +522,15 @@ run:
 
 The last two are the history a value carries in perl, and the language
 can't both ignore it and never be WRONG. Step 2 writes the model that
-enumerates the operators over the edge values, and proposes where the
-faults go. The recommendation today: a whole Num of magnitude 10^15 or
-more faults when it is made a string (printed, joined, used as a hash
-key), which is the only place its history shows; and a string that
-isn't written as a plain integer and whose value is whole and 2^53 or
-more faults when used as a number. Both are loud and narrow, and the
-first makes `say 1e15` a fault. The alternative is doing as perl does,
-storing the integer back into whatever was read, which is exact and is
-the cruft D1 is about.
+enumerates the operators over the edge values, and confirms where the
+faults go. Decided: a whole Num of magnitude 10^15 or more faults when
+it is made a string (printed, joined, used as a hash key), which is
+the only place its history shows; and a string that isn't written as
+a plain integer and whose value is whole and 2^53 or more faults when
+used as a number. Both are loud and narrow, and the first makes `say
+1e15` a fault. Rejected: doing as perl does, storing the integer back
+into whatever was read (exact, and the cruft D1 is about: reading a
+variable would change it).
 
 Rejected already: unsigned integers (perl's implementation, not Perl
 the language); integer division for integer operands (not what perl
@@ -500,7 +541,7 @@ and "`/` gives a whole result as an integer" (the second draft; a
 review refuted both); bignums (machinery; a proposal if ever).
 
 **D24. A string is a sequence of Unicode code points, and the standard
-streams are UTF-8.** *(Default)* `length`, `substr`, `ord` and `chr`
+streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as
 `use v5.42` already demands. perl agrees when it's run with its
 standard streams as UTF-8 (`-CSDA`), which is how the oracle runs it.
@@ -511,7 +552,7 @@ with a hidden flag (the best-known cruft there is); bytes only, Chalk's
 choice (`chr` above 255 stops at run time).
 
 **D25. A value is two machine words: a tag and a payload.**
-*(Default)* A 64-bit integer and a double fit in the payload unboxed;
+*(User: accepted as proposed, 2026-11-24.)* A 64-bit integer and a double fit in the payload unboxed;
 a string, an array, a hash, code or an object is a pointer. Two words
 pass in registers under both C compilers' calling conventions.
 Rejected: one word with a tag in the low bits, the calculator's D4
@@ -520,7 +561,7 @@ Rejected: one word with a tag in the low bits, the calculator's D4
 
 **D26. Memory is collected by tracing: a precise, non-moving
 mark-and-sweep, with its roots on a shadow stack the generated C
-maintains.** *(Default; step 7.)* With knobs from the start, as the
+maintains.** *(User: picked from three options, 2026-11-24; step 7.)* With knobs from the start, as the
 workbench asks: a collection at every nth allocation, freed memory
 poisoned, a heap cap. No reference counts, so no `DESTROY` and no
 `weaken`, both refused: a cycle is just collected. Cleanup at the end
@@ -531,7 +572,7 @@ from a library (no stress knob to find a missed root, and a dependency);
 no collector, Chalk's state today.
 
 **D27. A hash keeps its keys in the order they were first stored.**
-*(Default)* perl's order changes with every run, so any order agrees
+*(User: accepted as proposed, 2026-11-24.)* perl's order changes with every run, so any order agrees
 with perl (D14), and insertion order is the one that makes a run
 reproducible without a seed. Rejected: perl's order for a fixed seed
 (perl's hash function and its bucket layout would become the
@@ -539,7 +580,7 @@ language).
 
 **D28. The runtime has no global state: everything hangs off one
 context that every runtime function and every compiled sub takes as
-its first argument.** *(Default)* Concurrency is planned (D5), and the
+its first argument.** *(User: accepted as proposed, 2026-11-24.)* Concurrency is planned (D5), and the
 likely shape is tasks that share nothing, each with a heap of its own
 (a64-slight's shape). That is cheap if the heap, the
 collector's roots and the fault path were never global, and a rewrite
@@ -548,7 +589,7 @@ if they were. Nothing else about concurrency is decided.
 ## Compiler
 
 **D29. The compiler's passes: lexer, parser, resolver, checker, code
-generator; one table of names.** *(Default)* Each is a file under
+generator; one table of names.** *(User: accepted as proposed, 2026-11-24.)* Each is a file under
 `compiler/src/`.
 
 - The **lexer** reads the whole file, with a line and column on every
@@ -572,7 +613,8 @@ and no scopes at compile time; errors as tree nodes that crashed the
 next stage.
 
 **D30. A refusal is tested as a golden test of its own kind.**
-*(Default; retires the workbench's D7 for this language.)* The
+*(User: accepted as proposed, 2026-11-24; retires the workbench's D7
+for this language.)* The
 workbench kept compile errors in unit tests because a calculator has
 few. Here the refusals are half the language's definition, so a test
 of kind `refused` (D10) is a `.pl` that must not compile, with the
@@ -580,7 +622,7 @@ compiler's message as its `.expected`. Unit tests stay for what a
 golden test can't reach: token positions, the tree.
 
 **D31. The generated C is straight-line: one statement per operation,
-each result in a temporary.** *(Default)* C doesn't order a call's
+each result in a temporary.** *(User: accepted as proposed, 2026-11-24.)* C doesn't order a call's
 arguments and clang stops at 256 nested brackets; the workbench met
 both (its D25 and D26, and the limit that's still open there) and
 called this shape "also right". Starting with it costs nothing here.

@@ -1,41 +1,43 @@
-# [name]
+# Curly
 
-A cleaned-up Perl 5 with a runtime of its own. A program it accepts is
+Curly is a cleaned-up Perl 5 with a runtime of its own. A program it accepts is
 Perl 5.42 once its annotations are erased, and prints what perl prints
 unless it stops loudly first; what Perl has that the language cuts is a
 compile error or a fault, never a different meaning. The compiler is
 TypeScript run by Node as it is, and emits C that links with a C
-runtime. It has no name yet: the driver is `langc`, and a program is a
-`.pl` file.
+runtime. The driver is `curlyc`, and a program is a `.pl` file.
 
 ## Status
 
 **Nothing is built.** 2026-11-24: the design was proposed from a
 reading of Chalk, perl5-son, Opal and Allium
-([`docs/BACKGROUND.md`](docs/BACKGROUND.md)). Stevan decided the scope
-(D1), the core rule (D2), the compiler's shape (D3), Chalk's subset as
-the start (D4), which of Perl 6's promises are planned (D5) and that
-there is no Sea of Nodes (D6); D7 to D9 are the workbench's process
-rules. D10 to D31 are defaults, every one open, listed at the end of
-[`docs/DESIGN.md`](docs/DESIGN.md). [`docs/PLAN.md`](docs/PLAN.md) has
-steps 0 (`say 42;`, and the oracle check) and 1 (integer arithmetic)
-proposed in full and steps 2 to 30 in outline. The first draft was
-reviewed adversarially against perl 5.38.2, which refuted four of its
-claims about perl and found about twenty ways to be WRONG; D10, D14,
-D15, D17, D18, D21 and D23 were rewritten, and
-[`docs/TRAPS.md`](docs/TRAPS.md) keeps the fifty programs (T1 to
-T50), by step. Known unfinished: D23, where perl's numbers carry
-history. **Next:** Stevan settles the open questions steps 0 and 1
-cite (D10, D12, D13, D15, D16, D21, D23, D25, D28 to D31), then step
-0. Not agreed: the name; whether perigrin's
-probes may be imported (D11).
+([`docs/BACKGROUND.md`](docs/BACKGROUND.md)), reviewed adversarially
+against perl 5.38.2 (which refuted four of its claims about perl and
+found about twenty ways to be WRONG; [`docs/TRAPS.md`](docs/TRAPS.md)
+keeps the fifty programs, T1 to T50, by step), and then decided:
+**D1 to D32 are all Stevan's.** The ones a builder meets first: the
+core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
+be caught (D13); perl's warnings are faults (D15); loop variables are
+read-only and containers freeze (D17); a sub can't see its context
+(D18); `class`, and `package` only as a namespace (D19); brackets on a
+program's own calls (D21); a whole Num of 10^15 or more faults when
+made a string (D23); the name (D32). perigrin has agreed to the probe
+corpus (D11). [`docs/PLAN.md`](docs/PLAN.md) has steps 0 (`say 42;`,
+and the oracle check) and 1 (integer arithmetic) in full and steps 2
+to 30 in outline; this branch holds only the documents, and step 0
+brings the workbench's tree in from `main`. **Next:** step 0, which
+also installs perl 5.42 and reruns every "perl prints" and every trap
+under it; a difference from 5.38.2 is reported before anything is
+built on it. Not agreed: what the decisions leave to steps, listed at
+the end of [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Read first, in this order
 
 1. [`docs/LANGUAGE.md`](docs/LANGUAGE.md): the language as it is, for
    someone writing programs in it.
 2. [`docs/DESIGN.md`](docs/DESIGN.md): the language and implementation
-   as agreed. **(open)** marks proposals that haven't been confirmed.
+   as agreed. **(open)** marks a later proposal that hasn't been
+   confirmed; there are none yet.
 3. [`docs/SURFACE.md`](docs/SURFACE.md): Perl, construct by construct:
    in, a fault, later, or cut.
 4. [`docs/PLAN.md`](docs/PLAN.md): the build order.
@@ -137,9 +139,30 @@ in `pmmc-labs/esoteric-language-workbench`.
 ## Toolchain
 
 - Node 22.18 or later, and a C compiler as `cc`; clang as well.
-- **perl 5.42**, as `LANG_PERL` (default `perl`). The checks fail
-  without it; they don't skip. [How it's installed on the cloud
-  machine, whose own perl is 5.38.2: step 0 writes this.]
+- **perl 5.42**, as `CURLY_PERL` (default `perl`). The checks fail
+  without it; they don't skip. The cloud machine's own perl is 5.38.2.
+  5.42 comes from the environment's setup script, built from
+  cpan.org's source (reachable; no network change needed) into
+  `/opt/perl-5.42`, with `CURLY_PERL=/opt/perl-5.42/bin/perl` set on
+  the environment:
+
+      if [ ! -x /opt/perl-5.42/bin/perl ]; then
+        cd /tmp
+        curl -fsSLO https://www.cpan.org/src/5.0/perl-5.42.0.tar.gz
+        echo "e093ef184d7f9a1b9797e2465296f55510adb6dab8842b0c3ed53329663096dc  perl-5.42.0.tar.gz" | sha256sum -c -
+        tar xzf perl-5.42.0.tar.gz
+        cd perl-5.42.0
+        ./Configure -des -Dprefix=/opt/perl-5.42 -Dman1dir=none -Dman3dir=none
+        make -j"$(nproc)"
+        make install
+      fi
+
+  **Not yet run.** The session that wrote this could download the
+  source and check its checksum (the one above, which is cpan.org's
+  own), but wasn't permitted to build it. Step 0 confirms the script
+  works, how long it adds to a session's start, and that `perl
+  -V:ivsize -V:nvsize` gives 8 and 8; if the build is too slow at
+  every start, it proposes something else.
 - Python 3 for `t/checks.py` and the models.
 - `t/run.sh t/000-say.pl` checks the setup; it should end
   `1 tests, 0 failed`.

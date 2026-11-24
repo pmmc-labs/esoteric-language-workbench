@@ -4,9 +4,9 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** nothing is built. Steps 0 and 1 are proposed in full and
-wait on the open questions they cite. Steps 2 to 30 are outlines: each
-is proposed, with options, when it's next.
+**Progress:** nothing is built. Steps 0 and 1 are written in full, and
+every decision they cite is made. Next: step 0. Steps 2 to 30 are
+outlines: each is proposed, with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -28,7 +28,7 @@ The workbench's, with these differences:
 
 | Path | |
 |---|---|
-| `bin/langc.ts` | The driver: `langc -o out file.pl` |
+| `bin/curlyc.ts` | The driver: `curlyc -o out file.pl` |
 | `compiler/src/` | `lexer.ts`, `parser.ts`, `ast.ts`, `resolver.ts`, `checker.ts`, `codegen.ts`, `names.ts` (the one table, D29), `errors.ts` |
 | `compiler/tests/` | Unit tests per pass |
 | `runtime/` | `rt.h`, `rt.c`, and a file per subsystem as they come (`gc.c`, `str.c`, `re.c`) |
@@ -51,20 +51,30 @@ Referee: perl. Size: medium; large for `t/checks.py oracle`, which is
 new and which everything after leans on.
 
 Decisions: D3, D10, D12, D13, D16, D23 (the range of a literal), D25,
-D28, D29, D30, D31. Confirm the open ones among them with Stevan
-first; D10 and D13 matter most here. Traps: T24.
+D28, D29, D30, D31, D32, all made. Traps: T24.
 
-- **Start from the workbench template** at af8e3a3: copy the tree,
-  overlay these documents, and remove the calculator: `reader.ts`,
+- **Start from the workbench template**: this branch holds only these
+  documents, so bring `main`'s tree (af8e3a3) in under them (`git
+  checkout origin/main -- .`, then restore these documents where the
+  two collide: `CLAUDE.md`, `README.md`, `docs/DESIGN.md`,
+  `DECISIONS.md`, `PLAN.md`, `LANGUAGE.md`, `BACKGROUND.md`; merge
+  `t/README.md` as it says; keep the workbench's `PROCESS.md`,
+  `MODELS.md` and `REPORT.md`), rename `lang` and `langc` to `curly`
+  and `curlyc`, and remove the calculator: `reader.ts`,
   `sexp.ts`, its `codegen.ts`, `t/0*.lang`, `t/models/*.py`,
   `t/referee/`, the calculator's decisions and plan. Keep `t/run.sh`,
-  `t/checks.py`, the `Makefile`, `bin/langc.ts` and `runtime/` as
+  `t/checks.py`, the `Makefile`, the driver and `runtime/` as
   shapes to rewrite.
 - **The toolchain.** Node 22.18 or later; `cc`, and clang for `make
-  golden-clang` and `make sanitize`; **perl 5.42** as `LANG_PERL`
-  (default `perl`). The cloud machine's perl is 5.38.2, so step 0
-  installs 5.42 there (it builds from cpan.org's source, which the
-  machine can reach) and records how in `CLAUDE.md`'s Toolchain.
+  golden-clang` and `make sanitize`; **perl 5.42** as `CURLY_PERL`
+  (default `perl`). The cloud machine's perl is 5.38.2, so 5.42 has
+  to be installed there: from cpan.org's source, which the machine
+  can reach, by the environment's setup script (`CLAUDE.md`'s
+  Toolchain has it). **Then rerun every "perl prints" in these
+  documents and every row of `TRAPS.md` under 5.42**, before anything
+  is built: they were run under 5.38.2. A row that differs is
+  reported to Stevan, with both outputs, and corrected in the
+  document that holds it.
   `make doctor` prints each tool's version and fails on a perl that
   isn't 5.42 with 64-bit integers and doubles (`perl -V:ivsize
   -V:nvsize`, 8 and 8).
@@ -88,8 +98,8 @@ first; D10 and D13 matter most here. Traps: T24.
   `refused` test must fail to compile, and its `.expected` is the
   compiler's stderr and `exit: 1`.
 - **`t/checks.py oracle`** (D10): for each test, by kind, as D10
-  says. For `same`: `$LANG_PERL -c FILE` with nothing on stderr, then
-  `PERL_HASH_SEED=1` to `8`, `$LANG_PERL -CSDA FILE`, each with empty
+  says. For `same`: `$CURLY_PERL -c FILE` with nothing on stderr, then
+  `PERL_HASH_SEED=1` to `8`, `$CURLY_PERL -CSDA FILE`, each with empty
   stderr, the eight stdouts and statuses equal, and equal to the
   `.expected`. For `fault`: perl compiles the file, and the compiled
   binary's stdout alone is the start of perl's, with a time limit on
@@ -145,6 +155,8 @@ Traps: T25, T27.
   operators over the values that find the edges (0, 1, -1, 2^31,
   2^32, 2^53 and its neighbours, 2^63 - 1 and -2^63 built by
   subtraction, and what multiplies to just inside and just outside).
+  (`docs/briefs/arith-review.py` is the script a review used to check
+  this against perl: a starting point for the values, not the model.)
   From Python's integers and the definition it writes one `same` test
   of every pair whose result is an Int, a line each, every line
   written `say(EXPR);` (T25: an expression that starts with a bracket
@@ -302,7 +314,7 @@ block's, read-only, and refused elsewhere); a string as a range's end
 
 Referee: perl. Size: medium.
 
-D11, if perigrin agrees. Import the probes and the graded corpus into
+D11; perigrin has agreed. Import the probes and the graded corpus into
 `t/census/`, each with perl 5.42's output regenerated here; `make
 census` gives each a verdict and writes the counts; `t/checks.py`
 holds WRONG to 0 and SAME from falling. From here every step's report
@@ -375,10 +387,11 @@ D19: `class`, `field`, `:param`, `:reader`, `method`, `ADJUST`,
 
 Referee: perl. Size: large.
 
-`use Name;` of the program's own files, found at compile time.
-Decides: how a file of plain subs is named and called without
-`package` (D19): a class of subs, as Chalk writes them, or `package`
-readmitted for this alone; imports.
+`package Name;` as the name of a file's subs, and nothing more (D19);
+`use Name;` of the program's own files, found at compile time; a sub
+of another package called as `Name::f($x)`. Decides: how files are
+found; imports, if any (`Exporter` needs package variables, which are
+cut); `package Name { }` as a block; `__PACKAGE__`.
 
 ### 19, 20. Regexes
 
@@ -431,7 +444,7 @@ truest account of how far apart the two have grown.
 Referee: perl, through the erasure. Size: large, twice.
 
 To be proposed. Annotations on variables, parameters, fields and
-returns, checked over the tree and erased (`langc --erase` prints the
+returns, checked over the tree and erased (`curlyc --erase` prints the
 Perl); then types put to work, removing the runtime's checks where a
 value's type is known, and turning D18's fault and several of D15's
 into refusals. Starting points: Chalk's lattice and `Maybe[T]`
@@ -462,8 +475,8 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-None agreed beyond D1 to D9. Steps 0 and 1 above are proposals; the
-open questions they wait on are in `DESIGN.md`.
+None waiting. D1 to D32 are agreed, and steps 0 and 1 are written from
+them. The next proposal is step 2's.
 
 ## Example-port table
 

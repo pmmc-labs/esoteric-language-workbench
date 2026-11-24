@@ -1,4 +1,4 @@
-# [name]
+# Curly
 
 The language as it is, for someone writing programs in it: every form
 and builtin, in prose with examples, no tables, changed in the same

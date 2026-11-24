@@ -4,10 +4,10 @@ Perl 5.42, construct by construct, and what this language does with
 each. It starts from Chalk's declared subset (D4:
 `docs/chalk-grammar-spec.md` in `stevan/chalk`), adds what perl5-son's
 audits and Allium's triage say about cost, and applies the four ideas
-of [`DESIGN.md`](DESIGN.md). It is a proposal, all of it **(open)**
-except where a row cites D1 to D6: each step confirms its own rows
-when it's proposed, and this file is then kept true, as the map of
-what's in.
+of [`DESIGN.md`](DESIGN.md). Where a row cites a decision, the
+decision is made; the rest is the plan's reading of the decisions, and
+each step confirms its own rows when it's proposed. This file is then
+kept true, as the map of what's in.
 
 What a row can say:
 
@@ -37,7 +37,9 @@ comparison: *in*, *out*, or *n/a*.
 | `use Module qw(names)`, `Exporter` | Later | 18 | in | To be proposed |
 | `no strict`, `no warnings`, other pragmas | Cut | | | D16 |
 | `require`, `do FILE` at run time | Cut | | out | D20 |
-| `package` | Cut | | out | D19; step 18 says how modules name each other |
+| `package Name;` naming a file's subs | In | 18 | out | D19: a namespace and nothing more |
+| `Name::f($x)`, a sub of another package | In | 18 | in | |
+| `package Name { }`, `__PACKAGE__`, imports | Later | 18 | | |
 | `BEGIN`, `END`, `INIT`, `CHECK`, `UNITCHECK` | Cut | | in | D20; `BEGIN` as evaluation is parked |
 | `__DATA__`, `__END__`, POD | Cut; POD later | 16 | out | POD is a comment, when someone wants it |
 | `my $x`, `my @a`, `my %h`, `my (...)` | In | 5, 9, 12 | in | |
