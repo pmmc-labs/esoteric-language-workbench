@@ -1,0 +1,2 @@
+t/checks/refused-past-end.pl:7:1: some message
+exit: 1

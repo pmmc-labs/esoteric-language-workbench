@@ -1,0 +1,2 @@
+t/checks/refused-line-zero.pl:0:0: some message
+exit: 1

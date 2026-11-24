@@ -30,11 +30,13 @@ v5.42;`, an integer past 2^63 - 1, `010`, `08`, a `#!` first line, a
 character past ASCII, a `#!` line after `# line 1`, `use v5.42#c`); 21
 unit tests. **The oracle check**
 (`t/checks.py oracle`, D10) holds every test to perl 5.42 by its
-kind, and has 26 tests of its own in `t/checks/`, each a Perl file the
-check must pass or must fail in a named way; it was broken on purpose
-fourteen ways and a fixture went red each time. Its reading rule for
-hashes is by pattern and errs toward rejecting; step 12 will meet it
-first. Green under gcc, clang, and UBSan with ASan.
+kind, and has 40 tests of its own in `t/checks/`, each a Perl file the
+check must pass or must fail in a named way; every rule in it was
+broken on purpose and a fixture went red each time. Its seeds are
+eight of 64 hex digits: `PERL_HASH_SEED=1` to `8` are nearly one seed
+to perl. Its reading rule for hashes is by pattern and errs toward
+rejecting; step 12 will meet it first. Green under gcc, clang, and
+UBSan with ASan.
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
@@ -51,7 +53,13 @@ refused. [`docs/TRAPS.md`](docs/TRAPS.md) keeps the programs, T1 to
 T75, by step. **Two adversarial reviews** were run, of the step's
 language and of the oracle check. The first found T75 and the `# line
 1` half of T72 after the compiler was green: the rule about reviewing
-a large step paid for itself on the smallest one.
+a large step paid for itself on the smallest one. The second got wrong
+tests past the check sixteen ways; the seeds were the worst of it.
+What was cheap is closed, each with a fixture, and **what is left is
+listed in `docs/TRAPS.md`, "The checks themselves", by the step that
+has to close it** (15: a `dies` test that also warns; 21 and 22:
+files, the environment, the clock; 16 and 19: quotes the reading rule
+can't pair). A test with a sort in it breaks its ties.
 
 **D1 to D32 are all Stevan's; D33 is a default.** The ones a builder
 meets first: the core rule (D2); a TypeScript compiler emitting C

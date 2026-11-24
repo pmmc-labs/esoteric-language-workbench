@@ -7,22 +7,25 @@ models` write what perl and the models say.
             output that perl can give (D10), and this holds each golden
             test to it, by the test's kind:
               same     perl compiles the file without a word and runs it
-                       with nothing on stderr; under eight hash seeds its
-                       stdout and exit status are the same, and are the
-                       .expected.
+                       with nothing on stderr; under eight hash seeds, each
+                       of the full 256 bits, its stdout and exit status
+                       are the same, and are the .expected.
               dies     the same, but perl's status is 255, and the
                        .expected is its stdout, then its stderr, then
                        `exit: 255`.
-              fault    perl compiles the file; the compiled program's
+              fault    perl compiles the file, in silence; the compiled program's
                        stdout is the start of perl's, under each seed;
                        perl ends within the time allowed; the .expected
                        is that stdout, a `fault:` line, and `exit: 1`.
               refused  perl isn't asked. The .expected is one line,
-                       FILE:LINE:COL: message, and `exit: 1`.
+                       FILE:LINE:COL: message, at a line the file has,
+                       and `exit: 1`.
               new      perl isn't asked: its decision names its source.
             And a test compared with perl may not print a hash's order:
             `keys`, `values`, `each` or a whole hash must be sorted (the
-            reading rule, below).
+            reading rule, below). A test's headers are checked too: one
+            of each, a limit of 1 to 60 seconds, and no variable of
+            perl's own in `# env:`.
             `--write` writes each same and dies test's .expected from
             perl instead of comparing (make oracle); it writes nothing
             for a test perl warns on, or whose output moves with the seed.
@@ -51,8 +54,10 @@ models` write what perl and the models say.
 """
 
 import glob
+import hashlib
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -61,8 +66,16 @@ IMPL = ('compiler/', 'runtime/', 'lib/', 'bin/')
 TEST_DIRS = ['t', 'examples', 'docs/guide/code']
 EXT = '.pl'
 KINDS = ('same', 'dies', 'fault', 'refused', 'new')
-PERL = os.environ.get('CURLY_PERL', 'perl')
-SEEDS = range(1, 9)
+# Found once, so that the perl that is vetted is the perl that is run,
+# whatever a test's `# env:` does.
+PERL = shutil.which(os.environ.get('CURLY_PERL', 'perl')) or os.environ.get('CURLY_PERL', 'perl')
+# Eight seeds of the full 256 bits. PERL_HASH_SEED=1 to 8 look like eight
+# and are nearly one: a short seed sets the first byte and leaves the rest
+# zero, and the part of perl's hash function that short keys go through
+# reads later bytes, so every key lands in the same bucket under all of
+# them (a review measured a sort with one tie, over six to ten keys,
+# getting past eight such seeds about one time in ten).
+SEEDS = [hashlib.sha256(str(n).encode()).hexdigest() for n in range(1, 9)]
 # Seconds perl may take over one run of one test. A fault test has to be
 # a program that ends under perl (D10), and the natural test of some
 # faults doesn't: `for my $x (@a) { push @a, $x }`.
@@ -129,6 +142,9 @@ def check_tests():
         for exp in sorted(glob.glob(f'{d}/*.expected')):
             if not os.path.exists(exp[:-len('.expected')] + EXT):
                 bad.append(f'{exp}: no {EXT} file')
+        # In t/checks/ a .stdout stands for what a binary printed. Beside
+        # a real test it would be taken for nothing, and looks like more.
+        bad += [f'{s}: a .stdout belongs to the check\'s own tests, in t/checks/' for s in sorted(glob.glob(f'{d}/*.stdout'))]
     return bad
 
 
@@ -137,20 +153,45 @@ def check_tests():
 def headers(path):
     """A test's headers: `# name: value` among the comments before its
     first statement, as t/run.sh reads them."""
-    found = {}
-    for line in open(path, encoding='utf-8', errors='replace').read().split('\n'):
+    return headers_and_problems(path)[0]
+
+def headers_and_problems(path):
+    """The headers, and what is wrong with them. Lines end at a newline
+    and nowhere else, as they do for awk and for perl: Python would end
+    one at a carriage return too, and read a header t/run.sh doesn't."""
+    found, problems = {}, []
+    for line in open(path, encoding='utf-8', errors='replace', newline='').read().split('\n'):
         if not line.strip(' \t'):
             continue
         if not line.lstrip(' \t').startswith('#'):
             break
         m = re.match(r'# (\w+): (.*)$', line)
-        if m and m.group(1) not in found:
-            found[m.group(1)] = m.group(2)
-    return found
+        if not m:
+            continue
+        name, value = m.group(1), m.group(2)
+        if name in found:
+            problems.append(f'more than one `# {name}:` header')
+        found[name] = value
+        if name == 'limit' and not re.fullmatch(r'[1-9]|[1-5][0-9]|60', value):
+            problems.append(f'`# limit: {value}`: a whole number of seconds, 1 to 60')
+        if name == 'env':
+            for pair in words(value):
+                # A test's environment is the program's. perl's own knobs
+                # in it would be a test turning the oracle's seeds off.
+                if '=' not in pair or re.match(r'PERL|PATH=|LD_|DYLD_', pair):
+                    problems.append(f'`# env: {pair}`: NAME=value, and a test may not set perl\'s own variables, PATH or the loader\'s')
+    return found, problems
+
+def words(text):
+    """A header's value split as the shell splits it in t/run.sh: at
+    spaces, tabs and newlines, and at nothing else Python calls a space."""
+    return [w for w in re.split(r'[ \t\n]+', text) if w]
 
 def printf_b(text):
-    """What printf %b makes of `text`: a `# stdin:` header's bytes."""
-    return subprocess.run(['printf', '%b', text], capture_output=True, check=True).stdout if text else b''
+    """What the shell's printf %b makes of `text`, a `# stdin:` header's
+    bytes: the shell's, as in t/run.sh, since printf the program reads
+    some escapes differently."""
+    return subprocess.run(['sh', '-c', 'printf %b "$1"', 'sh', text], capture_output=True, check=True).stdout if text else b''
 
 def perl_problem():
     """Why $CURLY_PERL can't be the oracle, or None. The checks fail
@@ -170,9 +211,9 @@ def run_perl(flags, path, hdr, seed, limit):
     compiler is given, with the test's stdin, arguments and environment
     and nothing else of this process's. None if it didn't end in time."""
     env = {'PATH': os.environ.get('PATH', ''), 'PERL_HASH_SEED': str(seed)}
-    env.update(pair.split('=', 1) for pair in hdr.get('env', '').split() if '=' in pair)
+    env.update(pair.split('=', 1) for pair in words(hdr.get('env', '')))
     try:
-        return subprocess.run([PERL, *flags, path, *hdr.get('args', '').split()], env=env,
+        return subprocess.run([PERL, *flags, path, *words(hdr.get('args', ''))], env=env,
                               input=printf_b(hdr.get('stdin', '')), capture_output=True, timeout=limit)
     except subprocess.TimeoutExpired:
         return None
@@ -192,8 +233,19 @@ def clip(data, n=300):
 #   their blocks; or of `scalar`; or
 #   a whole hash after my, state, keys, values, each, exists, delete or
 #   a backslash, or on the left of `=`.
-# Its holes are a hash inside a string ("@{[ %h ]}") and whatever a sort
-# block does with ties; the eight seeds are the net under those.
+# `scalar` counts only when it is right against its operand, and never for
+# `each`; one opening bracket may stand between a word and its operand,
+# since `sort((keys %h)[0])` sorts one key and not the keys; a double-
+# quoted string that runs code (`@{[ ... ]}`, `${\ ... }`) is rejected
+# with a hash in it or not.
+# Its holes: a sort that doesn't settle the order (a tie, `sort { 0 }`),
+# which only the seeds catch; quotes it can't pair (a heredoc, `q()`, an
+# apostrophe in a pattern), which can hide the rest of a file; a hash
+# written with a space in it (`% h`). And it knows nothing of what else
+# can show an order: a dumper, `each` behind a sub. Behind it stands the
+# compiler, which a test must also pass and which refuses most of that,
+# and the eight seeds. TRAPS.md, "The checks themselves", has the list,
+# by the step that brings each construct.
 ORDERED = re.compile(r'\b(?:keys|values|each)\b|->%\*|%(?=[A-Za-z_${])')
 THROUGH = ('map', 'grep', 'reverse')
 OWNERS = ('my', 'state', 'keys', 'values', 'each', 'exists', 'delete')
@@ -212,7 +264,9 @@ def strip_strings_and_comments(text):
             j = i + 1
             while j < len(text) and text[j] != c:
                 j += 2 if text[j] == '\\' else 1
-            out.append(c + c)
+            # A string that runs code keeps a mark that the reader rejects.
+            runs_code = c == '"' and re.search(r'@\{\s*\[|\$\{\s*\\\\', text[i:j])
+            out.append(c + ('\0' if runs_code else '') + c)
             i = j + 1
         elif c == '#' and (i == 0 or text[i - 1] not in '$'):
             while i < len(text) and text[i] != '\n':
@@ -224,9 +278,12 @@ def strip_strings_and_comments(text):
 
 def word_before(code, i):
     """The word that ends just before position i, skipping blanks and
-    opening brackets, and where it starts. A block `{ ... }` there is
-    stepped over, to the word that owns it."""
-    while i > 0 and code[i - 1] in ' \t\n(':
+    one opening bracket, and where it starts. A block `{ ... }` there is
+    stepped over, to the word that owns it. A name with a sigil or an
+    arrow before it (`$sort`, `->sort`) is no word."""
+    brackets = 0
+    while i > 0 and (code[i - 1] in ' \t\n' or (code[i - 1] == '(' and brackets == 0)):
+        brackets += code[i - 1] == '('
         i -= 1
     if i > 0 and code[i - 1] == '}':
         depth = 0
@@ -240,13 +297,16 @@ def word_before(code, i):
     j = i
     while j > 0 and (code[j - 1].isalnum() or code[j - 1] == '_'):
         j -= 1
+    if j > 0 and code[j - 1] in '$@%&>:':
+        return '', j
     return code[j:i], j
 
 def hash_order_shown(path):
     """Where a test shows a hash's order, by the reading rule: a list of
     `line N: what`."""
     code = strip_strings_and_comments(open(path, encoding='utf-8', errors='replace').read())
-    found = []
+    found = [f'line {code.count(chr(10), 0, m.start()) + 1}: a string with code in it, which the check can\'t read, without sort'
+             for m in re.finditer('"\0"', code)]
     for m in ORDERED.finditer(code):
         what = m.group(0)
         whole = what[0] in '%-'
@@ -254,9 +314,11 @@ def hash_order_shown(path):
             # `\%h` is a reference: the order shows where it is used.
             continue
         word, at = word_before(code, m.start())
+        if word == 'scalar' and what != 'each':
+            continue
         while word in THROUGH:
             word, at = word_before(code, at)
-        if word in ('sort', 'scalar'):
+        if word == 'sort':
             continue
         if whole and word in OWNERS:
             continue
@@ -298,15 +360,16 @@ def perl_says(path, hdr, kind, limit):
                 return f'perl\'s exit status is {r.returncode}, not 255: not an uncaught die (D12)', None
             outputs.append(r.stdout + r.stderr + b'exit: 255\n')
     if len(set(outputs)) > 1:
-        return 'perl\'s output changes with the hash seed (D14)', None
+        return 'perl\'s output changes from run to run: with the hash seed, or with something else D14 lists', None
     return None, outputs[0]
 
 def program_stdout(path, hdr):
-    """(problem, stdout) of the compiled program. A file PATH.stdout
-    stands in for it where one exists: the check's own tests are Perl the
-    language can't compile yet, with what a binary would have printed."""
+    """(problem, stdout) of the compiled program. For the check's own
+    tests, and only those, a file PATH.stdout stands in for it: they are
+    Perl the language can't compile yet, with what a binary would have
+    printed."""
     stood = path[:-len(EXT)] + '.stdout'
-    if os.path.exists(stood):
+    if path.startswith('t/checks/') and os.path.exists(stood):
         return None, open(stood, 'rb').read()
     os.makedirs('build/oracle', exist_ok=True)
     binary = 'build/oracle/' + os.path.basename(path)[:-len(EXT)]
@@ -314,9 +377,9 @@ def program_stdout(path, hdr):
     if c.returncode != 0:
         return f'it does not compile: {clip(c.stderr)}', None
     env = dict(os.environ)
-    env.update(pair.split('=', 1) for pair in hdr.get('env', '').split() if '=' in pair)
+    env.update(pair.split('=', 1) for pair in words(hdr.get('env', '')))
     try:
-        r = subprocess.run([binary, *hdr.get('args', '').split()], env=env, input=printf_b(hdr.get('stdin', '')),
+        r = subprocess.run([binary, *words(hdr.get('args', ''))], env=env, input=printf_b(hdr.get('stdin', '')),
                            capture_output=True, timeout=int(os.environ.get('TIMEOUT', '60')))
     except subprocess.TimeoutExpired:
         return 'the compiled program did not finish', None
@@ -324,7 +387,17 @@ def program_stdout(path, hdr):
 
 def oracle_one(path, write=False):
     """What is wrong with one test, as a list; empty if nothing is."""
-    hdr = headers(path)
+    hdr, problems = headers_and_problems(path)
+    if problems:
+        return problems
+    try:
+        return oracle_kind(path, hdr, write)
+    except (ValueError, OSError, subprocess.CalledProcessError) as e:
+        # A header the shell or the system won't take: say so, and go on
+        # to the next test.
+        return [f'the check could not run it: {e}']
+
+def oracle_kind(path, hdr, write):
     kind = hdr.get('kind', 'same')
     limit = int(hdr.get('limit', PERL_LIMIT))
     exp_path = path[:-len(EXT)] + '.expected'
@@ -334,9 +407,11 @@ def oracle_one(path, write=False):
     if kind == 'new':
         return []
     if kind == 'refused':
-        shape = re.escape(path).encode() + rb':\d+:\d+: [^\n]+\nexit: 1\n'
-        if expected is None or not re.fullmatch(shape, expected):
-            return [f'the .expected is not `{path}:LINE:COL: message` and `exit: 1`']
+        shape = re.escape(path).encode() + rb':([1-9]\d*):[1-9]\d*: [!-~][ -~]*\nexit: 1\n'
+        m = re.fullmatch(shape, expected or b'')
+        lines = open(path, 'rb').read().count(b'\n') + 1
+        if not m or int(m.group(1)) > lines:
+            return [f'the .expected is not `{path}:LINE:COL: message`, at a line the file has, and `exit: 1`']
         return []
 
     shown = hash_order_shown(path)
@@ -358,8 +433,10 @@ def oracle_one(path, write=False):
             return [f'the .expected differs from perl, which gives: {clip(says)!r}']
         return []
 
-    # fault
-    problem = perl_compiles(path, hdr, limit, silent=False)
+    # fault. perl compiles it in silence too: D10 asks only that perl
+    # compile it, but a warning as perl compiles is a refusal (D15), and
+    # a refused program is no fault test.
+    problem = perl_compiles(path, hdr, limit, silent=True)
     if problem:
         return [problem]
     problem, printed = program_stdout(path, hdr)

@@ -15,8 +15,12 @@ Header lines a test may carry, as comments before the first statement
   `# args: words`, its arguments; `# env: NAME=value ...`, its
   environment. perl is given the same three.
 - `# model: t/models/name.py`, when a model wrote the test.
-- `# limit: seconds`, how long perl may take over the test, where the
-  usual ten isn't right.
+- `# limit: seconds`, 1 to 60, how long perl may take over the test,
+  where the usual ten isn't right.
+
+A header appears once. `# env:` may not set a variable of perl's own
+(`PERL_HASH_SEED`, `PERL5OPT`), `PATH`, or the loader's: the test's
+environment is perl's too when the check runs it.
 
 A test that writes files writes under `build/t/`.
 
@@ -33,7 +37,9 @@ person either:
   there and may say nothing else) or running: a warning means the
   language should have faulted or refused (D15), and the test is then
   of another kind, or a mistake. perl is run under eight hash seeds,
-  and the outputs must match (D14).
+  and the outputs must match (D14). The seeds are 64 hex digits each:
+  `PERL_HASH_SEED=1` to `8` set one byte of perl's seed and leave the
+  keys of a small hash in the same buckets every time.
 - **`dies`**: from perl. An uncaught `die`: perl's stdout, then its
   stderr, then `exit: 255` (D12).
 - **`fault`**: by hand. The lines the program prints before it stops,
@@ -74,10 +80,20 @@ a whole hash that isn't the operand of `sort` (directly, or through
 `map`, `grep` and `reverse`) or of `scalar`, since a small hash can
 come out the same under every seed tried. The reading is by pattern
 and errs toward rejecting: write the test so that it can see the sort.
+It can't see whether the sort settles the order. **A sort with a tie
+in it shows the hash's order**, and two tied keys come out the same
+way under all eight seeds about once in 128 tests: break every tie
+(`sort { $n{$b} <=> $n{$a} or $a cmp $b }`).
 The rest are the author's to keep out, and a test that fails on
 Stevan's machine and not the cloud's has usually found one. Nor, until
 steps 8 and 15 say how, may it go 100 calls deep or call `warn`: perl
 writes to stderr for both.
+
+What the check doesn't see, the compiler mostly refuses: a test must
+compile, and `no warnings`, `$SIG{__WARN__}`, `BEGIN`, string `eval`
+and a dumper are not in the language. `docs/TRAPS.md`, "The checks
+themselves", lists what a review got past the check and which step
+has to close each.
 
 ## The check's own tests
 

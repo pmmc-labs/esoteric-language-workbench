@@ -172,6 +172,20 @@ line counter back to 1, with the same result as `# line 1`.
   three-key hash 25%. Hence eight seeds and the reading rule in D10.
   (Under 5.42, over the 435 pairs of seeds 1 to 30: 211 for the keys
   `a` and `b`, and 100 for `a`, `b` and `c`, which is 23%.)
+- **`PERL_HASH_SEED=1` to `8` are nearly one seed.** The value is hex
+  for the front of a 256-bit seed, the rest zero
+  (`PERL_HASH_SEED_DEBUG=1` shows `0x1000...`), and
+  `Hash::Util::hash_value("pine")` is 1813974225 under every one of
+  them: only the order of walking the buckets moves. `my %h = (pine
+  => 1, yew => 2, nut => 3); my @k = sort { 0 } keys %h;` puts `yew`
+  second under none of the seeds 1 to 300, and in 9 of 40 runs
+  without a seed. The check's seeds are 64 hex digits each.
+- **A sort with a tie shows the hash's order**, and reading can't see
+  a tie: `sort { $count{$b} <=> $count{$a} } keys %count` with two
+  words at 7. Under eight real seeds two tied keys agree by luck about
+  once in 128. Tests break their ties; steps 10 and 12 write tests
+  that sort, so they are where this bites first, and a ninth seed is
+  cheap if one in 128 turns out to be too many (D10 says eight).
 - A program more than 100 calls deep makes perl warn, so it can't be
   a `same` test as D10 stands. Step 8.
 - Plain `perl FILE` prints `é` as the single byte E9, in silence;
@@ -190,6 +204,37 @@ line counter back to 1, with the same result as `# line 1`.
   `for my ($k, $v)`, experimental until 5.40; `try`, stable from 5.40;
   `:reader`, `__CLASS__`, `:writer`, `my method` and `->&`, each newer
   than 5.38; `^^`, `^^=`, `any`, `all`.
+- **What a review got past the oracle check, and which step closes
+  it.** A reader was given `t/checks.py` and perl and asked to get a
+  wrong test through. What was cheap is closed (the seeds; `scalar`,
+  `sort` and a string that runs code in the reading rule; headers
+  that `t/run.sh` and the check read differently; `PERL_HASH_SEED` or
+  `PERL5OPT` in a test's `# env:`; a `.stdout` beside a real test)
+  and each has a fixture in `t/checks/`. What is left:
+  - A `dies` test in which perl also warns, or which ends with `exit
+    255` and no `die`, is accepted: perl's stderr is the `.expected`,
+    whatever is in it. Step 15, with `die` and `warn`.
+  - A test that writes a file leaves it for the next of perl's nine
+    runs (one to compile, eight seeds), so the check fails it the
+    first time, blaming the seed, and passes it ever after. Step 21:
+    each run gets a clean place to write.
+  - perl is given an environment of `PATH` and the seed, and a pipe
+    for stdin; the compiled program gets the whole environment and a
+    file. `%ENV`, `-t`, `localtime` and `time` show the difference.
+    Steps 21 and 22: one environment for both, and `TZ` pinned.
+  - `-CSDA` is not `perl FILE` for a character past ASCII (the open
+    question of step 3).
+  - A `new` test is not checked at all. Step 27, where the first one
+    is.
+  - The reading rule pairs quotes by counting them, so an apostrophe
+    in a heredoc, a `q{"}`, a `tr/'//` or a `#` in a pattern hides
+    what follows; and it doesn't know `% h` with a space, `%::h`, or a
+    dumper. Steps 16 and 19 bring those constructs and teach the
+    reader each one; until a step does, the compiler refuses them.
+  - `no warnings`, `$SIG{__WARN__}` and closing STDERR keep a warning
+    off stderr. None is in the language (D16), so the compiler is the
+    net: a test must compile. The same goes for `BEGIN { exit }`,
+    which makes `perl -c` say nothing about the rest of a file.
 - A program's own `sub trim` or `sub ceil` is still the one called
   under `use v5.42`, not the builtin, and perl says so twice as it
   compiles (`Prototype mismatch: sub trim ($) vs none`, `Subroutine

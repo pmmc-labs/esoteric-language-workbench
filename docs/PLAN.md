@@ -75,12 +75,19 @@ differences and findings:
   and the half of T72 that a `# line 1` comment opens, both of which
   the compiler as first committed got wrong while every test passed.
   The other was given the oracle check and asked to get a wrong test
-  past it; `CLAUDE.md`'s Status has what it found.
+  past it, and did, sixteen ways. The worst: `PERL_HASH_SEED=1` to `8`
+  are nearly one seed to perl, so the eight runs D10 asks for were
+  catching far less than eight would. The check now uses seeds of the
+  full width; what else was cheap is closed, and the rest is listed in
+  `TRAPS.md`, "The checks themselves", by the step that owns it.
 - **Golden tests 006 to 009** beside the six planned: a `#!` first
   line, a character past ASCII, a `#!` line after `# line 1`, and a
   comment hard against the version.
-- **The fixtures in `t/checks/`** are twenty-six, not six, and each
-  check was broken on purpose, fourteen ways, to see a fixture go red.
+- **The fixtures in `t/checks/`** are forty, not six, and every rule
+  of the check was broken on purpose to see a fixture go red.
+- **A `fault` test must compile under perl in silence**, where D10
+  says only that perl compiles it: a warning as perl compiles is a
+  refusal (D15), so such a program is no fault test.
 - **`# limit: seconds`** is a header the plan didn't have: the fixture
   that never ends under perl would otherwise cost every `make test`
   ten seconds.
@@ -192,6 +199,9 @@ Traps: T25, T27.
 - **Faults**: a result outside Int is `integer overflow`; `% 0` is
   `modulus by zero`. Each is where perl would print something else (a
   float, an unsigned) or die.
+- **The oracle's seeds** are eight of 64 hex digits (step 0 found
+  that 1 to 8 are nearly one seed). Nothing in this step has a hash,
+  so nothing here depends on them.
 - `%` takes the sign of its right operand: `-7 % 3` is 2 and `7 % -3`
   is -2 (run under perl; C's `%` is the other rule, so the runtime
   can't just use it).
@@ -402,7 +412,10 @@ step, and turned into a golden test.
 Referee: perl. Size: medium.
 
 Literals, elements, `exists`, `delete`, `keys`, `values`, a hash in
-list and scalar position, slurpy `%opts`, slices. D27. A hash is
+list and scalar position, slurpy `%opts`, slices. D27. The first step
+to meet the oracle check's reading rule in earnest: read `TRAPS.md`,
+"The checks themselves", and `t/checks/README.md` first, and have the
+check reviewed again once this step's tests exist. A hash is
 frozen while `values`, a slice or the hash itself is being iterated,
 and not while its `keys` are (D17, T7). A `same` test sorts its keys;
 D10's check rejects one that doesn't. `=>` quotes the word on its
