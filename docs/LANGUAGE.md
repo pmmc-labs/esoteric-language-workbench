@@ -29,7 +29,9 @@ The first statement of a program is
 
 and nothing may stand before it but blank lines and comments. That
 line is what makes the file mean one thing to perl, so it can't be
-left out, and it must be `v5.42` exactly. It appears once.
+left out, and it must be `v5.42` exactly. It appears once. The `v5.42`
+is followed by its semicolon or by a blank: a comment hard against it,
+`use v5.42#`, is refused, because perl then reads something else.
 
 ## The text of a program
 
@@ -49,10 +51,12 @@ A comment starts at `#` and runs to the end of its line.
     # on a line of its own
     say 42;   # or after a statement
 
-One comment is refused: a first line that starts `#!`. perl reads
-switches from that line (`#!/usr/bin/perl -n` wraps the whole program
-in a loop over its input), and the language has no switches. A `#!`
-anywhere but the first line is an ordinary comment.
+One comment is refused: a line that starts `#!`, with or without
+blanks before it. perl reads switches from such a line when it is the
+first (`#!/usr/bin/perl -n` wraps the whole program in a loop over its
+input), and there are ways to make perl take a later line for the
+first, so no line may start that way. After a statement on its line,
+`say 42; #!`, it is an ordinary comment.
 
 ## Statements
 

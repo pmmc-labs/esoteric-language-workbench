@@ -31,8 +31,19 @@ test('a version literal is v, digits, and groups of .digits', () => {
     assert.deepEqual(kinds('v5.42.0'), ['version v5.42.0', 'eof']);
     assert.deepEqual(kinds('v5'), ['version v5', 'eof']);
     assert.deepEqual(kinds('v v5x value'), ['word v', 'word v5x', 'word value', 'eof']);
-    // The dot after a version belongs to it only with digits behind it.
-    refused('v5.42.;', "'.' is not in the language yet", 1, 6);
+});
+
+test('a version ends at a blank or a semicolon, as perl has it (T75)', () => {
+    const message = (c: string) => `v5.42 runs into '${c}': perl reads a version only before a blank or ';'`;
+    refused('use v5.42#c\n;', message('#'), 1, 5);
+    refused('use v5.42# c\n;', message('#'), 1, 5);
+    refused('v5.42.;', message('.'), 1, 1);
+    refused('v5.42x;', message('x'), 1, 1);
+    assert.equal(lex('use v5.42 #c\n;').length, 4);
+    assert.equal(lex('use v5.42\t;').length, 4);
+    assert.equal(lex('use v5.42\n;').length, 4);
+    assert.equal(lex('use v5.42').length, 3);
+    refused('use v5.42\r\n;', 'a control character (U+000D) is not in the language', 1, 10);
 });
 
 test('a number that runs into a word is neither', () => {
@@ -67,13 +78,15 @@ test('a control character, wherever it stands', () => {
     refused('# \x7f', 'a control character (U+007F) is not in the language', 1, 3);
 });
 
-test("a first line that starts '#!'", () => {
-    const message = "a first line that starts '#!' is not in the language: perl takes switches from it";
+test("a line that starts '#!', the first or any other (T72)", () => {
+    const message = "a line that starts '#!' is not in the language: perl can take switches from it";
     refused('#!/usr/bin/perl -n\nuse v5.42;', message, 1, 1);
     refused('#!', message, 1, 1);
     refused(' \t#!perl', message, 1, 3);
-    // On a later line, or after a token, perl takes it for a comment.
-    assert.equal(lex('\n#!/usr/bin/perl -n\nuse v5.42;').length, 4);
+    refused('\n#!/usr/bin/perl -n\nuse v5.42;', message, 2, 1);
+    refused('use v5.42;\n# line 1\n  #!perl -n\nsay 2;', message, 3, 3);
+    refused('use v5.42;\nsay\n#!perl\n1;', message, 3, 1);
+    // After a token on its line, or after another `#`, it is a comment.
     assert.equal(lex('use v5.42; #!perl -n').length, 4);
-    assert.equal(lex('# !perl -n\n#!perl -n').length, 1);
+    assert.equal(lex('# !perl -n\n# #!perl -n\n##!').length, 1);
 });

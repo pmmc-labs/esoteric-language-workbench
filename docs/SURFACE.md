@@ -34,7 +34,8 @@ comparison: *in*, *out*, or *n/a*.
 |---|---|---|---|---|
 | `use v5.42;` first | In, required | 0 | in | D16 |
 | `use utf8`, `use experimental '...'` | In | 3, 17 | in | D16. On a line before the first character past ASCII, a comment's included (T73) |
-| A first line that starts `#!` | Cut | | | D33: perl takes switches from it (T72). On a later line: a comment |
+| A line that starts `#!`, the first or any other | Cut | | | D33: perl takes switches from it when it is line 1, and a `# line 1` comment makes any line that (T72). After code on its line: a comment |
+| A version literal hard against a comment, `use v5.42#c` | Cut | | | perl then asks for a module called `v5` (T75) |
 | A comment that is a line directive, `# line 100 "file"` | Later | 15 | | T74: it changes the line and file a `die` reports |
 | A carriage return, a form feed, any other control character; ^D or ^Z | Cut | | | perl takes the first two for white space, and ends the program at either of the last. Windows line endings are converted first |
 | `use Module;` of the program's own | Later | 18 | in | Compile time only |

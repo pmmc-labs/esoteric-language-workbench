@@ -301,21 +301,30 @@ program's own (step 18). `no strict`, `no warnings`, `use integer`,
 step proposes them. Rejected: implying the line (the file would then
 mean something else to perl, and D2 is about the file).
 
-**D33. A first line that starts `#!` is refused.** *(Default, step 0;
-not discussed.)* perl takes switches from that line, after any blanks:
-under `#!/usr/bin/perl -n`, `use v5.42; say 42;` prints nothing when
-stdin is empty and `42` once for each line when it isn't; and a `#!`
-line without the word `perl` in it names a program perl runs in its
-own place (T72). A compiler that took the line for the comment it
-looks like would print `42`: a WRONG, at step 0, which is why this
-couldn't wait to be proposed. A `#!` on any later line is a comment to
-perl and is one here. Rejected: reading the switches (`-n` loops over
+**D33. A line that starts `#!` is refused, the first line or any
+other.** *(Default, step 0; not discussed.)* perl takes switches from
+such a line, after any blanks, when it is line 1: under
+`#!/usr/bin/perl -n`, `use v5.42; say 42;` prints nothing when stdin
+is empty and `42` once for each line when it isn't; and a `#!` line
+without the word `perl` in it names a program perl runs in its own
+place (T72). A compiler that took the line for the comment it looks
+like would print `42`: a WRONG, at step 0, which is why this couldn't
+wait to be proposed. And line 1 is whichever line perl is calling 1: a
+`# line 1` comment makes the next line that (and so, the review that
+found this reports, does a file of 2^32 lines, perl's counter being 32
+bits), so the refusal can't stop at the first line. (The first build
+did stop there.) After code on its
+line, `say 1; #!x`, it is a comment to perl and is one here. Rejected: reading the switches (`-n` loops over
 stdin and `-l` makes `print` end its line: each switch is another
 language, and the cruft D1 is about); allowing the line when it holds no switch
 (`#!/usr/bin/perl`, or `#!/usr/bin/env perl`, which is how a script is
 made runnable; it needs perl's own rule for what counts as a switch
-and as the word `perl`, and a compiled program isn't run that way).
-Fair to revisit: the second is small if it's wanted.
+and as the word `perl`, and a compiled program isn't run that way);
+refusing `# line` comments and leaving `#!` alone after the first line
+(it doesn't cover the long file, and what a line directive means is
+step 15's to propose, T74).
+Fair to revisit: allowing a first line with no switch is small if
+it's wanted.
 
 ## The language: what the cleanup cuts
 

@@ -48,7 +48,7 @@ again.
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | D1 to D32: who decided, why, what was rejected |
 | [`docs/SURFACE.md`](docs/SURFACE.md) | Perl construct by construct: in, a fault, later, or cut |
 | [`docs/PLAN.md`](docs/PLAN.md) | Steps 0 to 30; 0 and 1 in full |
-| [`docs/TRAPS.md`](docs/TRAPS.md) | Seventy-four programs, run under perl 5.42, where the obvious implementation would be wrong |
+| [`docs/TRAPS.md`](docs/TRAPS.md) | Seventy-five programs, run under perl 5.42, where the obvious implementation would be wrong |
 | [`docs/BACKGROUND.md`](docs/BACKGROUND.md) | What Chalk, perl5-son, Opal, Allium and Crayon taught, with paths |
 | [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: `say`, and an integer |
 | [`t/README.md`](t/README.md) | The five kinds of golden test, and the oracle check |
@@ -87,8 +87,9 @@ Seven decisions were rewritten, and the programs are kept in
 down: exactly where numbers fault because perl's printing depends on a
 number's history (D23, step 2). Everything was run under perl 5.38.2
 first, and step 0 reran it all under 5.42: every statement held, and
-building `say 42;` still found three traps the review hadn't
-(`docs/TRAPS.md`, T72 to T74). Read the design as a strong first
+building `say 42;` still found four traps the first review hadn't
+(`docs/TRAPS.md`, T72 to T75), two of them by a second review, of
+step 0's own language, after the compiler was passing its tests. Read the design as a strong first
 proposal that has survived one attack, and expect the next to find
 more.
 

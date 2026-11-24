@@ -9,7 +9,7 @@ Anything marked **(open)** from here on is a default a later step
 proposed that he hasn't confirmed: fine to build on, but bring it up
 before baking it in further. What the decisions leave for a step to
 settle is listed at the end.
-[`TRAPS.md`](TRAPS.md) has seventy-four programs, each run under perl
+[`TRAPS.md`](TRAPS.md) has seventy-five programs, each run under perl
 5.42, where the obvious implementation would break the core rule.
 
 ## Goals

@@ -145,13 +145,20 @@ the first fifty; these are what they showed.
 
 ## Found at step 0
 
-Building `say 42;` and rerunning everything above under 5.42.
+Building `say 42;` and rerunning everything above under 5.42. T72's
+first half, T73 and T74 came from the builder's own probes. T75 and
+T72's second half came from an adversarial review of the step's
+language, a reader given its definition and perl and asked to break
+it: both were programs the compiler as first built accepted and got
+wrong. The reviewer also found that a file of 2^32 lines wraps perl's
+line counter back to 1, with the same result as `# line 1`.
 
 | | Program | perl prints | Step | Way out |
 |---|---|---|---|---|
-| T72 | A first line `#!/usr/bin/perl -n`, then `use v5.42; say 42;` | nothing, stdin being empty; once for each line of stdin otherwise. With blanks before the `#!`, the same. `#!/bin/echo hello` there, and perl runs `echo` | 0 | Refuse a first line that starts `#!` (D33); on a later line it is a comment |
+| T72 | A first line `#!/usr/bin/perl -n`, then `use v5.42; say 42;` | nothing, stdin being empty; once for each line of stdin otherwise. With blanks before the `#!`, the same. `#!/bin/echo hello` there, and perl runs `echo`. **And on any line perl calls line 1**: after `use v5.42; say 1;`, the lines `# line 1`, `#!perl -n` and `say 2;` print `1` alone, and `perl -c` sees nothing wrong | 0 | Refuse every line that starts `#!` (D33). After code on its line it is a comment, to perl too |
 | T73 | `use v5.42;` and then, on one line, `use utf8; say uc("straße");` | doesn't compile: `Use of non-ASCII character 0xC3 illegal when 'use source::encoding "ascii"' is in effect`. On the line after `use utf8;`, it runs. In a comment with no `use utf8`, the same error | 3 | Refuse a character past ASCII on any line up to and including the one that says `use utf8;`, comments included |
-| T74 | `# line 100 "other.pl"` on a line of its own, then `say 42; die "x";` | `42`, and the `die` says `x at other.pl line 101.` With `#line 100`, the same line and this file. Indented, or with more words after the number, it is a comment | 15, 16 | To be proposed with `die` and `__LINE__`: refuse a comment perl reads as a line directive. Nothing shows the line before then (a fault's line is the language's own, D12) |
+| T74 | `# line 100 "other.pl"` on a line of its own, then `say 42; die "x";` | `42`, and the `die` says `x at other.pl line 101.` With `#line 100`, the same line and this file. Indented, or with more words after the number, it is a comment | 15, 16 | To be proposed with `die` and `__LINE__`: refuse a comment perl reads as a line directive. Until then the only thing a directive could change on stdout was which line is line 1 (T72), and that is closed; a fault's line is the language's own (D12) |
+| T75 | `use v5.42#c`, then `;` on the next line, then `say 42;` | doesn't compile: `Can't locate v5.pm in @INC`. With a space before the `#`, it prints `42` | 0 | Refuse a version literal that isn't followed by a blank or `;`: perl decides it is a version by that one character |
 
 ## The checks themselves
 

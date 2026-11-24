@@ -64,12 +64,21 @@ differences and findings:
   programs differ only where `TRAPS.md` had said they would. Three
   rows were corrected: T71 (5.42 prints `x's`), and T45 and T67, whose
   `use utf8;` has to be on a line of its own (T73).
-- **Three traps were found**, T72 to T74. T72 was a WRONG in this
-  step's own language (a `#!` first line), so it is refused, by a
-  default: **D33, for Stevan to confirm.** T73 is step 3's and T74
-  step 15's.
-- **Golden tests 006 and 007** beside the six planned: the `#!` line,
-  and a character past ASCII.
+- **Four traps were found**, T72 to T75. T72 was a WRONG in this
+  step's own language (a line that starts `#!`), so it is refused, by
+  a default: **D33, for Stevan to confirm.** T73 is step 3's and T74
+  step 15's. T75 (`use v5.42#c`) is a program perl doesn't compile,
+  and is refused.
+- **Two adversarial reviews**, each by a reader who hadn't written
+  the thing and had perl, as the working rules ask of a large step.
+  One was given the definition of this step's language: it found T75
+  and the half of T72 that a `# line 1` comment opens, both of which
+  the compiler as first committed got wrong while every test passed.
+  The other was given the oracle check and asked to get a wrong test
+  past it; `CLAUDE.md`'s Status has what it found.
+- **Golden tests 006 to 009** beside the six planned: a `#!` first
+  line, a character past ASCII, a `#!` line after `# line 1`, and a
+  comment hard against the version.
 - **The fixtures in `t/checks/`** are twenty-six, not six, and each
   check was broken on purpose, fourteen ways, to see a fixture go red.
 - **`# limit: seconds`** is a header the plan didn't have: the fixture

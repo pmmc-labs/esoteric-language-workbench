@@ -25,9 +25,10 @@ no program can reach yet and `runtime/tests/fault.c` drives from C.
 The generated C is one statement per `say` (D31) and a `main` that
 hands the file's path to `rt_run`; it does not set the context's line
 yet (step 1, with the first fault). **Golden tests** 000 and 001
-(`same`, written by perl) and 002 to 007 (`refused`, by hand: no `use
+(`same`, written by perl) and 002 to 009 (`refused`, by hand: no `use
 v5.42;`, an integer past 2^63 - 1, `010`, `08`, a `#!` first line, a
-character past ASCII); 20 unit tests. **The oracle check**
+character past ASCII, a `#!` line after `# line 1`, `use v5.42#c`); 21
+unit tests. **The oracle check**
 (`t/checks.py oracle`, D10) holds every test to perl 5.42 by its
 kind, and has 26 tests of its own in `t/checks/`, each a Perl file the
 check must pass or must fail in a named way; it was broken on purpose
@@ -37,15 +38,20 @@ first. Green under gcc, clang, and UBSan with ASan.
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 184 of them, and all hold under 5.42.0; under
+about perl as a program, 189 of them, and all hold under 5.42.0; under
 5.38.2 they differ only where `docs/TRAPS.md` had said. T71 is settled
-(5.42 prints `x's`). **Found at step 0**: T72, a `#!` first line, from
-which perl takes switches, a WRONG in step 0's own language and so
-refused at once (**D33, a default: Stevan to confirm**); T73, `use
-utf8;` must be on a line before the first character past ASCII (step
-3); T74, `# line N "file"` comments (step 15).
-[`docs/TRAPS.md`](docs/TRAPS.md) keeps the programs, T1 to T74, by
-step.
+(5.42 prints `x's`). **Found at step 0**: T72, a line that starts
+`#!`, from which perl takes switches when it calls that line 1 (the
+first line, or any line after a `# line 1` comment), a WRONG in step
+0's own language and so refused at once, on every line (**D33, a
+default: Stevan to confirm**); T73, `use utf8;` must be on a line
+before the first character past ASCII (step 3); T74, `# line N "file"`
+comments (step 15); T75, `use v5.42#c`, which perl doesn't compile,
+refused. [`docs/TRAPS.md`](docs/TRAPS.md) keeps the programs, T1 to
+T75, by step. **Two adversarial reviews** were run, of the step's
+language and of the oracle check. The first found T75 and the `# line
+1` half of T72 after the compiler was green: the rule about reviewing
+a large step paid for itself on the smallest one.
 
 **D1 to D32 are all Stevan's; D33 is a default.** The ones a builder
 meets first: the core rule (D2); a TypeScript compiler emitting C

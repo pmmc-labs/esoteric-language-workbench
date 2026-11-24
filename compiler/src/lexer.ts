@@ -59,12 +59,14 @@ export const lex = (src: string): Token[] => {
         if (isBlank(c)) {
             take();
         } else if (c === '#') {
-            // perl reads switches from a first line that starts `#!`,
-            // after any blanks: `-n` wraps the program in a loop over
-            // stdin, and a line that doesn't say `perl` names another
-            // program to run in perl's place (T72, D33).
-            if (line === 1 && tokens.length === 0 && src[i + 1] === '!') {
-                refuse("a first line that starts '#!' is not in the language: perl takes switches from it", start);
+            // perl reads switches from a line that starts `#!`, after any
+            // blanks, if it is line 1: `-n` wraps the program in a loop
+            // over stdin, and a line that doesn't say `perl` names another
+            // program to run in perl's place. And line 1 is whichever line
+            // perl calls 1: a `# line 1` comment above it will do. So no
+            // line may start that way (T72, D33).
+            if (src[i + 1] === '!' && tokens.at(-1)?.pos.line !== line) {
+                refuse("a line that starts '#!' is not in the language: perl can take switches from it", start);
             }
             run(ch => ch !== '\n');
         } else if (isDigit(c)) {
@@ -79,6 +81,14 @@ export const lex = (src: string): Token[] => {
             // of `.digits` that follow.
             const isVersion = text.length > 1 && text[0] === 'v' && [...text.slice(1)].every(isDigit);
             while (isVersion && at() === '.' && isDigit(src[i + 1] ?? '')) text += take() + run(isDigit);
+            // perl looks at the one character after it to decide that this
+            // is a version, and a `#` there isn't good enough: `use
+            // v5.42#c` asks for a module called v5 (T75).
+            // (`take` first, so that a character no program may hold is
+            // refused as that.)
+            if (isVersion && i < src.length && !isBlank(at()) && at() !== ';') {
+                refuse(`${text} runs into '${take()}': perl reads a version only before a blank or ';'`, start);
+            }
             tokens.push({ kind: isVersion ? 'version' : 'word', text, pos: start });
         } else if (c === ';') {
             tokens.push({ kind: ';', text: take(), pos: start });

@@ -1,0 +1,2 @@
+t/009-version-comment.pl:5:5: v5.42 runs into '#': perl reads a version only before a blank or ';'
+exit: 1
