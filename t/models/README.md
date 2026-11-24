@@ -17,6 +17,13 @@ differs; `make models` writes them. A model that lists no command, or a
 test that names a model that doesn't list it, fails too. `arith.py` is
 the worked example: copy its shape.
 
+`arith.py` is step 1's Ints; `num.py` is step 2's Nums and the rule
+for which kind an answer is (D35, D45); `str.py` is step 3's strings,
+and imports `num.py` for its numbers. `str.py` lists its commands in
+its docstring and checks the list against its own table of tests as
+it starts: `python3 t/models/str.py --commands` prints the list when
+a test is added.
+
 Keep a program a model writes to about three thousand statements, and
 write several if there are more: a C compiler takes more than
 proportionally longer over one long run of statements.

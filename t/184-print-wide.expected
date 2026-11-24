@@ -1,0 +1,4 @@
+1
+1
+fault: a character past ASCII printed without 'use open' at t/184-print-wide.pl line 6.
+exit: 1

@@ -28,6 +28,9 @@ test is tested apart, on `t/000-say.pl`.)
 | `same-exit-missing` | perl exits 3 and the `.expected` doesn't say so |
 | `same-warns` | perl warns as it runs |
 | `same-warns-compiling` | perl warns as it compiles |
+| `same-open-ok` | A character past ASCII, with `use open`: perl prints UTF-8, run plain (D39) |
+| `same-latin1-no-open` | `é` without `use open`: perl prints one byte, and the `.expected` has two. With `-CSDA`, which the oracle once passed, the check would pass it |
+| `same-wide-no-open` | `☺` without `use open`: perl warns of a wide character. With `-CSDA` it wouldn't |
 | `same-died` | perl dies: a `dies` test called `same` |
 | `same-perl-refuses` | perl can't compile it |
 | `same-seeds` | Sorted, so it reads well, but the order is still perl's |

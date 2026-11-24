@@ -277,8 +277,9 @@ static number from_string(rt_ctx *cx, const rt_str *s) {
         return v;
     }
     if (exponent && whole) rt_fault(cx, EXPONENT);
+    // With an exponent a whole number has gone one of the two ways above.
     v.n = x;
-    v.soft = !exponent && whole && fabs(x) < TWO_53;
+    v.soft = whole && fabs(x) < TWO_53;
     return v;
 }
 

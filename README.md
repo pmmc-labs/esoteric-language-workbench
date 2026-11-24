@@ -7,9 +7,9 @@ it can be built with this repository's process (`docs/PROCESS.md` on
 `main`): an agent builds, a person decides, one feature a step, and every
 expected output comes from somewhere other than the compiler.
 
-Steps 0 to 2 are built: arithmetic on integers and floats compiles to
-a native binary, and a script holds every test to what perl 5.42
-prints. The rest is the workbench's
+Steps 0 to 3 are built: arithmetic on integers and floats, and
+strings, compile to a native binary, and a script holds every test to
+what perl 5.42 prints. The rest is the workbench's
 documents, filled in.
 
 ## The idea in one paragraph
@@ -57,7 +57,7 @@ again.
 
 ## What is decided and what isn't
 
-D1 to D38 are Stevan's, all settled on 2026-11-24. The ones that give the language its
+D1 to D45 are Stevan's, all settled on 2026-11-24. The ones that give the language its
 character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);
@@ -69,8 +69,9 @@ character:
 - A sub can't see its caller's context (D18).
 - `class` for objects, and `package` only as a namespace for subs
   (D19). Brackets on a program's own calls (D21).
-- Strings are Unicode code points (D24); memory is traced, so no
-  `DESTROY` (D26).
+- Strings are Unicode characters (D24, D42), and a string is a number
+  only where perl has one answer for it whatever was done with it
+  before (D40); memory is traced, so no `DESTROY` (D26).
 - Gradual types, roles with a metaobject protocol, and concurrency are
   planned later steps (D5).
 
@@ -85,7 +86,9 @@ about twenty programs the design as written would have got wrong.
 Seven decisions were rewritten, and the programs are kept in
 `docs/TRAPS.md`. The part that was only decided in principle then,
 where numbers fault because perl's printing depends on a number's
-history, has since been measured and settled (D35, D36, step 2). Everything was run under perl 5.38.2
+history, has since been measured and settled (D35, D36, step 2), and
+then found to have a hole by the review of that step, which step 3
+closed (D45). Everything was run under perl 5.38.2
 first, and step 0 reran it all under 5.42: every statement held, and
 building `say 42;` still found four traps the first review hadn't
 (`docs/TRAPS.md`, T72 to T75), two of them by a second review, of
@@ -99,7 +102,7 @@ more.
     make test
 
 A fresh session, on this branch: "Read `CLAUDE.md`, then propose step
-3 of `docs/PLAN.md`."
+4 of `docs/PLAN.md`."
 
 This is a branch of the workbench that shares no history with `main`:
 it began as these documents alone, the seed of a language to be

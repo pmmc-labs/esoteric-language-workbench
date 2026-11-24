@@ -1,0 +1,4 @@
+1
+57344
+fault: not a character at t/183-chr-surrogate-last.pl line 6.
+exit: 1

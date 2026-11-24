@@ -1,0 +1,4 @@
+1
+9007199254740992
+fault: a string with an exponent that is a whole number this large has two values in perl at t/180-string-exponent-edge.pl line 6.
+exit: 1

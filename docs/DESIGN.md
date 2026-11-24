@@ -141,7 +141,20 @@ Four ideas do the cleaning, and `SURFACE.md` applies them:
   remember having been used as an integer; the language faults where
   that shows, making a whole Num from 10^15 up to 2^53 a string (D23,
   D36).
-- A string is immutable, a sequence of code points (D24).
+- A string is immutable, a sequence of Unicode scalar values (D24,
+  D42), held as UTF-8 with its length in characters beside its length
+  in bytes. A program that prints a character past ASCII says `use
+  open ':std', ':encoding(UTF-8)';` (D39).
+- A string where a number is wanted is a number if it is written as
+  one of the shapes perl takes in silence, and faults otherwise (D40).
+  perl settles what a string is worth at its first use as a number and
+  keeps the answer, one way for a use that wants an integer and
+  another for a float; a value here has no past, so the rule gives
+  perl's answer where every past agrees and faults where they differ:
+  `"1e16"`, `"3.0"` in arithmetic that passes 2^53, a minus before a
+  large or a signed string. The same is true of a number alone, in one
+  place: `+ - *` with an Int of 2^53 or more that is exactly a double,
+  beside a whole Num or a string (D45).
 - Arrays and hashes are mutable and have identity; assigning one
   copies it, as in Perl.
 - The collector traces: precise, non-moving, roots on a shadow stack
@@ -218,7 +231,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D32 are decided. What is left is what the decisions hand to a
+D1 to D45 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
@@ -226,17 +239,14 @@ step, roughly in the order it will matter:
    trap under both (`briefs/claims.py`), and the two differ only where
    `TRAPS.md` already said they would.
 2. **Whether a program must say `use open ':std',
-   ':encoding(UTF-8)';`** (step 3). The oracle runs perl with `-CSDA`;
-   plain perl prints `é` as one byte. As it stands the file alone
-   doesn't fix its own output, which the core rule's wording assumes.
-   **Proposed in `PLAN.md`, step 3, Q1**, with five more questions:
-   which strings are numbers (a string can have two numeric values in
-   perl, by its past), the builtins, which characters a string holds,
-   the escapes.
-3. **The exact line of D23**: settled, D35 to D38 (step 2). Left by
-   it to later steps: a negative zero given to `atan2` or formatted
-   with `%g` (T79; steps 16 and 22), and a string used as a number
-   (step 3).
+   ':encoding(UTF-8)';`**: settled, D39 (step 3). To print a character
+   past ASCII it must, and the oracle runs perl plain.
+3. **The exact line of D23**: settled, D35 to D38 (step 2), and for a
+   string used as a number, D40 and D45 (step 3). Left to later steps:
+   a negative zero given to `atan2` or formatted with `%g` (T79; steps
+   16 and 22); `--` on a Num (T93, step 5); and **whether a variable's
+   past can show anywhere the rules don't fault**, which step 5 has to
+   ask again once there are variables to have one.
 4. **How deep a program may recurse**, and how a test that goes 100
    deep is checked, since perl warns there (step 8).
 5. **`for my $x ($p, $q)`**, a `foreach` over variables named directly

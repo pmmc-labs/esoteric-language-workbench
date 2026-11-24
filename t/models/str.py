@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/100 to t/169: strings (step 3; D39 to D45).
+"""t/100 to t/186: strings (step 3; D39 to D45).
 
 The definition, which is all this file knows of the language beyond
 t/models/num.py (the numbers, which it imports). A value is an Int, a Num
@@ -85,7 +85,7 @@ utf8`. A test that prints a character past ASCII has the `use open` line.
 and two strings. 106 is the minus and the plus; 107 `.`; 108 `x`; 109
 `length`, `ord` and `chr`; 110 `uc` and `lc`; 111 and 112 `substr`; 113
 `index`; 114 whole numbers wanted; 115 printing; 116 every way of writing
-a number in a string. 120 to 169 each fault once, the line before the
+a number in a string. 120 to 169 and 180 to 186 each fault once, the line before the
 fault being a near thing that doesn't.
 
 Every command that writes a file, one a line (t/checks.py runs them all):
@@ -224,6 +224,20 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/str.py 168 > t/168-substr-outside-empty.expected
     python3 t/models/str.py --program 169 > t/169-neg-whole-float.pl
     python3 t/models/str.py 169 > t/169-neg-whole-float.expected
+    python3 t/models/str.py --program 180 > t/180-string-exponent-edge.pl
+    python3 t/models/str.py 180 > t/180-string-exponent-edge.expected
+    python3 t/models/str.py --program 181 > t/181-soft-add-edge.pl
+    python3 t/models/str.py 181 > t/181-soft-add-edge.expected
+    python3 t/models/str.py --program 182 > t/182-string-product-overflow.pl
+    python3 t/models/str.py 182 > t/182-string-product-overflow.expected
+    python3 t/models/str.py --program 183 > t/183-chr-surrogate-last.pl
+    python3 t/models/str.py 183 > t/183-chr-surrogate-last.expected
+    python3 t/models/str.py --program 184 > t/184-print-wide.pl
+    python3 t/models/str.py 184 > t/184-print-wide.expected
+    python3 t/models/str.py --program 185 > t/185-print-noncharacter-first.pl
+    python3 t/models/str.py 185 > t/185-print-noncharacter-first.expected
+    python3 t/models/str.py --program 186 > t/186-print-noncharacter-last.pl
+    python3 t/models/str.py 186 > t/186-print-noncharacter-last.expected
 """
 
 import math
@@ -471,7 +485,7 @@ BASES = ['0', '1', '-1', '2', '-2', '3', '10', '2.0', '3.0', '-3.0', '10.0', '1.
 POWERS = [0, 1, 2, 3, 10, 15, 16, 33, 34, 52, 53, 62, 63, 64, -1, -2, 0.5, 2.0, '0', '2', '2.0', '3.0', '-1', '-1.0',
           '0.5', '1e1', '33', '34', '53.0', '64']
 # Every way of writing a number in a string that perl takes in silence.
-FORMS = ['0', '00', '007', '12', '+12', '-12', ' 12', '12 ', '\t12\n', '\n12', '12\r', '\f12', '12\v', '\v12\f',
+FORMS = ['0', '00', '007', '12', '+12', '-12', ' 12', '12 ', ' +12', '\n-12', '-5.0', '\t12\n', '\n12', '12\r', '\f12', '12\v', '\v12\f',
          ' \t\n\r\f\v12 \t\n\r\f\v', '-0', '+0', '1.5', '+1.5', '-1.5', '.5', '-.5', '+.5', '5.', '-5.', '0.5', '00.5',
          '1.50', '1.0', '100.000', '0.0', '-0.0', '.0', '0.', '1e3', '1E3', '1e+3', '1e-3', '1e03', '1e0', '1e00',
          '-1e3', '+1e3', '1.5e3', '.5e3', '5.e3', '1.5E-3', ' 1e3 ', '0e0', '0e5', '0.0e0', '-0e0', '1e-400', '-1e-400',
@@ -667,6 +681,20 @@ FAULTS = {
     # then they are, the first first.
     '165': ('fault-order-conversions', call('substr', 1e14, '1'), call('substr', 1e15, 'x')),
     '164': ('fault-order-operands', ('+', '1', '2'), ('+', '', '1e16')),
+    # Edges that breaking the runtime on purpose found untested: an
+    # exponent's whole number at 2^53 itself; a soft answer of 2^53 itself
+    # (one less is a Num that can't be printed, so it is brought down
+    # first); and two strings of digits whose product leaves the Ints
+    # downward, where a Num beside one of them would give a float; and the
+    # last surrogate.
+    '180': ('string-exponent-edge', ('+', '9007199254740991e0', 1), ('+', '9007199254740992e0', 1)),
+    '181': ('soft-add-edge', ('-', ('+', '3.0', 9007199254740988), 9007199254740000),
+            ('-', ('+', '3.0', 9007199254740989), 9007199254740000)),
+    '182': ('string-product-overflow', ('*', '3037000499', '-3037000499'), ('*', '3037000500', '-3037000501')),
+    '183': ('chr-surrogate-last', call('ord', call('chr', 0xe000)), call('ord', call('chr', 0xdfff))),
+    '184': ('print-wide', call('length', '\u263a'), '\u263a'),
+    '185': ('print-noncharacter-first', call('chr', 0xfdcf), call('chr', 0xfdd0), True),
+    '186': ('print-noncharacter-last', call('chr', 0xfdf0), call('chr', 0xfdef), True),
 }
 
 def name_of(number):
