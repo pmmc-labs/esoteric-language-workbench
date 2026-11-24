@@ -212,6 +212,18 @@ differences and findings:
   a program meets it.
 - **The oracle's `fault` half met real tests** and was failed on
   purpose: with overflow wrapping in silence, ten tests fail it.
+- **An adversarial review of the step's language** found nothing: no
+  program the definition accepts that perl treats otherwise, over
+  about 1.2 million statements and half a million programs, many of
+  them every string of up to seven fragments after `say`. The
+  reviewer wrote its own model of the definition to do it, and **the
+  compiler was then run against that model**, a second implementation
+  nobody here wrote: the same 20,304 programs accepted of 1,271,555,
+  the same output, the same faults (`docs/briefs/step1-review/`).
+  What the review did note: perl prints an Int on some lines where
+  the language faults (`say 0 * (9223372036854775807 + 1);` prints
+  0), which D12 allows; and perl takes expressions a million terms
+  long or brackets deep, where the compiler stops at some thousands.
 
 - `say EXPR;` and `say(EXPR);`, where an expression is an integer,
   `( )`, unary `-`, and binary `+`, `-`, `*`, `%`, with `perlop`'s

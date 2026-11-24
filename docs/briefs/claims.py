@@ -203,6 +203,7 @@ CLAIMS = [
     c('S1-mod-zero', 'PLAN 1', 'say 1;\nsay 5 % 0;', out='1\n', err=r'Illegal modulus zero at claim\.pl line 3\.', exit=255),
     c('D34-line', 'D34', 'say 1;\nsay 2\n+ 5 % 0\n+ 3;', out='1\n', err=r'Illegal modulus zero at claim\.pl line 3\.', exit=255),
     c('S1-overflow', 'LANGUAGE', 'say 9223372036854775806 + 1; say 9223372036854775807 + 1; say -(-9223372036854775807 - 1);', out='9223372036854775807\n9223372036854775808\n9223372036854775808\n'),
+    c('S1-back-in-range', 'TRAPS', 'say - - (-9223372036854775807 - 1); say 0 * (9223372036854775807 + 1);', out='-9223372036854775808\n0\n'),
     # ---- DECISIONS.md
     c('D13-catch', 'D13', 'my $z = 0; try { say 1 / $z } catch ($e) { say "caught" }', out='caught\n'),
     c('D14-late', 'D14; BACKGROUND', 'my $r = [0]; sub f($v) { $r->[0] = $v; return $v } say f(1), $r->[0], f(0), $r->[0];', out='1000\n'),

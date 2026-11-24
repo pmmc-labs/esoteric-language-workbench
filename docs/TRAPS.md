@@ -166,6 +166,18 @@ line counter back to 1, with the same result as `# line 1`.
 |---|---|---|---|---|
 | T76 | `say (1 +` and, on the next line, `2);`. Or `say (1 + 2)` with its `;` on the next line, or after a comment | `3`, and a warning as it compiles: `say (...) interpreted as function`. With the bracket hard against `say`, or after two blanks, a tab or a newline, no warning; nor when the `)` and the `;` are on the line the `(` is on | 1 | Refuse `say`, one blank and a bracket unless the statement ends on that line. perl makes the check by reading along the line of text, not by parsing |
 
+A review of this step's language, with a model of its own, found no
+other: `briefs/step1-review/`. Two things it noted that a later step
+will want. perl sometimes prints an Int on a line where the language
+has already faulted, because perl went through an unsigned or a float
+and came back: `say - - (-9223372036854775807 - 1);` prints
+`-9223372036854775808`, and `say 0 * (9223372036854775807 + 1);`
+prints `0`. The language faults at the inner operation, which D12
+allows; step 2's model must not take perl's line for an answer there.
+And perl compiles some shapes slowly: brackets nested 100,000 deep
+round a `% 0`, which it can't fold, take `perl -c` 21 seconds, so a
+test of that shape would run into the oracle's time limit.
+
 Not traps, since no obvious parser takes them, but each is what perl
 does where the language refuses: `say 2 * *3;` reads `*3` as a glob,
 warns and prints `0`; `say * 2;` prints `*main::2`; `say % 2;` and

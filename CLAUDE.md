@@ -44,7 +44,11 @@ and has 40 tests of its own in `t/checks/`; its seeds are eight of 64
 hex digits (`PERL_HASH_SEED=1` to `8` are nearly one seed to perl).
 Its reading rule for hashes is by pattern and errs toward rejecting;
 step 12 will meet it first. Green under gcc, clang, and UBSan with
-ASan.
+ASan. **Step 1's language was reviewed adversarially** and nothing was
+found; the reviewer's own model of the definition was then used as a
+second implementation, and the compiler agrees with it on which of
+1,271,555 programs are accepted and on what they print
+(`docs/briefs/step1-review/`, a record: not part of `make test`).
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
@@ -58,7 +62,7 @@ default: Stevan to confirm**); T73, `use utf8;` must be on a line
 before the first character past ASCII (step 3); T74, `# line N "file"`
 comments (step 15); T75, `use v5.42#c`, which perl doesn't compile,
 refused. **Found at step 1**: T76. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T76, by step; `claims.py` has 210 programs
+keeps the programs, T1 to T76, by step; `claims.py` has 211 programs
 now. **Two adversarial reviews** were run, of the step's
 language and of the oracle check. The first found T75 and the `# line
 1` half of T72 after the compiler was green: the rule about reviewing
@@ -238,7 +242,7 @@ in `pmmc-labs/esoteric-language-workbench`.
 | `compiler/tests/` | Unit tests, per pass |
 | `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` |
 | `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `checks/`, the oracle check's own tests; `models/` |
-| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program) |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program) and `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it) |
 | `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
 | `build/` | Output (ignored) |
 
