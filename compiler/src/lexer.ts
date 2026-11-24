@@ -1,21 +1,27 @@
 // Text to tokens: the whole file at once, a line and column on each (D29).
 // White space and comments are dropped. Character tests, not regexes.
 //
-// The parser doesn't steer the lexer yet. It will have to once `/` can be
-// a division or the start of a pattern (D29); nothing here is ambiguous.
+// The lexer knows whether a value or an operator may come next, by the
+// token before: after a value a dot joins and `x` repeats, and before one
+// a dot begins `.5` and `x` is a word (T90). D29 has the parser tell it;
+// the last token says as much, and will until `/` can begin a pattern.
 import { refuse } from './errors.ts';
-import { OPERATORS, infixOp, prefixOp } from './names.ts';
+import { NAMES, OPERATORS, infixOp, isScalarValue, prefixOp } from './names.ts';
 import type { Pos } from './ast.ts';
 
 export type Token =
     | { kind: 'word'; text: string; pos: Pos }
     | { kind: 'int' | 'num'; text: string; pos: Pos }
+    // `text` is the literal as written, quotes and all; `value` is the
+    // string it stands for.
+    | { kind: 'str'; text: string; value: string; pos: Pos }
     | { kind: 'version'; text: string; pos: Pos }
-    | { kind: ';' | '(' | ')'; text: string; pos: Pos }
+    | { kind: ';' | '(' | ')' | ','; text: string; pos: Pos }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
 const isDigit = (c: string) => c >= '0' && c <= '9';
+const isOctalDigit = (c: string) => c >= '0' && c <= '7';
 const isHexDigit = (c: string) => isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 const isWordStart = (c: string) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
 const isWord = (c: string) => isWordStart(c) || isDigit(c);
@@ -23,36 +29,60 @@ const isBlank = (c: string) => c === ' ' || c === '\t' || c === '\n';
 
 const codePoint = (c: number) => 'U+' + c.toString(16).toUpperCase().padStart(4, '0');
 
+// The escapes of a double-quoted string that are one letter (D43).
+const ESCAPES: Readonly<Record<string, string>> = {
+    n: '\n', t: '\t', r: '\r', f: '\f', b: '\b', a: '\x07', e: '\x1b',
+};
+
 export const lex = (src: string): Token[] => {
     const tokens: Token[] = [];
-    // `i` counts UTF-16 units and `col` code points. They move together
-    // because the first character past ASCII is refused: step 3, which
-    // brings `use utf8`, has to count a pair of surrogates as one column.
+    // `i` counts UTF-16 units and `col` code points: a character past
+    // U+FFFF is two of the first and one of the second.
     let i = 0;
     let line = 1;
     let col = 1;
+    // The first line on which a character past ASCII may stand: the one
+    // after `use utf8;` (T73).
+    let utf8From = Infinity;
+    // The line the last token ended on (a string may end lines after it
+    // began), and where in the source it ended.
+    let lastLine = 0;
+    let lastEnd = 0;
     const at = (): string => src[i] ?? '';
     const pos = (): Pos => ({ line, col });
+    const push = (t: Token): void => {
+        tokens.push(t);
+        lastLine = line;
+        lastEnd = i;
+    };
 
     // Every character of the file passes through here, a comment's too,
     // so this is the one place that says which characters a program may
-    // hold: tab, newline and printable ASCII (D16). perl 5.42 refuses a
-    // byte past ASCII without `use utf8` even in a comment (T73), ends
-    // the program at a ^D or ^Z outside one, and takes a lone carriage
-    // return for white space that doesn't end a line. None is worth
-    // having.
-    const take = (): string => {
-        const c = src[i]!;
+    // hold: tab, newline and printable ASCII (D16); and, in a string or a
+    // comment (`inText`) on a line after `use utf8;`, any other character
+    // but a control. perl 5.42 refuses a byte past ASCII without `use
+    // utf8` even in a comment, and on the line that says `use utf8;`
+    // itself (T73); it ends the program at a ^D or ^Z outside a string,
+    // and takes a lone carriage return for white space that doesn't end a
+    // line. None is worth having.
+    const take = (inText = false): string => {
         const n = src.codePointAt(i)!;
-        if (n > 0x7f) refuse(`a character past ASCII (${codePoint(n)}) is not in the language yet`, pos());
+        const c = String.fromCodePoint(n);
+        if (n > 0x7f) {
+            if (line < utf8From) refuse(`a character past ASCII (${codePoint(n)}) needs 'use utf8;' on a line before it`, pos());
+            if (!inText) refuse(`a character past ASCII (${codePoint(n)}) outside a string or a comment is not in the language`, pos());
+            // Half of a pair: the driver refuses a file that isn't UTF-8,
+            // and this is for a caller that isn't the driver.
+            if (!isScalarValue(n)) refuse(`${codePoint(n)} is not a character`, pos());
+        }
         if ((n < 0x20 && c !== '\t' && c !== '\n') || n === 0x7f) refuse(`a control character (${codePoint(n)}) is not in the language`, pos());
-        i += 1;
+        i += c.length;
         if (c === '\n') { line += 1; col = 1; } else col += 1;
         return c;
     };
-    const run = (more: (c: string) => boolean): string => {
+    const run = (more: (c: string) => boolean, inText = false): string => {
         let text = '';
-        while (i < src.length && more(at())) text += take();
+        while (i < src.length && more(at())) text += take(inText);
         return text;
     };
 
@@ -72,7 +102,7 @@ export const lex = (src: string): Token[] => {
         if (based) {
             const letter = src[i + 1]!.toLowerCase();
             take(); take();
-            parts.push(digitsOf(letter === 'x' ? isHexDigit : letter === 'b' ? ch => ch === '0' || ch === '1' : ch => ch >= '0' && ch <= '7'));
+            parts.push(digitsOf(letter === 'x' ? isHexDigit : letter === 'b' ? ch => ch === '0' || ch === '1' : isOctalDigit));
         } else {
             if (isDigit(at())) parts.push(digitsOf(isDigit));
             if (at() === '.' && src[i + 1] !== '.') {
@@ -105,6 +135,94 @@ export const lex = (src: string): Token[] => {
         return { kind, text, pos: start };
     };
 
+    // `\x{...}`, `\o{...}` and `\N{U+...}`: digits of one base between
+    // braces, and nothing else, which is less than perl takes (it allows
+    // blanks and underscores in some) and none of what it warns about.
+    // The opening brace is next.
+    const braced = (where: Pos, shown: string, ok: (c: string) => boolean, base: number): string => {
+        take();
+        const digits = run(ok);
+        if (digits === '' || at() !== '}') {
+            refuse(`${shown}...}: ${base === 16 ? 'hex' : 'octal'} digits between the braces, and nothing else`, where);
+        }
+        take();
+        const n = parseInt(digits, base);
+        if (!isScalarValue(n)) refuse(`${shown}${digits}} is not a character: a surrogate, or past U+10FFFF`, where);
+        return String.fromCodePoint(n);
+    };
+
+    // What a backslash and the characters after it stand for in a
+    // double-quoted string (D43); the backslash, at `where`, is taken.
+    // Refused: what perl warns about (a letter or a digit that is no
+    // escape; one hex digit, or an octal escape, that a character which
+    // isn't a digit of its base cuts short), what it reads in silence as
+    // a NUL (`\x` alone, T86), and what belongs to interpolation or needs
+    // every character's name (`\U`, `\Q`, `\N{NAME}`, `\c`).
+    const escape = (where: Pos): string => {
+        if (i >= src.length) return '';     // the caller says the string never ends
+        const c = take(true);
+        if (ESCAPES[c] !== undefined) return ESCAPES[c];
+        if (isOctalDigit(c)) {
+            let digits = c;
+            while (digits.length < 3 && isOctalDigit(at())) digits += take();
+            if (digits.length < 3 && isDigit(at())) {
+                refuse(`\\${digits}${at()}: an octal escape that ${at()} cuts short, and perl warns: write \\${digits.padStart(3, '0')}`, where);
+            }
+            return String.fromCodePoint(parseInt(digits, 8));
+        }
+        if (c === 'x' && at() === '{') return braced(where, '\\x{', isHexDigit, 16);
+        if (c === 'x') {
+            const digits = (isHexDigit(at()) ? take() : '') + (isHexDigit(at()) ? take() : '');
+            if (digits.length !== 2) refuse(`\\x${digits}: \\x takes two hex digits, or any number in braces: \\x0A, \\x{263A}`, where);
+            return String.fromCodePoint(parseInt(digits, 16));
+        }
+        if (c === 'o' && at() === '{') return braced(where, '\\o{', isOctalDigit, 8);
+        if (c === 'N' && src.startsWith('{U+', i)) {
+            take(); take();
+            // `braced` takes the third character, as it does a brace.
+            return braced(where, '\\N{U+', isHexDigit, 16);
+        }
+        if (isWord(c) && c !== '_') {
+            refuse(`\\${c}${c === 'N' ? '{...}' : ''} is not an escape in the language`, where);
+        }
+        if (c >= ' ' && c <= '~') return c;
+        return refuse(`a backslash before ${c === '\n' ? 'the end of a line' : c === '\t' ? 'a tab' : codePoint(c.codePointAt(0)!)} is not in the language`, where);
+    };
+
+    // A string literal. In single quotes a backslash is itself, except
+    // before a backslash or the quote. In double quotes it begins an
+    // escape, and a `$` or an `@` begins a variable to perl, which is
+    // refused until there is interpolation (T34): perl takes some of them
+    // as they stand (`"a @ b"`) and stops at others (`"a$"`).
+    const string = (start: Pos): Token => {
+        const from = i;
+        const quote = take();
+        let value = '';
+        for (;;) {
+            if (i >= src.length) refuse(`a string that never ends: it begins with ${quote} here`, start);
+            const where = pos();
+            const c = take(true);
+            if (c === quote) break;
+            if (c !== '\\') {
+                if (quote === '"' && (c === '$' || c === '@')) {
+                    refuse(`'${c}' in a double-quoted string is a variable to perl: write \\${c} (interpolation is not in the language yet)`, where);
+                }
+                value += c;
+            } else if (quote === '"') {
+                value += escape(where);
+            } else {
+                value += at() === '\\' || at() === "'" ? take() : '\\';
+            }
+        }
+        return { kind: 'str', text: src.slice(from, i), value, pos: start };
+    };
+
+    // Whether the last token ends a value, so that an operator comes next.
+    const afterValue = (): boolean => {
+        const last = tokens.at(-1)?.kind;
+        return last === 'int' || last === 'num' || last === 'str' || last === ')';
+    };
+
     while (i < src.length) {
         const c = at();
         const start = pos();
@@ -117,14 +235,29 @@ export const lex = (src: string): Token[] => {
             // program to run in perl's place. And line 1 is whichever line
             // perl calls 1: a `# line 1` comment above it will do. So no
             // line may start that way (T72, D33).
-            if (src[i + 1] === '!' && tokens.at(-1)?.pos.line !== line) {
+            if (src[i + 1] === '!' && lastLine !== line) {
                 refuse("a line that starts '#!' is not in the language: perl can take switches from it", start);
             }
-            run(ch => ch !== '\n');
-        } else if (isDigit(c) || (c === '.' && isDigit(src[i + 1] ?? ''))) {
-            tokens.push(number(start));
+            run(ch => ch !== '\n', true);
+        } else if (c === '"' || c === "'") {
+            push(string(start));
+        } else if (isDigit(c) || (c === '.' && isDigit(src[i + 1] ?? '') && !afterValue())) {
+            push(number(start));
         } else if (isWordStart(c)) {
+            const operator = afterValue();
             let text = run(isWord);
+            // After a value, `x` is the repetition operator. perl takes
+            // it hard against a number too, `"ab" x3`, and stops at `$s
+            // x3`, where `x3` is a word to it (T57): here it is a word of
+            // its own. `x=` is the assignment.
+            if (operator && text === 'x') {
+                if (at() === '=') refuse("'x=' is not in the language yet", start);
+                push({ kind: 'op', text, pos: start });
+                continue;
+            }
+            if (operator && text[0] === 'x' && [...text.slice(1)].every(isDigit)) {
+                refuse(`${text}: the repetition operator is a word of its own: write x ${text.slice(1)}`, start);
+            }
             // A `v` and digits is a version literal, and takes the groups
             // of `.digits` that follow.
             const isVersion = text.length > 1 && text[0] === 'v' && [...text.slice(1)].every(isDigit);
@@ -137,18 +270,35 @@ export const lex = (src: string): Token[] => {
             if (isVersion && i < src.length && !isBlank(at()) && at() !== ';') {
                 refuse(`${text} runs into '${take()}': perl reads a version only before a blank or ';'`, start);
             }
-            tokens.push({ kind: isVersion ? 'version' : 'word', text, pos: start });
-        } else if (c === ';' || c === '(' || c === ')') {
-            tokens.push({ kind: c, text: take(), pos: start });
+            push({ kind: isVersion ? 'version' : 'word', text, pos: start });
+        } else if (c === ';' || c === '(' || c === ')' || c === ',') {
+            push({ kind: c, text: take(), pos: start });
+            // `use utf8;` is in force from the next line (T73). Whether it
+            // may stand where it does is the checker's to say.
+            const [use, utf8] = [tokens.at(-3), tokens.at(-2)];
+            if (c === ';' && use?.kind === 'word' && use.text === 'use' && utf8?.kind === 'word' && utf8.text === 'utf8') {
+                utf8From = Math.min(utf8From, line + 1);
+            }
         } else {
             // The longest of perl's operators that starts here: `--` is a
             // decrement and never two minus signs, `**` never two stars
             // (T27). One the language doesn't have yet is refused as the
             // whole operator it is to perl.
             const op = [3, 2, 1].map(n => src.slice(i, i + n)).find(s => OPERATORS.has(s)) ?? c;
+            const last = tokens.at(-1);
+            const before = lastEnd;
             for (const _ of op) take();
             if (!prefixOp(op) && !infixOp(op)) refuse(`'${op}' is not in the language yet`, start);
-            tokens.push({ kind: 'op', text: op, pos: start });
+            // A sign after a named unary operator is the sign of its
+            // argument, `length -5`, and perl warns that the rest are
+            // ambiguous: `length - 5` and `length-5`, which read as a
+            // subtraction and aren't one. It goes by the characters: a
+            // blank after the name, and none after the sign.
+            if (prefixOp(op) && last?.kind === 'word' && NAMES.get(last.text)?.kind === 'unary'
+                && (!isBlank(src[before] ?? '') || isBlank(at()))) {
+                refuse(`${last.text} ${op}: perl warns that this is ambiguous: write ${last.text}(${op}...)`, start);
+            }
+            push({ kind: 'op', text: op, pos: start });
         }
     }
     tokens.push({ kind: 'eof', text: '', pos: pos() });

@@ -1,0 +1,4 @@
+1
+4611686018427387905
+fault: an integer this large with a whole float or a string has two answers in perl at t/077-two-answers-mul.pl line 6.
+exit: 1

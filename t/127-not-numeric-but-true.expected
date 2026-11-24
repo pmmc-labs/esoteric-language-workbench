@@ -1,0 +1,4 @@
+1
+5
+fault: not a numeric string at t/127-not-numeric-but-true.pl line 6.
+exit: 1

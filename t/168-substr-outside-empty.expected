@@ -1,0 +1,4 @@
+1
+[]
+fault: substr outside of string at t/168-substr-outside-empty.pl line 6.
+exit: 1

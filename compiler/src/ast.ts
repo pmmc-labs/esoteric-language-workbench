@@ -14,6 +14,11 @@ export type Int = { kind: 'int'; text: string; value: bigint; pos: Pos; brackete
 // nearest to what it says, which is how perl reads one.
 export type Num = { kind: 'num'; text: string; value: number; pos: Pos; bracketed?: true };
 
+// A string literal (D24). `text` is the literal as written, quotes and
+// all; `value` is the string, its characters as JavaScript holds them: a
+// character past U+FFFF is two units there and one character here.
+export type Str = { kind: 'str'; text: string; value: string; pos: Pos; bracketed?: true };
+
 // An operator before its operand, `-x`; `pos` is the operator's.
 export type Unary = { kind: 'unary'; op: string; operand: Expr; pos: Pos; bracketed?: true };
 
@@ -24,14 +29,22 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // `(x + y)`. The tree's shape already holds the grouping; this is for the
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
-export type Expr = Int | Num | Unary | Binary;
+export type Expr = Int | Num | Str | Unary | Binary | Apply;
+
+// A builtin that has a value, applied to its arguments: `length "abc"`,
+// `substr($s, 1)`. `pos` is the name's.
+export type Apply = { kind: 'apply'; name: string; args: readonly Expr[]; pos: Pos; bracketed?: true };
 
 export type Use = { kind: 'use'; version: string; pos: Pos };
 
-// A builtin from the table of names, applied to its arguments.
+// `use NAME ARGS;` (D16). Which names there are, and with which
+// arguments, is the checker's to say, from the table.
+export type Pragma = { kind: 'pragma'; name: string; args: readonly Expr[]; pos: Pos };
+
+// A builtin that is a statement, `say` and `print`, and its arguments.
 export type Call = { kind: 'call'; name: string; args: readonly Expr[]; pos: Pos };
 
-export type Stmt = Use | Call;
+export type Stmt = Use | Pragma | Call;
 
 // `end` is where the file ends, for a diagnostic about what isn't there.
 export type Program = { kind: 'program'; body: readonly Stmt[]; end: Pos };

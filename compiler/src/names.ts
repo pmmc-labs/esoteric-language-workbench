@@ -5,20 +5,52 @@
 // define a sub called `q`; that list comes with subs, at step 8.
 
 export type Name =
-    // `use VERSION;`, the only `use` so far (D16).
+    // `use VERSION;` and `use PRAGMA ...;` (D16).
     | { kind: 'use' }
-    // A builtin, written with brackets round its arguments or without
-    // (D21). `args` is the shape of what follows it: `one`, a single
-    // expression. `rt` is the runtime function the generated C calls.
-    | { kind: 'builtin'; args: 'one'; rt: string };
+    // A builtin that is a statement: `say EXPR;`, with brackets round its
+    // one argument or without (D21). `rt` is the runtime function the
+    // generated C calls.
+    | { kind: 'statement'; rt: string }
+    // One of perl's named unary operators (D41): one argument, in brackets
+    // or without, and without them it takes everything that binds tighter
+    // than the row of perlop's table that is theirs.
+    | { kind: 'unary'; rt: string }
+    // A builtin whose arguments are in brackets, always (D41): `min` to
+    // `min + rt.length - 1` of them, each count with a runtime function
+    // of its own.
+    | { kind: 'function'; min: number; rt: readonly string[] };
 
 export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['use', { kind: 'use' }],
-    ['say', { kind: 'builtin', args: 'one', rt: 'rt_say' }],
+    ['say', { kind: 'statement', rt: 'rt_say' }],
+    ['print', { kind: 'statement', rt: 'rt_print' }],
+    ['length', { kind: 'unary', rt: 'rt_length' }],
+    ['uc', { kind: 'unary', rt: 'rt_uc' }],
+    ['lc', { kind: 'unary', rt: 'rt_lc' }],
+    ['ord', { kind: 'unary', rt: 'rt_ord' }],
+    ['chr', { kind: 'unary', rt: 'rt_chr' }],
+    ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
+    ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);
 
 // The perl whose meaning the language keeps (D2, D16).
 export const VERSION = 'v5.42';
+
+// The pragmas, a closed list (D16): each with the arguments it must be
+// written with, as strings. `rt` is what one does when the program starts,
+// if anything; `utf8` is the lexer's business and nothing else's.
+export type Pragma = { args: readonly string[]; rt?: string };
+export const PRAGMAS: ReadonlyMap<string, Pragma> = new Map<string, Pragma>([
+    ['utf8', { args: [] }],
+    // perl's standard streams as UTF-8 (D39).
+    ['open', { args: [':std', ':encoding(UTF-8)'], rt: 'rt_use_open' }],
+]);
+
+// The largest Unicode scalar value, and the surrogates, which aren't any
+// (D42).
+export const isScalarValue = (n: number): boolean => n >= 0 && n <= 0x10FFFF && !(n >= 0xD800 && n <= 0xDFFF);
+// The 66 noncharacters: perl warns when one is printed (T88).
+export const isNoncharacter = (n: number): boolean => (n >= 0xFDD0 && n <= 0xFDEF) || (n & 0xFFFE) === 0xFFFE;
 
 // The largest Int (D23): 2^63 - 1. A literal can't be negative: a minus
 // before one is an operator, so the smallest Int, -2^63, has no literal.
@@ -51,6 +83,7 @@ export type Level = {
 };
 
 const ops = (...names: string[]): Op[] => names.map(op => ({ op }));
+const NAMED_UNARY = 'named unary operators';
 
 export const PRECEDENCE: readonly Level[] = [
     { assoc: 'left', what: 'terms and list operators (leftward)' },
@@ -59,10 +92,10 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'right', infix: [{ op: '**', in: true, rt: 'rt_pow' }] },
     { assoc: 'right', prefix: [...ops('!', '~', '~.', '\\'), { op: '+', in: true }, { op: '-', in: true, rt: 'rt_neg' }] },
     { assoc: 'left', infix: ops('=~', '!~') },
-    { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x' }] },
-    { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.' }] },
+    { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x', in: true, rt: 'rt_repeat' }] },
+    { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.', in: true, rt: 'rt_concat' }] },
     { assoc: 'left', infix: ops('<<', '>>') },
-    { assoc: 'nonassoc', what: 'named unary operators' },
+    { assoc: 'nonassoc', what: NAMED_UNARY },
     { assoc: 'nonassoc', infix: ops('isa') },
     { assoc: 'chained', infix: ops('<', '>', '<=', '>=', 'lt', 'gt', 'le', 'ge') },
     { assoc: 'chain/na', infix: ops('==', '!=', 'eq', 'ne', '<=>', 'cmp', '~~') },
@@ -96,3 +129,7 @@ const find = (place: 'prefix' | 'infix') => (op: string): { row: number; assoc: 
 };
 export const prefixOp = find('prefix');
 export const infixOp = find('infix');
+
+// The row of the named unary operators: `length`, written without
+// brackets, takes for its argument everything in the rows above this one.
+export const NAMED_UNARY_ROW = PRECEDENCE.findIndex(l => l.what === NAMED_UNARY);

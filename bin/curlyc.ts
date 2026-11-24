@@ -23,11 +23,24 @@ const out = args[at + 1]!;
 const src = args.find((a, i) => i !== at && i !== at + 1)!;
 if (out.startsWith('-')) usage();
 
-// Bytes that aren't UTF-8 become U+FFFD, which the lexer refuses as it
-// does every character past ASCII.
-let text: string;
-try { text = readFileSync(src, 'utf8'); }
+let bytes: Buffer;
+try { bytes = readFileSync(src); }
 catch (e) { console.error(`curlyc: can't read ${src}: ${(e as Error).message}`); process.exit(2); }
+
+// The source is UTF-8 (D24), and a file that isn't is refused here, at
+// the first byte that isn't: decoded leniently it would be U+FFFD, which
+// is a character a string may hold. (Bytes that don't come back the same
+// from a decoding and an encoding weren't UTF-8.)
+const text = bytes.toString('utf8');
+const back = Buffer.from(text, 'utf8');
+if (!back.equals(bytes)) {
+    let at = 0;
+    while (at < bytes.length && bytes[at] === back[at]) at += 1;
+    const before = bytes.subarray(0, at).toString('utf8').split('\n');
+    rmSync(out, { force: true });
+    console.error(`${src}:${before.length}:${[...before.at(-1)!].length + 1}: a byte that is not UTF-8`);
+    process.exit(1);
+}
 
 // A refusal leaves no binary (D13), an old one included: a test that ran
 // the last build's would pass for a program that no longer compiles.

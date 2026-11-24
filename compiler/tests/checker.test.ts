@@ -30,9 +30,35 @@ test("a program begins 'use v5.42;'", () => {
     refused('use v5;', message, 1, 1);
 });
 
-test('and has no other use', () => {
-    refused('use v5.42;\nuse v5.42;', "'use v5.42;' here: the only 'use' so far is the first statement", 2, 1);
-    refused('use v5.42; say 1; use v5.36;', "'use v5.36;' here: the only 'use' so far is the first statement", 1, 19);
+test('the version is said once', () => {
+    refused('use v5.42;\nuse v5.42;', "'use v5.42;' here: the version is the first statement, and is said once", 2, 1);
+    refused('use v5.42; say 1; use v5.36;', "'use v5.36;' here: the version is the first statement, and is said once", 1, 19);
+});
+
+test('the pragmas: a closed list, each written one way, at the top, once (D16, D39)', () => {
+    accepted("use v5.42;\nuse utf8;\nuse open ':std', ':encoding(UTF-8)';\nsay 1;");
+    accepted('use v5.42;\nuse open ":std", ":encoding(UTF-8)";\nuse utf8;');
+    accepted('use v5.42; use open ":s\\x74d", \':encoding(UTF-8)\';');
+    const open = "'use open' is written: use open ':std', ':encoding(UTF-8)';";
+    refused("use v5.42;\nuse open;", open, 2, 1);
+    refused("use v5.42;\nuse open ':std';", open, 2, 1);
+    refused("use v5.42;\nuse open ':std', ':utf8';", open, 2, 1);
+    refused("use v5.42;\nuse open ':encoding(UTF-8)', ':std';", open, 2, 1);
+    refused("use v5.42;\nuse open ':std', ':encoding(UTF-8)', ':std';", open, 2, 1);
+    refused("use v5.42;\nuse open ':std', ':encoding(utf-8)';", open, 2, 1);
+    refused("use v5.42;\nuse open (':std'), ':encoding(UTF-8)';", open, 2, 1);
+    refused("use v5.42;\nuse open ':std' . '', ':encoding(UTF-8)';", open, 2, 1);
+    refused("use v5.42;\nuse utf8 'x';", "'use utf8' is written: use utf8;", 2, 1);
+    refused('use v5.42;\nuse utf8;\nuse utf8;', "'use utf8' is said once", 3, 1);
+    refused("use v5.42;\nsay 1;\nuse utf8;", "'use utf8' goes at the top, after 'use v5.42;' and before anything else", 3, 1);
+    refused("use utf8;\nuse v5.42;", "a program begins 'use v5.42;'", 1, 1);
+});
+
+test('a string, a builtin and its arguments are checked through', () => {
+    accepted('use v5.42;\nsay length("abc") . substr("abc", 1, 2) x 2;');
+    refused('use v5.42;\nsay substr("abc", 01);', '01 starts with a zero: perl reads that as octal, which the language writes 0o17', 2, 19);
+    refused('use v5.42;\nsay length 0xFFFFFFFFF;', '0xFFFFFFFFF is past 32 bits, where perl warns that a literal is not portable', 2, 12);
+    refused('use v5.42;\nprint "a" . 9223372036854775808;', '9223372036854775808 is past the largest integer, 9223372036854775807', 2, 13);
 });
 
 test('an integer has no leading zero (T24)', () => {

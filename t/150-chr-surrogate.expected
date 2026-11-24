@@ -1,0 +1,4 @@
+1
+55295
+fault: not a character at t/150-chr-surrogate.pl line 6.
+exit: 1

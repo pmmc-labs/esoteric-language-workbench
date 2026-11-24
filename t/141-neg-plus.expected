@@ -1,0 +1,4 @@
+1
+-5
+fault: a minus before a string that starts with a plus at t/141-neg-plus.pl line 6.
+exit: 1

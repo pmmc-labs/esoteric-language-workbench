@@ -1,0 +1,4 @@
+1
+foo
+fault: not a numeric string at t/143-neg-not-numeric.pl line 6.
+exit: 1

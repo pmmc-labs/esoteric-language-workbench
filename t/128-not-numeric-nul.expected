@@ -1,0 +1,4 @@
+1
+4
+fault: not a numeric string at t/128-not-numeric-nul.pl line 6.
+exit: 1

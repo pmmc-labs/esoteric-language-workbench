@@ -1,0 +1,4 @@
+1
+9223372036854775807
+fault: integer overflow at t/130-string-overflow.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+1
+fault: not a character at t/149-chr-past-unicode.pl line 6.
+exit: 1

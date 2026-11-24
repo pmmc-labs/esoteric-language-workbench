@@ -346,7 +346,7 @@ def perl_says(path, hdr, kind, limit):
     by running perl, or why perl won't say."""
     outputs = []
     for seed in SEEDS:
-        r = run_perl(['-CSDA'], path, hdr, seed, limit)
+        r = run_perl([], path, hdr, seed, limit)
         if r is None:
             return f'perl did not finish in {limit} seconds', None
         if r.returncode < 0:
@@ -446,7 +446,7 @@ def oracle_kind(path, hdr, write):
     if expected is None or not re.fullmatch(shape, expected):
         return [f'the .expected is not what the program printed, `fault: MESSAGE at {path} line N.` and `exit: 1`']
     for seed in SEEDS:
-        r = run_perl(['-CSDA'], path, hdr, seed, limit)
+        r = run_perl([], path, hdr, seed, limit)
         if r is None:
             return [f'perl did not finish in {limit} seconds: a fault test is a program that ends under perl (D10)']
         if not r.stdout.startswith(printed):

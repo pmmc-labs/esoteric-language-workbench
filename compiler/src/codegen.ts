@@ -1,7 +1,7 @@
 // The tree to C: straight-line, one statement per operation, each result
 // in a temporary (D31), every runtime call taking the context first (D28).
 // The C is linked with runtime/rt.c by the driver.
-import { NAMES, infixOp, prefixOp } from './names.ts';
+import { NAMES, PRAGMAS, infixOp, prefixOp } from './names.ts';
 import type { Expr, Program, Stmt } from './ast.ts';
 
 // A C string literal of `text`'s UTF-8 bytes. Octal, three digits, for
@@ -18,8 +18,9 @@ export const cString = (text: string): string => {
 };
 
 // The C statements of one source statement, and how many temporaries
-// they have declared.
-type Block = { lines: string[]; temps: number };
+// they have declared. `strings` is the whole program's: the string
+// literals, each a constant at the top of the C file, in the order met.
+type Block = { lines: string[]; temps: number; strings: string[] };
 
 const temp = (b: Block, call: string): string => {
     const t = `t${++b.temps}`;
@@ -37,6 +38,22 @@ const genExpr = (e: Expr, b: Block): string => {
     if (e.kind === 'int') return `rt_int(INT64_C(${e.value}))`;
     // A Num goes over as its 64 bits: no decimal is read twice.
     if (e.kind === 'num') return `rt_num_bits(UINT64_C(0x${new BigUint64Array(new Float64Array([e.value]).buffer)[0]!.toString(16)}))`;
+    // A string literal is a constant the program never allocates: its
+    // bytes as UTF-8, how many there are, and how many characters.
+    if (e.kind === 'str') {
+        const bytes = new TextEncoder().encode(e.value).length;
+        b.strings.push(`static const rt_str s${b.strings.length + 1} = { ${bytes}, ${[...e.value].length}, ${cString(e.value)} };`);
+        return `rt_string(&s${b.strings.length})`;
+    }
+    if (e.kind === 'apply') {
+        // Arguments left before right, each in a temporary or a literal
+        // by the time the call is made.
+        const args = e.args.map(a => genExpr(a, b));
+        const name = NAMES.get(e.name);
+        const rt = name?.kind === 'unary' ? name.rt : name?.kind === 'function' ? name.rt[e.args.length - name.min] : undefined;
+        if (rt === undefined) throw new Error(`no runtime function for ${e.name}`);
+        return temp(b, `${rt}(${['cx', ...args].join(', ')})`);
+    }
     if (e.kind === 'unary') {
         const operand = genExpr(e.operand, b);
         const rt = prefixOp(e.op)?.rt;
@@ -50,12 +67,18 @@ const genExpr = (e: Expr, b: Block): string => {
     return temp(b, `${rt}(cx, ${left}, ${right})`);
 };
 
-const genStmt = (s: Stmt): string[] => {
+const genStmt = (s: Stmt, strings: string[]): string[] => {
     // `use v5.42;` says which language this is; it does nothing at run time.
     if (s.kind === 'use') return [];
+    // A pragma is the compiler's business, unless the table gives it
+    // something to do as the program starts.
+    if (s.kind === 'pragma') {
+        const rt = PRAGMAS.get(s.name)?.rt;
+        return rt === undefined ? [] : [`    ${rt}(cx);`];
+    }
     const name = NAMES.get(s.name);
-    if (name === undefined || name.kind !== 'builtin') throw new Error(`no runtime function for ${s.name}`);
-    const b: Block = { lines: [], temps: 0 };
+    if (name === undefined || name.kind !== 'statement') throw new Error(`no runtime function for ${s.name}`);
+    const b: Block = { lines: [], temps: 0, strings };
     const args = s.args.map(a => genExpr(a, b));
     b.lines.push(`${name.rt}(cx, ${args.join(', ')});`);
     // A fault names the line its statement starts on (D34). A block of
@@ -69,16 +92,22 @@ const genStmt = (s: Stmt): string[] => {
 
 // `file` is the program's path as the driver was given it, which is the
 // path perl is given too (D10): a fault names it.
-export const generate = (program: Program, file: string): string => [
-    '#include "rt.h"',
-    '',
-    'static void curly_main(rt_ctx *cx) {',
-    '    (void)cx;',
-    ...program.body.flatMap(genStmt),
-    '}',
-    '',
-    'int main(void) {',
-    `    return rt_run(curly_main, ${cString(file)});`,
-    '}',
-    '',
-].join('\n');
+export const generate = (program: Program, file: string): string => {
+    const strings: string[] = [];
+    const body = program.body.flatMap(s => genStmt(s, strings));
+    return [
+        '#include "rt.h"',
+        '',
+        ...strings,
+        ...(strings.length ? [''] : []),
+        'static void curly_main(rt_ctx *cx) {',
+        '    (void)cx;',
+        ...body,
+        '}',
+        '',
+        'int main(void) {',
+        `    return rt_run(curly_main, ${cString(file)});`,
+        '}',
+        '',
+    ].join('\n');
+};

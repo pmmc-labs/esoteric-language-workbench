@@ -1,0 +1,4 @@
+1
+00000000000000
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/165-fault-order-conversions.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+617673396283947
+fault: a string like "3.0" in arithmetic this large has two answers in perl at t/139-soft-pow.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+0
+fault: not a numeric string at t/126-not-numeric-nan.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+-999999999999999
+fault: a minus before a string that is a whole number this large has two answers in perl at t/142-neg-large.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+ab
+fault: negative repeat count at t/163-fault-order-arguments.pl line 6.
+exit: 1

@@ -3,20 +3,22 @@
 // operator means comes from the table of names; the rules of the language
 // (which `use`, which integers) are the checker's.
 import { refuse } from './errors.ts';
-import { NAMES, OPERATORS, infixOp, prefixOp } from './names.ts';
+import { NAMED_UNARY_ROW, NAMES, OPERATORS, PRAGMAS, infixOp, prefixOp } from './names.ts';
 import type { Token } from './lexer.ts';
 import type { Expr, Program, Stmt } from './ast.ts';
 
-// A token as a diagnostic names it.
+// A token as a diagnostic names it. A string is shown if it is short.
 const show = (t: Token): string =>
     t.kind === 'eof' ? 'the end of the file'
     : t.kind === 'int' || t.kind === 'num' || t.kind === 'version' ? t.text
+    : t.kind === 'str' ? (t.text.length <= 20 && !t.text.includes('\n') ? t.text : 'a string')
     : `'${t.text}'`;
 
 // Something else was wanted where `t` stands. A word that is one of perl's
-// operators (`x`, `and`) gets the answer the symbols get from the lexer.
+// operators and not one of the language's (`and`, `lt`) gets the answer
+// the symbols get from the lexer.
 const unexpected = (t: Token, wanted: string): never =>
-    t.kind === 'word' && OPERATORS.has(t.text)
+    t.kind === 'word' && OPERATORS.has(t.text) && !infixOp(t.text) && !prefixOp(t.text)
         ? refuse(`'${t.text}' is not in the language yet`, t.pos)
         : refuse(`expected ${wanted}, found ${show(t)}`, t.pos);
 
@@ -36,8 +38,55 @@ export const parse = (tokens: readonly Token[]): Program => {
         return t.kind === ')' ? t : unexpected(t, "')'");
     };
 
-    // A number, a bracketed expression, or a prefix operator and its
-    // operand, which may hold only operators that bind tighter than it.
+    // Expressions with commas between them, as many as there are.
+    const list = (): Expr[] => {
+        const items = [expression(Infinity)];
+        while (peek().kind === ',') {
+            next();
+            items.push(expression(Infinity));
+        }
+        return items;
+    };
+
+    // A builtin that has a value, its name just read.
+    const apply = (head: Token): Expr => {
+        const name = NAMES.get(head.text)!;
+        const open = peek();
+        if (name.kind === 'unary') {
+            // One of perl's named unary operators (D41). Brackets after
+            // it hold its argument, whatever follows them: `length ("ab")
+            // . "c"` is `2c`. Without them the argument is everything
+            // that binds tighter than these operators do, which is all of
+            // arithmetic and `.`: `length "ab" . "c"` is 3 (T87).
+            if (open.kind === '(') {
+                next();
+                if (peek().kind === ')') refuse(`${head.text} needs an argument`, head.pos);
+                const inner = expression(Infinity);
+                closing();
+                return { kind: 'apply', name: head.text, args: [inner], pos: head.pos };
+            }
+            if (open.kind === ';' || open.kind === ')' || open.kind === ',' || open.kind === 'eof') {
+                refuse(`${head.text} needs an argument`, head.pos);
+            }
+            return { kind: 'apply', name: head.text, args: [expression(NAMED_UNARY_ROW)], pos: head.pos };
+        }
+        if (name.kind !== 'function') return refuse(`${head.text} is a statement, and has no value`, head.pos);
+        // perl takes `substr $s, 0, 1` as well: a list operator's
+        // arguments without brackets, which D21 is wary of.
+        if (open.kind !== '(') refuse(`${head.text} needs brackets round its arguments: ${head.text}(...)`, head.pos);
+        next();
+        const args = peek().kind === ')' ? [] : list();
+        closing();
+        const max = name.min + name.rt.length - 1;
+        if (args.length < name.min || args.length > max) {
+            refuse(`${head.text} takes ${name.min} to ${max} arguments, and here are ${args.length}`, head.pos);
+        }
+        return { kind: 'apply', name: head.text, args, pos: head.pos };
+    };
+
+    // A literal, a bracketed expression, a builtin and its arguments, or
+    // a prefix operator and its operand, which may hold only operators
+    // that bind tighter than it.
     const primary = (): Expr => {
         const t = next();
         // JavaScript reads `0x1F`, `0b101` and `0o17` as perl does, and a
@@ -45,6 +94,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         const digits = t.text.replaceAll('_', '');
         if (t.kind === 'int') return { kind: 'int', text: t.text, value: BigInt(digits), pos: t.pos };
         if (t.kind === 'num') return { kind: 'num', text: t.text, value: Number(digits), pos: t.pos };
+        if (t.kind === 'str') return { kind: 'str', text: t.text, value: t.value, pos: t.pos };
         if (t.kind === '(') {
             const inner = expression(Infinity);
             closing();
@@ -52,7 +102,8 @@ export const parse = (tokens: readonly Token[]): Program => {
         }
         const prefix = t.kind === 'op' ? prefixOp(t.text) : undefined;
         if (prefix) return { kind: 'unary', op: t.text, operand: expression(prefix.row), pos: t.pos };
-        return unexpected(t, "a number or '('");
+        if (t.kind === 'word' && NAMES.has(t.text) && NAMES.get(t.text)!.kind !== 'use') return apply(t);
+        return unexpected(t, 'a value');
     };
 
     // Everything that binds tighter than row `limit` of the table. A row
@@ -70,7 +121,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         }
     };
 
-    // A builtin's one argument, in brackets or not (D21).
+    // The one argument of `say` or `print`, in brackets or not (D21).
     const argument = (head: Token): Expr => {
         const open = peek();
         if (open.kind !== '(') return expression(Infinity);
@@ -101,12 +152,20 @@ export const parse = (tokens: readonly Token[]): Program => {
         const name = NAMES.get(head.text);
         if (name === undefined) return refuse(`'${head.text}' is not in the language`, head.pos);
         if (name.kind === 'use') {
-            const version = next();
-            if (version.kind !== 'version') return refuse(`after 'use', expected a version, found ${show(version)}`, version.pos);
+            const what = next();
+            if (what.kind === 'version') {
+                semicolon();
+                return { kind: 'use', version: what.text, pos: head.pos };
+            }
+            if (what.kind !== 'word') return refuse(`after 'use', expected a version or a pragma, found ${show(what)}`, what.pos);
+            if (!PRAGMAS.has(what.text)) return refuse(`'use ${what.text}' is not in the language`, what.pos);
+            const args = peek().kind === ';' ? [] : list();
             semicolon();
-            return { kind: 'use', version: version.text, pos: head.pos };
+            return { kind: 'pragma', name: what.text, args, pos: head.pos };
         }
+        if (name.kind !== 'statement') return refuse(`${head.text} has a value, and nothing is done with it here`, head.pos);
         const args = [argument(head)];
+        if (peek().kind === ',') refuse(`',' after ${head.text}'s argument: a list is not in the language yet`, peek().pos);
         semicolon();
         return { kind: 'call', name: head.text, args, pos: head.pos };
     };

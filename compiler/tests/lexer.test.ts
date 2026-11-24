@@ -47,14 +47,128 @@ test('a version ends at a blank or a semicolon, as perl has it (T75)', () => {
 });
 
 const literals = (src: string) => lex(src).slice(0, -1).map(t => `${t.kind} ${t.text}`);
+// Each word of `src` on its own: after a value a dot is an operator.
+const each = (src: string) => src.split(' ').flatMap(literals);
 
 test('numeric literals (D38)', () => {
-    assert.deepEqual(literals('0 42 1_000 0x1F 0XfF 0b101 0B1 0o17 0O7 0xff_ff'),
+    assert.deepEqual(each('0 42 1_000 0x1F 0XfF 0b101 0B1 0o17 0O7 0xff_ff'),
         ['int 0', 'int 42', 'int 1_000', 'int 0x1F', 'int 0XfF', 'int 0b101', 'int 0B1', 'int 0o17', 'int 0O7', 'int 0xff_ff']);
-    assert.deepEqual(literals('1.5 .5 0.25 1e3 1E3 1.5e-3 .5E+2 1e007 1_0.2_5 1e1_0 0e0'),
+    assert.deepEqual(each('1.5 .5 0.25 1e3 1E3 1.5e-3 .5E+2 1e007 1_0.2_5 1e1_0 0e0'),
         ['num 1.5', 'num .5', 'num 0.25', 'num 1e3', 'num 1E3', 'num 1.5e-3', 'num .5E+2', 'num 1e007', 'num 1_0.2_5', 'num 1e1_0', 'num 0e0']);
     // Leading zeros are the checker's to refuse: they lex.
-    assert.deepEqual(literals('010 00.5'), ['int 010', 'num 00.5']);
+    assert.deepEqual(each('010 00.5'), ['int 010', 'num 00.5']);
+});
+
+test('after a value a dot joins and x repeats; before one a dot begins a number (T90)', () => {
+    assert.deepEqual(literals('1 .5'), ['int 1', 'op .', 'int 5']);
+    assert.deepEqual(literals('1 . .5'), ['int 1', 'op .', 'num .5']);
+    assert.deepEqual(literals('"a".5'), ['str "a"', 'op .', 'int 5']);
+    assert.deepEqual(literals('(1).5'), ['( (', 'int 1', ') )', 'op .', 'int 5']);
+    assert.deepEqual(literals('length .5'), ['word length', 'num .5']);
+    assert.deepEqual(literals('say .5 x .5'), ['word say', 'num .5', 'op x', 'num .5']);
+    assert.deepEqual(literals('"a" x 3'), ['str "a"', 'op x', 'int 3']);
+    assert.deepEqual(literals('"a"x 3'), ['str "a"', 'op x', 'int 3']);
+    assert.deepEqual(literals('2 x(3)'), ['int 2', 'op x', '( (', 'int 3', ') )']);
+    assert.deepEqual(literals('1 x"2"'), ['int 1', 'op x', 'str "2"']);
+    // Where a value is wanted, x is a word, and so is a longer word after one.
+    assert.deepEqual(literals('say x'), ['word say', 'word x']);
+    assert.deepEqual(literals('1 xy'), ['int 1', 'word xy']);
+    refused('say "a" x3;', 'x3: the repetition operator is a word of its own: write x 3', 1, 9);
+    refused('say "a"x3;', 'x3: the repetition operator is a word of its own: write x 3', 1, 8);
+    refused('say "a" x= 3;', "'x=' is not in the language yet", 1, 9);
+});
+
+const value = (src: string) => {
+    const t = lex(src)[0]!;
+    assert.equal(t.kind, 'str');
+    return t.kind === 'str' ? t.value : '';
+};
+
+test('a string in single quotes: a backslash is itself, but before a backslash or the quote', () => {
+    assert.equal(value("'abc'"), 'abc');
+    assert.equal(value("''"), '');
+    assert.equal(value("'a\\b'"), 'a\\b');
+    assert.equal(value("'it\\'s'"), "it's");
+    assert.equal(value("'a\\nb\\q\\x41'"), 'a\\nb\\q\\x41');
+    assert.equal(value("'$x @y \"'"), '$x @y "');
+    assert.equal(value("'two\nlines\t'"), 'two\nlines\t');
+    assert.equal(value("'a\\\\'"), 'a\\');
+    refused("say 'abc", "a string that never ends: it begins with ' here", 1, 5);
+    refused("say 'abc\\'", "a string that never ends: it begins with ' here", 1, 5);
+});
+
+test('a string in double quotes: the escapes (D43)', () => {
+    assert.equal(value('"a\\n\\t\\r\\f\\b\\a\\e\\0"'), 'a\n\t\r\f\b\x07\x1b\0');
+    assert.equal(value('"\\\\ \\" \\$ \\@"'), '\\ " $ @');
+    assert.equal(value('"\\x41\\x7e\\xFF"'), 'A~\xff');
+    assert.equal(value('"\\x{41}\\x{263A}\\x{1F600}\\x{10FFFF}"'), 'A\u263a\u{1F600}\u{10FFFF}');
+    assert.equal(value('"\\101\\7\\12\\777\\0000"'), 'A\x07\n\u01ff\x000');
+    assert.equal(value('"\\o{101}\\N{U+263a}"'), 'A\u263a');
+    assert.equal(value('"\\-\\ \\_\\{\\\'"'), "- _{'");
+    assert.equal(value('"it\'s\ntwo # lines"'), "it's\ntwo # lines");
+    const at = (src: string, message: string, col: number) => refused(src, message, 1, col);
+    at('"\\q"', '\\q is not an escape in the language', 2);
+    at('"ab\\8"', '\\8 is not an escape in the language', 4);
+    at('"\\c["', '\\c is not an escape in the language', 2);
+    at('"\\Ux"', '\\U is not an escape in the language', 2);
+    at('"\\N{LATIN SMALL LETTER A}"', '\\N{...} is not an escape in the language', 2);
+    at('"\\x"', '\\x: \\x takes two hex digits, or any number in braces: \\x0A, \\x{263A}', 2);
+    at('"\\x4"', '\\x4: \\x takes two hex digits, or any number in braces: \\x0A, \\x{263A}', 2);
+    at('"\\x4g"', '\\x4: \\x takes two hex digits, or any number in braces: \\x0A, \\x{263A}', 2);
+    at('"\\x{}"', '\\x{...}: hex digits between the braces, and nothing else', 2);
+    at('"\\x{4 1}"', '\\x{...}: hex digits between the braces, and nothing else', 2);
+    at('"\\x{41"', '\\x{...}: hex digits between the braces, and nothing else', 2);
+    at('"\\o{8}"', '\\o{...}: octal digits between the braces, and nothing else', 2);
+    at('"\\N{U+}"', '\\N{U+...}: hex digits between the braces, and nothing else', 2);
+    at('"\\x{D800}"', '\\x{D800} is not a character: a surrogate, or past U+10FFFF', 2);
+    at('"\\x{110000}"', '\\x{110000} is not a character: a surrogate, or past U+10FFFF', 2);
+    at('"\\x{FFFFFFFFFFFFFFFFFFFF}"', '\\x{FFFFFFFFFFFFFFFFFFFF} is not a character: a surrogate, or past U+10FFFF', 2);
+    at('"\\N{U+DFFF}"', '\\N{U+DFFF} is not a character: a surrogate, or past U+10FFFF', 2);
+    at('"\\18"', '\\18: an octal escape that 8 cuts short, and perl warns: write \\001', 2);
+    at('"\\129"', '\\129: an octal escape that 9 cuts short, and perl warns: write \\012', 2);
+    at('"a\\\tb"', 'a backslash before a tab is not in the language', 3);
+    at('"a\\\nb"', 'a backslash before the end of a line is not in the language', 3);
+    at('"cost: $x"', "'$' in a double-quoted string is a variable to perl: write \\$ (interpolation is not in the language yet)", 8);
+    at('"a@b"', "'@' in a double-quoted string is a variable to perl: write \\@ (interpolation is not in the language yet)", 3);
+    at('"abc', 'a string that never ends: it begins with " here', 1);
+    at('"abc\\', 'a string that never ends: it begins with " here', 1);
+    at('"abc\\"', 'a string that never ends: it begins with " here', 1);
+});
+
+test('a string token is the literal as written, and where it starts', () => {
+    const tokens = lex('say "a\nb" . \'c\';');
+    assert.deepEqual(tokens.map(t => [t.kind, t.text, t.pos.line, t.pos.col]), [
+        ['word', 'say', 1, 1], ['str', '"a\nb"', 1, 5], ['op', '.', 2, 4], ['str', "'c'", 2, 6], [';', ';', 2, 9], ['eof', '', 2, 10],
+    ]);
+});
+
+test('a sign after a named unary operator: a blank before it and none after', () => {
+    assert.deepEqual(literals('length -5'), ['word length', 'op -', 'int 5']);
+    assert.deepEqual(literals('ord +"a"'), ['word ord', 'op +', 'str "a"']);
+    assert.deepEqual(literals('length\n-5'), ['word length', 'op -', 'int 5']);
+    assert.deepEqual(literals('length(- 5)'), ['word length', '( (', 'op -', 'int 5', ') )']);
+    assert.deepEqual(literals('say - 5'), ['word say', 'op -', 'int 5']);
+    refused('say length - 5;', 'length -: perl warns that this is ambiguous: write length(-...)', 1, 12);
+    refused('say length-5;', 'length -: perl warns that this is ambiguous: write length(-...)', 1, 11);
+    refused('say chr +\n65;', 'chr +: perl warns that this is ambiguous: write chr(+...)', 1, 9);
+    refused('say uc#c\n-5;', 'uc -: perl warns that this is ambiguous: write uc(-...)', 2, 1);
+});
+
+test('use utf8: a character past ASCII, in a string or a comment, on a later line (T73)', () => {
+    const tokens = lex('use utf8;\n# caf\u00e9\nsay "\u{1F600}\u00e9" . "a"; # \u263a');
+    assert.deepEqual(tokens.slice(3).map(t => [t.kind, t.text, t.pos.line, t.pos.col]), [
+        ['word', 'say', 3, 1], ['str', '"\u{1F600}\u00e9"', 3, 5], ['op', '.', 3, 10], ['str', '"a"', 3, 12], [';', ';', 3, 15], ['eof', '', 3, 20],
+    ]);
+    const needs = (c: string) => `a character past ASCII (${c}) needs 'use utf8;' on a line before it`;
+    refused('use utf8; say "\u00e9";', needs('U+00E9'), 1, 16);
+    refused('use utf8; # \u00e9', needs('U+00E9'), 1, 13);
+    refused('use utf8\n; say "\u00e9";', needs('U+00E9'), 2, 8);
+    assert.equal(lex('use utf8\n;\nsay "\u00e9";').length, 7);
+    refused('say "\u00e9";\nuse utf8;', needs('U+00E9'), 1, 6);
+    refused('use utf8;\nsay \u00e9;', 'a character past ASCII (U+00E9) outside a string or a comment is not in the language', 2, 5);
+    refused('use utf8;\nsay "\\\u00e9";', 'a backslash before U+00E9 is not in the language', 2, 6);
+    refused('use utf8;\n"\x85', 'a string that never ends: it begins with " here', 2, 1);
+    refused('use utf8;\n"a\x00"', 'a control character (U+0000) is not in the language', 2, 3);
 });
 
 test('a number hard against an operator is still one number', () => {
@@ -121,26 +235,30 @@ test("the longest of perl's operators is the token, in the language or not (T27)
     refused('say 1 <=> 2;', "'<=>' is not in the language yet", 1, 7);
     refused('say 1 -> 2;', "'->' is not in the language yet", 1, 7);
     refused('say 7 %= 2;', "'%=' is not in the language yet", 1, 7);
-    refused('say 1 . 5;', "'.' is not in the language yet", 1, 7);
+    refused('say 1 .. 5;', "'..' is not in the language yet", 1, 7);
+    refused('say 1 .= 5;', "'.=' is not in the language yet", 1, 7);
     refused('say 1 // 2;', "'//' is not in the language yet", 1, 7);
-    refused('say 1, 2;', "',' is not in the language yet", 1, 6);
+    refused('say 1 => 2;', "'=>' is not in the language yet", 1, 7);
     // With a blank between them they are two, as they are to perl.
     assert.deepEqual(lex('- - + +').map(t => t.text), ['-', '-', '+', '+', '']);
 });
 
 test('a character the language has no use for yet', () => {
-    refused('say "x";', "'\"' is not in the language yet", 1, 5);
+    refused('say `x`;', "'`' is not in the language yet", 1, 5);
     refused('say $x;', "'$' is not in the language yet", 1, 5);
     refused('say {1};', "'{' is not in the language yet", 1, 5);
 });
 
 test('a character past ASCII, wherever it stands', () => {
-    refused('say 42; # café', 'a character past ASCII (U+00E9) is not in the language yet', 1, 14);
-    refused('\nsay é;', 'a character past ASCII (U+00E9) is not in the language yet', 2, 5);
-    refused('# \u{1F600}', 'a character past ASCII (U+1F600) is not in the language yet', 1, 3);
-    // What the driver makes of bytes that aren't UTF-8, and a byte order mark.
-    refused('say �;', 'a character past ASCII (U+FFFD) is not in the language yet', 1, 5);
-    refused('﻿use v5.42;', 'a character past ASCII (U+FEFF) is not in the language yet', 1, 1);
+    const needs = (c: string) => `a character past ASCII (${c}) needs 'use utf8;' on a line before it`;
+    refused('say 42; # café', needs('U+00E9'), 1, 14);
+    refused('\nsay é;', needs('U+00E9'), 2, 5);
+    refused('# \u{1F600}', needs('U+1F600'), 1, 3);
+    refused('say "é";', needs('U+00E9'), 1, 6);
+    // A byte order mark.
+    refused('﻿use v5.42;', needs('U+FEFF'), 1, 1);
+    // Half of a pair, which no file that is UTF-8 holds.
+    refused('use utf8;\n"\ud800"', 'U+D800 is not a character', 2, 2);
 });
 
 test('a control character, wherever it stands', () => {

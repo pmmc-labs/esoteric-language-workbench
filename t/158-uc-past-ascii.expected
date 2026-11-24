@@ -1,0 +1,4 @@
+1
+E
+fault: uc of a character past ASCII at t/158-uc-past-ascii.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+11
+fault: not a numeric string at t/123-not-numeric-hex.pl line 6.
+exit: 1

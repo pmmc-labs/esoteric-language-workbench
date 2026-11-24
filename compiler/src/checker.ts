@@ -2,8 +2,8 @@
 // (D29): a tree perl would accept and the language doesn't. It returns
 // nothing; a tree that comes through is a program.
 import { refuse } from './errors.ts';
-import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, VERSION } from './names.ts';
-import type { Expr, Program } from './ast.ts';
+import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, PRAGMAS, VERSION } from './names.ts';
+import type { Expr, Pragma, Program } from './ast.ts';
 
 const checkExpr = (e: Expr): void => {
     if (e.kind === 'unary') return checkExpr(e.operand);
@@ -11,6 +11,9 @@ const checkExpr = (e: Expr): void => {
         checkExpr(e.left);
         return checkExpr(e.right);
     }
+    if (e.kind === 'apply') return e.args.forEach(checkExpr);
+    // The lexer has seen to a string: its escapes, and its characters.
+    if (e.kind === 'str') return;
     // perl reads `010` as octal, 8, doesn't compile `08`, and reads
     // `00.5` as two numbers joined (T24, T78). Octal is `0o10` (D38).
     if (/^0[0-9_]/.test(e.text)) {
@@ -36,14 +39,36 @@ const checkExpr = (e: Expr): void => {
     if (e.value > INT_MAX) refuse(`${e.text} is past the largest integer, ${INT_MAX}`, e.pos);
 };
 
+// A pragma is written one way (D16): its arguments are the table's, each
+// a string literal. perl takes `use open qw(:std :encoding(UTF-8))` and
+// `use open ':std', ':utf8'` too, and each is another thing to read.
+const checkPragma = (p: Pragma): void => {
+    const wanted = PRAGMAS.get(p.name)!.args;
+    const written = p.args.map(a => (a.kind === 'str' && !a.bracketed ? a.value : undefined));
+    if (written.length !== wanted.length || written.some((w, n) => w !== wanted[n])) {
+        refuse(`'use ${p.name}' is written: use ${[p.name, wanted.map(a => `'${a}'`).join(', ')].join(' ').trim()};`, p.pos);
+    }
+};
+
 export const check = (program: Program): void => {
     // The line that makes the file mean the same thing to perl (D16).
     const first = program.body[0];
     if (first === undefined || first.kind !== 'use' || first.version !== VERSION) {
         refuse(`a program begins 'use ${VERSION};'`, first?.pos ?? program.end);
     }
+    // The pragmas come next, each once at most, before anything else.
+    const seen = new Set<string>();
+    let pragmas = true;
     for (const stmt of program.body.slice(1)) {
-        if (stmt.kind === 'use') refuse(`'use ${stmt.version};' here: the only 'use' so far is the first statement`, stmt.pos);
-        else stmt.args.forEach(checkExpr);
+        if (stmt.kind === 'use') refuse(`'use ${stmt.version};' here: the version is the first statement, and is said once`, stmt.pos);
+        else if (stmt.kind === 'pragma') {
+            if (!pragmas) refuse(`'use ${stmt.name}' goes at the top, after 'use ${VERSION};' and before anything else`, stmt.pos);
+            if (seen.has(stmt.name)) refuse(`'use ${stmt.name}' is said once`, stmt.pos);
+            seen.add(stmt.name);
+            checkPragma(stmt);
+        } else {
+            pragmas = false;
+            stmt.args.forEach(checkExpr);
+        }
     }
 };

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/040 to t/074: Num, `/`, `**`, and the two kinds of number together
+"""t/040 to t/078: Num, `/`, `**`, and the two kinds of number together
 (step 2; D35 to D38).
 
 The definition, which is all this file knows of the language. A number is
@@ -24,6 +24,11 @@ below 2^53. Then (D35):
         C's pow, a Num.
   -x    an Int negated (or `integer overflow`); a Num's sign changed.
 
+And D45, which amends D35: in `+`, `-` and `*` on two integral operands, an
+Int of 2^53 or more that a double holds exactly faults when the other
+operand is a Num, because perl has two answers there, by what was done
+with the Int before (T92).
+
 A Num is finite (D37): a result that would be an infinity is `float
 overflow`, a NaN `not a number`. `say` prints a Num as C's %.15g does,
 and a zero of either sign as 0; but a whole Num from 10^15 up to 2^53
@@ -45,7 +50,7 @@ down: no last bit can change it.
 040 to 045 are an operator each, over every pair of an Int and a Num, a
 Num and an Int, and two Nums (and two Ints for `/` and `**`, which step 1
 didn't have), a line a pair, wherever there is an answer that prints.
-046 is each Num negated and 047 is Nums printed. 048 to 074 each fault
+046 is each Num negated and 047 is Nums printed. 048 to 078 each fault
 once, the line before the fault being the nearest thing that doesn't.
 
 Every line is `say(EXPR);` (T25). A negative number is a minus applied to
@@ -125,6 +130,14 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/num.py 073 > t/073-fault-order.expected
     python3 t/models/num.py --program 074 > t/074-print-whole-float-power-of-two.pl
     python3 t/models/num.py 074 > t/074-print-whole-float-power-of-two.expected
+    python3 t/models/num.py --program 075 > t/075-two-answers-add.pl
+    python3 t/models/num.py 075 > t/075-two-answers-add.expected
+    python3 t/models/num.py --program 076 > t/076-two-answers-sub.pl
+    python3 t/models/num.py 076 > t/076-two-answers-sub.expected
+    python3 t/models/num.py --program 077 > t/077-two-answers-mul.pl
+    python3 t/models/num.py 077 > t/077-two-answers-mul.expected
+    python3 t/models/num.py --program 078 > t/078-two-answers-negative.pl
+    python3 t/models/num.py 078 > t/078-two-answers-negative.expected
 """
 
 import ctypes
@@ -163,9 +176,23 @@ def integral(v):
         return v
     return int(v) if v == math.trunc(v) and abs(v) < 2**53 else None
 
+TWO_ANSWERS = 'an integer this large with a whole float or a string has two answers in perl'
+
+def two_answers(x, y, a_is_int, b_is_int):
+    """D45, for `+`, `-` and `*` on two integral operands: perl works in
+    floats when both operands carry one, and a whole number of 2^53 or
+    more that a double holds exactly carries one once it has been used as
+    a float (T92). So with anything but an Int beside it, it has two
+    answers, and a value here has no past to choose by."""
+    for w, other_is_int in ((x, b_is_int), (y, a_is_int)):
+        if abs(w) >= 2**53 and float(w) == w and not other_is_int:
+            raise Fault(TWO_ANSWERS)
+
 def operate(op, a, b):
     x, y = integral(a), integral(b)
     fa, fb = float(a), float(b)
+    if op in ('+', '-', '*') and x is not None and y is not None:
+        two_answers(x, y, not is_num(a), not is_num(b))
     if op in ('+', '-'):
         if x is not None and y is not None:
             return Int(x + y if op == '+' else x - y)
@@ -327,7 +354,8 @@ def same_lines(number):
 # number: (name, the nearest expression that prints, the one that faults)
 FAULTS = {
     '048': ('overflow-num-add', ('+', MAX - 1, 1.0), ('+', MAX, 1.0)),
-    '049': ('overflow-num-sub', ('-', MIN + 1, 1.0), ('-', MIN, 1.0)),
+    # Not MIN itself: a double holds -2^63 exactly, and that is D45's fault.
+    '049': ('overflow-num-sub', ('-', MIN + 1, 1.0), ('-', MIN + 1, 2.0)),
     '050': ('overflow-num-mul', ('*', 1e9, 1e9), ('*', 1e10, 1e9)),
     '051': ('overflow-int-num-mul', ('*', MAX, 3.0), ('*', MAX, 2.0)),
     '052': ('overflow-div', ('/', MIN, 1), ('/', MIN, -1)),
@@ -357,6 +385,13 @@ FAULTS = {
     # A power of two to a whole power is a Num whatever its size: as an
     # Int, which the bits would allow, this one would print.
     '074': ('print-whole-float-power-of-two', ('**', 1024, 4), ('**', 1024, 5)),
+    # D45: an Int of 2^53 or more that is exactly a double, beside a whole
+    # Num. One more or one less is not exactly a double, and is added as
+    # an integer whatever came before.
+    '075': ('two-answers-add', ('+', 2**53 + 1, 1.0), ('+', 2**53, 1.0)),
+    '076': ('two-answers-sub', ('-', 3.0, 10**16 + 1), ('-', 3.0, 10**16)),
+    '077': ('two-answers-mul', ('*', 2**62 + 1, 1.0), ('*', 2**62, 1.0)),
+    '078': ('two-answers-negative', ('+', -(2**53) - 1, 2.0), ('+', -(2**53), 2.0)),
 }
 
 def program(lines, header):

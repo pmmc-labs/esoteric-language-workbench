@@ -1,0 +1,4 @@
+1
+e
+fault: lc of a character past ASCII at t/159-lc-past-ascii.pl line 6.
+exit: 1

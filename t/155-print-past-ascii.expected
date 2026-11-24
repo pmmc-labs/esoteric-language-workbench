@@ -1,0 +1,4 @@
+1
+
+fault: a character past ASCII printed without 'use open' at t/155-print-past-ascii.pl line 6.
+exit: 1

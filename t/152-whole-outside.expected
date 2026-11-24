@@ -1,0 +1,4 @@
+1
+[abc]
+fault: a number outside the integers where a whole number is wanted at t/152-whole-outside.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+🿽
+fault: a noncharacter printed at t/157-print-noncharacter-high.pl line 7.
+exit: 1

@@ -1,0 +1,4 @@
+1
+a999999999999999
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/160-concat-whole-float.pl line 6.
+exit: 1

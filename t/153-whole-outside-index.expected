@@ -1,0 +1,4 @@
+1
+-1
+fault: a number outside the integers where a whole number is wanted at t/153-whole-outside-index.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+2000
+fault: repeated string too long at t/148-repeat-too-long.pl line 6.
+exit: 1
