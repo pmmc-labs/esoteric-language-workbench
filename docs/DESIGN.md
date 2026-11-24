@@ -8,7 +8,7 @@ Anything marked **(open)** from here on is a default a later step
 proposed that he hasn't confirmed: fine to build on, but bring it up
 before baking it in further. What the decisions leave for a step to
 settle is listed at the end.
-[`TRAPS.md`](TRAPS.md) has eighty-two programs, each run under perl
+[`TRAPS.md`](TRAPS.md) has ninety-three programs, each run under perl
 5.42, where the obvious implementation would break the core rule.
 
 ## Goals
@@ -229,6 +229,10 @@ step, roughly in the order it will matter:
    ':encoding(UTF-8)';`** (step 3). The oracle runs perl with `-CSDA`;
    plain perl prints `é` as one byte. As it stands the file alone
    doesn't fix its own output, which the core rule's wording assumes.
+   **Proposed in `PLAN.md`, step 3, Q1**, with five more questions:
+   which strings are numbers (a string can have two numeric values in
+   perl, by its past), the builtins, which characters a string holds,
+   the escapes.
 3. **The exact line of D23**: settled, D35 to D38 (step 2). Left by
    it to later steps: a negative zero given to `atan2` or formatted
    with `%g` (T79; steps 16 and 22), and a string used as a number

@@ -49,7 +49,7 @@ again.
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | D1 to D32: who decided, why, what was rejected |
 | [`docs/SURFACE.md`](docs/SURFACE.md) | Perl construct by construct: in, a fault, later, or cut |
 | [`docs/PLAN.md`](docs/PLAN.md) | Steps 0 to 30; 0 and 1 in full |
-| [`docs/TRAPS.md`](docs/TRAPS.md) | Eighty-two programs, run under perl 5.42, where the obvious implementation would be wrong |
+| [`docs/TRAPS.md`](docs/TRAPS.md) | Ninety-three programs, run under perl 5.42, where the obvious implementation would be wrong |
 | [`docs/BACKGROUND.md`](docs/BACKGROUND.md) | What Chalk, perl5-son, Opal, Allium and Crayon taught, with paths |
 | [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: `say`, and arithmetic on integers and floats |
 | [`t/README.md`](t/README.md) | The five kinds of golden test, and the oracle check |

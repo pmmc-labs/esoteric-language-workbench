@@ -5,8 +5,9 @@ the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
 **Progress:** steps 0 to 2 are done (2026-11-24): arithmetic on Ints
-and Nums compiles, runs, and is checked against perl 5.42. Next: step
-3, strings, which is an outline and is proposed before it is built. Steps 3 to 30 are outlines: each is proposed,
+and Nums compiles, runs, and is checked against perl 5.42. **Step 3,
+strings, is proposed, below, and waits on six answers from Stevan**
+(Q1 to Q6); nothing of it is built. Steps 3 to 30 are outlines: each is proposed,
 with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
@@ -314,6 +315,16 @@ differences and findings:
 - **The driver links `-lm`.**
 - Not done here, and noted where it will be needed: a negative zero
   given to `atan2` or `%g` (T79; steps 16 and 22).
+- **The adversarial review of the definition** (about 3.7 million
+  statements against a model of its own) found one program the
+  compiler accepted and perl refuses: a decimal literal of more than
+  250 characters, which perl stops at with `Number too long` (T91).
+  Refused now; test 093. And it **refuted the claim this step rested
+  on**, that a number's past shows in two places only: an Int of 2^53
+  or more that a double holds exactly, once used as a float, adds to
+  a whole Num as a float (T92). Nothing built is wrong by it, there
+  being no variables; step 3's proposal carries the amendment to D35
+  (its Q7), and `--` on a Num is step 5's to settle (T93).
 
 **Proposed 2026-11-24, and agreed the same day: Stevan took the
 recommendation on each of the five questions below, which are now D35
@@ -510,31 +521,224 @@ own and writes the double's bits into the C.
 - Leave out: comparison (step 4), strings as numbers (step 3),
   `int`, `sqrt`, `abs` and the bit operators (step 22), `++`.
 
-### 3. Strings
+### 3. Strings (proposed, not agreed)
 
 Referee: perl. Size: large.
 
-Single and double quotes with their escapes and no interpolation; `.`
-and `x`; `length`, `uc`, `lc`, `substr` reading, `index`; a number as a
-string and a numeric string as a number. Decides: D24; exactly which
-strings are numbers (perl takes `"3 "`, `" 3"`, `"1e3"`, `".5"`,
-`"+3"`, `"Inf"` and `"0 but true"` in silence, and warns on `""`,
-`"abc"`, `"12abc"` and `"0x10"`; the model enumerates and perl
-confirms); a numeric string perl reads differently from the same
-literal (T38); `use utf8` and a source that isn't ASCII; `print`. An
-unescaped `$` or `@` in double quotes is refused until step 16 (T34).
-`use utf8;` stands on a line before the first character past ASCII, a
-comment's included (T73): perl 5.42 checks the encoding a line at a
-time.
-Case-mapping past ASCII faults until a step brings perl's Unicode
-tables, which the C library doesn't have (T45); unary minus on a
-string that isn't a number faults (T47), and on a bareword is refused
-(T69); `x` before a digit (T57); what `chr` gives for a surrogate or a
-number past Unicode. **Decides whether a program with text past ASCII
-must carry `use open ':std', ':encoding(UTF-8)';`**: the oracle runs
-perl with `-CSDA`, and plain `perl` prints `é` as one byte, so as it
-stands the file alone doesn't say what the language does with it. The first heap values: allocated
-and never freed until step 7.
+**Proposed 2026-11-24. Nothing is built, and seven questions are
+Stevan's: Q1 to Q7 below; Q7 amends step 2's D35.** Everything here
+about perl was run under 5.42.0:
+[`briefs/step3-strings-as-numbers.py`](briefs/step3-strings-as-numbers.py)
+(strings and numbers under every past perl can give them: 41,594
+operations) and `briefs/claims.py`. Traps: T34, T38, T45, T47, T57,
+T69, T73, T78, and T83 to T93, found writing this and by the review
+of step 2.
+
+#### The picture
+
+A third kind of value, the **Str**: a sequence of Unicode characters,
+immutable (D24). This step brings the literals, `.` and `x`, seven
+builtins, `print`, and the two crossings between strings and numbers.
+
+```
+   "12" + 1        a Str where a number is wanted  --->  Int or Num     (Q2)
+   "n = " . 0.3    a number where a string is wanted --->  Str          (settled: what say prints)
+```
+
+A number as a string is settled: what `say` prints (D36's fault
+included). **A string as a number is the hard half**, and D23 saw
+only part of it. perl decides what a string is worth the first time
+it is used as a number, and keeps the answer in the value; and it
+decides differently for a first use that wants an integer and one
+that wants a float. So one string can have two numeric values:
+
+```
+my $s = "3.0";                            my $s = "3.0";
+                                          my $t = $s > 0.5;
+say $s + 9007199254740990;                say $s + 9007199254740990;
+# 9.00719925474099e+15                    # 9007199254740993
+```
+
+`step3-strings-as-numbers.py` asks perl for every answer it can give
+(each operand fresh, after a float use, after an integer use): for
+9,596 of 41,594 operations there is more than one. A value in the
+language has no past, so the rule has to give perl's answer where
+every past agrees and fault where they differ (Q2). The review of
+step 2 found the same thing in plain numbers, where step 2's own
+search had missed it (Q7).
+
+#### The language at step 3
+
+- **Literals.** `'...'` with `\\` and `\'`. `"..."` with the escapes
+  of Q5, and no interpolation: an unescaped `$` or `@` is refused
+  until step 16 (T34). A string may run over lines.
+- **`.`** joins two values as strings, at the level of `+` and `-`.
+  **`x`** repeats a string, at the level of `*`: `"ab" x 3`.
+- **Builtins**: `length`, `uc`, `lc`, `ord`, `chr`, `substr` (reading,
+  two or three arguments), `index` (two or three). Q3.
+- **`print`**, as `say` without the newline: one argument, a statement.
+- **`use utf8;`** for a source with characters past ASCII, on a line
+  before the first of them (T73); **`use open`**, Q1.
+- A Str where a number is wanted, and a number where a string is.
+
+Left for later steps, and refused until then: interpolation, `q`,
+`qq`, heredocs, `sprintf`, `join`, `reverse`, `ucfirst`, `lcfirst`,
+`rindex`, four-argument `substr` (16); `eq` and the comparisons (4);
+lists, so `say "a", "b";` (9, 10); case mapping past ASCII (T45).
+
+#### The questions
+
+**Q1. Text past ASCII on standard output.** D24 says the streams are
+UTF-8, and the oracle runs perl with `-CSDA` to make perl agree. But
+the file alone doesn't say so: plain `perl FILE` prints `é` as the
+one byte E9, and `☺` as UTF-8 with a `Wide character` warning.
+(a) As it is: nothing in the file, and D2 carries a footnote, "with
+perl's streams as UTF-8".
+(b) **Recommended: the file says it, and only when it needs to.**
+`use open ':std', ':encoding(UTF-8)';` joins the closed list of
+pragmas (D16), after `use v5.42;` and beside `use utf8;`. With it,
+plain perl prints UTF-8, and so does the language. Without it,
+printing a character past ASCII is a fault, since perl would print
+something else (one byte) or warn. A program that prints only ASCII
+needs nothing. The oracle then runs plain `perl FILE`, with no
+switches, which is D2 as written; D10's `-CSDA` goes. It is also what
+your own style guide asks for.
+(c) Require the line in every program: no fault to explain, and
+three lines of preamble on `say 42;`.
+
+**Q2. Which strings are numbers, and what of the two answers.** In
+silence perl takes: digits; digits with a point; an exponent; a sign;
+blanks before and after (so `"12\n"`, a line just read, is 12). It
+warns on anything else (`""`, `"abc"`, `"12abc"`, `"0x10"`,
+`"1_000"`), so those fault (D15). It also takes `"Inf"`, `"NaN"` and
+`"0 but true"` in silence: D37 makes the first two faults, and I
+propose the third is one too. Then, by how the string is written:
+
+| The string | perl, by the string's past | Proposed |
+|---|---|---|
+| Digits: `"12"`, `" -12 "`, `"012"` (which is 12) | always the integer | The Int; a fault past the Ints |
+| An exponent, whole, below 2^53: `"1e3"`, `"1.5e1"` | always the integer | The Int |
+| An exponent, whole, 2^53 or more: `"1e16"` | the integer, or the float: `"1e16" + 1` is `10000000000000001` or `1e+16` | A fault (D23 has this) |
+| A point or exponent, not whole: `"1.5"`, `".5"`, `"1e-3"` | always the float | The Num |
+| A point, no exponent, whole, below 2^53: `"3.0"`, `"5."`, `"0.0"` | the float, or the integer once it has been used as a float | See below |
+| A point, whole, 2^53 or more: `"10000000000000000.0"` | always the float | The Num |
+
+The fifth row is the new one. `"3.0" + 1` is 4 either way, and the
+two answers differ only when something is too large for a double to
+hold exactly, as in the example above.
+(a) **Recommended: such a string is the Num, arithmetic with it is
+float arithmetic (perl's answer for a string with no past), and it
+faults when whole-number arithmetic would have given another answer**:
+when the other operand, or the exact answer, is 2^53 or more. So
+`"3.0" + 1` is 4, `"10.00" * 3` is 30, and the example above faults.
+The model has this rule and never gives a value perl doesn't, under
+any past, on the 41,594 operations.
+(b) A string with a point or an exponent that is whole is not a
+number at all: `"3.0" + 1` faults. One sentence, and a price list
+read from a file stops at `"10.00"`.
+
+A minus sign before a string has the same trouble, and one more:
+perl negates `"+0"` as text, into the string `-0`. Proposed: the
+string must be a number, the answer is a Num, and a whole number of
+2^53 or more, or a string that starts with `+`, is a fault. T47's
+`-"foo"` (which perl makes `-foo`) is a fault as not a number.
+
+**Q3. The builtins, and how they are called.** `length`, `uc`, `lc`,
+`ord` and `chr` take one argument, and are written as perl's named
+unary operators are, with brackets or without: `length $s` in time,
+`length "abc"` now. Without brackets the argument runs over
+arithmetic and `.` and stops before a comparison, which is perl's
+rule and has a trap in it that falls out loudly: `length "abc" + 1`
+is `length("abc" + 1)`, a fault. `substr` and `index` take two or
+three arguments, and **I propose brackets are required on them**:
+perl allows `substr $s, 0, 1`, and it is the list-operator parsing
+D21 is wary of, for a spelling nobody uses. (`ord` and `chr` aren't
+in the outline; D24 needs some way to make a character and to look
+at one.) What they do at the edges is perl's, enumerated by the
+model: `substr("abcdef", -9, 3)` is empty in silence, and
+`substr("abcdef", 7)` warns, so that one faults (`substr outside of
+string`). `uc` and `lc` fault on a character past ASCII until a step
+brings perl's tables (T45).
+
+**Q4. Which characters a string may hold.** perl's strings hold any
+number as a "character": surrogates, numbers past U+10FFFF, anything
+below 2^63. It builds them in silence and warns when one is printed.
+(a) **Recommended: a character is a Unicode scalar value** (0 to
+U+10FFFF, less the surrogates). `chr` of anything else is a fault,
+and such an escape in a literal is refused. The 66 noncharacters
+(U+FFFE and its kin) are characters, and printing one is a fault,
+because perl warns there (D15).
+(b) As perl: anything in a string, and the fault only at printing.
+
+**Q5. Escapes in double quotes.** In, as perl has them: `\n \t \r \f
+\b \a \e \0`; `\\ \" \$ \@`; `\x41`, `\x{263A}`; octal `\101`
+and `\o{101}`; `\N{U+263A}`. A backslash before any other
+punctuation mark is that mark (perl says nothing). Refused: a
+backslash before any other letter or digit (`\q`, `\8`: perl warns);
+`\x` with no digits after it, and `\x{}` (perl gives a NUL, in
+silence: T86); `\c`; `\N{name}`, which needs the names of every
+character; and `\U \L \u \l \Q \E \F`, which belong with
+interpolation (step 16).
+
+**Q6. Small cuts, and the faults' names.**
+- `x` is a word on its own: `"ab" x 3`. `"ab"x3` and `"ab" x3` work
+  in perl and are refused (T57). Its count is cut to a whole number;
+  a negative one is a fault (perl warns), as is a string that isn't a
+  number.
+- A dot after a blank is concatenation, as in perl: `1 .5` is `15`
+  (T90). Hard against a number it stays refused (D38).
+- New faults: `not a numeric string`; `two answers in perl` for Q2's
+  cases (the wording to be settled with the code); `substr outside of
+  string`; `negative repeat count`; `not a character` (Q4); `a
+  character past ASCII printed without use open` (Q1); `uc` and `lc`
+  past ASCII.
+
+**Q7. A hole in D35, found by the review of step 2.** D35 says two
+integral operands are added, subtracted and multiplied as whole
+numbers. perl has a shortcut in front of that rule: when both
+operands carry a float, it works in floats; and an Int that has been
+used as a float carries one from then on, if a double holds it
+exactly.
+
+```
+my $x = 10000000000000000;                my $x = 10000000000000000;
+                                          my $t = $x / 3;
+say $x + 1.0;                             say $x + 1.0;
+# 10000000000000001                       # 1e+16
+```
+
+Without variables nothing has a past, so nothing built is wrong: `say
+10000000000000000 + 1.0;` prints `10000000000000001` in perl and
+here. From step 5 it would be. The two answers always differ in what
+they print, so the only sound rule is a fault.
+(a) **Recommended: in `+`, `-` and `*`, a whole number of 2^53 or
+more that a double holds exactly (10^16, 2^60, a nanosecond clock)
+faults when the other operand is integral and not an Int**: a whole
+Num, or a string. With another Int, perl works on integers whatever
+came before, and nothing changes; with a Num that isn't whole it
+works on floats whatever came before. Two Ints are the common case
+and are untouched. The model has this, and holds under every past.
+(b) Leave D35 as it is until step 5, and decide there. The rule would
+then change under programs already written against it.
+
+#### The build, once the questions are answered
+
+- **`t/models/str.py` first, red before any code.** Python's `str` is
+  D24's string, code point for code point. The model writes: every
+  operator over strings and numbers at the edges of Q2; `substr` and
+  `index` over every position from well before to well past each of a
+  few strings; `x`, `.`, `length`, `ord`, `chr`, `uc`, `lc`; and a
+  fault test for each fault. perl confirms each line.
+  `briefs/step3-strings-as-numbers.py` is its starting point.
+- **An adversarial review of this proposal** before the build, and of
+  the claim behind Q2 (that a string's past shows nowhere the rule
+  doesn't fault).
+- **The lexer learns where it is**: after a value, a dot is an
+  operator and `x` is one; before one, a dot begins `.5` (D29 said
+  the parser would tell it). **Strings on the heap**, allocated and
+  never freed until step 7 brings the collector. **The oracle** loses
+  `-CSDA` if Q1 is (b).
+- Leave out: everything listed above as later.
 
 ### 4. Booleans, undef, comparison, logic
 
@@ -820,9 +1024,8 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-None waiting. D1 to D38 are agreed: D33 and D34, defaults from steps
-0 and 1, were confirmed with step 2's five answers. The next proposal
-is step 3's.
+Waiting: **step 3**, written out above with its six questions. D1 to
+D38 are agreed.
 
 ## Example-port table
 

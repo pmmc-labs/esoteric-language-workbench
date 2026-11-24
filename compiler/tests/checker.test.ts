@@ -66,6 +66,16 @@ test('a hex, binary or octal literal is at most 32 bits (D38)', () => {
     refused('use v5.42; say 0xFFFF_FFFF_F;', past('0xFFFF_FFFF_F'), 1, 16);
 });
 
+test('a decimal literal is at most 250 characters, underscores aside (T91)', () => {
+    const long = 'a number of more than 250 characters: perl refuses it as too long';
+    accepted(`use v5.42; say 1.${'0'.repeat(248)};`);
+    refused(`use v5.42; say 1.${'0'.repeat(249)};`, long, 1, 16);
+    accepted(`use v5.42; say 0.${'1_'.repeat(247)}1;`);
+    refused(`use v5.42; say 0.${'1_'.repeat(249)}1;`, long, 1, 16);
+    refused(`use v5.42; say 1e${'0'.repeat(249)}1;`, long, 1, 16);
+    accepted(`use v5.42; say 0x${'0'.repeat(300)}1F;`);
+});
+
 test('a float is finite (D37)', () => {
     accepted('use v5.42; say 1.7976931348623157e308; say 1e-400; say 5e-324;');
     refused('use v5.42; say 1e400;', '1e400 is past the largest float', 1, 16);

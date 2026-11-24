@@ -309,6 +309,14 @@ def language(op, a, b=None):
     x, y = integral(a), integral(b)
     fa, fb = float(a[1]), float(b[1])
     both_ints = a[0] == 'i' and b[0] == 'i'
+    if op in ('+', '-', '*') and x is not None and y is not None:
+        # The amendment step 3 proposes (PLAN.md, Q7; T92): an Int of 2^53
+        # or more that a double holds exactly has two answers with a whole
+        # Num, by whether the Int has been used as a float. Only a past
+        # shows it, so step3-strings-as-numbers.py is where it is checked.
+        for whole, other in ((a, b), (b, a)):
+            if whole[0] == 'i' and abs(whole[1]) >= 2**53 and float(whole[1]) == whole[1] and other[0] == 'n':
+                raise Fault('a whole number this large with a float has two answers in perl')
     if op in ('+', '-'):
         if x is not None and y is not None:
             return Int(x + y if op == '+' else x - y)       # exact, or a fault

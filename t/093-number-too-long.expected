@@ -1,0 +1,2 @@
+t/093-number-too-long.pl:6:5: a number of more than 250 characters: perl refuses it as too long
+exit: 1

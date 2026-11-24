@@ -2,7 +2,7 @@
 // (D29): a tree perl would accept and the language doesn't. It returns
 // nothing; a tree that comes through is a program.
 import { refuse } from './errors.ts';
-import { BASED_MAX, INT_MAX, VERSION } from './names.ts';
+import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, VERSION } from './names.ts';
 import type { Expr, Program } from './ast.ts';
 
 const checkExpr = (e: Expr): void => {
@@ -17,6 +17,11 @@ const checkExpr = (e: Expr): void => {
         refuse(`${e.text} starts with a zero: perl reads that as octal, which the language writes 0o17`, e.pos);
     }
     if (e.kind === 'num') {
+        // perl reads a decimal into a buffer of its own, and stops the
+        // compile at 250 characters, underscores not counted (T91).
+        if (e.text.replaceAll('_', '').length > DECIMAL_MAX_LENGTH) {
+            refuse(`a number of more than ${DECIMAL_MAX_LENGTH} characters: perl refuses it as too long`, e.pos);
+        }
         // perl makes it an infinity, in silence (T81); a Num is finite (D37).
         if (!Number.isFinite(e.value)) refuse(`${e.text} is past the largest float`, e.pos);
         return;

@@ -202,6 +202,39 @@ Not traps, but perl's answers where the proposal faults: `-7 % 9**9**9`
 is `Inf`; `NaN <=> 1` is undef; `1e20 % 7` is 2, by `fmod`, where
 `1e19 % 7` is 3, by integers.
 
+## Found proposing step 3
+
+`briefs/step3-strings-as-numbers.py` asks perl for every answer it can
+give for a string where a number is wanted.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T83 | `my $s = "3.0"; say $s + 9007199254740990;` and the same with `my $t = $s > 0.5;` first | `9.00719925474099e+15`, then `9007199254740993`. perl settles what a string is worth at its first use as a number, one way for a use that wants an integer and another for a float, and keeps it. `"1e16"` is the other way round (T38) | 3 | The Num and float arithmetic, which is perl's answer for a string with no past; a fault where whole-number arithmetic would differ (Q2) |
+| T84 | `my $s = "12abc"; my $t = $s + 0; say $s + 1;` | `13`, and one warning, at the first use only: perl keeps the number it guessed, and says nothing the second time | 3 | Fault at the first use (D15): there is no second |
+| T85 | `say -"+0"; say -"-foo"; say -"foo";` | `-0`, `+foo`, `-foo`: a minus before a string that starts with a sign or a letter changes the text. `-"12"` is the integer -12 until the string has been used as a float, and the float after | 3 | The string must be a number; the answer is a Num; a string that starts with `+` faults (Q2) |
+| T86 | `say length "\x"; say length "\x{}";` | `1`, `1`: a NUL, in silence. `"\q"` and `"\8"` warn and give `q` and `8`; `"\-"` gives `-` in silence | 3 | Refuse `\x` without digits and a backslash before any letter or digit that isn't an escape (Q5) |
+| T87 | `say length "abc" + 1;` | `1`, and a warning: without brackets a named operator's argument runs over arithmetic. `length ("abc") . "de"` is `3de`: with brackets, hard against or not, they are the whole argument | 3 | Agree: perlop's row for named unary operators. The first is then a fault, `"abc" + 1` |
+| T88 | `say length(chr(55296)); say chr(65534);` | `1`; then the character and a warning, `Unicode non-character U+FFFE is not recommended`. A surrogate and a number past U+10FFFF are built in silence and warned of when printed; under `use open` they print as the text `\x{D800}` | 3 | A character is a Unicode scalar value: `chr` faults otherwise. Printing a noncharacter faults (Q4) |
+| T89 | `say "a" x -1; say "a" x 1e30; say "a" x 2.7;` | An empty line and `Negative repeat count does nothing`, twice (the second count having overflowed); `aa` | 3 | Fault on a negative count and on one too large; cut a fraction off, as perl does |
+| T90 | `say "a".5; say 1 . .5;` | `a5`, `10.5`: after a value a dot is an operator, whatever follows it | 3 | Agree: the lexer knows whether a value or an operator comes next (D29) |
+
+## Found by the review of step 2
+
+A reader given step 2's definition, and the claim that a number's past
+shows in two places only (T35, T79), with perl.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T91 | `say 1.000...0;` with 249 zeros: a decimal literal of 251 characters | Nothing: `Number too long`, as it compiles. 250 characters are read. Underscores aren't counted, and a hex literal may be any length | 2 | Refuse a decimal literal of more than 250 characters |
+| T92 | `my $x = 10000000000000000; say $x + 1.0;` and the same with `my $t = $x / 3;` first | `10000000000000001`, then `1e+16`. When both operands carry a float, `+`, `-` and `*` work in floats, and an Int that has been used as a float carries one if a double holds it exactly. `2**53 + 1` and `2**63 - 1` don't change; `/`, `%` and `**` don't. A copy carries it, and so does `1.0` in a sub called twice | 5 | Fault: a whole number of 2^53 or more that is exactly a double, with a whole Num or a string (step 3's Q7, amending D35) |
+| T93 | `my $x = -9007199254740991.0; $x--; say $x - 1;` and the same with `my $t = $x % 7;` before the `$x--` | `-9.00719925474099e+15`, then `-9007199254740993`: `--` on a Num subtracts as a float, unless the Num has been used as an integer. `++` asks each time, and doesn't change | 5 | `--` on a whole Num gives a Num, and faults when the answer reaches 2^53; what T79 and D36 fault on covers the rest (`1.0` decremented is a zero whose negation has a sign; `-999999999999999.0` decremented is in the window) |
+
+The sign of a zero (T79) shows in more places than `atan2` and
+`sprintf("%g")`: `pack("d")`, `sprintf("%a")`, `POSIX::copysign` and
+`signbit`. And `Data::Dumper` reads the integer mark directly, printing
+`'5'` for a Num 5 and `5` once it has been used as an integer: a
+module, and a reason to be careful when one is proposed.
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

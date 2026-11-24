@@ -50,7 +50,7 @@ tags and asking the one question, `integral`. **Tests**: golden 000 to
 009 (step 0); 010 to 026 from `t/models/arith.py` and 030 to 038 by
 hand (step 1; 039 is retired); 040 to 074 from `t/models/num.py`
 (about 14,600 lines on which the model and perl agree, and 27 programs
-that each fault once at an edge) and 080 to 092 by hand (step 2); 40
+that each fault once at an edge) and 080 to 093 by hand (step 2); 41
 unit tests, the runtime's own in C. **The oracle check**
 (`t/checks.py oracle`, D10) holds every test to perl 5.42 by its kind,
 and has 40 tests of its own in `t/checks/`; its seeds are eight of 64
@@ -75,7 +75,7 @@ default: Stevan to confirm**); T73, `use utf8;` must be on a line
 before the first character past ASCII (step 3); T74, `# line N "file"`
 comments (step 15); T75, `use v5.42#c`, which perl doesn't compile,
 refused. **Found at step 1**: T76. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T82, by step; `claims.py` has 251 programs
+keeps the programs, T1 to T93, by step; `claims.py` has 286 programs
 now. **Two adversarial reviews** were run, of the step's
 language and of the oracle check. The first found T75 and the `# line
 1` half of T72 after the compiler was green: the rule about reviewing
@@ -95,11 +95,21 @@ see its context (D18); `class`, and `package` only as a namespace
 (D19); brackets on a program's own calls (D21); a whole Num of 10^15
 up to 2^53 faults when made a string (D23, D36), and a number is
 integral or it isn't (D35); the name (D32). perigrin has
-agreed to the probe corpus (D11). **Next:** step 3, strings, which is
-an outline: it is **proposed first**, with options, and reviewed
-adversarially before it is built. It decides D24's details, which
-strings are numbers, and whether a program with text past ASCII must
-say `use open`. The evidence for step 2's rule is kept:
+agreed to the probe corpus (D11). **Next:** step 3, strings, is
+**proposed in full in `docs/PLAN.md` and waits on Stevan's answers to
+its seven questions** (Q1: `use open` for text past ASCII, and the
+oracle without `-CSDA`; Q2: which strings are numbers, a string having
+two numeric values in perl by its past; Q3: the builtins and their
+brackets; Q4: which characters a string holds; Q5: the escapes; Q6:
+small cuts and fault names; **Q7: an amendment to D35**, since the
+review of step 2 found that an Int of 2^53 or more that is exactly a
+double, once used as a float, adds to a whole Num as a float: T92).
+Nothing of step 3 is built. `docs/briefs/step3-strings-as-numbers.py`
+holds the proposed rule to perl under every past of every operand:
+41,594 operations, of which perl has more than one answer for 9,596.
+The review of step 2 also found a literal perl refuses and the
+compiler took (T91, fixed, test 093). The evidence for step 2's rule
+is kept:
 `docs/briefs/step2-perl-numbers.py` (the rule against perl, 129,801
 operations), `step2-history.pl` (the two places a number's past shows:
 T35, T79) and `step2-literals.py` (perl reads and prints floats as C

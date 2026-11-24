@@ -28,6 +28,10 @@ export const INT_MAX = 9223372036854775807n;
 // larger one is not portable.
 export const BASED_MAX = 0xFFFFFFFFn;
 
+// The longest decimal literal perl compiles, in characters, underscores
+// aside: one more is `Number too long` (T91).
+export const DECIMAL_MAX_LENGTH = 250;
+
 // Operators: perlop's table, "Operator Precedence and Associativity", as
 // perl 5.42's own perlop.pod has it, highest precedence first, every row
 // of it though few are in the language yet. An operator with `in` is in;
