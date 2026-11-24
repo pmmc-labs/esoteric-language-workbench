@@ -4,11 +4,11 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 2 are done (2026-11-24): arithmetic on Ints
-and Nums compiles, runs, and is checked against perl 5.42. **Step 3,
-strings, is proposed, below, and waits on six answers from Stevan**
-(Q1 to Q6); nothing of it is built. Steps 3 to 30 are outlines: each is proposed,
-with options, when it's next.
+**Progress:** steps 0 to 3 are done (2026-11-24): arithmetic on Ints
+and Nums, and strings, compile, run, and are checked against perl
+5.42. **Next: step 4**, booleans and comparison, to be proposed.
+Steps 4 to 30 are outlines: each is proposed, with options, when it's
+next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -521,12 +521,67 @@ own and writes the double's bits into the C.
 - Leave out: comparison (step 4), strings as numbers (step 3),
   `int`, `sqrt`, `abs` and the bit operators (step 22), `++`.
 
-### 3. Strings (proposed, not agreed)
+### 3. Strings (done)
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-24. Nothing is built, and seven questions are
-Stevan's: Q1 to Q7 below; Q7 amends step 2's D35.** Everything here
+**Built 2026-11-24**, by Fable 5.2, as agreed below, and with these
+differences and findings:
+
+- **The model first, and perl agreed with it almost everywhere.**
+  `t/models/str.py` writes 100 to 116 (about 15,000 lines: every
+  operator over strings and numbers at the edges of D40, every way of
+  writing a number in a string, `substr` and `index` over every
+  position, the rest) and 59 programs that fault once each. perl 5.42
+  printed the model's answer for every line but one family, below.
+  The compiler passed all of them the first time it ran.
+- **`substr` has a second way to be outside its string** (T96): a
+  piece that starts and ends before the beginning. perl warns, so it
+  faults; the proposal had only the start past the end. The model
+  found it, 90 lines of 995.
+- **Five more refusals and faults than the proposal had, each because
+  perl warns or answers with garbage**, found by the model's tests
+  and by writing the hand tests: a sign after a named unary operator
+  that perl calls ambiguous, `length - 5` (T94); `\x` with one hex
+  digit, and an octal escape cut short by an 8 or a 9 (T95); a count
+  or a character's number below zero before it is cut, `"a" x -0.5`
+  (T98); a whole number wanted that isn't an Int once cut, where
+  perl's `substr("abc", 0, 1e30)` is `ab` (T97). And one refusal of
+  taste: a backslash before a tab or the end of a line. D41 to D44
+  carry them.
+- **One thing the proposal's table had and the first rule didn't**: a
+  string of the digits of -2^63 is that Int. The evidence script holds
+  under every past without the special case that had faulted it.
+- **`-CSDA` is gone from the oracle** (D39), and three fixtures in
+  `t/checks/` go red if it comes back: it was put back on purpose to
+  see them fail.
+- **The lexer keeps its own count of where it is**: after a value a
+  dot is an operator and `x` is one. D29 has the parser tell the
+  lexer; the token before says the same, until `/` can begin a
+  pattern.
+- **Strings are on the heap and never freed** while the program runs:
+  a list of blocks on the context, released at the end and at a
+  fault, so the sanitizers find nothing left. Step 7 brings the
+  collector.
+- **Test 092 changed sides**: `say 1.5 .5;` was refused and is now
+  perl's `1.55`.
+- **The runtime was broken 70 ways on purpose** (kept:
+  `briefs/step3-mutations.py`). Eight got through. Six were holes in
+  the tests, each closed by a fault test (180 to 186): a fault that
+  never happens is invisible to a test of what prints, so every fault
+  needs a test of its own at its edge. Two changed nothing a program
+  can see, and one of those was a condition that could never be
+  false, since removed.
+- `make test` takes about two minutes now, most of it perl run eight
+  times over each test by the oracle.
+- An identifier past ASCII (SURFACE had it at this step) waits for
+  step 5, where names begin.
+
+**Proposed 2026-11-24, and agreed the same day: Stevan took the
+recommendation on each of the seven questions below, which are now
+D39 (Q1), D40 (Q2), D41 (Q3), D42 (Q4), D43 (Q5), D44 (Q6) and D45
+(Q7, which amends step 2's D35).** The text is kept as it was
+proposed, since it is the reasoning. Everything here
 about perl was run under 5.42.0:
 [`briefs/step3-strings-as-numbers.py`](briefs/step3-strings-as-numbers.py)
 (strings and numbers under every past perl can give them: 41,594
@@ -1024,8 +1079,7 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-Waiting: **step 3**, written out above with its six questions. D1 to
-D38 are agreed.
+None waiting. D1 to D45 are agreed. **Step 4 is next to propose.**
 
 ## Example-port table
 

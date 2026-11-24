@@ -2,8 +2,8 @@
 // (D29): a tree perl would accept and the language doesn't. It returns
 // nothing; a tree that comes through is a program.
 import { refuse } from './errors.ts';
-import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, PRAGMAS, VERSION } from './names.ts';
-import type { Expr, Pragma, Program } from './ast.ts';
+import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, PRAGMAS, VERSION, infixOp, prefixOp } from './names.ts';
+import type { Call, Expr, Pragma, Program } from './ast.ts';
 
 const checkExpr = (e: Expr): void => {
     if (e.kind === 'unary') return checkExpr(e.operand);
@@ -39,6 +39,21 @@ const checkExpr = (e: Expr): void => {
     if (e.value > INT_MAX) refuse(`${e.text} is past the largest integer, ${INT_MAX}`, e.pos);
 };
 
+// An expression behind any unary plus, which does nothing in perl either.
+const plain = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === undefined ? plain(e.operand) : e);
+
+// `say`'s argument is in list context, and there perl's `x` repeats a
+// list when its left operand is in brackets: `say(("a") x 3)` is three
+// values, not one string. They print the same, and cost perl a value
+// each, so a count the string would bear stops perl for lack of memory
+// (T101). Lists are step 9's: until then the brackets are refused.
+const checkListContext = (call: Call): void => {
+    const e = plain(call.args[0]!);
+    if (e.kind === 'binary' && infixOp(e.op)?.list && plain(e.left).bracketed) {
+        refuse(`(...) ${e.op} as ${call.name}'s argument repeats a list, to perl: take the brackets off the left operand`, e.pos);
+    }
+};
+
 // A pragma is written one way (D16): its arguments are the table's, each
 // a string literal. perl takes `use open qw(:std :encoding(UTF-8))` and
 // `use open ':std', ':utf8'` too, and each is another thing to read.
@@ -69,6 +84,7 @@ export const check = (program: Program): void => {
         } else {
             pragmas = false;
             stmt.args.forEach(checkExpr);
+            checkListContext(stmt);
         }
     }
 };

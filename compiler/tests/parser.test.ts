@@ -178,7 +178,7 @@ test('say and print take one argument, and are statements', () => {
     refused('say print "a";', 'print is a statement, and has no value', 1, 5);
     refused('print ("a") . "b";', "'.' after print (...): perl takes the brackets for all of print's arguments; bracket the whole expression", 1, 13);
     refused('print ("a") x 2;', "'x' after print (...): perl takes the brackets for all of print's arguments; bracket the whole expression", 1, 13);
-    refused('print ("a"\n);', "print (...) after one blank must end on the same line, ';' and all, or perl warns: write print(...)", 1, 7);
+    refused('print ("a"\n);', "print (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ';' after them: write print(...)", 1, 7);
 });
 
 test('use takes a version, or a pragma and its arguments', () => {
@@ -245,12 +245,19 @@ test("an operator after say's brackets (T25)", () => {
 });
 
 test('say, one blank, and a bracket: all on one line (T76)', () => {
-    const message = "say (...) after one blank must end on the same line, ';' and all, or perl warns: write say(...)";
+    const message = "say (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ';' after them: write say(...)";
     refused('say (1 +\n2);', message, 1, 5);
     refused('say (1 + 2)\n;', message, 1, 5);
     refused('say (1 + 2) # then\n;', message, 1, 5);
     refused('say (\n1);', message, 1, 5);
-    refused('use v5.42;\n  say\t(1)\n;', message, 2, 7);
+    // perl goes by the text: a bracket in a string counts (T100).
+    refused('say ("(");', message, 1, 5);
+    refused('say (")" . "a");', message, 1, 5);
+    refused('say (1) # and then\n;', message, 1, 5);
+    assert.equal(grouped('say (1); # and ('), '1*');
+    assert.equal(grouped('say\t("(");'), '"("*');
+    assert.equal(grouped('say  ("(");'), '"("*');
+    assert.equal(grouped('say("(");'), '"("*');
     assert.equal(grouped('say (1 + 2) ;'), '(1 + 2)*');
     assert.equal(grouped('say (1 + 2); # after'), '(1 + 2)*');
     // perl doesn't look after two blanks, a newline, or none.

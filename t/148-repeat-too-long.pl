@@ -3,5 +3,5 @@
 use v5.42;
 say(1);
 say(length('ab' x 1000));
-say(length('ab' x 1073741824));
+say(length('ab' x 9223372036854775807));
 say(2);

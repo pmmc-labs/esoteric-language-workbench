@@ -73,7 +73,9 @@ export const DECIMAL_MAX_LENGTH = 250;
 // signs and `**` never two stars, as perl has it (T27); the parser reads
 // its precedence from a row's place in the list.
 export type Assoc = 'left' | 'right' | 'nonassoc' | 'chained' | 'chain/na';
-export type Op = { op: string; in?: true; rt?: string };
+// `list`: in list context, with its left operand in brackets, the
+// operator works on a list (`x`).
+export type Op = { op: string; in?: true; rt?: string; list?: true };
 export type Level = {
     assoc: Assoc;
     prefix?: readonly Op[];     // before its operand
@@ -92,7 +94,7 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'right', infix: [{ op: '**', in: true, rt: 'rt_pow' }] },
     { assoc: 'right', prefix: [...ops('!', '~', '~.', '\\'), { op: '+', in: true }, { op: '-', in: true, rt: 'rt_neg' }] },
     { assoc: 'left', infix: ops('=~', '!~') },
-    { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x', in: true, rt: 'rt_repeat' }] },
+    { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x', in: true, rt: 'rt_repeat', list: true }] },
     { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.', in: true, rt: 'rt_concat' }] },
     { assoc: 'left', infix: ops('<<', '>>') },
     { assoc: 'nonassoc', what: NAMED_UNARY },
@@ -120,10 +122,10 @@ export const OPERATORS: ReadonlySet<string> = new Set(
     PRECEDENCE.flatMap(l => [...(l.prefix ?? []), ...(l.infix ?? [])].map(o => o.op).concat(l.other ?? [])));
 
 // An operator in the language at this place, and its row; or undefined.
-const find = (place: 'prefix' | 'infix') => (op: string): { row: number; assoc: Assoc; rt?: string } | undefined => {
+const find = (place: 'prefix' | 'infix') => (op: string): { row: number; assoc: Assoc; rt?: string; list?: true } | undefined => {
     for (const [row, level] of PRECEDENCE.entries()) {
         const found = level[place]?.find(o => o.op === op && o.in);
-        if (found) return { row, assoc: level.assoc, rt: found.rt };
+        if (found) return { row, assoc: level.assoc, rt: found.rt, list: found.list };
     }
     return undefined;
 };

@@ -1,0 +1,4 @@
+1
+65
+fault: a string with a point this close to the next whole number has two values in perl at t/189-split-chr.pl line 6.
+exit: 1

@@ -10,7 +10,10 @@ import { NAMES, OPERATORS, infixOp, isScalarValue, prefixOp } from './names.ts';
 import type { Pos } from './ast.ts';
 
 export type Token =
-    | { kind: 'word'; text: string; pos: Pos }
+    // `asFunction`: the word is `say` or `print`, one blank and a bracket
+    // follow it, and perl's look along the line for the end of the call
+    // fails, so that it warns `say (...) interpreted as function` (T76).
+    | { kind: 'word'; text: string; pos: Pos; asFunction?: true }
     | { kind: 'int' | 'num'; text: string; pos: Pos }
     // `text` is the literal as written, quotes and all; `value` is the
     // string it stands for.
@@ -270,7 +273,25 @@ export const lex = (src: string): Token[] => {
             if (isVersion && i < src.length && !isBlank(at()) && at() !== ';') {
                 refuse(`${text} runs into '${take()}': perl reads a version only before a blank or ';'`, start);
             }
-            push({ kind: isVersion ? 'version' : 'word', text, pos: start });
+            // `say (` with exactly one space: perl looks along the rest
+            // of the line, as text, for the bracket that closes this one
+            // and then for what may follow a call, and warns `say (...)
+            // interpreted as function` when it doesn't find them (T76).
+            // It counts every bracket it passes, one in a string or a
+            // comment too, so `say ("(");` warns (T100). The characters
+            // it is content to find are its own list, begun with `;`.
+            // The parser refuses it, after what it has to say itself.
+            let asFunction = false;
+            if (NAMES.get(text)?.kind === 'statement' && at() === ' ' && src[i + 1] === '(') {
+                const newline = src.indexOf('\n', i);
+                const end = newline < 0 ? src.length : newline;
+                let w = i + 2;
+                let level = 1;
+                for (; w < end && level > 0; w++) level += src[w] === '(' ? 1 : src[w] === ')' ? -1 : 0;
+                while (w < end && (src[w] === ' ' || src[w] === '\t')) w++;
+                asFunction = level > 0 || w >= end || !';&/|})]oaiuwef!='.includes(src[w]!);
+            }
+            push(isVersion ? { kind: 'version', text, pos: start } : asFunction ? { kind: 'word', text, pos: start, asFunction } : { kind: 'word', text, pos: start });
         } else if (c === ';' || c === '(' || c === ')' || c === ',') {
             push({ kind: c, text: take(), pos: start });
             // `use utf8;` is in force from the next line (T73). Whether it
@@ -286,16 +307,18 @@ export const lex = (src: string): Token[] => {
             // whole operator it is to perl.
             const op = [3, 2, 1].map(n => src.slice(i, i + n)).find(s => OPERATORS.has(s)) ?? c;
             const last = tokens.at(-1);
-            const before = lastEnd;
+            const between = src.slice(lastEnd, i);
             for (const _ of op) take();
             if (!prefixOp(op) && !infixOp(op)) refuse(`'${op}' is not in the language yet`, start);
             // A sign after a named unary operator is the sign of its
             // argument, `length -5`, and perl warns that the rest are
             // ambiguous: `length - 5` and `length-5`, which read as a
             // subtraction and aren't one. It goes by the characters: a
-            // blank after the name, and none after the sign.
+            // blank before the sign and none after (T94). On a line
+            // below the name perl looks at how that line begins; here
+            // the sign is on the name's own line.
             if (prefixOp(op) && last?.kind === 'word' && NAMES.get(last.text)?.kind === 'unary'
-                && (!isBlank(src[before] ?? '') || isBlank(at()))) {
+                && (between === '' || [...between].some(ch => ch !== ' ' && ch !== '\t') || isBlank(at()))) {
                 refuse(`${last.text} ${op}: perl warns that this is ambiguous: write ${last.text}(${op}...)`, start);
             }
             push({ kind: 'op', text: op, pos: start });

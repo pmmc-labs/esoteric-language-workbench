@@ -20,8 +20,7 @@ say length -"5";
 say length +"ab";
 say length +5;
 say length(- 5);
-say length
-    -5;
+say length	-5;
 say length .5;
 say length 10 / 4;
 say length 2 ** 10;

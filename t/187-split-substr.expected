@@ -1,0 +1,4 @@
+1
+[bcdef]
+fault: a string with a point this close to the next whole number has two values in perl at t/187-split-substr.pl line 6.
+exit: 1

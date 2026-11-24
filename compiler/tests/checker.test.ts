@@ -54,6 +54,18 @@ test('the pragmas: a closed list, each written one way, at the top, once (D16, D
     refused("use utf8;\nuse v5.42;", "a program begins 'use v5.42;'", 1, 1);
 });
 
+test("x with its left operand in brackets, as say's argument, repeats a list to perl (T101)", () => {
+    const message = (name: string) => `(...) x as ${name}'s argument repeats a list, to perl: take the brackets off the left operand`;
+    refused('use v5.42;\nsay(("a") x 3);', message('say'), 2, 11);
+    refused('use v5.42;\nsay ("a") x 3;', "'x' after say (...): perl takes the brackets for all of say's arguments; bracket the whole expression", 2, 11);
+    refused('use v5.42;\nprint +("a") x 3;', message('print'), 2, 14);
+    refused('use v5.42;\nsay((("a" . "b")) x 2);', message('say'), 2, 19);
+    refused('use v5.42;\nsay +(+("a") x 2);', message('say'), 2, 14);
+    // In a string's place it is a string that is repeated.
+    accepted('use v5.42;\nsay "a" x 3;\nsay(("a") x 3 . "b");\nsay length(("a") x 3);\nsay -("2") x 3;\nsay "" . ("a") x 3;\nsay(("a" x 2) . "");');
+    accepted('use v5.42;\nsay(("a" x 3));\nsay "a" x (3);');
+});
+
 test('a string, a builtin and its arguments are checked through', () => {
     accepted('use v5.42;\nsay length("abc") . substr("abc", 1, 2) x 2;');
     refused('use v5.42;\nsay substr("abc", 01);', '01 starts with a zero: perl reads that as octal, which the language writes 0o17', 2, 19);

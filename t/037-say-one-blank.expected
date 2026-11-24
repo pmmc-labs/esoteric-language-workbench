@@ -1,2 +1,2 @@
-t/037-say-one-blank.pl:6:5: say (...) after one blank must end on the same line, ';' and all, or perl warns: write say(...)
+t/037-say-one-blank.pl:6:5: say (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ';' after them: write say(...)
 exit: 1

@@ -19,6 +19,7 @@
 #define TWO_ANSWERS "an integer this large with a whole float or a string has two answers in perl"
 #define EXPONENT "a string with an exponent that is a whole number this large has two values in perl"
 #define SOFT "a string like \"3.0\" in arithmetic this large has two answers in perl"
+#define SPLIT "a string with a point this close to the next whole number has two values in perl"
 #define NEG_LARGE "a minus before a string that is a whole number this large has two answers in perl"
 
 // ---- the heap
@@ -189,6 +190,9 @@ typedef struct {
     double n;
     int plain;      // an Int that was an Int, and not a string that is one (D45)
     int soft;       // a string with a point, whole and below 2^53: "3.0" (D40)
+    int split;      // a string with a point whose digits before it aren't its
+                    // number cut to a whole one: "0.99999999999999995", which
+                    // is the double 1 (T103)
 } number;
 
 static uint64_t magnitude(int64_t x) {
@@ -280,6 +284,19 @@ static number from_string(rt_ctx *cx, const rt_str *s) {
     // With an exponent a whole number has gone one of the two ways above.
     v.n = x;
     v.soft = whole && fabs(x) < TWO_53;
+    // Where a whole number is wanted, perl takes the digits before the
+    // point of a string it has not used as a float, and the double cut
+    // toward zero of one it has. They differ when the digits after the
+    // point round the double up to the next whole number.
+    if (!exponent && fabs(x) < TWO_63) {
+        uint64_t before = 0;
+        int o = 0;
+        for (const char *d = first; d < whole_end; d++) {
+            o |= __builtin_mul_overflow(before, (uint64_t)10, &before);
+            o |= __builtin_add_overflow(before, (uint64_t)(*d - '0'), &before);
+        }
+        v.split = o || before != (uint64_t)trunc(fabs(x));
+    }
     return v;
 }
 
@@ -566,6 +583,7 @@ static int64_t whole_number(rt_ctx *cx, number v) {
     if (v.is_int) return v.i;
     double t = trunc(v.n);
     if (!(t >= -TWO_63 && t < TWO_63)) rt_fault(cx, "a number outside the integers where a whole number is wanted");
+    if (v.split) rt_fault(cx, SPLIT);
     return (int64_t)t;
 }
 
@@ -641,6 +659,7 @@ rt_value rt_chr(rt_ctx *cx, rt_value a) {
     number v = numeric(cx, a);
     double t = v.is_int ? (double)v.i : trunc(v.n);
     if (below_zero(v) || t > 0x10FFFF || (t >= 0xD800 && t <= 0xDFFF)) rt_fault(cx, "not a character");
+    if (v.split) rt_fault(cx, SPLIT);
     uint32_t c = (uint32_t)t;
     int size = c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
     char *bytes;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/100 to t/186: strings (step 3; D39 to D45).
+"""t/100 to t/191: strings (step 3; D39 to D45).
 
 The definition, which is all this file knows of the language beyond
 t/models/num.py (the numbers, which it imports). A value is an Int, a Num
@@ -40,8 +40,11 @@ place where perl has two answers by what was done with a value before:
   +s    the operand, whatever it is.
 
 Where a whole number is wanted (the count of `x`, a position or a length
-of `substr` and `index`), the number is cut toward zero, and must then be
-an Int.
+of `substr` and `index`, the argument of `chr`), the number is cut toward
+zero, and must then be an Int. A string with a point whose digits before
+the point are not that whole number ("0.99999999999999995", which is the
+double 1) is a fault there: perl takes the digits or the double, by the
+string's past (T103).
 
   a . b            the two as strings, joined
   s x n            s as a string, n times. A count below zero (before it is
@@ -85,7 +88,7 @@ utf8`. A test that prints a character past ASCII has the `use open` line.
 and two strings. 106 is the minus and the plus; 107 `.`; 108 `x`; 109
 `length`, `ord` and `chr`; 110 `uc` and `lc`; 111 and 112 `substr`; 113
 `index`; 114 whole numbers wanted; 115 printing; 116 every way of writing
-a number in a string. 120 to 169 and 180 to 186 each fault once, the line before the
+a number in a string. 120 to 169 and 180 to 191 each fault once, the line before the
 fault being a near thing that doesn't.
 
 Every command that writes a file, one a line (t/checks.py runs them all):
@@ -238,6 +241,16 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/str.py 185 > t/185-print-noncharacter-first.expected
     python3 t/models/str.py --program 186 > t/186-print-noncharacter-last.pl
     python3 t/models/str.py 186 > t/186-print-noncharacter-last.expected
+    python3 t/models/str.py --program 187 > t/187-split-substr.pl
+    python3 t/models/str.py 187 > t/187-split-substr.expected
+    python3 t/models/str.py --program 188 > t/188-split-repeat.pl
+    python3 t/models/str.py 188 > t/188-split-repeat.expected
+    python3 t/models/str.py --program 189 > t/189-split-chr.pl
+    python3 t/models/str.py 189 > t/189-split-chr.expected
+    python3 t/models/str.py --program 190 > t/190-split-index.pl
+    python3 t/models/str.py 190 > t/190-split-index.expected
+    python3 t/models/str.py --program 191 > t/191-split-length.pl
+    python3 t/models/str.py 191 > t/191-split-length.expected
 """
 
 import math
@@ -255,6 +268,7 @@ SOFT = 'a string like "3.0" in arithmetic this large has two answers in perl'
 NEG_PLUS = 'a minus before a string that starts with a plus'
 NEG_LARGE = 'a minus before a string that is a whole number this large has two answers in perl'
 OUTSIDE = 'a number outside the integers where a whole number is wanted'
+SPLIT = 'a string with a point this close to the next whole number has two values in perl'
 NEGATIVE_COUNT = 'negative repeat count'
 TOO_LONG = 'repeated string too long'
 NOT_A_CHARACTER = 'not a character'
@@ -266,6 +280,14 @@ NUMERIC = re.compile(r'[ \t\n\r\f\v]*([+-]?)(?:([0-9]+)(?:(\.)([0-9]*))?|(\.)([0
 
 def is_str(v):
     return isinstance(v, str)
+
+def split(v):
+    """Whether a string has a point, and digits before it that are not its
+    number cut to a whole one."""
+    m = is_str(v) and NUMERIC.match(v)
+    if not m or m.group(7) is not None or not (m.group(3) or m.group(5)):
+        return False
+    return int(m.group(2) or '0') != math.trunc(abs(as_number(v)[0]))
 
 def as_number(v):
     """A value where a number is wanted: (the Int or the Num, whether it is
@@ -339,6 +361,8 @@ def whole(v):
     t = math.trunc(n)
     if not MIN <= t <= MAX:
         raise Fault(OUTSIDE)
+    if split(v):
+        raise Fault(SPLIT)
     return t
 
 def repeat(a, b):
@@ -346,7 +370,7 @@ def repeat(a, b):
     n, _ = as_number(b)
     if n < 0:
         raise Fault(NEGATIVE_COUNT)
-    count = whole(n)
+    count = whole(b)
     if count * len(s) > 2**31 - 1:
         raise Fault(TOO_LONG)
     return s * count
@@ -373,6 +397,8 @@ def chr_(v):
     t = math.trunc(n)
     if t > 0x10ffff or 0xd800 <= t <= 0xdfff:
         raise Fault(NOT_A_CHARACTER)
+    if split(v):
+        raise Fault(SPLIT)
     return chr(t)
 
 def substr(v, offset, count=None):
@@ -546,7 +572,8 @@ def index_cases():
 
 # Where a whole number is wanted: Nums and strings that have to be cut.
 WHOLES = [0, 1, 2, 3, 0.0, -0.0, 0.5, 0.999, 1.0, 1.9, 2.0, 2.7, 3.999999, '0', '1', '2', ' 2 ', '2.0', '2.7', '1e0',
-          '2e0', '.9', '1.9', '+1', '02', '2.', '25e-1', '9223372036854775807']
+          '2e0', '.9', '1.9', '+1', '02', '2.', '25e-1', '1.9999999999999', '199999999999999999e-17', '0.99999999999999995e0',
+          '9223372036854775807']
 BELOW = [-1, -2, -0.5, -1.5, -2.9, '-1', '-0.5', '-1.9', '-2', '-1e0', '-0', '-0.0', -9223372036854775807]
 
 def whole_cases():
@@ -585,7 +612,7 @@ def same(number):
     if number == '108':
         counts = [0, 1, 2, 3, 10]
         return 'str-repeat', with_answers([bracketed(('x', a, n)) for a in TEXTS + VALUES for n in counts]
-                                          + [('call', 'length', [('x', 'abc', n)]) for n in (1000, 65536, 715827882)]
+                                          + [('call', 'length', [('x', 'abc', n)]) for n in (1000, 65536)]
                                           + [bracketed(('x', '', n)) for n in (2**31, 2**62, MAX)])
     if number == '109':
         every = TEXTS + VALUES + STRINGS
@@ -659,7 +686,10 @@ FAULTS = {
     '168': ('substr-outside-empty', bracketed(call('substr', '', -1, 1)), call('substr', '', -1, 0)),
     '146': ('repeat-negative', bracketed(('x', 'a', -0.0)), ('x', 'a', -1)),
     '147': ('repeat-negative-fraction', bracketed(('x', 'a', 0.5)), ('x', 'a', -0.5)),
-    '148': ('repeat-too-long', call('length', ('x', 'ab', 1000)), call('length', ('x', 'ab', 2**30))),
+    # perl works a constant `x` out as it compiles, so the edge itself,
+    # 2^31 characters, can't be a test: perl would need the memory for it,
+    # eight times over. This count perl refuses as it runs.
+    '148': ('repeat-too-long', call('length', ('x', 'ab', 1000)), call('length', ('x', 'ab', MAX))),
     '149': ('chr-past-unicode', call('length', call('chr', 0x10ffff)), call('length', call('chr', 0x110000))),
     '150': ('chr-surrogate', call('ord', call('chr', 0xd7ff)), call('ord', call('chr', 0xd800))),
     '151': ('chr-negative', call('ord', call('chr', -0.0)), call('ord', call('chr', -0.5))),
@@ -681,6 +711,12 @@ FAULTS = {
     # then they are, the first first.
     '165': ('fault-order-conversions', call('substr', 1e14, '1'), call('substr', 1e15, 'x')),
     '164': ('fault-order-operands', ('+', '1', '2'), ('+', '', '1e16')),
+    # T103: the digits before the point are 1 and the double is 2.
+    '187': ('split-substr', bracketed(call('substr', 'abcdef', '1.9999999999999998')), call('substr', 'abcdef', '1.99999999999999999')),
+    '188': ('split-repeat', bracketed(('x', 'ab', '0.9999999999999999')), ('x', 'ab', '0.99999999999999995')),
+    '189': ('split-chr', call('ord', call('chr', '65.999999999999')), call('ord', call('chr', '65.99999999999999999'))),
+    '190': ('split-index', call('index', 'abcabc', 'a', '0.9999999999999999'), call('index', 'abcabc', 'a', '0.99999999999999995')),
+    '191': ('split-length', bracketed(call('substr', 'abcdef', 1, '2.0')), call('substr', 'abcdef', 1, '-0.99999999999999995')),
     # Edges that breaking the runtime on purpose found untested: an
     # exponent's whole number at 2^53 itself; a soft answer of 2^53 itself
     # (one less is a Num that can't be printed, so it is brought down

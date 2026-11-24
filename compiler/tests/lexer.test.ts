@@ -145,7 +145,10 @@ test('a string token is the literal as written, and where it starts', () => {
 test('a sign after a named unary operator: a blank before it and none after', () => {
     assert.deepEqual(literals('length -5'), ['word length', 'op -', 'int 5']);
     assert.deepEqual(literals('ord +"a"'), ['word ord', 'op +', 'str "a"']);
-    assert.deepEqual(literals('length\n-5'), ['word length', 'op -', 'int 5']);
+    assert.deepEqual(literals('length\t-5'), ['word length', 'op -', 'int 5']);
+    refused('length\n-5', 'length -: perl warns that this is ambiguous: write length(-...)', 2, 1);
+    refused('length\n  -5', 'length -: perl warns that this is ambiguous: write length(-...)', 2, 3);
+    refused('length # c\n -5', 'length -: perl warns that this is ambiguous: write length(-...)', 2, 2);
     assert.deepEqual(literals('length(- 5)'), ['word length', '( (', 'op -', 'int 5', ') )']);
     assert.deepEqual(literals('say - 5'), ['word say', 'op -', 'int 5']);
     refused('say length - 5;', 'length -: perl warns that this is ambiguous: write length(-...)', 1, 12);

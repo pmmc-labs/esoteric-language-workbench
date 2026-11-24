@@ -127,7 +127,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (open.kind !== '(') return expression(Infinity);
         next();
         const inner = expression(Infinity);
-        const close = closing();
+        closing();
         const after = peek();
         // To perl the brackets hold all of the arguments, and an operator
         // after them is applied to what the builtin returned: `say (1 + 2)
@@ -135,13 +135,13 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (after.kind === 'op') {
             refuse(`'${after.text}' after ${head.text} (...): perl takes the brackets for all of ${head.text}'s arguments; bracket the whole expression`, after.pos);
         }
-        // After exactly one blank, perl looks along the line for the
-        // closing bracket and what follows it, and warns `say (...)
-        // interpreted as function` unless that is there, and a semicolon
-        // (T76). With no blank, or two, or a newline, it doesn't look.
-        const oneBlank = open.pos.line === head.pos.line && open.pos.col === head.pos.col + head.text.length + 1;
-        if (oneBlank && after.kind === ';' && (close.pos.line !== open.pos.line || after.pos.line !== open.pos.line)) {
-            refuse(`${head.text} (...) after one blank must end on the same line, ';' and all, or perl warns: write ${head.text}(...)`, open.pos);
+        // After exactly one blank, perl looks along the line, as text,
+        // for the closing bracket and what follows it, and warns `say
+        // (...) interpreted as function` unless they are there (T76,
+        // T100). The lexer has looked as perl does. (Anything but a
+        // semicolon here is refused for what it is, below.)
+        if (head.kind === 'word' && head.asFunction && after.kind === ';') {
+            refuse(`${head.text} (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ';' after them: write ${head.text}(...)`, open.pos);
         }
         return { ...inner, bracketed: true };
     };
