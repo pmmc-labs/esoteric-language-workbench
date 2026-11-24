@@ -532,7 +532,7 @@ differences and findings:
   `t/models/str.py` writes 100 to 116 (about 15,000 lines: every
   operator over strings and numbers at the edges of D40, every way of
   writing a number in a string, `substr` and `index` over every
-  position, the rest) and 59 programs that fault once each. perl 5.42
+  position, the rest) and 62 programs that fault once each. perl 5.42
   printed the model's answer for every line but one family, below.
   The compiler passed all of them the first time it ran.
 - **`substr` has a second way to be outside its string** (T96): a
@@ -572,8 +572,44 @@ differences and findings:
   needs a test of its own at its edge. Two changed nothing a program
   can see, and one of those was a condition that could never be
   false, since removed.
+- **The adversarial review of the definition** was run beside the
+  build, by a reader with only the proposal's words and perl, who
+  wrote a model of its own: 2.9 million statements with literal
+  operands (no disagreement in arithmetic at all: where the rule
+  doesn't fault, its answer is perl's), 1.2 million random statements
+  over the whole grammar, and 82 million cases of one value used two
+  ways. Twelve findings. Eight the build had met already (T94 to
+  T98). Four it had not, and each is fixed, with a test: `say ("(");`,
+  where perl counts the bracket in the string and warns (T100);
+  `say(("a") x 3)`, a list to perl (T101, refused until step 9); a
+  string like `"1.99999999999999999"` where a whole number is wanted,
+  which perl cuts to 1 or to 2 by its past (T103: **the claim that a
+  value's past shows nowhere the rule doesn't fault was refuted again,
+  in this one place, and holds on the 82 million cases with it
+  closed**); and a sign on the line below a named unary operator.
+- **One finding is open: T102.** perl works a constant `x` out as it
+  compiles, so a count too large for memory stops perl before the
+  program starts, having printed nothing, where the language prints
+  what came before and faults. That isn't the beginning of what perl
+  prints (D12). Options, for Stevan: leave it, and say in D12 that
+  perl running out of memory as it compiles is outside the promise;
+  or have the compiler work constant counts out too and refuse the
+  program, which is a constant folder the language doesn't otherwise
+  need. Until step 5 every count is a constant; after it, only
+  constant ones are affected.
+- **The compiler was held to the reviewer's model and to perl**
+  (`briefs/step3-review/compiler.py`): 106,000 random statements over
+  the whole grammar, half of them with newlines and comments for
+  blanks. The model prints for 55,002 of them; the compiler prints
+  what perl prints for 54,969 and refuses 33, each for one of two
+  rules where it is stricter than the model (brackets round the left
+  of `x` in `say`'s argument; a sign on the line below a named unary
+  operator). Of the statements the model faults on or refuses, 1,800
+  were tried one to a program. Nothing WRONG.
 - `make test` takes about two minutes now, most of it perl run eight
-  times over each test by the oracle.
+  times over each test by the oracle. No test asks perl for a long
+  string: the first draft of two did (2 GB, as perl compiled them,
+  eight times each), and the machine killed processes for it.
 - An identifier past ASCII (SURFACE had it at this step) waits for
   step 5, where names begin.
 

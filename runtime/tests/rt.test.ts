@@ -71,3 +71,7 @@ test('the sign of a zero', () => {
         '-(0.0) + 0: Int', '-(0): Int', '0', '',
     ].join('\n') });
 });
+
+test('a repeated string of 2^31 characters is too long', () => {
+    assert.deepEqual(run('limit'), { status: 1, output: '2000\nfault: repeated string too long at limit.pl line 5.\n' });
+});

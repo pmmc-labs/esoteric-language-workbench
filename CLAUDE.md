@@ -32,7 +32,9 @@ are the Int; an exponent gives the Int if whole and below 2^53, a
 fault if whole and larger, else the Num; a point gives the Num, and a
 whole one below 2^53 (`"3.0"`) is *soft*: float arithmetic beside an
 integral operand, and a fault if either number or the exact answer
-reaches 2^53. **perl has two answers in those places, by what was
+reaches 2^53; and where a whole number is wanted, a string with a
+point whose digits before it aren't its number cut down faults
+(T103). **perl has two answers in those places, by what was
 done with the value before, and a value here has no past**: that is
 the reason for every fault that says `two answers` or `two values`,
 and for D45, which amends D35: in `+ - *`, an Int of 2^53 or more
@@ -57,9 +59,11 @@ or dot (T62, T78); an unescaped `$` or `@` in double quotes (T34), an
 escape perl warns about or that needs interpolation (T86, T95); a
 character past ASCII outside a string or a comment, or on any line up
 to the one that says `use utf8;` (T73); a file that isn't UTF-8; `say
-(1 + 2) * 3;` (T25); `say`, one blank and a bracket that doesn't end
-on its line (T76); `"ab" x3` (T57); `substr` without brackets; `length
-- 5` (T94); any pragma or spelling of one outside D16's list; `--`,
+(1 + 2) * 3;` (T25); `say`, one space and a bracket, unless the
+brackets close on that line counted as text, one in a string too, and
+`;` follows (T76, T100); `(...) x N` as the whole argument of `say`,
+which is a list to perl (T101); `"ab" x3` (T57); `substr` without
+brackets; `length - 5` (T94); any pragma or spelling of one outside D16's list; `--`,
 `++` and every other operator of perl's, as the longest token perl
 would take (T27); a line that starts `#!` (D33).
 **The compiler**: `lexer.ts` (the whole file, a line and column on
@@ -80,10 +84,10 @@ owns and frees at the end (no collector until step 7), every operator
 checking its operands' tags. **Tests**: golden 000 to 009 (step 0);
 010 to 026 from `t/models/arith.py` and 030 to 038 by hand (step 1);
 040 to 078 from `t/models/num.py` and 080 to 093 by hand (step 2);
-100 to 169 and 180 to 186 from `t/models/str.py` (about 15,000 lines
-on which the model and perl agree, and 60 programs that each fault
-once), 170 to 179 by hand with perl's answers, 200 to 234 refusals
-by hand (step 3); 56 unit tests, the runtime's own in C. **The oracle
+100 to 169 and 180 to 191 from `t/models/str.py` (about 15,000 lines
+on which the model and perl agree, and 62 programs that each fault
+once), 170 to 179 by hand with perl's answers, 200 to 237 refusals
+by hand (step 3); 58 unit tests, the runtime's own in C. **The oracle
 check** (`t/checks.py oracle`, D10) holds every test to perl 5.42 by
 its kind, **run plain, with no switches** (D39), and has 43 tests of
 its own in `t/checks/`; its seeds are eight of 64 hex digits
@@ -95,15 +99,17 @@ found, and the compiler agrees with the reviewer's own model on
 1,271,555 programs, `docs/briefs/step1-review/`). Each step's runtime
 was broken on purpose until every breakage was caught: step 2's found
 three holes in its own tests that way, and step 3's six of 70
-(`docs/briefs/step3-mutations.py`). **A fault that never happens is
+(`docs/briefs/step3-mutations.py`); the limit of `x` is tested from C
+(`runtime/tests/limit.c`), since perl can't be asked for 2^31
+characters. **A fault that never happens is
 invisible to a test of what prints: every fault needs a fault test of
 its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 317 of them now, and all hold under 5.42.0,
+about perl as a program, 328 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T99, by step. **Found at step 0**: T72 (a
+keeps the programs, T1 to T103, by step. **Found at step 0**: T72 (a
 line that starts `#!`, D33), T73 (`use utf8;` on a line before the
 first character past ASCII), T74 (`# line N "file"` comments, step
 15), T75 (`use v5.42#c`). **At step 1**: T76. **Proposing step 2**:
@@ -112,7 +118,18 @@ characters), T92 (D45), T93 (`--` on a Num, step 5). **Proposing and
 building step 3**: T83 to T90 and T94 to T99, the last six each a
 place where perl warns or answers with garbage that the proposal
 hadn't seen (`length - 5`; `\x4 `; `substr("abcde", -8, 2)`;
-`substr("abc", 0, 1e30)`, which is `ab`; `"a" x -0.5`). What the
+`substr("abc", 0, 1e30)`, which is `ab`; `"a" x -0.5`). **By the
+review of step 3**: T100 to T103; the reviewer's model and generator
+are kept, `docs/briefs/step3-review/`, and the compiler agrees with
+them and with perl on 54,969 of the 55,002 random statements the
+model prints for, refusing the other 33 by two rules where it is the
+stricter. **One finding is open,
+and Stevan's: T102.** perl works a constant `x` out as it compiles,
+so `say "before"; say "b" x 999999999999999;` prints nothing under
+perl (it runs out of memory before the program starts), where the
+language prints `before` and faults: not the beginning of what perl
+prints, which D12 promises. Nothing built is changed by it, and no
+test asks perl for a large string. What the
 review of the oracle check left open is listed in `docs/TRAPS.md`,
 "The checks themselves", by the step that has to close it (15: a
 `dies` test that also warns; 21 and 22: files, the environment, the
@@ -295,7 +312,7 @@ in `pmmc-labs/esoteric-language-workbench`.
 | `compiler/tests/` | Unit tests, per pass |
 | `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` |
 | `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `checks/`, the oracle check's own tests; `models/` |
-| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*` and `step3-strings-as-numbers.py` (the evidence for those steps' rules) and `step3-mutations.py` (the runtime broken on purpose) |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*` and `step3-strings-as-numbers.py` (the evidence for those steps' rules), `step3-mutations.py` (the runtime broken on purpose) and `step3-review/` (the reviewer's model of step 3, and the script that ran the compiler against it) |
 | `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
 | `build/` | Output (ignored) |
 

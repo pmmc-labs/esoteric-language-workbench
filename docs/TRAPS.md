@@ -243,12 +243,29 @@ proposal had perl's answer, or none.
 
 | | Program | perl prints | Step | Way out |
 |---|---|---|---|---|
-| T94 | `say length - 5;` and `say length-5;` | `2`, and `Warning: Use of "length" without parentheses is ambiguous`, as it compiles. `length -5` is silent: perl goes by the blank before the sign and the lack of one after | 3 | Refuse a sign after a named unary operator unless it has a blank before it and none after (D41) |
+| T94 | `say length - 5;` and `say length-5;` | `2`, and `Warning: Use of "length" without parentheses is ambiguous`, as it compiles. `length -5` is silent: perl goes by the blank before the sign and the lack of one after. With the sign on the line below it goes by how that line begins: a sign in the first column warns | 3 | Refuse a sign after a named unary operator unless it is on the name's line, with blanks before it and none after (D41) |
 | T95 | `say "\x4 ";` and `say "\18";` | The character and a warning: `Non-hex character ' ' terminates \x early`, `Non-octal character '8' terminates \0 early`. `"\x4"` at the end of a string, `"\x41g"` and `"\0008"` are silent | 3 | `\x` takes two hex digits or braces; an octal escape of one or two digits may not be followed by `8` or `9` (D43) |
 | T96 | `say substr("abcde", -8, 2);` | An empty line, and `substr outside of string`: the piece starts and ends before the beginning. `substr("abcde", -8, 3)` ends at the beginning, and is empty in silence | 3 | Fault, as for a start past the end (D41) |
 | T97 | `say substr("abc", 0, 1e30); say substr("abc", 1e30); say index("abc", "c", 1e30);` | `ab`, `c`, `2`, in silence: a float past the Ints is cut to whatever the machine gives | 3 | Where a whole number is wanted, the number cut toward zero must be an Int, or it faults (D41) |
 | T98 | `say "a" x -0.5;` and `say ord chr(-0.5);` | An empty line and `Negative repeat count does nothing`; `65533` and `Invalid negative number (-0.5) in chr`. perl tests the number before cutting it to 0. `"a" x "-0.5"`, a string, is silent | 3 | A count or a character number below zero faults before it is cut, a string's too (D42, D44) |
 | T99 | `say "a"x 3; say "c" x.5; say "d" x"2"; say "a" x= 3;` | `aaa`, an empty line, `dd`; the last doesn't compile, `x=` being an assignment | 3 | Agree on the first three: after a value `x` is the operator, whatever it is hard against but a digit (T57). Refuse `x=` as the operator it is |
+
+## Found by the review of step 3
+
+A reader who hadn't seen the builder's model wrote one of its own from
+the proposal, and ran it against perl: 2.9 million statements with
+literal operands, and 82 million cases of one value used two ways. It
+found twelve things. Eight the build had found for itself by then
+(T94 to T98); these are the other four. Its model and generator are
+kept, `briefs/step3-review/`, and the compiler agrees with them and
+with perl on the statements `compiler.py` there draws.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T100 | `say ("(");` and `say (")" . "a");` | `(` and `)a`, each with `say (...) interpreted as function`: after `say`, one space and a bracket, perl looks for the closing bracket in the text of the line, and counts one inside a string or a comment. `say("(");`, two spaces, or a tab: silent | 3 | T76's rule by the text, as perl has it: the brackets close on the line, counted as characters, and `;` follows |
+| T101 | `say(("a") x 3);` and `say "before"; say(("") x 9223372036854775807);` | `aaa`; then `before`, `Out of memory during list extend`, and exit 255. In `say`'s list of arguments, `x` with its left operand in brackets repeats a list: three values, or 2^63 of them. `say +("a") x 3` is the same; `length(("a") x 3)` and `("a") x 3 . ""` repeat a string | 3 | Refuse `(...) x N` where it is the whole argument of `say` or `print`, through brackets and unary plus. Step 9, which brings lists, says what it is there |
+| T102 | `say "before"; say length("b" x 999999999999999);` | Nothing at all: perl works a constant `x` out as it compiles, runs out of memory doing it, and stops before the program starts (`panic: fold_constants`). The language prints `before` and faults: **not the beginning of what perl prints**, which D12 promises | 3 | **Open, Stevan's.** Nothing built is changed by it. Every count is a constant until step 5; after that only a constant count is affected. No test asks perl for more than a megabyte; one count past what a string can be at all, 2^63 - 1 of `ab`, perl refuses as it runs, and that is test 148 |
+| T103 | `my $x = "1.99999999999999999"; say substr("abcdefgh", $x);` and the same with `my $t = $x + 0.5;` first | `bcdefgh`, then `cdefgh`. Where a whole number is wanted, perl takes the digits before the point of a string it hasn't used as a float, and the double, cut, of one it has; and this string's double is 2. `"ab" x "0.99999999999999995"` is empty, or `ab`; `chr` goes the other way round | 3 | Where a whole number is wanted, a string with a point whose digits before it are not its number cut toward zero faults (D40) |
 
 ## The checks themselves
 

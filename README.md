@@ -75,7 +75,7 @@ character:
 - Gradual types, roles with a metaobject protocol, and concurrency are
   planned later steps (D5).
 
-What isn't decided is what those hand to a step: fourteen items at the
+What isn't decided is what those hand to a step: fifteen items at the
 end of `docs/DESIGN.md`.
 
 ## How far to trust it

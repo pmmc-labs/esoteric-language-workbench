@@ -737,9 +737,17 @@ Anything else is `fault: not a numeric string`: perl warns on `""`,
   `-foo` (T47), faults as not a number. A plus before a string is the
   string.
 
+- **Where a whole number is wanted** (a count, a position, `chr`'s
+  argument), a string with a point whose digits before the point are
+  not its number cut toward zero is a fault: `"1.99999999999999999"`
+  is the double 2, and perl takes the 1 or the 2 by the string's past
+  (T103, found by the review of this step).
+
 `docs/briefs/step3-strings-as-numbers.py` holds the rule to perl under
 every past of every operand, 41,594 operations of which perl has more
 than one answer for 9,596: the rule never gives a value perl doesn't.
+The review's own search, 82 million cases, found the one hole above
+and no other.
 A value has no past here, which is the point. Rejected: a string with
 a point or an exponent that is whole is not a number at all (one
 sentence, and a price list read from a file stops at `"10.00"`).
@@ -763,8 +771,9 @@ position into the string. `uc` and `lc` change the ASCII letters and
 fault on a character past ASCII, until a step brings perl's tables
 (T45). **Found building it**: perl warns that `length - 5` and
 `length-5` are ambiguous (it reads them as `length(-5)`), so after a
-named unary operator a sign must have a blank before it and none
-after, `length -5`, or brackets; refused otherwise. And where a whole
+named unary operator a sign must be on the name's line, with a blank
+before it and none after, `length -5`, or in brackets; refused
+otherwise. And where a whole
 number is wanted, a count or a position, the number is cut toward
 zero and must then be an Int: perl's own cut of a float past the Ints
 is whatever the machine gives, `substr("abc", 0, 1e30)` being `ab`.
@@ -814,11 +823,18 @@ that. The count is cut to a whole number; a count below zero, before
 it is cut, faults `negative repeat count` (perl warns, of `-0.5`
 too), and a repeated string may not pass 2^31 - 1 characters
 (`repeated string too long`: perl would build it if the machine
-could). After a value a dot is the operator whatever follows it, as
+could). **`(...) x N` as the whole argument of `say` or `print` is
+refused**, through brackets and unary plus: there perl repeats a list,
+not a string, which prints the same and costs it a value each, so a
+count the string would bear stops perl for lack of memory (T101,
+found by the review). Lists are step 9's to bring. After a value a dot is the operator whatever follows it, as
 in perl: `1 .5` is `15` and `"a".5` is `a5` (T90); hard against a
 number it stays refused (D38). `print` is `say` without the newline:
 one argument, a statement, and the rules `say` has for brackets (T25,
-T76). The lexer knows whether a value or an operator comes next from
+T76). T76's rule is now perl's own, by the text of the line: after
+`say`, one space and a bracket, the brackets must close on that line
+counted as characters, one in a string too, with `;` after them
+(T100, found by the review). The lexer knows whether a value or an operator comes next from
 the token before; D29 had the parser tell it, and will again when `/`
 can begin a pattern.
 

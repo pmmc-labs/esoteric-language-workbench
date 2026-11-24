@@ -307,6 +307,18 @@ CLAIMS = [
     c('T99-assign', 'TRAPS; D44', 'say "a" x= 3;', compiles=False, err="Can't modify constant item in repeat"),
     c('D44-print', 'D44', 'print "a"; print "b\\n"; print -1; print "\\n"; say -"1"; say\'a\';', out='ab\n-1\n-1\na\n'),
     c('D42-noncharacter-source', 'D42', 'use utf8;\nsay length "￾";', out='1\n'),
+    # ---- found by the review of step 3's definition (T100 to T103)
+    c('T94-below', 'TRAPS; D41', 'say length\n-5;', out='2\n', err='without parentheses is ambiguous'),
+    c('T94-below-fine', 'TRAPS; D41', 'say length\n    -5;', out='2\n'),
+    c('T100', 'TRAPS', 'say ("(");', out='(\n', err=r'say \(\.\.\.\) interpreted as function'),
+    c('T100-closes-early', 'TRAPS', 'say (")" . "a");', out=')a\n', err=r'say \(\.\.\.\) interpreted as function'),
+    c('T100-fine', 'TRAPS', 'say (1); # and (\nsay\t("(");\nsay  ("(");\nsay("(");', out='1\n(\n(\n(\n'),
+    c('T101', 'TRAPS; D44', 'say(("a") x 3); say +("a") x 3; say length(("a") x 3);', out='aaa\naaa\n3\n'),
+    c('T101-memory', 'TRAPS; D44', 'say "before"; say(("") x 9223372036854775807);', out='before\n', err='Out of memory', exit=255),
+    c('T102', 'TRAPS', 'say "before";\nsay length("b" x 999999999999999);', out='', err='fold_constants', exit='nonzero'),
+    c('T102-wrap', 'TRAPS; t/models/str.py 148', 'say "before";\nsay length("ab" x 9223372036854775807);', out='before\n', err='panic: memory wrap', exit='nonzero'),
+    c('T103-fresh', 'TRAPS; D40', 'my $x = "1.99999999999999999"; say substr("abcdefgh", $x); my $y = "0.99999999999999995"; say "<" . "ab" x $y . ">"; my $z = "0.99999999999999995"; say ord(chr($z));', out='bcdefgh\n<>\n1\n'),
+    c('T103-used', 'TRAPS; D40', 'my $x = "1.99999999999999999"; my $t = $x + 0.5; say substr("abcdefgh", $x); my $y = "0.99999999999999995"; $t = $y * 1.5; say "<" . "ab" x $y . ">"; my $z = "0.99999999999999995"; $t = $z + 0; say ord(chr($z));', out='cdefgh\n<ab>\n0\n'),
     # ---- found by the review of step 2
     c('T91', 'TRAPS', 'say 1;\nsay 1.' + '0' * 249 + ';', compiles=False, err='Number too long'),
     c('T91-250', 'TRAPS', 'say 1.' + '0' * 248 + '; say 0x' + '0' * 300 + '1F;', out='1\n31\n'),

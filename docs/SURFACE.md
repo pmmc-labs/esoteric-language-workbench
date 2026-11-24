@@ -104,7 +104,8 @@ comparison: *in*, *out*, or *n/a*.
 | `exit` | In | 21 | | |
 | `say;`, `print;` with no argument | In | 10 | | They print `$_` |
 | A builtin's brackets and then an operator, `say (1 + 2) * 3;` | Cut | | | D21, T25: perl prints 3 |
-| `say (...)` after one blank, not ending on its line | Cut | | | T76: perl warns. `say(...)`, hard against, may run over lines |
+| `say (...)` after one space, not ending on its line, or with a bracket in a string or a comment that perl's count of them trips on | Cut | | | T76, T100: perl warns. `say(...)`, hard against, may run over lines |
+| `(...) x N` as the whole argument of `say` or `print` | Later | 9 | | T101: perl repeats a list there. Refused until lists |
 | `print STDERR ...`, `say STDERR ...` | In | 15 | | With `warn` |
 | `1;` ending a module | In | 18 | | Not needed under `use v5.42`; harmless |
 
@@ -118,7 +119,7 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `+ - *`, unary `-`, `%` | In | 1 | Int overflow faults (D23); `%` on a Num truncates, step 2; unary `-` on a string that isn't a number faults |
 | `/`, `**`, float literals | In | 2 | Int or Num as perl has it (D35); a whole Num from 10^15 up to 2^53 faults when printed (D36); no infinity or NaN (D37) |
 | `.`, `x` on a string | In | 3 | D44. After a value a dot joins, whatever follows (T90); `x` is a word of its own (T57), its count cut to a whole number; a count below zero faults, and a result of 2^31 characters or more |
-| A string where a number is wanted | In | 3 | D40: perl's silent shapes, anything else faults. An Int or a Num by how it is written; a fault where perl has two answers by the string's past (`"1e16"`, `"3.0"` in arithmetic past 2^53) |
+| A string where a number is wanted | In | 3 | D40: perl's silent shapes, anything else faults. An Int or a Num by how it is written; a fault where perl has two answers by the string's past (`"1e16"`, `"3.0"` in arithmetic past 2^53, `"1.99999999999999999"` as a position) |
 | Unary `-` on a string | In | 3 | D40: the Num, negated; a string that starts with `+`, or isn't a number, faults (T47, T85) |
 | `+ - *` with an Int of 2^53 or more that is exactly a double, beside a whole Num or a string | Fault | 3 | D45: perl has two answers, by the Int's past (T92) |
 | `== != < <= > >= <=>` | In | 4 | A non-number faults (D15); an Int and a Num compare as floats, as in perl |

@@ -132,10 +132,12 @@ saying that a bracket doesn't begin the argument list. All three print
 9.
 
 Write the bracket hard against the word, `say(1 + 2);`. With exactly
-one blank between them, `say (1 + 2);`, the statement has to end on
+one space between them, `say (1 + 2);`, the statement has to end on
 that line, bracket, semicolon and all: perl looks along the line for
 them and warns when they aren't there, and a program perl warns about
-is refused.
+is refused. It looks at the text, not at what the text means, so a
+bracket inside a string counts: `say ("(");` is refused, and
+`say("(");` is fine.
 
 ## Numbers
 
@@ -375,6 +377,13 @@ refused. Its count is cut to a whole number, so `"a" x 2.7` is `aa`. A
 count below zero is a fault (`negative repeat count`), `-0.5`
 included, and so is a result of 2^31 characters or more.
 
+One spelling is refused: brackets round the left operand when the
+repetition is the whole of what `say` or `print` is given,
+`say(("ab") x 3);`. To perl that repeats a list of values and not a
+string, and lists come later. `say "ab" x 3;` says what is meant, and
+inside a larger expression, `("ab") x 3 . "!"`, the brackets are
+harmless.
+
 After a value, a dot is always the operator, whatever follows it: `1
 .5` is `15`, and `"a".5` is `a5`.
 
@@ -455,8 +464,8 @@ loosely than arithmetic and the dot**, which is perl's rule:
     say length "ab" . "c";    # 3: the length of "abc"
     say length "abc" + 1;     # a fault: "abc" + 1
 
-One spelling is refused: a sign after the name must have a blank
-before it and none after, `length -5`. perl warns that `length - 5`
+One spelling is refused: a sign after the name must be on the same
+line, with a blank before it and none after, `length -5`. perl warns that `length - 5`
 and `length-5` are ambiguous (it means `length(-5)` by both).
 
 ### substr and index
@@ -486,7 +495,10 @@ position on.
 
 These two are always written with brackets. A position or a length
 that isn't a whole number is cut to one, toward zero; one too large
-to be an Int is a fault.
+to be an Int is a fault. So is a string with a point that is a hair
+below a whole number, `"1.99999999999999999"`, here and as a count or
+for `chr`: its nearest double is 2, and perl cuts it to 1 or to 2 by
+what was done with the string before.
 
 ## When a program stops
 

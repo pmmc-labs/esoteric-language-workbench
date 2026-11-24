@@ -12,7 +12,8 @@ A record of step 3, and not part of make test: each breakage is a piece
 of the runtime's text as it was then, and one that no longer matches
 stops the run. The first run, of 70, let eight through; six were holes
 in the tests (t/180 to t/186 are their tests now) and two changed
-nothing a program can see, which the list says where they were."""
+nothing a program can see, which the list says where they were. The
+review's rule for split strings (T103) added four, all caught."""
 import subprocess, glob, sys, os
 from concurrent.futures import ThreadPoolExecutor
 KEEP = open('runtime/rt.c').read()
@@ -55,7 +56,13 @@ M = [
  ("whole number: no range", '    if (!(t >= -TWO_63 && t < TWO_63)) rt_fault(cx, "a number outside the integers where a whole number is wanted");\n', '    if (!(t >= -TWO_63 && t < TWO_63)) t = 0;\n'),
  ("x: a count below zero repeats nothing", '    if (below_zero(c)) rt_fault(cx, "negative repeat count");\n', '    if (below_zero(c)) c.is_int = 1, c.i = 0;\n'),
  ("x: only a whole count below zero faults", '    if (below_zero(c)) rt_fault(cx, "negative repeat count");\n', '    if (whole_number(cx, c) < 0) rt_fault(cx, "negative repeat count");\n'),
- ("x: one more character allowed", "n > (uint64_t)INT32_MAX / s->chars", "n > ((uint64_t)INT32_MAX + 1) / s->chars"),
+ # Not here: the limit of `x`. perl builds a constant string as it
+ # compiles, so a test at 2^31 characters would ask perl for two
+ # gigabytes, eight times (T102): runtime/tests/limit.c tests it from C.
+ ("a split string where a whole number is wanted", "    if (v.split) rt_fault(cx, SPLIT);\n    return (int64_t)t;", "    return (int64_t)t;"),
+ ("a split string for chr", '    if (v.split) rt_fault(cx, SPLIT);\n    uint32_t c', '    uint32_t c'),
+ ("no string is split", "        v.split = o || before != (uint64_t)trunc(fabs(x));", "        v.split = 0;"),
+ ("split by the rounded double", "        v.split = o || before != (uint64_t)trunc(fabs(x));", "        v.split = o || before != (uint64_t)round(fabs(x));"),
  ("x: characters counted as bytes", "str_new(cx, s->len * n, s->chars * n, &bytes)", "str_new(cx, s->len * n, s->len * n, &bytes)"),
  ("concat: characters counted as bytes", "str_new(cx, s->len + t->len, s->chars + t->chars, &bytes)", "str_new(cx, s->len + t->len, s->chars + t->len, &bytes)"),
  ("length in bytes", "    return rt_int((int64_t)to_str(cx, a)->chars);", "    return rt_int((int64_t)to_str(cx, a)->len);"),
@@ -93,7 +100,7 @@ M = [
 only = sys.argv[1:]
 os.makedirs('build/mut', exist_ok=True)
 tests = []
-for src in sorted(glob.glob('t/04*.pl') + glob.glob('t/07[5-8]*.pl') + glob.glob('t/09*.pl') + glob.glob('t/1[0-8]*.pl')):
+for src in sorted(glob.glob('t/04*.pl') + glob.glob('t/07[5-8]*.pl') + glob.glob('t/09*.pl') + glob.glob('t/1*.pl')):
     if 'kind: refused' in open(src, encoding='utf-8', errors='replace').read(400):
         continue
     name = os.path.basename(src)[:-3]
