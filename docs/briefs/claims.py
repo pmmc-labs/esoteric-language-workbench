@@ -20,10 +20,13 @@ said is some of:
     exit     0 (the default), or the status, or 'nonzero'
     compiles False: `perl -c` fails, and err is searched in what it says
     raw      True: the program is the whole file, its first line included
+    csda     True: perl is run with -CSDA, its streams UTF-8, as the oracle
+             ran it before D39. What is said is then said of that.
+    outbytes perl's stdout, exactly, as bytes: for a claim about encoding
 
 The program is given `use v5.42;` (with --old, `use v5.38;` and the
 experimental features 5.42 has since made stable), and perl is run as the
-oracle runs it: -CSDA, one hash seed, empty stdin.
+oracle runs it: plain, one hash seed, empty stdin.
 """
 
 import os
@@ -151,11 +154,11 @@ CLAIMS = [
     # ---- found at step 0
     c('T72', 'TRAPS; D33', '#!/usr/bin/perl -n\nuse v5.42;\nsay 42;', raw=True, out=''),
     c('T72-blanks', 'TRAPS; D33', ' \t#!/usr/bin/perl -n\nuse v5.42;\nsay 42;', raw=True, out=''),
-    c('T72-other', 'TRAPS; D33', '#!/bin/echo hello\nuse v5.42;\nsay 42;', raw=True, out='hello -CSDA claim.pl\n'),
+    c('T72-other', 'TRAPS; D33', '#!/bin/echo hello\nuse v5.42;\nsay 42;', raw=True, out='hello claim.pl\n'),
     c('T72-plain', 'TRAPS; D33', '#!/usr/bin/perl\nuse v5.42;\nsay 42;', raw=True, out='42\n'),
     c('T72-line-2', 'TRAPS; D33', '\n#!/usr/bin/perl -n\nuse v5.42;\nsay 42;', raw=True, out='42\n'),
     c('T72-renumbered', 'TRAPS; D33', 'use v5.42;\nsay 1;\n# line 1\n#!perl -n\nsay 2;', raw=True, out='1\n'),
-    c('T72-renumbered-other', 'TRAPS; D33', 'use v5.42;\nsay 1;\n# line 1\n#!/bin/echo hello\nsay 2;', raw=True, out='hello -CSDA claim.pl\n'),
+    c('T72-renumbered-other', 'TRAPS; D33', 'use v5.42;\nsay 1;\n# line 1\n#!/bin/echo hello\nsay 2;', raw=True, out='hello claim.pl\n'),
     c('T72-after-code', 'TRAPS; D33', 'use v5.42;\nsay 1;\n# line 1\nsay 2; #!perl -n\nsay 3;', raw=True, out='1\n2\n3\n'),
     c('T75', 'TRAPS', 'use v5.42#c\n;\nsay 42;', raw=True, compiles=False, err=r"Can't locate v5\.pm"),
     c('T75-space', 'TRAPS', 'use v5.42 #c\n;\nsay 42;', raw=True, out='42\n'),
@@ -259,11 +262,11 @@ CLAIMS = [
     c('T86', 'TRAPS; PLAN 3', 'say length "\\x"; say length "\\x{}"; say ord "\\x"; say "\\-\\%\\ |";', out='1\n1\n0\n-% |\n'),
     c('T86-warns', 'TRAPS; PLAN 3', 'say "\\q";', out='q\n', err=r'Unrecognized escape \\q passed through'),
     c('T86-digit', 'TRAPS; PLAN 3', 'say "\\8";', out='8\n', err=r'Unrecognized escape \\8 passed through'),
-    c('P3-escapes', 'PLAN 3', 'say "\\x41\\x{263A}\\101\\o{101}\\N{U+263A}\\e[0m\\0|\\$x \\@y \\" \\\\";', out='A\u263aAA\u263a\x1b[0m\x00|$x @y " \\\n'),
+    c('P3-escapes', 'PLAN 3', 'say "\\x41\\x{263A}\\101\\o{101}\\N{U+263A}\\e[0m\\0|\\$x \\@y \\" \\\\";', out='A\u263aAA\u263a\x1b[0m\x00|$x @y " \\\n', csda=True),
     c('P3-single', 'PLAN 3', "say 'a\\tb \\\\ \\' $x @y';", out="a\\tb \\ ' $x @y\n"),
     c('T87', 'TRAPS; PLAN 3', 'say length "abc" . "de"; say length("abc") . "de"; say length ("abc") . "de"; say length "abc" == 3; say uc "abc" . "def";', out='5\n3de\n3de\n1\nABCDEF\n'),
     c('T87-warns', 'TRAPS; PLAN 3', 'say length "abc" + 1;', out='1\n', err="isn't numeric in addition"),
-    c('T88', 'TRAPS; PLAN 3', 'say length(chr(55296)); say length(chr(1114112)); say chr(65534);', out='1\n1\n\ufffe\n', err='Unicode non-character U\\+FFFE is not recommended for open interchange'),
+    c('T88', 'TRAPS; PLAN 3', 'say length(chr(55296)); say length(chr(1114112)); say chr(65534);', out='1\n1\n\ufffe\n', err='Unicode non-character U\\+FFFE is not recommended for open interchange', csda=True),
     c('T88-open', 'TRAPS; PLAN 3', 'use open ":std", ":encoding(UTF-8)";\nsay chr(233); say chr(65534);', out='\xe9\n\\x{FFFE}\n', err='Unicode non-character'),
     c('T89', 'TRAPS; PLAN 3', 'say "ab" x 3; say "ab"x3; say "ab" x3; say "a" x 2.7; say "a" x "2"; say 2 x 3;', out='ababab\nababab\nababab\naa\naa\n222\n'),
     c('T89-negative', 'TRAPS; PLAN 3', 'say "a" x -1;', out='\n', err='Negative repeat count does nothing'),
@@ -272,6 +275,38 @@ CLAIMS = [
     c('P3-substr', 'PLAN 3', 'say "[", substr("abcdef", -9, 3), "]"; say substr("abcdef", 2, 3); say substr("abcdef", -2); say substr("abcdef", 6), "|";', out='[]\ncde\nef\n|\n'),
     c('P3-substr-outside', 'PLAN 3', 'say "before"; say substr("abcdef", 7);', out='before\n\n', err='substr outside of string'),
     c('P3-concat', 'PLAN 3', 'say 1 . 2 + 3; say "x" . 2 * 3; say "a" x 2 . "b"; say 1e16 . ""; say 0.1 + 0.2 . "";', out='15\nx6\naab\n1e+16\n0.3\n'),
+    # ---- step 3 as built: D39 to D45, LANGUAGE.md, and what the build found (T94 to T99)
+    c('D39-latin1', 'D39; LANGUAGE', 'say "\\x{e9}";', outbytes=b'\xe9\n'),
+    c('D39-wide', 'D39; LANGUAGE', 'say "\\x{263A}";', outbytes=b'\xe2\x98\xba\n', err='Wide character in say'),
+    c('D39-open', 'D39', 'use open ":std", ":encoding(UTF-8)";\nsay "\\x{e9}\\x{263A}";', outbytes=b'\xc3\xa9\xe2\x98\xba\n'),
+    c('D39-qw', 'D39', 'use open qw(:std :encoding(UTF-8));\nuse open ":std", ":utf8";\nsay "\\x{e9}";', outbytes=b'\xc3\xa9\n'),
+    c('D40-min', 'D40', 'say "-9223372036854775808" + 0; say "-9223372036854775808" + 1; say "9223372036854775808" + 0;', out='-9223372036854775808\n-9223372036854775807\n9223372036854775808\n'),
+    c('D40-blanks', 'D40; LANGUAGE', 'say "3\\x0b" + 1; say "\\f3\\r" + 1; say " 12\\n" + 1; say "1.5" * 2;', out='4\n4\n13\n3\n'),
+    c('D40-nul', 'D40', 'say "3\\0" + 1;', out='4\n', err="isn't numeric"),
+    c('D40-plus', 'D40; LANGUAGE', 'say +"abc"; say -"12"; say -"7.5";', out='abc\n-12\n-7.5\n'),
+    c('L3-concat', 'LANGUAGE', 'say "ab" . "cd"; say "ab" x 3; say "-" x 10 . ">"; say "a" . "b" x 2; say 1 + 2 . 3; say "n = " . (0.1 + 0.2); say length 1000;', out='abcd\nababab\n---------->\nabb\n33\nn = 0.3\n4\n'),
+    c('L3-concat-fault', 'LANGUAGE', 'say "n = " . 0.1 + 0.2;', out='0.2\n', err="isn't numeric"),
+    c('L3-builtins', 'LANGUAGE', 'say uc "abc"; say ord "A"; say chr 65; say chr 65.9; say length "ab" . "c"; say length("ab") . "c";', out='ABC\n65\nA\nA\n3\n2c\n'),
+    c('L3-substr', 'LANGUAGE', 'say substr("abcdef", 2); say substr("abcdef", 2, 3); say substr("abcdef", -2); say substr("abcdef", 1, -1); say index("abcabc", "c"); say index("abcabc", "c", 3); say index("abcabc", "x");', out='cdef\ncde\nef\nbcde\n2\n5\n-1\n'),
+    c('L3-utf8', 'LANGUAGE; D24', 'use utf8;\nuse open ":std", ":encoding(UTF-8)";\nsay length "café"; say "café";', outbytes=b'4\ncaf\xc3\xa9\n'),
+    c('T94', 'TRAPS; D41', 'say length - 5;', out='2\n', err='Use of "length" without parentheses is ambiguous'),
+    c('T94-hard', 'TRAPS; D41', 'say length-5;', out='2\n', err='Use of "length-5" without parentheses is ambiguous'),
+    c('T94-fine', 'TRAPS; D41', 'say length -5; say length +"ab"; say - length "ab"; say -length "ab";', out='2\n2\n-2\n-2\n'),
+    c('T95', 'TRAPS; D43', 'say "\\x4 ";', out='\x04 \n', err='Non-hex character .* terminates \\\\x early'),
+    c('T95-end', 'TRAPS; D43', 'say "\\x4"; say "\\x41g";', out='\x04\nAg\n'),
+    c('T95-octal', 'TRAPS; D43', 'say "\\18";', out='\x018\n', err="Non-octal character '8' terminates"),
+    c('T95-octal-fine', 'TRAPS; D43', 'say "\\0008|\\1a|\\x048";', out='\x008|\x01a|\x048\n'),
+    c('T95-quiet', 'TRAPS; D43', 'say "a\\\nb\\\t|\\_"; say "\\x{ 41 }\\x{4_1}";', out='a\nb\t|_\nAA\n'),
+    c('T96', 'TRAPS; D41', 'say "[", substr("abcde", -8, 2), "]";', out='[]\n', err='substr outside of string'),
+    c('T96-edge', 'TRAPS; D41', 'say "[", substr("abcde", -8, 3), "]"; say "[", substr("abc", 1, -5), "]"; say "[", substr("abc", -4), "]";', out='[]\n[]\n[abc]\n'),
+    c('T97', 'TRAPS; D41', 'say substr("abc", 0, 1e30); say substr("abc", 1e30); say index("abc", "c", 1e30);', out='ab\nc\n2\n'),
+    c('T98', 'TRAPS; D44', 'say "[", "a" x -0.5, "]";', out='[]\n', err='Negative repeat count does nothing'),
+    c('T98-string', 'TRAPS; D44', 'say "[", "a" x "-0.5", "]"; say "[", "a" x -0.0, "]"; say "[", "" x 4611686018427387904, "]";', out='[]\n[]\n[]\n'),
+    c('T98-chr', 'TRAPS; D42', 'say ord chr(-0.5);', out='65533\n', err='Invalid negative number \\(-0.5\\) in chr'),
+    c('T99', 'TRAPS; D44', 'say "a"x 3; say "c" x.5, "|"; say "d" x"2"; say "b" x(2);', out='aaa\n|\ndd\nbb\n'),
+    c('T99-assign', 'TRAPS; D44', 'say "a" x= 3;', compiles=False, err="Can't modify constant item in repeat"),
+    c('D44-print', 'D44', 'print "a"; print "b\\n"; print -1; print "\\n"; say -"1"; say\'a\';', out='ab\n-1\n-1\na\n'),
+    c('D42-noncharacter-source', 'D42', 'use utf8;\nsay length "￾";', out='1\n'),
     # ---- found by the review of step 2
     c('T91', 'TRAPS', 'say 1;\nsay 1.' + '0' * 249 + ';', compiles=False, err='Number too long'),
     c('T91-250', 'TRAPS', 'say 1.' + '0' * 248 + '; say 0x' + '0' * 300 + '1F;', out='1\n31\n'),
@@ -363,6 +398,8 @@ def run(perl, prelude, code, flags):
 def judge(said, status, out, err):
     """What differs from what the document says; nothing if nothing does."""
     wrong = []
+    if 'outbytes' in said and out != said['outbytes']:
+        wrong.append(f'stdout is not the bytes {said["outbytes"]!r}')
     out, err = out.decode('utf-8', 'replace'), err.decode('utf-8', 'replace')
     if said.get('compiles', True) is False:
         if status == 0:
@@ -405,7 +442,8 @@ def main(argv):
         if only and id not in only:
             continue
         compiles = said.get('compiles', True)
-        status, out, err = run(perl, '' if said.get('raw') else prelude, code, ['-CSDA'] if compiles else ['-c'])
+        flags = ['-c'] if not compiles else ['-CSDA'] if said.get('csda') else []
+        status, out, err = run(perl, '' if said.get('raw') else prelude, code, flags)
         wrong, out, err = judge(said, status, out, err)
         if wrong or only:
             differ += bool(wrong)

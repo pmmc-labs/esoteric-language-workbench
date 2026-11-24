@@ -41,7 +41,8 @@ comparison: *in*, *out*, or *n/a*.
 | `use Module;` of the program's own | Later | 18 | in | Compile time only |
 | `use Module qw(names)`, `Exporter` | Later | 18 | in | To be proposed |
 | `no strict`, `no warnings`, `use integer`, `use bytes` | Cut | | | D16 |
-| `use open ':std', ':encoding(UTF-8)';` | Later | 3 | | The file would then say what the oracle's `-CSDA` says: plain `perl` prints `é` as one byte |
+| `use open ':std', ':encoding(UTF-8)';` | In | 3 | | D39: needed to print a character past ASCII, which faults without it (plain `perl` prints `é` as one byte). That one spelling, at the top |
+| `use open qw(:std :encoding(UTF-8))`, `':utf8'`, any other layers | Cut | | | D39: one spelling. `qw` itself is step 16 |
 | `use constant`, `List::Util`, `Scalar::Util`, `POSIX`, other core modules | Later | 18, 23 | | D16: refused until proposed |
 | `require`, `do FILE` at run time | Cut | | out | D20 |
 | `package Name;` naming a file's subs | In | 18 | out | D19: a namespace and nothing more |
@@ -116,7 +117,10 @@ Precedence and associativity are `perlop`'s. Chalk's
 |---|---|---|---|
 | `+ - *`, unary `-`, `%` | In | 1 | Int overflow faults (D23); `%` on a Num truncates, step 2; unary `-` on a string that isn't a number faults |
 | `/`, `**`, float literals | In | 2 | Int or Num as perl has it (D35); a whole Num from 10^15 up to 2^53 faults when printed (D36); no infinity or NaN (D37) |
-| `.`, `x` on a string | In | 3 | |
+| `.`, `x` on a string | In | 3 | D44. After a value a dot joins, whatever follows (T90); `x` is a word of its own (T57), its count cut to a whole number; a count below zero faults, and a result of 2^31 characters or more |
+| A string where a number is wanted | In | 3 | D40: perl's silent shapes, anything else faults. An Int or a Num by how it is written; a fault where perl has two answers by the string's past (`"1e16"`, `"3.0"` in arithmetic past 2^53) |
+| Unary `-` on a string | In | 3 | D40: the Num, negated; a string that starts with `+`, or isn't a number, faults (T47, T85) |
+| `+ - *` with an Int of 2^53 or more that is exactly a double, beside a whole Num or a string | Fault | 3 | D45: perl has two answers, by the Int's past (T92) |
 | `== != < <= > >= <=>` | In | 4 | A non-number faults (D15); an Int and a Num compare as floats, as in perl |
 | `eq ne lt le gt ge cmp` | In | 4 | undef faults (D15) |
 | `! && \|\| //`, `not and or xor` | In | 4 | Truth is perl's: undef, `""`, `0`, `"0"` are false |
@@ -160,8 +164,11 @@ Precedence and associativity are `perlop`'s. Chalk's
 | Octal by a leading zero, `017`; a point with nothing after it, `1.` | Cut | | D38: `010` is 8 (T24), and `0o17` says it; a dot after a number is concatenation (T78) |
 | Infinity and NaN, `9**9**9`, `"inf"`, the builtins `inf` and `nan` | Cut | | D37: a Num is finite. `float overflow`, `not a number` |
 | v-strings; a number with two dots | Cut | | `say 65.66.67` prints `ABC` (T62) |
-| An identifier past ASCII, with `use utf8` | In | 3 | |
-| `'...'`, `"..."` with escapes | In | 3 | |
+| An identifier past ASCII, with `use utf8` | In | 5 | Until there are names: a character past ASCII outside a string or a comment is refused |
+| `'...'`, `"..."` with escapes | In | 3 | D43. `\n \t \r \f \b \a \e \0`, `\\ \" \$ \@`, `\xHH`, `\x{...}`, octal, `\o{...}`, `\N{U+...}`, a backslash before a punctuation mark. A character is a Unicode scalar value (D42) |
+| `\q` and other unknown escapes; `\x` with fewer than two digits; `\x{}`; an octal escape cut short by `8` or `9`; a backslash before a tab or a newline | Cut | | D43: perl warns, or makes a NUL in silence (T86, T95) |
+| `\c`, `\N{name}`, `\U \L \u \l \Q \E \F` | Later | 16 | D43: with interpolation |
+| An unescaped `$` or `@` in double quotes | Later | 16 | T34: refused until interpolation |
 | Interpolation of `$x`, `${x}`, `@a`, elements, `->` chains | In | 16 | The shapes perl has to guess at are refused |
 | `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
 | `true`, `false`, `undef`, `defined` | In | 4 | |
@@ -196,7 +203,11 @@ Opal's notation, `docs/BUILTINS.md`.
 | Family | Here | Step |
 |---|---|---|
 | `say`, `print` to stdout | In | 0, 3 |
-| `length`, `uc`, `lc`, `ucfirst`, `lcfirst`, `index`, `rindex`, `substr` (reading, and 4 arguments), `chr`, `ord`, `reverse` of a string, `sprintf`, `printf`, `join`, `chomp` and `chop` of a variable | In | 3, 16 |
+| `length`, `uc`, `lc`, `ord`, `chr`, with brackets or as named unary operators (D41); `substr` (reading, 2 or 3 arguments) and `index` (2 or 3), in brackets | In | 3 |
+| `ucfirst`, `lcfirst`, `rindex`, `substr` with 4 arguments, `reverse` of a string, `sprintf`, `printf`, `join`, `chomp` and `chop` of a variable | In | 16 |
+| `uc`, `lc` of a character past ASCII (T45, until perl's tables are in) | Fault | 3 |
+| `chr` of a surrogate, of a number past U+10FFFF or below zero; printing a noncharacter | Fault | 3 |
+| `substr` and `index` without brackets; a sign after a named unary operator that perl calls ambiguous, `length - 5` | Cut | |
 | `substr` on the left of `=`, `vec`, `pos`, `lc` and friends without an argument | Cut | |
 | `push`, `pop`, `shift`, `unshift`, `splice`, `reverse`, `sort`, `map`, `grep`, `join`, `scalar` | In | 9, 10 |
 | `sort` with `$a` and `$b` | In | 10 |

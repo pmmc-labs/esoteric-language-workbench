@@ -212,8 +212,8 @@ static int digit(char c) {
 // What number it is turns on how it is written, because perl settles a
 // string's value the first time it is used as a number, one way for a use
 // that wants an integer and another for a float, and keeps it (T83):
-//   digits only          the Int. Past the Ints perl goes to a float, and
-//                        holds -2^63 itself two ways: both overflow.
+//   digits only          the Int. Past the Ints perl goes on as an
+//                        unsigned integer and then a float: an overflow.
 //   with an exponent     whole and below 2^53, the Int, by either route.
 //                        Whole and larger, perl has the integer or the
 //                        float: a fault. Otherwise the Num.
@@ -256,10 +256,11 @@ static number from_string(rt_ctx *cx, const rt_str *s) {
         for (const char *d = first; d < whole_end; d++) {
             int o = __builtin_mul_overflow(m, (uint64_t)10, &m);
             o |= __builtin_add_overflow(m, (uint64_t)(*d - '0'), &m);
-            if (o || m > (uint64_t)INT64_MAX) rt_fault(cx, "integer overflow");
+            if (o || m > (uint64_t)INT64_MAX + (negative ? 1 : 0)) rt_fault(cx, "integer overflow");
         }
+        // 0 - m, in unsigned arithmetic: -2^63 has no positive to negate.
         v.is_int = 1;
-        v.i = negative ? -(int64_t)m : (int64_t)m;
+        v.i = negative ? (int64_t)(0 - m) : (int64_t)m;
         return v;
     }
     // The C library reads a decimal as perl does, to the nearest double

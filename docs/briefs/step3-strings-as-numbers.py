@@ -29,7 +29,6 @@ operation:
 The rule, for a string where a number is wanted:
 
     class A   digits                   the Int, or a fault past the Ints
-                                       (and at -2^63 itself)
     class C   with an exponent         whole and below 2^53: the Int;
                                        whole and 2^53 or more: a fault
                                        (D23); otherwise the Num
@@ -78,9 +77,7 @@ def numify(text):
     digits = (whole or '') + ('.' + (frac or lead_frac or '') if point or lead_point else '')
     if exponent is None and not (point or lead_point):                      # class A
         n = int(sign + whole)
-        # -2^63 too: perl holds that one string as an integer or as a
-        # float, by its past, and no other.
-        if not INT_MIN < n <= INT_MAX:
+        if not INT_MIN <= n <= INT_MAX:
             raise Fault('integer overflow')
         return ('i', n)
     x = float(sign + digits + ('e' + exponent if exponent is not None else ''))

@@ -235,6 +235,21 @@ The sign of a zero (T79) shows in more places than `atan2` and
 `'5'` for a Num 5 and `5` once it has been used as an integer: a
 module, and a reason to be careful when one is proposed.
 
+## Found building step 3
+
+The model's tests, held to perl, and the hand tests found these after
+the proposal was agreed. Each is a refusal or a fault where the
+proposal had perl's answer, or none.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T94 | `say length - 5;` and `say length-5;` | `2`, and `Warning: Use of "length" without parentheses is ambiguous`, as it compiles. `length -5` is silent: perl goes by the blank before the sign and the lack of one after | 3 | Refuse a sign after a named unary operator unless it has a blank before it and none after (D41) |
+| T95 | `say "\x4 ";` and `say "\18";` | The character and a warning: `Non-hex character ' ' terminates \x early`, `Non-octal character '8' terminates \0 early`. `"\x4"` at the end of a string, `"\x41g"` and `"\0008"` are silent | 3 | `\x` takes two hex digits or braces; an octal escape of one or two digits may not be followed by `8` or `9` (D43) |
+| T96 | `say substr("abcde", -8, 2);` | An empty line, and `substr outside of string`: the piece starts and ends before the beginning. `substr("abcde", -8, 3)` ends at the beginning, and is empty in silence | 3 | Fault, as for a start past the end (D41) |
+| T97 | `say substr("abc", 0, 1e30); say substr("abc", 1e30); say index("abc", "c", 1e30);` | `ab`, `c`, `2`, in silence: a float past the Ints is cut to whatever the machine gives | 3 | Where a whole number is wanted, the number cut toward zero must be an Int, or it faults (D41) |
+| T98 | `say "a" x -0.5;` and `say ord chr(-0.5);` | An empty line and `Negative repeat count does nothing`; `65533` and `Invalid negative number (-0.5) in chr`. perl tests the number before cutting it to 0. `"a" x "-0.5"`, a string, is silent | 3 | A count or a character number below zero faults before it is cut, a string's too (D42, D44) |
+| T99 | `say "a"x 3; say "c" x.5; say "d" x"2"; say "a" x= 3;` | `aaa`, an empty line, `dd`; the last doesn't compile, `x=` being an assignment | 3 | Agree on the first three: after a value `x` is the operator, whatever it is hard against but a digit (T57). Refuse `x=` as the operator it is |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only
@@ -265,10 +280,11 @@ module, and a reason to be careful when one is proposed.
   a `same` test as D10 stands. Step 8.
 - Plain `perl FILE` prints `é` as the single byte E9, in silence;
   with `-CSDA`, or with `use open ':std', ':encoding(UTF-8)';` in the
-  file, it prints the two bytes of UTF-8. The oracle runs perl with
-  `-CSDA` (D24), so "the same file, given to perl" is true only with
-  a flag the file doesn't carry. Step 3 proposes whether a program
-  with text past ASCII must say `use open` itself.
+  file, it prints the two bytes of UTF-8. The oracle ran perl with
+  `-CSDA` until step 3 (D24), so "the same file, given to perl" was
+  true only with a flag the file didn't carry. Closed by D39: the
+  oracle runs perl plain, and `t/checks/same-latin1-no-open` and
+  `same-wide-no-open` go red if the flag comes back.
 - `perl -c` says `FILE syntax OK` on stderr when all is well, so
   "nothing on stderr" for a compile means nothing but that line.
 - 5.38 and 5.42 differ here, and nowhere else that these documents
@@ -297,8 +313,8 @@ module, and a reason to be careful when one is proposed.
     for stdin; the compiled program gets the whole environment and a
     file. `%ENV`, `-t`, `localtime` and `time` show the difference.
     Steps 21 and 22: one environment for both, and `TZ` pinned.
-  - `-CSDA` is not `perl FILE` for a character past ASCII (the open
-    question of step 3).
+  - `-CSDA` is not `perl FILE` for a character past ASCII: closed at
+    step 3 (D39).
   - A `new` test is not checked at all. Step 27, where the first one
     is.
   - The reading rule pairs quotes by counting them, so an apostrophe

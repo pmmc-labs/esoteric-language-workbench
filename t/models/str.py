@@ -15,8 +15,7 @@ digits with a point among them or not, at least one digit; an exponent or
 none (`e` or `E`, a sign or none, digits); blanks. Anything else is `not a
 numeric string`. Then, by how it is written:
 
-  digits only          the Int, or `integer overflow`; and -2^63 itself
-                       overflows, which perl holds two ways
+  digits only          the Int, or `integer overflow`
   with an exponent     the nearest double (or `float overflow`). Whole and
                        below 2^53: the Int. Whole and larger: a fault, perl
                        having two values for it. Otherwise the Num.
@@ -265,7 +264,7 @@ def as_number(v):
     sign, whole, point, frac, lead_point, lead_frac, exponent = m.groups()
     if exponent is None and not (point or lead_point):
         n = int(sign + whole)
-        if not MIN < n <= MAX:
+        if not MIN <= n <= MAX:
             raise Fault('integer overflow')
         return n, False
     x = float(sign + (whole or '') + '.' + (frac or lead_frac or '') + 'e' + (exponent or '0'))
@@ -456,7 +455,8 @@ def text(e, top=True):
 # Ints.
 DIGITS = ['0', '1', '7', '12', '-12', '+12', ' 12 ', '012', '-0', '00', '12\n', '2147483648', '999999999999999',
           '1000000000000000', '9007199254740991', '9007199254740992', '9007199254740993', '-9007199254740992',
-          '10000000000000000', '4611686018427387904', '9223372036854775807', '-9223372036854775807']
+          '10000000000000000', '4611686018427387904', '9223372036854775807', '-9223372036854775807',
+          '-9223372036854775808']
 POINTS = ['3.0', '5.', '0.0', '-0.0', '10.00', '+3.0', ' 3.0 ', '2.0', '-1.0', '.5', '1.5', '-2.5', '0.1', '3.7',
           '999999999999999.0', '1000000000000000.0', '9007199254740991.0', '9007199254740992.0',
           '10000000000000000.0', '0.000001']
@@ -623,7 +623,7 @@ FAULTS = {
     '128': ('not-numeric-nul', ('+', '3\v', 1), ('+', '3\x00', 1)),
     '129': ('not-numeric-digit', ('+', '3', 1), ('+', '٣', 1)),
     '130': ('string-overflow', ('+', '9223372036854775807', 0), ('+', '9223372036854775808', 0)),
-    '131': ('string-overflow-negative', ('+', '-9223372036854775807', 0), ('+', '-9223372036854775808', 0)),
+    '131': ('string-overflow-negative', ('+', '-9223372036854775808', 0), ('+', '-9223372036854775809', 0)),
     '132': ('string-float-overflow', ('*', '1' + '0' * 308 + '.0', 1), ('*', '1e309', 1)),
     '133': ('string-exponent', ('+', '9007199254740991e0', 1), ('+', '1e16', 1)),
     '134': ('two-answers-string', ('+', 9007199254740993, '1'), ('+', 9007199254740992, '1')),

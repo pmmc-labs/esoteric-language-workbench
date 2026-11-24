@@ -7,8 +7,8 @@ commit as the feature.
 What the language is meant to become is in [`DESIGN.md`](DESIGN.md),
 and [`SURFACE.md`](SURFACE.md) says, for each construct of Perl,
 whether it will be in. Neither is a description of what works. This
-is, and so far it is short: a program can do arithmetic and print the
-answers.
+is, and so far it is short: a program can do arithmetic, build
+strings, and print.
 
 ## A program
 
@@ -34,13 +34,36 @@ left out, and it must be `v5.42` exactly. It appears once. The `v5.42`
 is followed by its semicolon or by a blank: a comment hard against it,
 `use v5.42#`, is refused, because perl then reads something else.
 
+Two more lines may follow it, in either order, each once, before
+anything else:
+
+    use utf8;
+    use open ':std', ':encoding(UTF-8)';
+
+The first lets the program's text hold characters past ASCII, and the
+second lets the program print them; each is described where it
+matters, below. They are written exactly so (either kind of quote will
+do), and no other `use` is in the language.
+
 ## The text of a program
 
 A program is written in ASCII: the printable characters, the space,
-the tab and the newline. Any other character is refused wherever it
-is, in a comment too: a carriage return, so a file with Windows line
-endings has to be converted; any control character; any character
-past ASCII, until strings arrive and bring `use utf8` with them.
+the tab and the newline. A carriage return is refused, so a file with
+Windows line endings has to be converted, and so is every other
+control character, wherever it is.
+
+A character past ASCII may stand in a string or in a comment, and
+nowhere else, in a file that is UTF-8 and says `use utf8;` **on an
+earlier line**:
+
+    use v5.42;
+    use utf8;
+    use open ':std', ':encoding(UTF-8)';
+    say "café";   # and in a comment: ☺
+
+On the line that says `use utf8;` itself it is too soon, as it is to
+perl, which reads a line at a time; and without the pragma the
+character is refused, in a comment too, as perl refuses it.
 
 Spaces, tabs and newlines separate words and are otherwise ignored. A
 statement may be spread over several lines, and several statements may
@@ -64,9 +87,10 @@ first, so no line may start that way. After a statement on its line,
 Every statement ends with a semicolon, the last one too, and there is
 no empty statement: `;;` is refused.
 
-## say
+## say and print
 
-`say` prints the value of an expression and a newline.
+`say` prints the value of an expression and a newline. `print` prints
+the value and no newline.
 
     use v5.42;
     say 42;
@@ -79,8 +103,21 @@ prints
     14
     3.5
 
-It is the only statement there is yet, and it takes exactly one
-expression, with brackets round it or without.
+    print "no newline";
+    print "\n";
+
+They are the only statements there are yet, and each takes exactly one
+expression, with brackets round it or without: `say "a", "b";` waits
+for lists. Neither has a value, so neither can stand inside an
+expression. What is said of `say` below goes for `print` too.
+
+**To print a character past ASCII, the program says `use open ':std',
+':encoding(UTF-8)';` at the top.** With that line perl writes its
+output as UTF-8, and so does the language. Without it perl writes `é`
+as a single byte that isn't UTF-8 and warns about `☺`, so the language
+stops there: `fault: a character past ASCII printed without 'use
+open'`. A program that prints only ASCII doesn't need the line, and
+may still build and measure any string it likes.
 
 Without brackets, the expression runs to the semicolon. With them,
 **the brackets are the whole of what `say` is given**, and nothing but
@@ -276,6 +313,180 @@ in perl, and that prints one way:
 Outside that range there is nothing to choose. Below it, both ways
 are the same digits. From 2^53 up perl always prints the float, so
 `say 1e16;` prints `1e+16`.
+
+## Strings
+
+A **Str** is a sequence of characters, of any length, the empty string
+included. A character is a Unicode character: `length` counts
+characters, not bytes, and so does everything else. A string never
+changes; every operation makes a new one.
+
+### Writing strings
+
+In single quotes, what is written is what the string holds:
+
+    say 'a $ and an @, and a \n that is two characters';
+
+Only two things are special there: `\\` is one backslash and `\'` is
+a quote.
+
+In double quotes a backslash begins an escape:
+
+    say "a tab\tand a newline\n";
+
+The escapes are `\n` (newline), `\t` (tab), `\r`, `\f`, `\b`, `\a`,
+`\e` (escape) and `\0` (a NUL); `\\`, `\"`, `\$` and `\@` for those
+four characters; and four ways to name a character by its number:
+`\x41` (two hex digits), `\x{263A}` (any number of them), `\101` or
+`\o{101}` (octal), and `\N{U+263A}`. A backslash before any other
+punctuation mark, or a space, is that mark.
+
+**A `$` or an `@` in double quotes must have its backslash**: `"cost:
+\$5"`, `"me\@example.com"`. To perl those begin a variable, and
+putting a variable's value into a string comes later.
+
+Everything else is refused, because perl warns about it or reads it
+as something nobody means: a backslash before a letter or a digit that
+isn't an escape (`\q`, `\8`); `\x` with fewer than two digits; an
+octal escape of one or two digits with an `8` or a `9` after it (write
+all three digits, `\001`); a number that isn't a character
+(`\x{D800}`, `\x{110000}`); `\c`, a character by its name
+(`\N{LATIN SMALL LETTER E}`), and the case escapes `\U \L \u \l \Q
+\E`.
+
+A string may run over several lines, and then it holds the newlines. A
+tab may be written as itself; any other control character is written
+as an escape.
+
+### Joining and repeating
+
+A dot joins two values into a string, and `x` repeats one:
+
+    say "ab" . "cd";      # abcd
+    say "ab" x 3;         # ababab
+    say "-" x 10 . ">";   # ---------->
+
+The dot sits with `+` and `-` in the order of operations, and `x` with
+`*`, so `"a" . "b" x 2` is `abb`, and `1 + 2 . 3` is `33`: the sum
+first, since the two are equals and group from the left.
+
+`x` is a word, with a blank or a bracket after it: `"ab" x3` is
+refused. Its count is cut to a whole number, so `"a" x 2.7` is `aa`. A
+count below zero is a fault (`negative repeat count`), `-0.5`
+included, and so is a result of 2^31 characters or more.
+
+After a value, a dot is always the operator, whatever follows it: `1
+.5` is `15`, and `"a".5` is `a5`.
+
+### Numbers as strings, and strings as numbers
+
+A number where a string is wanted becomes what `say` would print for
+it:
+
+    say "n = " . 0.1 + 0.2;   # a fault: see below
+    say "n = " . (0.1 + 0.2); # n = 0.3
+    say length 1000;          # 4
+
+(The first is `("n = " . 0.1) + 0.2`, and `"n = 0.1"` is no number.)
+The one kind of Num that doesn't print, above, doesn't become a string
+either: `"a" . 1e15` faults.
+
+A string where a number is wanted must be written as a number: blanks,
+a sign, digits with a point among them or not, an exponent, blanks.
+
+    say "12" + 1;       # 13
+    say " 12\n" + 1;    # 13: blanks before and after are fine
+    say "1.5" * 2;      # 3
+    say "1e3" + 1;      # 1001
+
+Anything else is `fault: not a numeric string`: `""`, `"abc"`,
+`"12abc"`, `"0x10"`, `"1_000"`. perl warns about each of those and
+carries on with a guess. It doesn't warn about `"Inf"`, `"NaN"` or `"0
+but true"`, and they are faults here all the same.
+
+Which number a string is depends on how it is written, as with a
+literal. Digits alone are an Int, and fault if they are past the Ints.
+A point or an exponent makes a Num, except that an exponent with a
+whole value, `"1e3"`, is the Int. Three corners fault, because perl
+has two answers in each, depending on what was done with the string
+earlier, and a value here has no earlier:
+
+- a string with an exponent whose value is whole and 2^53 or more,
+  `"1e16"`;
+- arithmetic on a string like `"3.0"`, whole with a point, when the
+  other number or the exact answer is 2^53 or more. `"3.0" + 1` is 4
+  and `"10.00" * 3` is 30; `"3.0" + 9007199254740990` stops;
+- a minus before a string whose number is whole and 2^53 or more, or
+  before a string that starts with `+`.
+
+A minus before a string negates its number: `-"12"` is -12. (perl's
+`-"foo"`, which is the string `-foo`, is a fault.) A plus before a
+string does nothing at all: `+"abc"` is `abc`.
+
+One more corner is about numbers alone, and is step 2's rule made
+exact: in `+`, `-` and `*`, an Int of 2^53 or more that happens to be
+exactly a double (10000000000000000, 2^60) faults beside a whole Num
+or a string, `10000000000000000 + 1.0`: perl answers
+`10000000000000001` or `1e+16` by the Int's past. Beside another Int
+it is exact as ever, and so is every Int a double can't hold exactly.
+
+### length, uc, lc, ord, chr
+
+`length` is the number of characters. `uc` and `lc` change the case of
+the ASCII letters, and fault on a character past ASCII, until perl's
+own tables for the rest of Unicode are in. `ord` is the number of a
+string's first character (0 for the empty string), and `chr` is the
+character with a number.
+
+    say length "café";     # 4
+    say uc "abc";          # ABC
+    say ord "A";           # 65
+    say chr 65;            # A
+
+`chr` wants a character's number: 0 to 0x10FFFF, less the surrogates
+(0xD800 to 0xDFFF). Anything else is `fault: not a character`, a
+number below zero too. A fraction is cut off, `chr 65.9` is `A`.
+
+These five are written with brackets or without. With brackets, the
+brackets are the argument: `length("ab") . "c"` is `2c`. **Without
+them, the argument is everything up to something that binds more
+loosely than arithmetic and the dot**, which is perl's rule:
+
+    say length "ab" . "c";    # 3: the length of "abc"
+    say length "abc" + 1;     # a fault: "abc" + 1
+
+One spelling is refused: a sign after the name must have a blank
+before it and none after, `length -5`. perl warns that `length - 5`
+and `length-5` are ambiguous (it means `length(-5)` by both).
+
+### substr and index
+
+`substr(STRING, START)` is the string from a position to its end, and
+`substr(STRING, START, LENGTH)` is that many characters from the
+position. Positions count from 0, and a negative one counts from the
+end; a negative length leaves that many off the end.
+
+    say substr("abcdef", 2);       # cdef
+    say substr("abcdef", 2, 3);    # cde
+    say substr("abcdef", -2);      # ef
+    say substr("abcdef", 1, -1);   # bcde
+
+A piece that hangs over an end of the string is cut to what the string
+has. A start past the end is `fault: substr outside of string`, and
+so is a piece that starts and ends before the beginning. (perl warns
+of both.)
+
+`index(STRING, PIECE)` is the position of the first place the piece
+is found, or -1, and `index(STRING, PIECE, START)` looks from a
+position on.
+
+    say index("abcabc", "c");      # 2
+    say index("abcabc", "c", 3);   # 5
+    say index("abcabc", "x");      # -1
+
+These two are always written with brackets. A position or a length
+that isn't a whole number is cut to one, toward zero; one too large
+to be an Int is a fault.
 
 ## When a program stops
 
