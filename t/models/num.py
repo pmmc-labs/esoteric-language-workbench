@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/040 to t/073: Num, `/`, `**`, and the two kinds of number together
+"""t/040 to t/074: Num, `/`, `**`, and the two kinds of number together
 (step 2; D35 to D38).
 
 The definition, which is all this file knows of the language. A number is
@@ -45,7 +45,7 @@ down: no last bit can change it.
 040 to 045 are an operator each, over every pair of an Int and a Num, a
 Num and an Int, and two Nums (and two Ints for `/` and `**`, which step 1
 didn't have), a line a pair, wherever there is an answer that prints.
-046 is each Num negated and 047 is Nums printed. 048 to 073 each fault
+046 is each Num negated and 047 is Nums printed. 048 to 074 each fault
 once, the line before the fault being the nearest thing that doesn't.
 
 Every line is `say(EXPR);` (T25). A negative number is a minus applied to
@@ -123,6 +123,8 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/num.py 072 > t/072-print-whole-float-div.expected
     python3 t/models/num.py --program 073 > t/073-fault-order.pl
     python3 t/models/num.py 073 > t/073-fault-order.expected
+    python3 t/models/num.py --program 074 > t/074-print-whole-float-power-of-two.pl
+    python3 t/models/num.py 074 > t/074-print-whole-float-power-of-two.expected
 """
 
 import ctypes
@@ -256,9 +258,15 @@ INTS = [0, 1, -1, 2, 3, -3, 7, -7, 10, 16, 2**31, 2**32 + 1, 3037000500, 10**15,
 NUMS = [0.0, -0.0, 0.5, -0.5, 1.0, 1.5, -2.5, 3.0, 3.7, 0.1, 1e-5, 1000.0, 4294967296.0, 999999999999999.0,
         1e15, -1e15, 2e15, 2.0**53 - 1, 2.0**53, 2.0**53 + 2, -(2.0**53), 1e16, -1e16, 2.0**62,
         2.0**63 - 1024, 2.0**63, 1e19, 1.8e19, 2.0**64, 1e20, 1e300, -1e300, 5e-324, 1.7976931348623157e308]
-BASES = [0, 1, -1, 2, -2, 3, -3, 7, 10, 15, 16, 255, 65535, 3037000499, 4294967295, 4294967296, 2**53 + 1, MAX, MIN,
+# For `**`: bases of every number of bits the rule turns on, with the
+# powers on each side of "bits times power is at most 64" (2 bits and 32
+# or 33, 3 and 21 or 22, 4 and 16 or 17, 5 and 12 or 13, 8 and 8 or 9, 16
+# and 4 or 5, 32 and 2 or 3); and powers of two large enough that an Int
+# and a Num of the same value print differently (1024 ** 5, 2^31 ** 2).
+BASES = [0, 1, -1, 2, -2, 3, -3, 7, 10, 15, 16, 17, 31, 255, 1024, -1024, 65535, 2**31, 3037000499, 4294967295,
+         4294967296, 2**53 + 1, MAX, MIN,
          0.0, 0.5, 1.5, -1.5, 2.0, 3.0, -8.0, 10.0, 0.1, 1e15, 2.0**53, 1e16, 1e300]
-POWERS = [0, 1, 2, 3, 4, 8, 15, 16, 20, 32, 33, 39, 40, 50, 62, 63, 64, 1023, -1, -2, -3,
+POWERS = [0, 1, 2, 3, 4, 5, 8, 9, 12, 13, 15, 16, 17, 20, 21, 22, 32, 33, 39, 40, 50, 62, 63, 64, 1023, -1, -2, -3,
           0.0, 0.5, -0.5, 1.5, 2.0, 3.0, 62.0, 0.1]
 
 def pairs(op):
@@ -346,6 +354,9 @@ FAULTS = {
     '072': ('print-whole-float-div', ('/', 4000000000000001, 2), ('/', 4000000000000000, 2)),
     # The left operand's fault is the one that happens.
     '073': ('fault-order', ('+', ('/', 1, 2), ('**', 2, 0.5)), ('+', ('/', 1, 0), ('**', -8.0, 0.5))),
+    # A power of two to a whole power is a Num whatever its size: as an
+    # Int, which the bits would allow, this one would print.
+    '074': ('print-whole-float-power-of-two', ('**', 1024, 4), ('**', 1024, 5)),
 }
 
 def program(lines, header):

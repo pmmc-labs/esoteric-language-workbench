@@ -20,7 +20,7 @@ What a row can say:
 - **Cut**: refused, and not planned. Reopening one is a proposal.
 - **New**: perl doesn't have it; an exception to D2.
 
-Steps 0 and 1 are built and nothing after them, so "In" is a plan and
+Steps 0 to 2 are built and nothing after them, so "In" is a plan and
 not a fact; [`LANGUAGE.md`](LANGUAGE.md) is what works.
 [`TRAPS.md`](TRAPS.md) has the programs that show why a row says
 what it does.

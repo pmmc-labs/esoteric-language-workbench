@@ -4,9 +4,9 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 and 1 are done (2026-11-24): integer arithmetic
-compiles, runs, and is checked against perl 5.42. **Step 2 is agreed
-(D35 to D38) and being built.** Steps 3 to 30 are outlines: each is proposed,
+**Progress:** steps 0 to 2 are done (2026-11-24): arithmetic on Ints
+and Nums compiles, runs, and is checked against perl 5.42. Next: step
+3, strings, which is an outline and is proposed before it is built. Steps 3 to 30 are outlines: each is proposed,
 with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
@@ -288,9 +288,32 @@ differences and findings:
   (`-9223372036854775808` is a minus applied to a refused literal;
   write `-9223372036854775807 - 1`).
 
-### 2. Num, division, `**`, numeric literals (agreed; being built)
+### 2. Num, division, `**`, numeric literals (done)
 
 Referee: perl. Size: large.
+
+**Built 2026-11-24**, by Fable 5.2, as agreed below, and with these
+differences and findings:
+
+- **The model and perl agree on every line**: `t/models/num.py` writes
+  040 to 047, about 14,600 lines over the edges, and perl 5.42 prints
+  the model's answer for each; 048 to 074 fault once each. Committed
+  red, before any code.
+- **A line with `**` is in a test only if no last bit can change what
+  it prints** (the answer one double up and one down prints the same),
+  so that another machine's `pow` can't fail a test here.
+- **The runtime was broken 22 ways on purpose, and three got through
+  the first time**: a power of two as an Int where it must be a Num,
+  the `**` test off by one at 65 bits, and a negated zero losing its
+  sign. Each was a hole in the tests, not the runtime. The model has
+  the missing edges now (a base of every number of bits, with the
+  power on each side of 64; `1024 ** 5`), and
+  `runtime/tests/zero.c` tests the sign of a zero from C, since no
+  program can see it until `atan2` comes (T79). All 22 are caught.
+- **Test 039 is retired**: it refused `**`.
+- **The driver links `-lm`.**
+- Not done here, and noted where it will be needed: a negative zero
+  given to `atan2` or `%g` (T79; steps 16 and 22).
 
 **Proposed 2026-11-24, and agreed the same day: Stevan took the
 recommendation on each of the five questions below, which are now D35

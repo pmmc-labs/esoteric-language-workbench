@@ -7,8 +7,9 @@ it can be built with this repository's process (`docs/PROCESS.md` on
 `main`): an agent builds, a person decides, one feature a step, and every
 expected output comes from somewhere other than the compiler.
 
-Steps 0 and 1 are built: integer arithmetic compiles to a native
-binary, and a script holds every test to what perl 5.42 prints. The rest is the workbench's
+Steps 0 to 2 are built: arithmetic on integers and floats compiles to
+a native binary, and a script holds every test to what perl 5.42
+prints. The rest is the workbench's
 documents, filled in.
 
 ## The idea in one paragraph
@@ -50,7 +51,7 @@ again.
 | [`docs/PLAN.md`](docs/PLAN.md) | Steps 0 to 30; 0 and 1 in full |
 | [`docs/TRAPS.md`](docs/TRAPS.md) | Eighty-two programs, run under perl 5.42, where the obvious implementation would be wrong |
 | [`docs/BACKGROUND.md`](docs/BACKGROUND.md) | What Chalk, perl5-son, Opal, Allium and Crayon taught, with paths |
-| [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: `say`, and arithmetic on integers |
+| [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: `say`, and arithmetic on integers and floats |
 | [`t/README.md`](t/README.md) | The five kinds of golden test, and the oracle check |
 | [`docs/briefs/claims.py`](docs/briefs/claims.py) | Every statement these documents make about perl, as a program, rerun under 5.42 |
 
@@ -98,7 +99,7 @@ more.
     make test
 
 A fresh session, on this branch: "Read `CLAUDE.md`, then propose step
-2 of `docs/PLAN.md`."
+3 of `docs/PLAN.md`."
 
 This is a branch of the workbench that shares no history with `main`:
 it began as these documents alone, the seed of a language to be

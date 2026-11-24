@@ -40,3 +40,11 @@ test('every operator faults on an operand that is no number', () => {
     // And with nothing wrong, nothing faults.
     assert.deepEqual(run('tags'), { status: 0, output: '2\n2\n' });
 });
+
+// What perl makes of each is in docs/briefs/claims.py (T79), by sprintf.
+test('the sign of a zero', () => {
+    assert.deepEqual(run('zero'), { status: 0, output: [
+        '-(0.0): negative Num', '-(-(0.0)): Num', '0 * -1.5: negative Num', '0.0 * -1: Int', '0 / -5: negative Num',
+        '-(0.0) + 0: Int', '-(0): Int', '0', '',
+    ].join('\n') });
+});
