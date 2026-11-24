@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/100 to t/168: strings (step 3; D39 to D45).
+"""t/100 to t/169: strings (step 3; D39 to D45).
 
 The definition, which is all this file knows of the language beyond
 t/models/num.py (the numbers, which it imports). A value is an Int, a Num
@@ -86,7 +86,7 @@ utf8`. A test that prints a character past ASCII has the `use open` line.
 and two strings. 106 is the minus and the plus; 107 `.`; 108 `x`; 109
 `length`, `ord` and `chr`; 110 `uc` and `lc`; 111 and 112 `substr`; 113
 `index`; 114 whole numbers wanted; 115 printing; 116 every way of writing
-a number in a string. 120 to 168 each fault once, the line before the
+a number in a string. 120 to 169 each fault once, the line before the
 fault being a near thing that doesn't.
 
 Every command that writes a file, one a line (t/checks.py runs them all):
@@ -223,6 +223,8 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/str.py 167 > t/167-substr-outside-before-negative.expected
     python3 t/models/str.py --program 168 > t/168-substr-outside-empty.pl
     python3 t/models/str.py 168 > t/168-substr-outside-empty.expected
+    python3 t/models/str.py --program 169 > t/169-neg-whole-float.pl
+    python3 t/models/str.py 169 > t/169-neg-whole-float.expected
 """
 
 import math
@@ -634,6 +636,8 @@ FAULTS = {
     '141': ('neg-plus', ('-', '5'), ('-', '+5')),
     '142': ('neg-large', ('-', '999999999999999'), ('-', '9007199254740992')),
     '143': ('neg-not-numeric', ('+', 'foo'), ('-', 'foo')),
+    # The answer is a Num, whatever the string: as an Int this one would print.
+    '169': ('neg-whole-float', ('-', '999999999999999'), ('-', '1000000000000000')),
     '144': ('substr-outside', bracketed(call('substr', 'abc', 3)), call('substr', 'abc', 4)),
     '145': ('substr-outside-length', bracketed(call('substr', 'abc', 3, 1)), call('substr', 'abc', 4, 1)),
     '166': ('substr-outside-before', bracketed(call('substr', 'abc', -5, 2)), call('substr', 'abc', -5, 1)),

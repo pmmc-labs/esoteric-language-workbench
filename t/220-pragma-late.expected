@@ -1,0 +1,2 @@
+t/220-pragma-late.pl:5:1: 'use utf8' goes at the top, after 'use v5.42;' and before anything else
+exit: 1

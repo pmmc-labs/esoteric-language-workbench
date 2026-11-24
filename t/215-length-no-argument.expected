@@ -1,0 +1,2 @@
+t/215-length-no-argument.pl:4:5: length needs an argument
+exit: 1

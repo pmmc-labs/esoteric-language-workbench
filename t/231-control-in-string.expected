@@ -1,0 +1,2 @@
+t/231-control-in-string.pl:4:7: a control character (U+0001) is not in the language
+exit: 1

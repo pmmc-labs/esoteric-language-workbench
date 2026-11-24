@@ -1,0 +1,2 @@
+t/207-escape-surrogate.pl:4:13: \x{D800} is not a character: a surrogate, or past U+10FFFF
+exit: 1

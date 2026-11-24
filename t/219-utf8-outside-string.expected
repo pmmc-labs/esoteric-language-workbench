@@ -1,0 +1,2 @@
+t/219-utf8-outside-string.pl:5:5: a character past ASCII (U+00E9) outside a string or a comment is not in the language
+exit: 1

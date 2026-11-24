@@ -41,6 +41,29 @@ test('every operator faults on an operand that is no number', () => {
     assert.deepEqual(run('tags'), { status: 0, output: '2\n2\n' });
 });
 
+test('and so does everything that wants a string, or a whole number', () => {
+    const strings = ['say', 'print', 'concat-left', 'concat-right', 'repeat-left', 'length', 'uc', 'lc', 'ord',
+        'substr2-1', 'substr3-1', 'index2-1', 'index2-2', 'index3-1', 'index3-2'];
+    const numbers = ['repeat-right', 'chr', 'substr2-2', 'substr3-2', 'substr3-3', 'index3-3'];
+    for (const [cases, what] of [[strings, 'not a value'], [numbers, 'not a numeric value']] as const) {
+        for (const which of cases) {
+            const r = run('tags', which);
+            assert.equal(r.output, `2\nfault: ${what} at tags.pl line 3.\n`, which);
+            assert.equal(r.status, 1, which);
+        }
+    }
+});
+
+// The second and third characters of the four are three bytes and four.
+test('strings are counted in characters, whatever their bytes', () => {
+    assert.deepEqual(run('strings'), { status: 0, output: [
+        'chr 233: 2 bytes, 1 character', 'chr 9786: 3 bytes, 1 character', 'chr 128512: 4 bytes, 1 character',
+        'joined: 10 bytes, 4 characters', 'repeated: 30 bytes, 12 characters', 'substr 1, 2: 7 bytes, 2 characters',
+        'index of the last: 3', 'a NUL in the middle: 3 bytes, 3 characters', '12 as a string: 2 bytes, 2 characters',
+        'a literal ends with a NUL that is not its own: 0', '',
+    ].join('\n') });
+});
+
 // What perl makes of each is in docs/briefs/claims.py (T79), by sprintf.
 test('the sign of a zero', () => {
     assert.deepEqual(run('zero'), { status: 0, output: [

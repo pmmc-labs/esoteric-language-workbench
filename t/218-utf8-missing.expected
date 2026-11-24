@@ -1,0 +1,2 @@
+t/218-utf8-missing.pl:4:6: a character past ASCII (U+00E9) needs 'use utf8;' on a line before it
+exit: 1

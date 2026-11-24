@@ -1,0 +1,2 @@
+t/216-named-unary-ambiguous.pl:5:12: length -: perl warns that this is ambiguous: write length(-...)
+exit: 1

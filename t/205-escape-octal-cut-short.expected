@@ -1,0 +1,2 @@
+t/205-escape-octal-cut-short.pl:4:6: \18: an octal escape that 8 cuts short, and perl warns: write \001
+exit: 1

@@ -689,16 +689,16 @@ rt_value rt_substr3(rt_ctx *cx, rt_value a, rt_value offset, rt_value count) {
 }
 
 // `index`: where `b` first is in `a`, at or after a position, which is
-// moved into the string; -1 if nowhere. Bytes are compared, and a match
-// begins at a character, since the search does and no character's bytes
-// begin inside another's.
+// moved into the string; -1 if nowhere. Bytes are compared: a match can
+// only begin at a character, since the first byte of one is never a later
+// byte of another.
 static rt_value find(rt_ctx *cx, rt_value a, rt_value b, int64_t position) {
     const rt_str *s = to_str(cx, a);
     const rt_str *t = to_str(cx, b);
     if (position < 0) position = 0;
     if (position > (int64_t)s->chars) position = (int64_t)s->chars;
     for (uint64_t at = offset_of(s, (uint64_t)position); at + t->len <= s->len; at++) {
-        if (!continues(s->bytes[at]) && memcmp(s->bytes + at, t->bytes, t->len) == 0) return rt_int((int64_t)chars_in(s, at));
+        if (memcmp(s->bytes + at, t->bytes, t->len) == 0) return rt_int((int64_t)chars_in(s, at));
     }
     return rt_int(-1);
 }

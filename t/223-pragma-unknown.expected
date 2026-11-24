@@ -1,0 +1,2 @@
+t/223-pragma-unknown.pl:4:5: 'use strict' is not in the language
+exit: 1

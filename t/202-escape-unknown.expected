@@ -1,0 +1,2 @@
+t/202-escape-unknown.pl:4:7: \q is not an escape in the language
+exit: 1

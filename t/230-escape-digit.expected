@@ -1,0 +1,2 @@
+t/230-escape-digit.pl:4:6: \8 is not an escape in the language
+exit: 1

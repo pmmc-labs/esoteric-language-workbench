@@ -1,0 +1,2 @@
+t/233-dot-no-right.pl:4:11: expected a value, found ';'
+exit: 1

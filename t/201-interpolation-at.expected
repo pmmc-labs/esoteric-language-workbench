@@ -1,0 +1,2 @@
+t/201-interpolation-at.pl:4:10: '@' in a double-quoted string is a variable to perl: write \@ (interpolation is not in the language yet)
+exit: 1

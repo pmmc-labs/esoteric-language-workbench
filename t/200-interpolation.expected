@@ -1,0 +1,2 @@
+t/200-interpolation.pl:4:12: '$' in a double-quoted string is a variable to perl: write \$ (interpolation is not in the language yet)
+exit: 1

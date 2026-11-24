@@ -1,0 +1,2 @@
+t/229-backslash-newline.pl:4:7: a backslash before the end of a line is not in the language
+exit: 1

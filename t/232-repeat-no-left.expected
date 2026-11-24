@@ -1,0 +1,2 @@
+t/232-repeat-no-left.pl:4:5: expected a value, found 'x'
+exit: 1

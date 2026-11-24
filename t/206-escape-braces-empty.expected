@@ -1,0 +1,2 @@
+t/206-escape-braces-empty.pl:4:6: \x{...}: hex digits between the braces, and nothing else
+exit: 1
