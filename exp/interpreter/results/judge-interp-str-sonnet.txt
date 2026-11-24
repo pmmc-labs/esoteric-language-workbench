@@ -1,0 +1,137 @@
+== interp-str-sonnet (base exp-interp-str)
+6c4da67 step 6: strings, literals, printing and six operators (D31 to D33)
+ee2523f step 6: DESIGN.md's host lines for strings, before the code (D31 to D33)
+== make test
+66 tests, 0 failed
+models: 80 files from 5 models
+referee: 1 referees, 66 tests agree, 0 outside them
+all: 0 failed
+== make golden-node
+ok   089-str-budget-spent
+66 tests, 0 failed
+== make commits
+commits: 2 in origin/exp-interp-str..HEAD
+commits: 0 failed
+== process
+DESIGN.md first: ('ee2523f', "step 6: DESIGN.md's host lines for strings, before the code (D31 to D33)"); code first: ('6c4da67', 'step 6: strings, literals, printing and six operators (D31 to D33)')
+host answers committed before code: yes
+files under t/ changed: none
+files the brief said not to touch, changed: none
+decisions added: none
+== probes-str
+                               got:  build/judge/bad-utf8.lang:1:1: the file is not valid UTF-8 [exit 2, 0.1s, 69 MB peak so far]
+overlong-utf8          ok      want: error before running
+                               got:  build/judge/overlong-utf8.lang:1:1: the file is not valid UTF-8 [exit 2, 0.1s, 69 MB peak so far]
+encoded-surrogate      ok      want: error before running
+                               got:  build/judge/encoded-surrogate.lang:1:1: the file is not valid UTF-8 [exit 2, 0.1s, 69 MB peak so far]
+len-arity              ok      want: error before running
+                               got:  build/judge/len-arity.lang:1:1: str/len takes 1 argument, not 2 [exit 2, 0.1s, 69 MB peak so far]
+char-arity             ok      want: error before running
+                               got:  build/judge/char-arity.lang:1:1: str/char takes 1 argument, not 0 [exit 2, 0.1s, 69 MB peak so far]
+cat-arity              ok      want: error before running
+                               got:  build/judge/cat-arity.lang:1:1: str/cat takes 2 arguments, not 1 [exit 2, 0.1s, 69 MB peak so far]
+column-after-astral    ok      want: error before running at 1:5
+                               got:  build/judge/column-after-astral.lang:1:5: unexpected form after the program [exit 2, 0.1s, 69 MB peak so far]
+column-after-accent    ok      want: error before running at 1:6
+                               got:  build/judge/column-after-accent.lang:1:6: unexpected form after the program [exit 2, 0.1s, 69 MB peak so far]
+print-astral           ok      want: '"😀"'
+                               got:  "😀" [exit 0, 0.1s, 69 MB peak so far]
+print-nul              ok      want: '"\\u{0}"'
+                               got:  "\u{0}" [exit 0, 0.1s, 69 MB peak so far]
+print-del              ok      want: '"\\u{7f}"'
+                               got:  "\u{7f}" [exit 0, 0.1s, 69 MB peak so far]
+print-ls               ok      want: '"\u2028"'
+                               got:  " " [exit 0, 0.1s, 69 MB peak so far]
+print-bom              ok      want: '"\ufeff"'
+                               got:  "﻿" [exit 0, 0.1s, 69 MB peak so far]
+print-quote-backslash  ok      want: '"\\"\\\\"'
+                               got:  "\"\\" [exit 0, 0.1s, 69 MB peak so far]
+len-astral             ok      want: 2
+                               got:  2 [exit 0, 0.1s, 69 MB peak so far]
+at-after-astral        ok      want: 98
+                               got:  98 [exit 0, 0.1s, 69 MB peak so far]
+lt-ffff-10000          ok      want: '#true'
+                               got:  #true [exit 0, 0.1s, 69 MB peak so far]
+lt-e000-1f600          ok      want: '#true'
+                               got:  #true [exit 0, 0.1s, 69 MB peak so far]
+eq-not-normalised      ok      want: '#false'
+                               got:  #false [exit 0, 0.1s, 69 MB peak so far]
+char-surrogate         ok      want: fault: not a character
+                               got:  fault: not a character [exit 1, 0.1s, 69 MB peak so far]
+code-of-pair           ok      want: fault: not a character
+                               got:  fault: not a character [exit 1, 0.1s, 69 MB peak so far]
+quote-ends-name        ok      want: 2
+                               got:  2 [exit 0, 0.1s, 69 MB peak so far]
+two-literals           ok      want: '"ab"'
+                               got:  "ab" [exit 0, 0.1s, 69 MB peak so far]
+bom-start              ok      want: error before running
+                               got:  build/judge/bom-start.lang:1:2: unexpected form after the program [exit 2, 0.1s, 69 MB peak so far]
+nbsp-not-space         ok      want: error before running
+                               got:  build/judge/nbsp-not-space.lang:1:2: unknown name + 1 [exit 2, 0.1s, 69 MB peak so far]
+ls-not-space           ok      want: error before running
+                               got:  build/judge/ls-not-space.lang:1:2: unknown name + 1 [exit 2, 0.1s, 69 MB peak so far]
+cr-in-literal          ok      want: '"a\\u{d}b"'
+                               got:  "a\u{d}b" [exit 0, 0.1s, 69 MB peak so far]
+tab-in-literal         ok      want: '"a\\tb"'
+                               got:  "a\tb" [exit 0, 0.1s, 69 MB peak so far]
+c1-raw                 ok      want: '"\x85"'
+                               got:  "" [exit 0, 0.1s, 69 MB peak so far]
+big-cat                ok      want: 200000
+                               got:  200000 [exit 0, 0.1s, 88 MB peak so far]
+probes: 38, 0 wrong
+== fuzz-str 1000 1
+fuzz-str: 1000 programs (seed 1), 0 differ, 0 outside the referee
+== probes
+untaken-arity         ok      want: error before running
+                              got:  build/judge/untaken-arity.lang:1:12: + takes 2 arguments, not 3 [exit 2]
+untaken-unknown       ok      want: error before running
+                              got:  build/judge/untaken-unknown.lang:1:14: unknown name foo [exit 2]
+untaken-if-parts      ok      want: error before running
+                              got:  build/judge/untaken-if-parts.lang:1:13: if takes 3 arguments, not 2 [exit 2]
+untaken-within-parts  ok      want: error before running
+                              got:  build/judge/untaken-within-parts.lang:1:13: within takes 2 arguments, not 1 [exit 2]
+literal-past-max      ok      want: error before running
+                              got:  build/judge/literal-past-max.lang:1:1: integer 4611686018427387904 is out of range (63 bit [exit 2]
+literal-past-min      ok      want: error before running
+                              got:  build/judge/literal-past-min.lang:1:1: integer -4611686018427387905 is out of range (63 bi [exit 2]
+two-expressions       ok      want: error before running
+                              got:  build/judge/two-expressions.lang:1:3: unexpected form after the program [exit 2]
+empty-program         ok      want: error before running
+                              got:  build/judge/empty-program.lang:1:1: expected an expression [exit 2]
+unbalanced            ok      want: error before running
+                              got:  build/judge/unbalanced.lang:1:1: unclosed ( [exit 2]
+position              ok      want: line 3, column 4
+                              got:  build/judge/position.lang:3:4: + takes 2 arguments, not 3 [exit 2]
+usage-no-file         ok      want: exit 2
+                              got:  usage: lang FILE [exit 2]
+missing-file          ok      want: exit 2
+                              got:  lang: cannot read build/judge/no-such-file.lang: ENOENT: no such file or directory, open ' [exit 2]
+name-toString         ok      want: error before running
+                              got:  build/judge/name-toString.lang:1:2: unknown name toString [exit 2]
+name-hasOwnProperty   ok      want: error before running
+                              got:  build/judge/name-hasOwnProperty.lang:1:13: unknown name hasOwnProperty [exit 2]
+exact-max             ok      want: 4611686018427387903
+                              got:  4611686018427387903 [exit 0]
+past-2^53             ok      want: 9007199254740993
+                              got:  9007199254740993 [exit 0]
+shl-32                ok      want: 4294967296
+                              got:  4294967296 [exit 0]
+shr-negative          ok      want: -3
+                              got:  -3 [exit 0]
+div-min-by-minus-one  ok      want: fault: overflow
+                              got:  fault: overflow [exit 1]
+pow-big-exponent      ok      want: 1, quickly
+                              got:  1 [exit 0]
+two-faults-shl        record  want: nothing decided: recorded
+                              got:  fault: not an integer [exit 1]
+two-faults-pow        record  want: nothing decided: recorded
+                              got:  fault: not an integer [exit 1]
+deep-1000             ok      want: 1001
+                              got:  1001 [exit 0]
+deep-20000            record  want: nothing decided: recorded
+                              got:  build/judge/deep-20000.lang:1:5001: nested too deeply (limit 1000) [exit 2]
+deep-100000           record  want: nothing decided: recorded
+                              got:  build/judge/deep-100000.lang:1:5001: nested too deeply (limit 1000) [exit 2]
+probes: 25, 0 wrong
+== fuzz 2000 1
+fuzz: 2000 programs (seed 1), 0 differ, 0 outside the referee

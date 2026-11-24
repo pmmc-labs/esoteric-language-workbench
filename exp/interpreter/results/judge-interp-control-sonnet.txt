@@ -1,0 +1,78 @@
+== interp-control-sonnet (base exp-interp-control)
+51657cc step 5: within, a budget of operations (D20 to D25)
+aff0346 step 4: exponentiation (D18, D19)
+270c02a step 3: bit operations (D15, D16, D17)
+1319069 step 2: booleans, comparisons and if (D11, D12, D13, D28)
+6efd026 step 1: arithmetic, with the errors before running (D3, D4, D5, D7, D28)
+3500f1a step 0: the reader, checker, evaluator and driver for one literal (D4, D28, D29)
+== make test
+46 tests, 0 failed
+models: 40 files from 4 models
+referee: 1 referees, 46 tests agree, 0 outside them
+all: 0 failed
+== make golden-node
+ok   069-within-bool
+46 tests, 0 failed
+== make commits
+commits: 6 in origin/exp-interp-control..HEAD
+commits: 0 failed
+== process
+DESIGN.md first: ('3500f1a', 'step 0: the reader, checker, evaluator and driver for one literal (D4, D28, D29)'); code first: ('3500f1a', 'step 0: the reader, checker, evaluator and driver for one literal (D4, D28, D29)')
+host answers committed before code: NO
+files under t/ changed: none
+files the brief said not to touch, changed: none
+decisions added: none
+== probes
+untaken-arity         ok      want: error before running
+                              got:  build/judge/untaken-arity.lang:1:12: + takes 2 arguments, not 3 [exit 2]
+untaken-unknown       ok      want: error before running
+                              got:  build/judge/untaken-unknown.lang:1:14: unknown name: foo [exit 2]
+untaken-if-parts      ok      want: error before running
+                              got:  build/judge/untaken-if-parts.lang:1:13: if takes 3 arguments, not 2 [exit 2]
+untaken-within-parts  ok      want: error before running
+                              got:  build/judge/untaken-within-parts.lang:1:13: within takes 2 arguments, not 1 [exit 2]
+literal-past-max      ok      want: error before running
+                              got:  build/judge/literal-past-max.lang:1:1: integer out of range: 4611686018427387904 [exit 2]
+literal-past-min      ok      want: error before running
+                              got:  build/judge/literal-past-min.lang:1:1: integer out of range: -4611686018427387905 [exit 2]
+two-expressions       ok      want: error before running
+                              got:  build/judge/two-expressions.lang:1:3: a program is one expression [exit 2]
+empty-program         ok      want: error before running
+                              got:  build/judge/empty-program.lang:1:1: empty program [exit 2]
+unbalanced            ok      want: error before running
+                              got:  build/judge/unbalanced.lang:1:1: unclosed ( [exit 2]
+position              ok      want: line 3, column 4
+                              got:  build/judge/position.lang:3:4: + takes 2 arguments, not 3 [exit 2]
+usage-no-file         ok      want: exit 2
+                              got:  usage: lang FILE [exit 2]
+missing-file          ok      want: exit 2
+                              got:  lang: can't read build/judge/no-such-file.lang: ENOENT: no such file or directory, open 'b [exit 2]
+name-toString         ok      want: error before running
+                              got:  build/judge/name-toString.lang:1:2: unknown name: toString [exit 2]
+name-hasOwnProperty   ok      want: error before running
+                              got:  build/judge/name-hasOwnProperty.lang:1:13: unknown name: hasOwnProperty [exit 2]
+exact-max             ok      want: 4611686018427387903
+                              got:  4611686018427387903 [exit 0]
+past-2^53             ok      want: 9007199254740993
+                              got:  9007199254740993 [exit 0]
+shl-32                ok      want: 4294967296
+                              got:  4294967296 [exit 0]
+shr-negative          ok      want: -3
+                              got:  -3 [exit 0]
+div-min-by-minus-one  ok      want: fault: overflow
+                              got:  fault: overflow [exit 1]
+pow-big-exponent      ok      want: 1, quickly
+                              got:  1 [exit 0]
+two-faults-shl        record  want: nothing decided: recorded
+                              got:  fault: not an integer [exit 1]
+two-faults-pow        record  want: nothing decided: recorded
+                              got:  fault: not an integer [exit 1]
+deep-1000             ok      want: 1001
+                              got:  1001 [exit 0]
+deep-20000            record  want: nothing decided: recorded
+                              got:  lang: internal error: RangeError: Maximum call stack size exceeded /     at Array.values ( [exit 3]
+deep-100000           record  want: nothing decided: recorded
+                              got:  lang: internal error: RangeError: Maximum call stack size exceeded /     at Array.values ( [exit 3]
+probes: 25, 0 wrong
+== fuzz 2000 1
+fuzz: 2000 programs (seed 1), 0 differ, 0 outside the referee
