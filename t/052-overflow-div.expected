@@ -1,0 +1,4 @@
+1
+-9223372036854775808
+fault: integer overflow at t/052-overflow-div.pl line 6.
+exit: 1

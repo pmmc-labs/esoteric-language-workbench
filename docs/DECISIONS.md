@@ -3,10 +3,11 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D32 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D38 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
-D33 and D34 are defaults, taken at steps 0 and 1.
+D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
+D35 to D38 are his answers to step 2's proposal.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -302,7 +303,7 @@ step proposes them. Rejected: implying the line (the file would then
 mean something else to perl, and D2 is about the file).
 
 **D33. A line that starts `#!` is refused, the first line or any
-other.** *(Default, step 0; not discussed.)* perl takes switches from
+other.** *(User: confirmed 2026-11-24; taken as a default at step 0.)* perl takes switches from
 such a line, after any blanks, when it is line 1: under
 `#!/usr/bin/perl -n`, `use v5.42; say 42;` prints nothing when stdin
 is empty and `42` once for each line when it isn't; and a `#!` line
@@ -326,8 +327,8 @@ step 15's to propose, T74).
 Fair to revisit: allowing a first line with no switch is small if
 it's wanted.
 
-**D34. A fault names the line its statement starts on.** *(Default,
-step 1; not discussed.)* `fault: MESSAGE at FILE line N.` needs an N,
+**D34. A fault names the line its statement starts on.** *(User:
+confirmed 2026-11-24; taken as a default at step 1.)* `fault: MESSAGE at FILE line N.` needs an N,
 and D13 doesn't say which. The statement's first line is where perl
 points for the same mistake (`say 2`, `+ 5 % 0`, `+ 3;` over three
 lines dies `Illegal modulus zero` at the line of the `say`), and it is
@@ -565,7 +566,9 @@ can't both ignore it and never be WRONG. Step 2 writes the model that
 enumerates the operators over the edge values, and confirms where the
 faults go. Decided: a whole Num of magnitude 10^15 or more faults when
 it is made a string (printed, joined, used as a hash key), which is
-the only place its history shows; and a string that isn't written as
+the only place its history shows (**step 2 measured it: D36 draws the
+line at 10^15 up to 2^53, and D35 is the rule for which results are
+Int and which Num**); and a string that isn't written as
 a plain integer and whose value is whole and 2^53 or more faults when
 used as a number. Both are loud and narrow, and the first makes `say
 1e15` a fault. Rejected: doing as perl does, storing the integer back
@@ -579,6 +582,98 @@ is an Int (it would print `1e15` as `1000000000000000`; this was the
 first draft of this entry, and perl refuted it); "`**` gives a float"
 and "`/` gives a whole result as an integer" (the second draft; a
 review refuted both); bignums (machinery; a proposal if ever).
+
+**D35. An operation is done on whole numbers when both operands are
+integral, and on doubles otherwise; an operand is integral when it is
+an Int, or a Num that is whole and below 2^53.** *(User: accepted as
+proposed, 2026-11-24; step 2, Q2. It finishes D23.)* This is perl's
+own rule, from its source (`SvIV_please` and the operators in `pp.c`)
+and then run: `docs/briefs/step2-perl-numbers.py` has it written out
+and agreeing with perl on 129,801 operations. Operator by operator:
+
+- `+` and `-`: both integral, the exact answer, an Int, or `integer
+  overflow`. Otherwise the doubles added, a Num.
+- `*`: both integral, the exact answer, an Int if it fits. If it
+  doesn't: two Ints overflow (D23); so does an answer from 2^63 to
+  2^64 - 1, which perl keeps as an unsigned integer the language
+  doesn't have (`1e10 * 1e9`); beyond that the doubles are multiplied
+  and the answer is a Num (`1e10 * 1e10` is `1e+20`). Otherwise the
+  doubles multiplied, a Num.
+- `/`: the doubles divided, a Num, so `6 / 2` is the Num 3; except
+  that an Int past 2^53 which the right operand divides exactly gives
+  the exact Int. By zero: `division by zero`.
+- `**`: both integral and the power 0 or more: a base of 0, 1, -1 or
+  plus or minus a power of two gives a Num, exact; any other base
+  gives the exact Int when the bits in the base times the power are
+  at most 64 (or `integer overflow`); otherwise, and in every other
+  case, C's `pow`, a Num.
+- `%`: each operand cut to its whole part, which must be an Int
+  (`modulus of a number outside the integers` if not), then as step
+  1. `10 % 3.7` is 1.
+- Unary `-`: an Int negated, or `integer overflow` for -2^63; a Num
+  with its sign changed.
+
+For `+` and `-` this is a little stricter than perl, which gives a
+float when a whole Num carries an Int past -2^63; the case needs an
+Int within 2^53 of an end, and one sentence covers it. Rejected:
+faulting whenever whole-number arithmetic leaves the Ints, Num or not
+(one sentence instead of three, and `1e10 * 1e10` and `1.5e10 * 1e10`
+fault, both being whole: float programs would trip on it); a rule by
+type, in which an Int and a Num always make a Num (D23 turned it
+down: it prints `1e15 + 1` as perl doesn't, so it would have to fault
+on every whole answer of 10^15 or more).
+
+**D36. A whole Num from 10^15 up to, not including, 2^53 faults when
+it is made a string.** *(User: accepted as proposed, 2026-11-24; step
+2, Q1. It replaces the line D23 drew at "10^15 or more".)* perl marks
+a value that has been used as an integer, and
+`docs/briefs/step2-history.pl` looked for where the mark shows: 41
+values, 17 earlier uses, 31 later looks. Two places. A whole Num in
+this range prints as `1e+15` before and `1000000000000000` after, and
+so do its negation and its decrement. And the negation of a Num zero
+is a negative zero before and an integer zero after, which `atan2`,
+`sprintf("%g")` and a negative power can tell apart (T79: steps 16
+and 22 fault there). Below 10^15 the two ways of printing are the
+same digits; at 2^53 and beyond perl never takes a Num for an
+integer, so `say 1e16` and `say 2 ** 62` print one way always, and
+print. The language's values carry no mark, so in the range it stops:
+`fault: a whole float this size prints two ways in perl (add 0 to
+print the integer)`. `+ 0` makes the Int, in perl and here. So `say
+1e15;`, `say 2 ** 50;` and `say 4000000000000000 / 2;` fault. Rejected:
+D23's own line, 10^15 or more (one bound to remember, and `say 1e16`
+faults for nothing).
+
+**D37. A Num is finite.** *(User: picked from three options,
+2026-11-24; step 2, Q3.)* A result that would be an infinity faults
+`float overflow`, and one that would be a NaN faults `not a number`;
+a float literal too large for a double is refused. It is what the
+Ints do at their ends (D23), and it keeps a family of perl's oddest
+answers out of every later step: `NaN <=> 1` is undef, `-7 %
+(9**9**9)` is `Inf`, the strings `"inf"`, `"nan"` and `"Infinity"`
+are numbers, and a negative zero shows through `0 ** -1`. The cost is
+`my $min = 9**9**9;`, the idiom for "larger than anything", which now
+stops, loudly. (perl 5.40's own `inf` and `nan` builtins are
+experimental and warn.) Rejected: both as values, as perl has them
+(every later step then owes perl's answer for each); infinity a value
+and NaN a fault (keeps the idiom, and needs `0 ** -1` to fault as a
+division and `%` to refuse an infinity).
+
+**D38. Numeric literals: perl's, less two.** *(User: accepted as
+proposed, 2026-11-24; step 2, Q4.)* In: decimal integers; `1.5`, `.5`,
+`1e3`, `1.5e-3`, `1E3`, each a Num, read to the nearest double; hex,
+binary and octal as `0x1F`, `0b101`, `0o17`, in either case, up to 32
+bits (past that perl warns `non-portable`, and D15 refuses); an
+underscore between two digits (`1_000`, `0xff_ff`). **Cut: octal by a
+leading zero** (`017`; `010` is 8, the trap T24 was written about, and
+`0o17` says it plainly), so a leading zero stays the refusal it has
+been since step 0. **Cut: `1.`**, a point with nothing after it
+(nobody writes it on purpose, and from step 3 a dot after a number is
+concatenation: T78). Refused with nothing to choose: a hex float
+(`0x1p3`, Later in `SURFACE.md`); a number hard against a dot, a
+letter or another number (T62, T78); a digits-only literal past 2^63
+- 1, which perl makes an unsigned integer and then a float in silence
+(T81); an underscore anywhere else (T82). Rejected: all of perl's
+forms (two more ways to be surprised, and nothing gained).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

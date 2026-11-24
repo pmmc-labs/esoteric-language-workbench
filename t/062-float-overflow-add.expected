@@ -1,0 +1,4 @@
+1
+1.79769313486232e+308
+fault: float overflow at t/062-float-overflow-add.pl line 6.
+exit: 1

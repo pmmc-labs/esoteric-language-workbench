@@ -1,0 +1,4 @@
+1
+2.76701161105643e+19
+fault: integer overflow at t/051-overflow-int-num-mul.pl line 6.
+exit: 1

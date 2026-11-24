@@ -1,0 +1,4 @@
+1
+0
+fault: modulus by zero at t/058-mod-zero-num.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+796131459065722
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/071-print-whole-float-pow.pl line 6.
+exit: 1

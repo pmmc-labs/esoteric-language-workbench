@@ -1,0 +1,4 @@
+1
+1e+308
+fault: float overflow at t/061-float-overflow-mul.pl line 6.
+exit: 1

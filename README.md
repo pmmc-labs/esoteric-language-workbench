@@ -56,8 +56,7 @@ again.
 
 ## What is decided and what isn't
 
-D1 to D32 are Stevan's, all settled on 2026-11-24; D33 and D34 are
-defaults from steps 0 and 1, to confirm. The ones that give the language its
+D1 to D38 are Stevan's, all settled on 2026-11-24. The ones that give the language its
 character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);

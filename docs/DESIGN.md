@@ -3,8 +3,7 @@
 This is the design as agreed on 2026-11-24. [`DECISIONS.md`](DECISIONS.md)
 has the reasons and the alternatives that were turned down,
 [`SURFACE.md`](SURFACE.md) goes through Perl construct by construct,
-and [`PLAN.md`](PLAN.md) has the build order. D1 to D32 are Stevan's;
-D33 and D34 are defaults from steps 0 and 1.
+and [`PLAN.md`](PLAN.md) has the build order. D1 to D38 are Stevan's.
 Anything marked **(open)** from here on is a default a later step
 proposed that he hasn't confirmed: fine to build on, but bring it up
 before baking it in further. What the decisions leave for a step to
@@ -134,12 +133,14 @@ Four ideas do the cleaning, and `SURFACE.md` applies them:
 
 - A value is two words, a tag and a payload (D25). Int and Num are in
   the payload; everything else is a pointer into the heap.
-- Int is 64 bits signed and faults on overflow. Num is a double.
-  Which of the two a result is follows perl, which decides by the
-  operands' values. perl also lets a number remember having been used
-  as an integer; the language faults in the one place that shows,
-  making a whole Num of 10^15 or more a string, and step 2 confirms
-  the exact line with a model (D23).
+- Int is 64 bits signed and faults on overflow. Num is a double, and
+  always finite (D37). Which of the two a result is follows perl,
+  which decides by the operands' values: an operation is done on whole
+  numbers when both operands are integral (an Int, or a whole Num
+  below 2^53), and on doubles otherwise (D35). perl also lets a number
+  remember having been used as an integer; the language faults where
+  that shows, making a whole Num from 10^15 up to 2^53 a string (D23,
+  D36).
 - A string is immutable, a sequence of code points (D24).
 - Arrays and hashes are mutable and have identity; assigning one
   copies it, as in Perl.
@@ -223,18 +224,15 @@ step, roughly in the order it will matter:
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
    does. Step 0 ran every "perl prints" in these documents and every
    trap under both (`briefs/claims.py`), and the two differ only where
-   `TRAPS.md` already said they would. **Still to confirm: D33**, the
-   refusal of a line that starts `#!`, and **D34**, which line a
-   fault names; steps 0 and 1 took them as defaults.
+   `TRAPS.md` already said they would.
 2. **Whether a program must say `use open ':std',
    ':encoding(UTF-8)';`** (step 3). The oracle runs perl with `-CSDA`;
    plain perl prints `é` as one byte. As it stands the file alone
    doesn't fix its own output, which the core rule's wording assumes.
-3. **The exact line of D23** (step 2): which results are Int and which
-   Num, operator by operator, and exactly which values fault when made
-   a string. Decided in principle; **proposed in full in `PLAN.md`,
-   step 2, with five questions for Stevan**, and a model of the rule
-   that agrees with perl on 129,801 operations.
+3. **The exact line of D23**: settled, D35 to D38 (step 2). Left by
+   it to later steps: a negative zero given to `atan2` or formatted
+   with `%g` (T79; steps 16 and 22), and a string used as a number
+   (step 3).
 4. **How deep a program may recurse**, and how a test that goes 100
    deep is checked, since perl warns there (step 8).
 5. **`for my $x ($p, $q)`**, a `foreach` over variables named directly

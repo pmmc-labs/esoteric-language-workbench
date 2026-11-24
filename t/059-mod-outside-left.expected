@@ -1,0 +1,4 @@
+1
+5
+fault: modulus of a number outside the integers at t/059-mod-outside-left.pl line 6.
+exit: 1

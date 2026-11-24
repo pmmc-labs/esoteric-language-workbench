@@ -1,0 +1,4 @@
+1
+2e+15
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/072-print-whole-float-div.pl line 6.
+exit: 1

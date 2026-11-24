@@ -1,0 +1,4 @@
+1
+8.98846567431158e+307
+fault: float overflow at t/064-float-overflow-pow.pl line 6.
+exit: 1

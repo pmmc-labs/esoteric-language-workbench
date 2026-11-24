@@ -115,7 +115,7 @@ Precedence and associativity are `perlop`'s. Chalk's
 | Construct | Here | Step | Note |
 |---|---|---|---|
 | `+ - *`, unary `-`, `%` | In | 1 | Int overflow faults (D23); `%` on a Num truncates, step 2; unary `-` on a string that isn't a number faults |
-| `/`, `**`, float literals | In | 2 | Int or Num as perl has it; one part unfinished (D23) |
+| `/`, `**`, float literals | In | 2 | Int or Num as perl has it (D35); a whole Num from 10^15 up to 2^53 faults when printed (D36); no infinity or NaN (D37) |
 | `.`, `x` on a string | In | 3 | |
 | `== != < <= > >= <=>` | In | 4 | A non-number faults (D15); an Int and a Num compare as floats, as in perl |
 | `eq ne lt le gt ge cmp` | In | 4 | undef faults (D15) |
@@ -156,7 +156,9 @@ Precedence and associativity are `perlop`'s. Chalk's
 
 | Construct | Here | Step | Note |
 |---|---|---|---|
-| Int, Num, their literals: hex, binary, octal as `0o17` and `017`, `_`, `.5`, `1.`, `1e3` | In | 1, 2 | D23. A hex float (`0x1p3`): Later |
+| Int, Num, their literals: hex, binary, octal as `0o17`, `_` between digits, `.5`, `1e3` | In | 1, 2 | D23, D38. Hex, binary and octal up to 32 bits (perl warns past that). A hex float (`0x1p3`): Later |
+| Octal by a leading zero, `017`; a point with nothing after it, `1.` | Cut | | D38: `010` is 8 (T24), and `0o17` says it; a dot after a number is concatenation (T78) |
+| Infinity and NaN, `9**9**9`, `"inf"`, the builtins `inf` and `nan` | Cut | | D37: a Num is finite. `float overflow`, `not a number` |
 | v-strings; a number with two dots | Cut | | `say 65.66.67` prints `ABC` (T62) |
 | An identifier past ASCII, with `use utf8` | In | 3 | |
 | `'...'`, `"..."` with escapes | In | 3 | |

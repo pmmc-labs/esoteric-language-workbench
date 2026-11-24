@@ -1,0 +1,4 @@
+1
+1000000000000000000
+fault: integer overflow at t/050-overflow-num-mul.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+-999999999999999
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/069-print-whole-float-negative.pl line 6.
+exit: 1

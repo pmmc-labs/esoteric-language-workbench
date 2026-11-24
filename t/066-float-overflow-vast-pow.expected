@@ -1,0 +1,4 @@
+1
+10000000000000000
+fault: float overflow at t/066-float-overflow-vast-pow.pl line 6.
+exit: 1

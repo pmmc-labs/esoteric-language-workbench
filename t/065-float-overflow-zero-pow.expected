@@ -1,0 +1,4 @@
+1
+0
+fault: float overflow at t/065-float-overflow-zero-pow.pl line 6.
+exit: 1

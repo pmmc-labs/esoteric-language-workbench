@@ -5,9 +5,8 @@ the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
 **Progress:** steps 0 and 1 are done (2026-11-24): integer arithmetic
-compiles, runs, and is checked against perl 5.42. **Step 2 is
-proposed, below, and waits on five answers from Stevan** (Q1 to Q5);
-nothing of it is built. Steps 3 to 30 are outlines: each is proposed,
+compiles, runs, and is checked against perl 5.42. **Step 2 is agreed
+(D35 to D38) and being built.** Steps 3 to 30 are outlines: each is proposed,
 with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
@@ -289,12 +288,15 @@ differences and findings:
   (`-9223372036854775808` is a minus applied to a refused literal;
   write `-9223372036854775807 - 1`).
 
-### 2. Num, division, `**`, numeric literals (proposed, not agreed)
+### 2. Num, division, `**`, numeric literals (agreed; being built)
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-24. Nothing is built, and five questions are
-Stevan's: Q1 to Q5 below.** Everything here about perl was run under
+**Proposed 2026-11-24, and agreed the same day: Stevan took the
+recommendation on each of the five questions below, which are now D35
+(the rule, Q2), D36 (Q1), D37 (Q3) and D38 (Q4); Q5's names stand as
+proposed.** The text is kept as it was proposed, questions and all,
+since it is the reasoning. Everything here about perl was run under
 5.42.0, and the scripts are kept:
 [`briefs/step2-perl-numbers.py`](briefs/step2-perl-numbers.py) (every
 operator over every pair of 147 edge values, 129,801 operations),
@@ -795,11 +797,9 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-Waiting: **step 2**, written out above with its five questions.
-**D33**, a line that starts `#!` refused, taken as a default at step 0
-because the alternative was a WRONG; to confirm, or to replace with
-the narrower rule its entry describes. **D34**, a fault names the line
-its statement starts on, a default from step 1. D1 to D32 are agreed.
+None waiting. D1 to D38 are agreed: D33 and D34, defaults from steps
+0 and 1, were confirmed with step 2's five answers. The next proposal
+is step 3's.
 
 ## Example-port table
 

@@ -1,0 +1,4 @@
+1
+0.5
+fault: division by zero at t/054-div-zero.pl line 6.
+exit: 1

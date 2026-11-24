@@ -1,0 +1,4 @@
+1
+7
+fault: modulus of a number outside the integers at t/060-mod-outside-right.pl line 6.
+exit: 1
