@@ -102,6 +102,44 @@ rebuilding something D17 to D22 cut.
 | T49 | `my %h; for my $x ($h{l}->@*) { } say exists $h{l} ? "made" : "no";` | `made` | 13 | The same, in `foreach`, `map`, `keys` |
 | T50 | `my @a; my $t = $a[3][0]; say scalar(@a);` | `4` | 13 | The same |
 
+## Accepted by the obvious parser, refused by perl
+
+The first half of D2: a program the compiler accepts is a program perl
+accepts. Each of these is a compile error in perl, so each is a
+refusal here, with a test.
+
+| | Program | perl says | Step | Way out |
+|---|---|---|---|---|
+| T51 | `say 1 <=> 2 == -1;` | syntax error | 4 | Refuse: `<=>`, `cmp`, `==` and `..` don't associate; also `1 .. 2 .. 3` |
+| T52 | `say 0 < $o isa P;` | syntax error, though `$o isa P == 1` parses | 17 | Refuse: `isa` sits above the relationals and doesn't mix with them |
+| T53 | `try { ... } catch { ... }` | `catch block requires a (VAR)` | 15 | Refuse |
+| T54 | `my %h = map { "$_" => 1 } @a;` | syntax error; `map {; ...}` and `map +( ... ),` work | 10 | Refuse the shapes perl guesses wrong (D21) |
+| T55 | `sub n(:$x) { }` | `A signature parameter must start with '$', '@' or '%'` | 8 | Refuse: tree-sitter-perl accepts it, which is why a grammar is no oracle |
+| T56 | A subclass method that reads its parent's `field $x` | `Global symbol "$x" requires explicit package name` | 17 | Refuse: fields are lexical |
+| T57 | `my $s = "ab"; say($s x3);` | `Bareword "x3" not allowed` | 3 | Refuse: `x` needs a space before a digit here |
+
+## Found by reading Crayon
+
+Crayon's grammar, tree and plan were read against this design after
+the first fifty; these are what they showed.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T58 | `my $x = 5; { my $x = $x // 9; say $x }` | `5` | 5 | Agree: the right side is resolved before the new `$x` exists |
+| T59 | `for my $i (1..3) { my @r = map { last if $_ == 2; $_ } (1,2,3); say $i } say "done";` | `done` | 10 | Refuse `last` and `next` in a `map`, `grep` or `sort` block |
+| T60 | `sub f() { next } for my $i (1..3) { f() if $i == 2; say $i }` | `1 3`, and a warning | 8 | Refuse loop control that isn't inside a loop of the same sub |
+| T61 | `my $a = 5; my @s = sort { $a <=> $b } (3,1,2); say "@s";` | `2 1 3`, and a warning | 10 | Refuse `my $a` and `my $b` |
+| T62 | `say 65.66.67;` | `ABC` | 2 | Refuse a number with two dots |
+| T63 | `my %h = (010 => "a", 0x10 => "c"); say join ",", sort keys %h;` | `16,8` | 12 | Agree: the key is the number, as a string |
+| T64 | `my $i = 5; do { say $i; $i++ } while ($i < 3);` | `5` | 6 | Agree if `do BLOCK` comes in: the block runs first |
+| T65 | `sub f() { try { 42 } catch ($e) { 0 } } say "[", f(), "]";` | `[42]` | 15 | Fault (D18): a sub that ends in `try` has no value |
+| T66 | `"abc" =~ /b/; say "xbx" =~ // ? "y" : "n";` | `y`: the empty pattern is the last one used | 19 | Refuse the empty pattern |
+| T67 | `use utf8; say "٣" =~ /^\d$/ ? "digit" : "no"; say "a\n" =~ /a$/ ? "match" : "no";` | `digit`, `match` | 19 | Agree |
+| T68 | `my $x = (4,5,6); say $x;` | `6`, and two warnings | 9 | Refuse (D15) |
+| T69 | `say -foo;` | `-foo` | 3 | Refuse a bareword |
+| T70 | `sub f() { ... } f();` | dies, `Unimplemented at FILE line N.` | 15 | Agree, as a `die`, or refuse until then |
+| T71 | `my $name = "x"; say "$name's";` | 5.38 reads `$name::s` and warns; 5.42 turns that off | 16 | Rerun under 5.42 before deciding |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only
@@ -114,3 +152,17 @@ rebuilding something D17 to D22 cut.
   three-key hash 25%. Hence eight seeds and the reading rule in D10.
 - A program more than 100 calls deep makes perl warn, so it can't be
   a `same` test as D10 stands. Step 8.
+- Plain `perl FILE` prints `é` as the single byte E9, in silence;
+  with `-CSDA`, or with `use open ':std', ':encoding(UTF-8)';` in the
+  file, it prints the two bytes of UTF-8. The oracle runs perl with
+  `-CSDA` (D24), so "the same file, given to perl" is true only with
+  a flag the file doesn't carry. Step 3 proposes whether a program
+  with text past ASCII must say `use open` itself.
+- 5.38 and 5.42 are known to differ here, so the rerun under 5.42
+  (step 0) looks at these first: the apostrophe as a package
+  separator (T71); `source::encoding`, which makes a non-ASCII source
+  without `use utf8` an error; the builtins `use v5.42` imports
+  (`true`, `false`, `trim`, `ceil` and nine more; on 5.38 `sub trim`
+  wins, with a warning); `for my ($k, $v)`, experimental until 5.40;
+  `try`, stable from 5.40; `:reader`, `__CLASS__`, `:writer`, `my
+  method` and `->&`, each newer than 5.38; `^^`, `^^=`, `any`, `all`.

@@ -74,7 +74,10 @@ D28, D29, D30, D31, D32, all made. Traps: T24.
   documents and every row of `TRAPS.md` under 5.42**, before anything
   is built: they were run under 5.38.2. A row that differs is
   reported to Stevan, with both outputs, and corrected in the
-  document that holds it.
+  document that holds it. `TRAPS.md`, "The checks themselves", lists
+  where the two versions are known to differ; look there first, and
+  at whether a program's own `sub trim` or `sub ceil` is still called
+  under `use v5.42` (it must be refused either way: D21).
   `make doctor` prints each tool's version and fails on a perl that
   isn't 5.42 with 64-bit integers and doubles (`perl -V:ivsize
   -V:nvsize`, 8 and 8).
@@ -142,7 +145,9 @@ Traps: T25, T27.
 - **`say (1 + 2) * 3;` is refused** (T25): perl takes the brackets as
   `say`'s whole argument list and prints 3, with a warning. `say`,
   then brackets, then an operator is a refusal; `say((1 + 2) * 3);`
-  and `say 3 * (1 + 2);` are fine. `--` and `++` are tokens, and
+  and `say 3 * (1 + 2);` are fine, and so is `say +(1 + 2) * 3;`,
+  which is 9: unary `+` is in from this step, as perl's own way of
+  saying the bracket isn't an argument list. `--` and `++` are tokens, and
   refused (T27): `say --5;` doesn't compile in perl, and `say - -5;`
   is 5.
 - **Faults**: a result outside Int is `integer overflow`; `% 0` is
@@ -170,6 +175,13 @@ Traps: T25, T27.
   `-2 * -3`, `2 * (3 + 4)`), a fault after output (the lines before it
   are printed, D12), `refused` tests for a missing operand, an
   unbalanced bracket, `say (1 + 2) * 3;` and `say --5;`.
+- **The tree** (`compiler/src/ast.ts`) gets its shape here, since
+  this is the first step with expressions. Start from the vocabulary
+  of Crayon's `lib/Crayon/AST.pm` (`BACKGROUND.md`), with a position
+  on every node, a flag for brackets that were written (T25, and list
+  against scalar assignment later, need it), and none of its
+  conflations: `return` is not loop control, a slice is not a
+  subscript, a call through a reference is not a method call.
 - **Runtime**: `rt_add`, `rt_sub`, `rt_mul`, `rt_mod`, `rt_neg`, each
   checking its operands' tags (nothing but an Int can reach them yet;
   the check is there for step 2) and overflowing by the compilers'
@@ -195,7 +207,9 @@ prints `0.3`), and whether `Inf` and `NaN` are values or faults (perl
 prints `Inf`, `-Inf` and `NaN` for `9**9**9`, its negation and their
 difference). `%` on a Num (perl truncates the operands: `10 % 3.7` is
 1; past the range of an integer it does something else, so that
-faults). Octal by a leading zero. Traps: T35, T36, T37, T40. What
+faults). Octal by a leading zero and as `0o17`; `.5`, `1.` and `1e3`;
+a number with two dots refused (T62); a hex float. Traps: T35, T36,
+T37, T40, T62. What
 perl warns about in a literal at compile time (`1__0`, a hex literal
 past 32 bits) is refused (D15). Division by zero is a fault. Hex, binary and octal
 literals, `_` in a literal, a literal with a point or an exponent.
@@ -217,8 +231,12 @@ literal (T38); `use utf8` and a source that isn't ASCII; `print`. An
 unescaped `$` or `@` in double quotes is refused until step 16 (T34).
 Case-mapping past ASCII faults until a step brings perl's Unicode
 tables, which the C library doesn't have (T45); unary minus on a
-string that isn't a number faults (T47); what `chr` gives for a
-surrogate or a number past Unicode. The first heap values: allocated
+string that isn't a number faults (T47), and on a bareword is refused
+(T69); `x` before a digit (T57); what `chr` gives for a surrogate or a
+number past Unicode. **Decides whether a program with text past ASCII
+must carry `use open ':std', ':encoding(UTF-8)';`**: the oracle runs
+perl with `-CSDA`, and plain `perl` prints `é` as one byte, so as it
+stands the file alone doesn't say what the language does with it. The first heap values: allocated
 and never freed until step 7.
 
 ### 4. Booleans, undef, comparison, logic
@@ -231,7 +249,9 @@ comparisons, `<=>` and `cmp`; `!`, `&&`, `||`, `//`, `not`, `and`, `or`,
 `xor`; `?:`. Truth is perl's. Decides: what a boolean prints as and
 adds as (perl: `true` is `1`, `false` is `""` as a string and 0 as a
 number, in silence); undef in a comparison or a concatenation faults
-(D15); chained comparisons refused (T33).
+(D15); chained comparisons refused (T33), and the mixes perl itself
+refuses (T51). The expected grouping in a precedence test comes from
+perl, `perl -MO=Deparse,-p`, which prints the brackets perl sees.
 
 ### 5. Lexical scalars, assignment, blocks, `if`
 
@@ -244,8 +264,9 @@ use before `my` refused, as perl refuses it; a second `my` of a name
 in one scope refused (perl warns, D15). Variables are read when their
 operator runs (D14, T1). Decides: `++` and `--` on a string that
 isn't a number (proposed: fault, T44); the assigning operators on
-undef (perl is silent for some and warns for others: T43). Traps: T1,
-T26, T30, T43, T44.
+undef (perl is silent for some and warns for others: T43). In `my $x
+= $x`, the right side is the outer `$x` (T58). Traps: T1, T26, T30,
+T43, T44, T58.
 
 ### 6. Loops
 
@@ -253,7 +274,10 @@ Referee: perl. Size: medium.
 
 `while`, `until`, their postfix forms, the C-style `for`, `last` and
 `next`, labels. A bare block is a loop that runs once, for `last` and
-`next` (T32). A program can now run for a long time: `t/run.sh`'s
+`next` (T32). `last` and `next` are allowed only inside a loop of the
+same sub, as written (T60). If `do BLOCK while` is wanted, it runs the
+block first (T64). The comma operator, in a C-style `for`'s slots
+only. A program can now run for a long time: `t/run.sh`'s
 watchdog matters from here.
 
 ### 7. The collector
@@ -276,7 +300,8 @@ with brackets (D21), before or after the definition; `return`;
 recursion. A wrong number of arguments is a fault (perl dies). A sub
 stands at the top of the file and may not be named for anything perl
 knows (D21; T28, T31). A sub that ends in a compound statement has no
-value (D18, T19). Traps: T1, T19, T28, T31.
+value (D18, T19). Signature placeholders and `//=` defaults; `:$x`
+is not Perl (T55). Traps: T1, T19, T28, T31, T55, T60.
 Decides: **how deep a program may recurse**, and what happens past it
 (perl has no limit and only warns at 100; the C stack does have one,
 so the limit is a number, a fault, and a test, not an accident; the
@@ -296,7 +321,8 @@ are refused until then. Decides: D17's freezing, with its tests of
 kind `fault`, each written so that perl finishes; `for my $x ($p,
 $q)`; an index past the end (perl: undef reading, extends writing);
 slices; a list assignment as a condition; an element read in an
-expression that also removes it (D14). Traps: T5, T9, T13, T14, T21.
+expression that also removes it (D14). Traps: T5, T9, T13, T14, T21,
+T68.
 
 ### 10. List operators, `$_`, list returns
 
@@ -308,7 +334,10 @@ a list, and D18's fault, with void as the third context. Decides:
 block or hash after `map` (D21); `sort`'s comparator (D14: frozen so
 that an effect faults, or perl's merge ported; `$a` and `$b` are the
 block's, read-only, and refused elsewhere); a string as a range's end
-(T41). Traps: T3, T4, T6, T8, T10, T15 to T18, T20, T23, T29, T41.
+(T41); `map EXPR, LIST`; `my $a` and `my $b` refused (T61); `last`
+out of a `map` block refused, and the freeze released on every exit
+that is allowed (T59). Traps: T3, T4, T6, T8, T10, T15 to T18, T20,
+T23, T29, T41, T54, T59, T61.
 
 ### 11. The census
 
@@ -329,7 +358,8 @@ Literals, elements, `exists`, `delete`, `keys`, `values`, a hash in
 list and scalar position, slurpy `%opts`, slices. D27. A hash is
 frozen while `values`, a slice or the hash itself is being iterated,
 and not while its `keys` are (D17, T7). A `same` test sorts its keys;
-D10's check rejects one that doesn't. Traps: T2, T7.
+D10's check rejects one that doesn't. `=>` quotes the word on its
+left, whatever the word. Traps: T2, T7, T63.
 
 ### 13. References and nested data
 
@@ -341,7 +371,9 @@ silent); reading through undef or a missing key (proposed: fault; perl
 creates the container on the way, and so do `foreach`, `map` and
 `keys` over a missing one); a reference as a string or a number, and
 which comparisons of references are allowed (D14: `==` and `!=`
-only). Traps: T12, T42, T48 to T50.
+only); dereference without braces, `@$x` and `$$x[0]` (proposed:
+cut, as Stevan's own style guide has it, leaving `->@*` and `@{ }`).
+Traps: T12, T42, T48 to T50.
 
 ### 14. Closures
 
@@ -365,7 +397,9 @@ newline, byte for byte) or with an object; `try` and `catch`; an
 uncaught `die` (D12, tests of kind `dies`); `warn`, and how a test of
 it is checked (D10). Decides: how unwinding is compiled
 (`setjmp` and the shadow stack, or a test after each call); `finally`
-and `defer`. Confirms D13 with tests of what `try` does not catch.
+and `defer`; `...`. `return` inside `try` returns from the sub, so
+unwinding can't be one mechanism shared with `die`. Confirms D13 with
+tests of what `try` does not catch. Traps: T53, T65, T70.
 
 ### 16. Strings, the rest
 
@@ -381,7 +415,14 @@ D21 says refuse what it has to guess). Traps: T9, T22, T23.
 Referee: perl. Size: large.
 
 D19: `class`, `field`, `:param`, `:reader`, `method`, `ADJUST`,
-`:isa`, `new`, method calls, `isa`. A missing method is a fault.
+`:isa`, `new`, method calls, `isa`, `SUPER::`. A missing method is a
+fault, and so is an unknown constructor argument. A field is a slot
+of the object, never a copy. From `perlclass`, each to be run under
+5.42 first: a parent's fields are not visible in a subclass (T56); a
+`:reader` on an array field is list-shaped (D18); `:writer` makes
+`set_x`, not `x`; a lexical method is called with `->&`; `:isa` loads
+its parent, so a parent the program doesn't define is refused (D20).
+Traps: T52, T56.
 
 ### 18. Modules
 
@@ -391,7 +432,10 @@ Referee: perl. Size: large.
 `use Name;` of the program's own files, found at compile time; a sub
 of another package called as `Name::f($x)`. Decides: how files are
 found; imports, if any (`Exporter` needs package variables, which are
-cut); `package Name { }` as a block; `__PACKAGE__`.
+cut); `package Name { }` as a block; `__PACKAGE__`; core modules
+(`List::Util`, `Scalar::Util`, `POSIX`, `constant`). Crayon's four
+modules are the worked example of what a port has to bend: `use
+Exporter 'import'; our @EXPORT_OK`, and a trailing `1;`.
 
 ### 19, 20. Regexes
 
@@ -402,7 +446,7 @@ compiled by the compiler into a program the runtime's matcher runs, a
 backtracking matcher with perl's order of trying. Decides: the subset
 (`SURFACE.md`); `$1` or only returned and named captures; a step limit
 on backtracking, since a regex is the one place a small program can
-run for ever by accident.
+run for ever by accident. Traps: T66, T67.
 
 ### 21. Files and the outside
 
@@ -488,4 +532,5 @@ them. The next proposal is step 2's.
 | Sum of digits | Opal `author/TESTING.md` | steps 8, 22 (`int`) | waits |
 | Opal's `t/*.t` with a TAP library in the language | Opal `t/`, `lib/Test.opal.pm` | steps 14, 18 | waits; the library leans on dynamic scope and must change (D8) |
 | `Chalk::Grammar::Symbol`, `Rule` | Chalk `lib/Chalk/Grammar/` | step 17 | waits |
+| About 25 small programs: subs, classes, references, `try` | Crayon `docs/superpowers/plans/2026-03-31-crayon-interpreter.md` | steps 8 to 17 | waits; their expected values were written by hand and some are wrong, so perl writes them (D7); four must bend (`show 42`, `:writer`, roles, a subclass reading a parent's field) |
 | The graded corpus, tier by tier | perl5-son `t/corpus/mdtest/pvm/` | step 11 | waits on D11 |

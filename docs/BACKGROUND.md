@@ -1,8 +1,9 @@
 # Background
 
 What was read before the design, what was borrowed, and what is parked.
-Four repositories, read on 2026-11-24 as shallow clones; the paths
-below are into them, so a claim can be checked.
+Five repositories, read on 2026-11-24 as shallow clones; the paths
+below are into them, so a claim can be checked. Four were read before
+the design was written; Crayon after it was decided, against it.
 
 | Repository | At | What it is |
 |---|---|---|
@@ -10,6 +11,7 @@ below are into them, so a claim can be checked.
 | `stevan/perl5-son` | 40e86a6 | Its current front end: perl's optree to a Sea of Nodes graph |
 | `stevan/pp` | 438994d | Opal, Stevan's TypeScript interpreter for a Perl, 2025 |
 | `stevan/Allium` | 59291d6 | Stevan's model of perl's opcodes and optrees, 2024 |
+| `stevan/p5-Crayon` | 58c87d6 | A parser front end for a Perl 5.42 subset, one day in March 2026 |
 
 The process is `pmmc-labs/esoteric-language-workbench` at af8e3a3, and
 its `interpreter` branch.
@@ -217,6 +219,53 @@ nullified, more pad entries are unnamed temporaries than variables,
 and many "Core" opcodes are the optimizer's fused pairs. The argument
 vocabulary of its opcode prototypes (Scalar, Numeric, Array, Hash,
 Code, List, optional) is a good shape for the table of builtins (D29).
+
+## Crayon
+
+A tree-sitter-perl parse turned into a tree of plain hashes; the
+interpreter planned on top was written and deleted the same day. Its
+goal (`docs/superpowers/specs/2026-03-31-chalk-ast-design.md`): "a
+Pugs-style experimentation ground for prototyping changes to the Perl
+5 core". It changed no decision here. What it gave:
+
+- **A vocabulary for the syntax tree** (`lib/Crayon/AST.pm`, 53 kinds
+  of node, each a hash with a `type`). The right grain for statements
+  and declarations, and it ports to a TypeScript union as it stands.
+  It has no positions, no context and no binding of a use to its
+  declaration, each left out on purpose there and each needed here
+  (D29, D18); and it runs together things this design tells apart:
+  `my ($x) = ...` and `my $x = ...`, `return` and loop control, a
+  slice and a subscript, a call through a reference and a method
+  call. Step 1 starts the tree from it, with those changes.
+- **About fifty rows `SURFACE.md` had missed**, from what its grammar
+  and tests reach for: unary `+`, the comma operator, the operators
+  that don't associate, v-strings, `=>` quoting, dereference without
+  braces, loop control that leaves a `map`, and most of `perlclass`.
+- **Traps T51 to T71**, among them a kind the first fifty lacked:
+  programs an obvious parser accepts and perl refuses.
+- **`writing-perl-5.42.md`**, Stevan's style guide for agents writing
+  Perl: `use v5.42; use utf8;`, signatures and never `@_`, `class`
+  over hashes, postfix dereference and never `@$ref`, `+{ }` for a
+  hash, `qw[ ]`, `say`. It is the baseline for examples and ports
+  (D8), and agrees with D16, D17, D19 and D21 where it speaks. Three
+  things in it to check against 5.42 before leaning on it (read from
+  5.42's own documentation, not run): `is_bool` is not imported by
+  `use v5.42`, and `reftype` and `is_tainted` are; a lexical method
+  is called with `->&`, not `->`; and `:writer` makes `set_x`. It
+  also asks for `use open ':std', ':encoding(UTF-8)';`, which is the
+  question step 3 has to settle.
+- **About 25 small programs** in its plan, for the example table.
+
+Not borrowed: tree-sitter-perl as the parser (D6, D29; and it accepts
+`role`, `BUILD` and `sub n(:$x)`, none of which is Perl, so it is no
+oracle); `perlish.bnf`, a second and wider grammar than Chalk's, with
+no precedence in it and its text damaged by a round trip through a
+rich-text editor, useful as a checklist to read and not as input to
+anything; the plan's execution model, which had no context, let a
+program's sub shadow a builtin, and ran `last` and `return` as host
+exceptions that its own `try` would have caught. Its plan held every
+line of code in advance and was abandoned in its first afternoon,
+which is one more reason there is no `docs/plans/` here.
 
 ## Parked, with the reason, so each stops coming up
 

@@ -46,8 +46,8 @@ again.
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | D1 to D32: who decided, why, what was rejected |
 | [`docs/SURFACE.md`](docs/SURFACE.md) | Perl construct by construct: in, a fault, later, or cut |
 | [`docs/PLAN.md`](docs/PLAN.md) | Steps 0 to 30; 0 and 1 in full |
-| [`docs/TRAPS.md`](docs/TRAPS.md) | Fifty programs, run under perl, where the obvious implementation would be wrong |
-| [`docs/BACKGROUND.md`](docs/BACKGROUND.md) | What Chalk, perl5-son, Opal and Allium taught, with paths |
+| [`docs/TRAPS.md`](docs/TRAPS.md) | Seventy-one programs, run under perl, where the obvious implementation would be wrong |
+| [`docs/BACKGROUND.md`](docs/BACKGROUND.md) | What Chalk, perl5-son, Opal, Allium and Crayon taught, with paths |
 | [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: empty |
 | [`t/README.md`](t/README.md) | The five kinds of golden test, and the oracle check |
 
@@ -70,7 +70,7 @@ the language its character:
 - Gradual types, roles with a metaobject protocol, and concurrency are
   planned later steps (D5).
 
-What isn't decided is what those hand to a step: thirteen items at the
+What isn't decided is what those hand to a step: fourteen items at the
 end of `docs/DESIGN.md`.
 
 ## How far to trust it

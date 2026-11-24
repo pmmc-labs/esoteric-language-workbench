@@ -8,8 +8,8 @@ Anything marked **(open)** from here on is a default a later step
 proposed that he hasn't confirmed: fine to build on, but bring it up
 before baking it in further. What the decisions leave for a step to
 settle is listed at the end.
-[`TRAPS.md`](TRAPS.md) has fifty programs, each run under perl, where
-the obvious implementation would break the core rule.
+[`TRAPS.md`](TRAPS.md) has seventy-one programs, each run under perl,
+where the obvious implementation would break the core rule.
 
 ## Goals
 
@@ -218,29 +218,35 @@ D1 to D32 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2** (step
-   0): every "perl prints" in these documents, and the fifty traps.
-2. **The exact line of D23** (step 2): which results are Int and which
+   0): every "perl prints" in these documents, and every trap.
+2. **Whether a program must say `use open ':std',
+   ':encoding(UTF-8)';`** (step 3). The oracle runs perl with `-CSDA`;
+   plain perl prints `é` as one byte. As it stands the file alone
+   doesn't fix its own output, which the core rule's wording assumes.
+3. **The exact line of D23** (step 2): which results are Int and which
    Num, operator by operator, and exactly which values fault when made
    a string. Decided in principle; the model confirms it.
-3. **How deep a program may recurse**, and how a test that goes 100
+4. **How deep a program may recurse**, and how a test that goes 100
    deep is checked, since perl warns there (step 8).
-4. **`for my $x ($p, $q)`**, a `foreach` over variables named directly
+5. **`for my $x ($p, $q)`**, a `foreach` over variables named directly
    (step 9); and an element read in an expression that also removes it
    (D14, step 9).
-5. **`sort`'s comparator** (step 10): frozen so that an effect faults,
+6. **`sort`'s comparator** (step 10): frozen so that an effect faults,
    or perl's merge ported.
-6. **Reading through undef** (step 13): proposed as a fault.
-7. **A closure over a loop variable** (step 14): refused until then,
+7. **Reading through undef** (step 13): proposed as a fault. And
+   **dereference without braces**, `@$x` and `$$x[0]`: proposed as
+   cut, leaving `->@*` and `@{ }`, as Stevan's style guide has it.
+8. **A closure over a loop variable** (step 14): refused until then,
    and too common an idiom to leave refused.
-8. **`finally` and `defer`; how `warn` is tested** (step 15).
-9. **Modules** (step 18): `package Name;` is decided (D19); imports,
+9. **`finally` and `defer`; how `warn` is tested** (step 15).
+10. **Modules** (step 18): `package Name;` is decided (D19); imports,
    and how files are found, are not.
-10. **Regex captures** (step 19): `$1`, or only named and returned.
-11. **Bytes**, for binary files, as a type apart from strings (with
+11. **Regex captures** (step 19): `$1`, or only named and returned.
+12. **Bytes**, for binary files, as a type apart from strings (with
     step 21).
-12. **The syntax of a type** (step 25); whether roles erase by
+13. **The syntax of a type** (step 25); whether roles erase by
     flattening into classes, which would keep perl as their oracle
     (step 27); the shape of concurrency, and D13 revisited with it
     (step 29).
-13. **The extension of a file that carries type annotations** (step
+14. **The extension of a file that carries type annotations** (step
     25). A program is a `.pl` file until then.

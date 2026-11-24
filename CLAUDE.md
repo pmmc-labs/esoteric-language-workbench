@@ -13,8 +13,11 @@ runtime. The driver is `curlyc`, and a program is a `.pl` file.
 reading of Chalk, perl5-son, Opal and Allium
 ([`docs/BACKGROUND.md`](docs/BACKGROUND.md)), reviewed adversarially
 against perl 5.38.2 (which refuted four of its claims about perl and
-found about twenty ways to be WRONG; [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the fifty programs, T1 to T50, by step), and then decided:
+found about twenty ways to be WRONG), read against Crayon (which added
+rows to `SURFACE.md` and a kind of trap the review had missed:
+accepted by an obvious parser, refused by perl), and decided.
+[`docs/TRAPS.md`](docs/TRAPS.md) keeps the programs, T1 to T71, by
+step.
 **D1 to D32 are all Stevan's.** The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
 be caught (D13); perl's warnings are faults (D15); loop variables are
@@ -46,7 +49,7 @@ the end of [`docs/DESIGN.md`](docs/DESIGN.md).
 5. [`docs/DECISIONS.md`](docs/DECISIONS.md): why, and what was turned
    down. Check it before "improving" something; it may have been
    decided against.
-6. [`docs/BACKGROUND.md`](docs/BACKGROUND.md): the four projects this
+6. [`docs/BACKGROUND.md`](docs/BACKGROUND.md): the five projects this
    learned from, and what is parked. Optional.
 
 The process is the workbench's: `docs/PROCESS.md` and `docs/MODELS.md`
