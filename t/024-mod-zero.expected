@@ -1,0 +1,4 @@
+1
+0
+fault: modulus by zero at t/024-mod-zero.pl line 6.
+exit: 1

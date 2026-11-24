@@ -1,0 +1,4 @@
+1
+9223372030926249001
+fault: integer overflow at t/019-overflow-mul.pl line 6.
+exit: 1

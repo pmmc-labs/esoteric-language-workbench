@@ -1,0 +1,4 @@
+1
+-9223372036854775808
+fault: integer overflow at t/020-overflow-mul-down.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+7
+fault: integer overflow at t/026-overflow-inner.pl line 6.
+exit: 1

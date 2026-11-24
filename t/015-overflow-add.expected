@@ -1,0 +1,4 @@
+1
+9223372036854775807
+fault: integer overflow at t/015-overflow-add.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+0
+fault: modulus by zero at t/025-mod-zero-computed.pl line 6.
+exit: 1
