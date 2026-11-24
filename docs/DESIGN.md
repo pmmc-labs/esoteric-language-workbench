@@ -4,12 +4,12 @@ This is the design as agreed on 2026-11-24. [`DECISIONS.md`](DECISIONS.md)
 has the reasons and the alternatives that were turned down,
 [`SURFACE.md`](SURFACE.md) goes through Perl construct by construct,
 and [`PLAN.md`](PLAN.md) has the build order. D1 to D32 are Stevan's;
-D33 is a default from step 0.
+D33 and D34 are defaults from steps 0 and 1.
 Anything marked **(open)** from here on is a default a later step
 proposed that he hasn't confirmed: fine to build on, but bring it up
 before baking it in further. What the decisions leave for a step to
 settle is listed at the end.
-[`TRAPS.md`](TRAPS.md) has seventy-five programs, each run under perl
+[`TRAPS.md`](TRAPS.md) has seventy-six programs, each run under perl
 5.42, where the obvious implementation would break the core rule.
 
 ## Goals
@@ -224,7 +224,8 @@ step, roughly in the order it will matter:
    does. Step 0 ran every "perl prints" in these documents and every
    trap under both (`briefs/claims.py`), and the two differ only where
    `TRAPS.md` already said they would. **Still to confirm: D33**, the
-   refusal of a `#!` first line, which step 0 took as a default.
+   refusal of a line that starts `#!`, and **D34**, which line a
+   fault names; steps 0 and 1 took them as defaults.
 2. **Whether a program must say `use open ':std',
    ':encoding(UTF-8)';`** (step 3). The oracle runs perl with `-CSDA`;
    plain perl prints `é` as one byte. As it stands the file alone

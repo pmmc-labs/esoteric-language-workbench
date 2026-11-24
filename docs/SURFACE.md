@@ -20,8 +20,8 @@ What a row can say:
 - **Cut**: refused, and not planned. Reopening one is a proposal.
 - **New**: perl doesn't have it; an exception to D2.
 
-Step 0 is built and nothing after it, so "In" is a plan and not a
-fact; [`LANGUAGE.md`](LANGUAGE.md) is what works.
+Steps 0 and 1 are built and nothing after them, so "In" is a plan and
+not a fact; [`LANGUAGE.md`](LANGUAGE.md) is what works.
 [`TRAPS.md`](TRAPS.md) has the programs that show why a row says
 what it does.
 
@@ -102,6 +102,8 @@ comparison: *in*, *out*, or *n/a*.
 | `given`, `when`, smartmatch | Cut | | | Not on under `use v5.42` either |
 | `exit` | In | 21 | | |
 | `say;`, `print;` with no argument | In | 10 | | They print `$_` |
+| A builtin's brackets and then an operator, `say (1 + 2) * 3;` | Cut | | | D21, T25: perl prints 3 |
+| `say (...)` after one blank, not ending on its line | Cut | | | T76: perl warns. `say(...)`, hard against, may run over lines |
 | `print STDERR ...`, `say STDERR ...` | In | 15 | | With `warn` |
 | `1;` ending a module | In | 18 | | Not needed under `use v5.42`; harmless |
 

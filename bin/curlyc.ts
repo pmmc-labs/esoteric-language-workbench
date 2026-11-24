@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// The driver: lex, parse, check, generate C next to the output, link it
-// with the runtime. `node bin/curlyc.ts -o out file.pl`.
+// The driver: lex, parse, check, generate C next to the output, compile
+// it and the runtime, link them. `node bin/curlyc.ts -o out file.pl`.
 // Exit codes: 0 ok; 1 a refusal (`FILE:LINE:COL: message`, and no binary);
 // 2 usage, the toolchain, or a file it can't read or write.
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -39,13 +39,25 @@ try {
 } catch (e) {
     try { rmSync(out, { force: true }); } catch { /* not a file of ours to remove */ }
     if (e instanceof CompileError) { console.error(`${src}:${e.line}:${e.col}: ${e.message}`); process.exit(1); }
+    // The passes walk the tree by recursion, and Node's stack holds a few
+    // thousand levels: brackets that deep, or an expression of that many
+    // terms. Not a refusal (the program may be fine), but not a mystery.
+    if (e instanceof RangeError) { console.error(`curlyc: ${src} nests too deeply for the compiler: an expression of thousands of terms, or of brackets`); process.exit(2); }
     console.error(`curlyc: internal error: ${(e as Error).stack}`); process.exit(2);
 }
 
 try { writeFileSync(`${out}.c`, c); }
 catch (e) { console.error(`curlyc: can't write ${out}.c: ${(e as Error).message}`); process.exit(2); }
 
+// The runtime is compiled for speed and the program is not: its C is a
+// long run of calls with nothing in it to optimize, and gcc at -O1 takes
+// more than proportionally longer over a long function (36 seconds for
+// ten thousand statements, against 6 at -O0).
 const cc = (process.env.CURLY_CC ?? 'cc').split(' ');
-const r = spawnSync(cc[0]!, [...cc.slice(1), '-O1', '-Wall', `-I${join(root, 'runtime')}`, '-o', out, `${out}.c`, join(root, 'runtime', 'rt.c')], { stdio: 'inherit' });
-if (r.error) { console.error(`curlyc: can't run ${cc[0]}: ${r.error.message}`); process.exit(2); }
-process.exit(r.status === 0 ? 0 : 2);
+const run = (args: string[]): void => {
+    const r = spawnSync(cc[0]!, [...cc.slice(1), '-Wall', `-I${join(root, 'runtime')}`, ...args], { stdio: 'inherit' });
+    if (r.error) { console.error(`curlyc: can't run ${cc[0]}: ${r.error.message}`); process.exit(2); }
+    if (r.status !== 0) process.exit(2);
+};
+run(['-O1', '-c', '-o', `${out}.rt.o`, join(root, 'runtime', 'rt.c')]);
+run(['-O0', '-o', out, `${out}.c`, `${out}.rt.o`]);

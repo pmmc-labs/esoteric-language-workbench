@@ -6,12 +6,18 @@ import { INT_MAX, VERSION } from './names.ts';
 import type { Expr, Program } from './ast.ts';
 
 const checkExpr = (e: Expr): void => {
+    if (e.kind === 'unary') return checkExpr(e.operand);
+    if (e.kind === 'binary') {
+        checkExpr(e.left);
+        return checkExpr(e.right);
+    }
     // perl reads `010` as octal, 8, and doesn't compile `08` (T24).
     if (e.text.length > 1 && e.text[0] === '0') {
         refuse(`${e.text} starts with a zero, which perl reads as octal: not in the language yet`, e.pos);
     }
     // perl carries on past here as an unsigned integer and then a float
-    // (D23); the language has neither kind of answer.
+    // (D23); the language has neither kind of answer. So -2^63 can't be
+    // written as a literal with a minus: its digits are past the largest.
     if (e.value > INT_MAX) refuse(`${e.text} is past the largest integer, ${INT_MAX}`, e.pos);
 };
 

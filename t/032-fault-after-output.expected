@@ -1,0 +1,4 @@
+3
+20
+fault: integer overflow at t/032-fault-after-output.pl line 8.
+exit: 1

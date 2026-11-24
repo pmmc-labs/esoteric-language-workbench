@@ -37,6 +37,15 @@ int rt_run(void (*body)(rt_ctx *cx), const char *file);
 // `say`: the value as perl prints it, and a newline.
 void rt_say(rt_ctx *cx, rt_value v);
 
+// Arithmetic on Ints (D23). A result that isn't an Int faults `integer
+// overflow`; `%` takes the sign of its right operand, and faults `modulus
+// by zero`.
+rt_value rt_add(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_sub(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_mul(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_mod(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_neg(rt_ctx *cx, rt_value a);
+
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and
 // nothing can catch it.

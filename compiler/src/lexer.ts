@@ -4,13 +4,15 @@
 // The parser doesn't steer the lexer yet. It will have to once `/` can be
 // a division or the start of a pattern (D29); nothing here is ambiguous.
 import { refuse } from './errors.ts';
+import { OPERATORS, infixOp, prefixOp } from './names.ts';
 import type { Pos } from './ast.ts';
 
 export type Token =
     | { kind: 'word'; text: string; pos: Pos }
     | { kind: 'int'; text: string; pos: Pos }
     | { kind: 'version'; text: string; pos: Pos }
-    | { kind: ';'; text: string; pos: Pos }
+    | { kind: ';' | '(' | ')'; text: string; pos: Pos }
+    | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
 const isDigit = (c: string) => c >= '0' && c <= '9';
@@ -90,11 +92,17 @@ export const lex = (src: string): Token[] => {
                 refuse(`${text} runs into '${take()}': perl reads a version only before a blank or ';'`, start);
             }
             tokens.push({ kind: isVersion ? 'version' : 'word', text, pos: start });
-        } else if (c === ';') {
-            tokens.push({ kind: ';', text: take(), pos: start });
+        } else if (c === ';' || c === '(' || c === ')') {
+            tokens.push({ kind: c, text: take(), pos: start });
         } else {
-            take();
-            refuse(`'${c}' is not in the language yet`, start);
+            // The longest of perl's operators that starts here: `--` is a
+            // decrement and never two minus signs, `**` never two stars
+            // (T27). One the language doesn't have yet is refused as the
+            // whole operator it is to perl.
+            const op = [3, 2, 1].map(n => src.slice(i, i + n)).find(s => OPERATORS.has(s)) ?? c;
+            for (const _ of op) take();
+            if (!prefixOp(op) && !infixOp(op)) refuse(`'${op}' is not in the language yet`, start);
+            tokens.push({ kind: 'op', text: op, pos: start });
         }
     }
     tokens.push({ kind: 'eof', text: '', pos: pos() });

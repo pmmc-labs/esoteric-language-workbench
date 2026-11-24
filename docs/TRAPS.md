@@ -160,6 +160,17 @@ line counter back to 1, with the same result as `# line 1`.
 | T74 | `# line 100 "other.pl"` on a line of its own, then `say 42; die "x";` | `42`, and the `die` says `x at other.pl line 101.` With `#line 100`, the same line and this file. Indented, or with more words after the number, it is a comment | 15, 16 | To be proposed with `die` and `__LINE__`: refuse a comment perl reads as a line directive. Until then the only thing a directive could change on stdout was which line is line 1 (T72), and that is closed; a fault's line is the language's own (D12) |
 | T75 | `use v5.42#c`, then `;` on the next line, then `say 42;` | doesn't compile: `Can't locate v5.pm in @INC`. With a space before the `#`, it prints `42` | 0 | Refuse a version literal that isn't followed by a blank or `;`: perl decides it is a version by that one character |
 
+## Found at step 1
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T76 | `say (1 +` and, on the next line, `2);`. Or `say (1 + 2)` with its `;` on the next line, or after a comment | `3`, and a warning as it compiles: `say (...) interpreted as function`. With the bracket hard against `say`, or after two blanks, a tab or a newline, no warning; nor when the `)` and the `;` are on the line the `(` is on | 1 | Refuse `say`, one blank and a bracket unless the statement ends on that line. perl makes the check by reading along the line of text, not by parsing |
+
+Not traps, since no obvious parser takes them, but each is what perl
+does where the language refuses: `say 2 * *3;` reads `*3` as a glob,
+warns and prints `0`; `say * 2;` prints `*main::2`; `say % 2;` and
+`say(());` print an empty line, in silence.
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

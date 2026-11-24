@@ -7,8 +7,8 @@ it can be built with this repository's process (`docs/PROCESS.md` on
 `main`): an agent builds, a person decides, one feature a step, and every
 expected output comes from somewhere other than the compiler.
 
-Step 0 is built: `say 42;` compiles to a native binary, and a script
-holds every test to what perl 5.42 prints. The rest is the workbench's
+Steps 0 and 1 are built: integer arithmetic compiles to a native
+binary, and a script holds every test to what perl 5.42 prints. The rest is the workbench's
 documents, filled in.
 
 ## The idea in one paragraph
@@ -48,16 +48,16 @@ again.
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | D1 to D32: who decided, why, what was rejected |
 | [`docs/SURFACE.md`](docs/SURFACE.md) | Perl construct by construct: in, a fault, later, or cut |
 | [`docs/PLAN.md`](docs/PLAN.md) | Steps 0 to 30; 0 and 1 in full |
-| [`docs/TRAPS.md`](docs/TRAPS.md) | Seventy-five programs, run under perl 5.42, where the obvious implementation would be wrong |
+| [`docs/TRAPS.md`](docs/TRAPS.md) | Seventy-six programs, run under perl 5.42, where the obvious implementation would be wrong |
 | [`docs/BACKGROUND.md`](docs/BACKGROUND.md) | What Chalk, perl5-son, Opal, Allium and Crayon taught, with paths |
-| [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: `say`, and an integer |
+| [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: `say`, and arithmetic on integers |
 | [`t/README.md`](t/README.md) | The five kinds of golden test, and the oracle check |
 | [`docs/briefs/claims.py`](docs/briefs/claims.py) | Every statement these documents make about perl, as a program, rerun under 5.42 |
 
 ## What is decided and what isn't
 
-D1 to D32 are Stevan's, all settled on 2026-11-24; D33 is a default
-from step 0, to confirm. The ones that give the language its
+D1 to D32 are Stevan's, all settled on 2026-11-24; D33 and D34 are
+defaults from steps 0 and 1, to confirm. The ones that give the language its
 character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);
@@ -98,8 +98,8 @@ more.
     make doctor     # node, cc, clang, and perl 5.42 as CURLY_PERL
     make test
 
-A fresh session, on this branch: "Read `CLAUDE.md`, then do step 1 of
-`docs/PLAN.md`."
+A fresh session, on this branch: "Read `CLAUDE.md`, then propose step
+2 of `docs/PLAN.md`."
 
 This is a branch of the workbench that shares no history with `main`:
 it began as these documents alone, the seed of a language to be

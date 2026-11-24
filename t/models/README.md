@@ -14,9 +14,12 @@ and every command that regenerates a file, one a line, exactly:
 
 `t/checks.py` reads those lines, runs each, and fails if the file
 differs; `make models` writes them. A model that lists no command, or a
-test that names a model that doesn't list it, fails too. There is none
-here yet: step 1 writes `arith.py`, and until then the workbench's
-`t/models/arith.py`, on `main`, is the shape to copy.
+test that names a model that doesn't list it, fails too. `arith.py` is
+the worked example: copy its shape.
+
+Keep a program a model writes to about three thousand statements, and
+write several if there are more: a C compiler takes more than
+proportionally longer over one long run of statements.
 
 In this language a model is half of a pair. The other half is perl:
 the oracle check (`t/checks.py oracle`) runs the model's program under

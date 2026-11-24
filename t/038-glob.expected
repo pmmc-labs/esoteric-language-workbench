@@ -1,0 +1,2 @@
+t/038-glob.pl:4:9: expected a number or '(', found '*'
+exit: 1

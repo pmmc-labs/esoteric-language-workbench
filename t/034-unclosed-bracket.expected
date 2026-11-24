@@ -1,0 +1,2 @@
+t/034-unclosed-bracket.pl:3:10: expected ')', found ';'
+exit: 1

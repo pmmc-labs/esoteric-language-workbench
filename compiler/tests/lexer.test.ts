@@ -53,11 +53,35 @@ test('a number that runs into a word is neither', () => {
     refused('say 42x3;', '42x3: the only numbers so far are decimal integers', 1, 5);
 });
 
-test('a character the language has no use for yet', () => {
+test('brackets and operators', () => {
+    const tokens = lex('say(1+-2 %3)\n* 4;');
+    assert.deepEqual(tokens.map(t => [t.kind, t.text, t.pos.line, t.pos.col]), [
+        ['word', 'say', 1, 1], ['(', '(', 1, 4], ['int', '1', 1, 5], ['op', '+', 1, 6], ['op', '-', 1, 7],
+        ['int', '2', 1, 8], ['op', '%', 1, 10], ['int', '3', 1, 11], [')', ')', 1, 12],
+        ['op', '*', 2, 1], ['int', '4', 2, 3], [';', ';', 2, 4], ['eof', '', 2, 5],
+    ]);
+});
+
+test("the longest of perl's operators is the token, in the language or not (T27)", () => {
+    refused('say --5;', "'--' is not in the language yet", 1, 5);
+    refused('say 1--2;', "'--' is not in the language yet", 1, 6);
+    refused('say ++5;', "'++' is not in the language yet", 1, 5);
+    refused('say 2 ** 3;', "'**' is not in the language yet", 1, 7);
+    refused('say 2 **= 3;', "'**=' is not in the language yet", 1, 7);
+    refused('say 1 <=> 2;', "'<=>' is not in the language yet", 1, 7);
+    refused('say 1 -> 2;', "'->' is not in the language yet", 1, 7);
+    refused('say 7 %= 2;', "'%=' is not in the language yet", 1, 7);
     refused('say 1.5;', "'.' is not in the language yet", 1, 6);
-    refused('use v5.42;\nsay(42);', "'(' is not in the language yet", 2, 4);
-    refused('say -1;', "'-' is not in the language yet", 1, 5);
+    refused('say 1 / 2;', "'/' is not in the language yet", 1, 7);
+    refused('say 1, 2;', "',' is not in the language yet", 1, 6);
+    // With a blank between them they are two, as they are to perl.
+    assert.deepEqual(lex('- - + +').map(t => t.text), ['-', '-', '+', '+', '']);
+});
+
+test('a character the language has no use for yet', () => {
     refused('say "x";', "'\"' is not in the language yet", 1, 5);
+    refused('say $x;', "'$' is not in the language yet", 1, 5);
+    refused('say {1};', "'{' is not in the language yet", 1, 5);
 });
 
 test('a character past ASCII, wherever it stands', () => {

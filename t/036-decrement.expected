@@ -1,0 +1,2 @@
+t/036-decrement.pl:5:5: '--' is not in the language yet
+exit: 1

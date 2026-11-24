@@ -9,34 +9,42 @@ runtime. The driver is `curlyc`, and a program is a `.pl` file.
 
 ## Status
 
-**Step 0 of [`docs/PLAN.md`](docs/PLAN.md) is done** (2026-11-24, by
-Fable 5.2 on a step marked medium, large for the oracle check). The
-workbench's tree is in from `main` (af8e3a3), its calculator removed.
-**The language** is `use v5.42;` and then any number of `say N;`, N a
-decimal integer from 0 to 2^63 - 1 without a leading zero, with `#`
-comments (D16, D23; [`docs/LANGUAGE.md`](docs/LANGUAGE.md)). **The
-compiler**: `lexer.ts` (the whole file, a line and column on each
-token, every character checked there: tab, newline and printable ASCII
-only), `parser.ts`, `ast.ts`, `checker.ts`, `codegen.ts`, `names.ts`
-(`use` and `say`), `errors.ts`, and the driver `bin/curlyc.ts` (D3,
-D29). **The runtime**: the two-word value (D25), the context first in
-every call (D28), `rt_run`, `rt_say`, and the fault path (D13), which
-no program can reach yet and `runtime/tests/fault.c` drives from C.
-The generated C is one statement per `say` (D31) and a `main` that
-hands the file's path to `rt_run`; it does not set the context's line
-yet (step 1, with the first fault). **Golden tests** 000 and 001
-(`same`, written by perl) and 002 to 009 (`refused`, by hand: no `use
-v5.42;`, an integer past 2^63 - 1, `010`, `08`, a `#!` first line, a
-character past ASCII, a `#!` line after `# line 1`, `use v5.42#c`); 21
-unit tests. **The oracle check**
-(`t/checks.py oracle`, D10) holds every test to perl 5.42 by its
-kind, and has 40 tests of its own in `t/checks/`, each a Perl file the
-check must pass or must fail in a named way; every rule in it was
-broken on purpose and a fixture went red each time. Its seeds are
-eight of 64 hex digits: `PERL_HASH_SEED=1` to `8` are nearly one seed
-to perl. Its reading rule for hashes is by pattern and errs toward
-rejecting; step 12 will meet it first. Green under gcc, clang, and
-UBSan with ASan.
+**Steps 0 and 1 of [`docs/PLAN.md`](docs/PLAN.md) are done**
+(2026-11-24, both by Fable 5.2). **The language** is `use v5.42;` and
+then any number of `say EXPR;` or `say(EXPR);`, where an expression is
+a decimal integer (0 to 2^63 - 1, no leading zero), brackets, unary
+`-` and `+`, and `+`, `-`, `*`, `%`, with perlop's precedence (D16,
+D21, D23; [`docs/LANGUAGE.md`](docs/LANGUAGE.md)). A result outside
+the 64-bit signed integers faults `integer overflow`, and `% 0` faults
+`modulus by zero` (D13); `%` takes the sign of its right operand. A
+fault names the line its statement starts on (**D34, a default**).
+Refused: `say (1 + 2) * 3;` (T25); `say`, one blank and a bracket
+that doesn't end on its line (T76); `--`, `++`, `**` and every other
+operator of perl's, each as the longest token perl would take (T27).
+**The compiler**: `lexer.ts` (the whole file, a line and column on
+each token, every character checked there), `parser.ts` (precedence
+climbing over perlop's table), `ast.ts` (`int`, `unary`, `binary`,
+each with a position and a mark for brackets that were written),
+`checker.ts`, `codegen.ts`, `names.ts` (`use`, `say`, and all 25 rows
+of perlop's table, of which three are live), `errors.ts`, and the
+driver `bin/curlyc.ts` (D3, D29). **The generated C** is straight-line
+(D31): each operation a statement with its result in a temporary,
+operands left before right, the statement's line stored in the context
+first. **The runtime**: the two-word value (D25), the context first in
+every call (D28), `rt_say`, `rt_add`, `rt_sub`, `rt_mul`, `rt_mod`,
+`rt_neg`, each checking its operands' tags, overflow by the compilers'
+builtins, and the fault path. **Tests**: golden 000 to 009 (step 0),
+010 to 026 from `t/models/arith.py` (every pair of 58 edge values
+under each operator, 10,592 lines on which the model and perl agree,
+and twelve programs that each fault once at an edge), 030 to 039 by
+hand (precedence, the forms of `say`, a fault after output, seven
+refusals); 31 unit tests, the runtime's own in C. **The oracle check**
+(`t/checks.py oracle`, D10) holds every test to perl 5.42 by its kind,
+and has 40 tests of its own in `t/checks/`; its seeds are eight of 64
+hex digits (`PERL_HASH_SEED=1` to `8` are nearly one seed to perl).
+Its reading rule for hashes is by pattern and errs toward rejecting;
+step 12 will meet it first. Green under gcc, clang, and UBSan with
+ASan.
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
@@ -49,8 +57,9 @@ first line, or any line after a `# line 1` comment), a WRONG in step
 default: Stevan to confirm**); T73, `use utf8;` must be on a line
 before the first character past ASCII (step 3); T74, `# line N "file"`
 comments (step 15); T75, `use v5.42#c`, which perl doesn't compile,
-refused. [`docs/TRAPS.md`](docs/TRAPS.md) keeps the programs, T1 to
-T75, by step. **Two adversarial reviews** were run, of the step's
+refused. **Found at step 1**: T76. [`docs/TRAPS.md`](docs/TRAPS.md)
+keeps the programs, T1 to T76, by step; `claims.py` has 210 programs
+now. **Two adversarial reviews** were run, of the step's
 language and of the oracle check. The first found T75 and the `# line
 1` half of T72 after the compiler was green: the rule about reviewing
 a large step paid for itself on the smallest one. The second got wrong
@@ -61,17 +70,18 @@ has to close it** (15: a `dies` test that also warns; 21 and 22:
 files, the environment, the clock; 16 and 19: quotes the reading rule
 can't pair). A test with a sort in it breaks its ties.
 
-**D1 to D32 are all Stevan's; D33 is a default.** The ones a builder
+**D1 to D32 are all Stevan's; D33 and D34 are defaults.** The ones a builder
 meets first: the core rule (D2); a TypeScript compiler emitting C
 (D3); a fault can't be caught (D13); perl's warnings are faults (D15);
 loop variables are read-only and containers freeze (D17); a sub can't
 see its context (D18); `class`, and `package` only as a namespace
 (D19); brackets on a program's own calls (D21); a whole Num of 10^15
 or more faults when made a string (D23); the name (D32). perigrin has
-agreed to the probe corpus (D11). **Next:** step 1, integer
-arithmetic, written in full in `docs/PLAN.md`: `t/models/arith.py`
-first, red before any code. Not agreed: D33, and what the decisions
-leave to steps, listed at the end of
+agreed to the probe corpus (D11). **Next:** step 2 (Num, `/`, `**`,
+the other numeric literals), which is an outline: it is **proposed
+first**, with the model that pins D23's exact line against perl, and
+reviewed adversarially before it is built. Not agreed: D33, D34, and
+what the decisions leave to steps, listed at the end of
 [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Read first, in this order
@@ -167,7 +177,11 @@ in `pmmc-labs/esoteric-language-workbench`.
 - The generated C is one statement per operation, each result in a
   temporary (D31). C doesn't order a call's arguments: never pass a
   variable and a call that sets it in the same argument list, and
-  never two arguments that can fault. The cloud machine's `cc` is gcc
+  never two arguments that can fault. A C compiler takes more than
+  proportionally longer over one long function (gcc at `-O1`, 36
+  seconds for ten thousand statements): the driver compiles the
+  program's C at `-O0` and the runtime at `-O1`, and a model keeps a
+  program to about three thousand statements. The cloud machine's `cc` is gcc
   and the Mac's is clang: run the suite under both, and `make
   sanitize`, before calling a runtime change done. A left shift of a
   negative value is undefined before C23. (All three are the
@@ -177,6 +191,9 @@ in `pmmc-labs/esoteric-language-workbench`.
 - Every runtime operator checks its operands' tags and faults by name.
   No operator trusts the compiler until types (step 26) give it a
   reason to.
+- The passes walk the tree by recursion, so an expression some
+  thousands of terms long or brackets deep stops the compiler (exit 2,
+  with a message). A pass that must take more becomes a loop.
 - Comments explain why, not what.
 
 ## Toolchain
@@ -231,7 +248,7 @@ in `pmmc-labs/esoteric-language-workbench`.
 ## Commands
 
 - `make test`: the unit tests, the golden tests, then the mechanical
-  checks (`t/checks.py`), which ask perl. A few seconds.
+  checks (`t/checks.py`), which ask perl. About fifteen seconds.
 - `make unit`, `make golden`, `make checks`: one at a time.
   `t/run.sh t/000-say.pl` runs one golden test; `JOBS=1` runs them one
   at a time.
@@ -254,7 +271,7 @@ in `pmmc-labs/esoteric-language-workbench`.
 - `make decisions`: `build/decisions-curly.html`, a browser of the
   decision log.
 - `node bin/curlyc.ts -o out file.pl`: compile and link. It writes
-  `out.c` next to `out`. Exit codes: 0 ok; 1 a refusal, `FILE:LINE:COL:
+  `out.c` and `out.rt.o` (the runtime, compiled) next to `out`. Exit codes: 0 ok; 1 a refusal, `FILE:LINE:COL:
   message` on stderr and no binary; 2 usage, the toolchain, or a file
   it can't read or write; a fault in the compiler itself is `curlyc:
   internal error: ...` with Node's stack, and 2.

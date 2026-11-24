@@ -42,6 +42,15 @@ test('an integer has no leading zero (T24)', () => {
     refused('use v5.42; say 00;', '00 starts with a zero, which perl reads as octal: not in the language yet', 1, 16);
 });
 
+test('every literal in an expression is checked', () => {
+    accepted('use v5.42; say -(1 + 2) * +3 % 4;');
+    refused('use v5.42;\nsay 1 + 010;', '010 starts with a zero, which perl reads as octal: not in the language yet', 2, 9);
+    refused('use v5.42;\nsay -(2 * (3 - 07));', '07 starts with a zero, which perl reads as octal: not in the language yet', 2, 16);
+    // The smallest Int has no literal: its digits are past the largest.
+    refused('use v5.42;\nsay -9223372036854775808;', '9223372036854775808 is past the largest integer, 9223372036854775807', 2, 6);
+    accepted('use v5.42; say -9223372036854775807 - 1;');
+});
+
 test('an integer is at most 2^63 - 1 (D23)', () => {
     refused('use v5.42;\nsay 9223372036854775808;', '9223372036854775808 is past the largest integer, 9223372036854775807', 2, 5);
     refused('use v5.42; say 99999999999999999999999999;', '99999999999999999999999999 is past the largest integer, 9223372036854775807', 1, 16);

@@ -6,7 +6,7 @@ proposed it and it wasn't explicitly discussed, and is fair to revisit.
 D1 to D32 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
-D33 is a default, taken at step 0.
+D33 and D34 are defaults, taken at steps 0 and 1.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -325,6 +325,19 @@ refusing `# line` comments and leaving `#!` alone after the first line
 step 15's to propose, T74).
 Fair to revisit: allowing a first line with no switch is small if
 it's wanted.
+
+**D34. A fault names the line its statement starts on.** *(Default,
+step 1; not discussed.)* `fault: MESSAGE at FILE line N.` needs an N,
+and D13 doesn't say which. The statement's first line is where perl
+points for the same mistake (`say 2`, `+ 5 % 0`, `+ 3;` over three
+lines dies `Illegal modulus zero` at the line of the `say`), and it is
+one store before each statement in the generated C. A fault's text is
+the language's own (D12), so nothing depends on agreeing with perl
+here; step 15 has to agree with it for `die`, byte for byte, and will
+say then whether the two can share the rule. Rejected: the line of the
+operator that faulted (more exact in a long statement, and a store
+before every operation instead of every statement; cheap to change to
+if it's wanted).
 
 ## The language: what the cleanup cuts
 

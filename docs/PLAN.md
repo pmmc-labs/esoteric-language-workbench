@@ -4,10 +4,11 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** step 0 is done (2026-11-24): `say 42;` compiles, runs,
-and is checked against perl 5.42. Step 1 is written in full, and every
-decision it cites is made. Next: step 1. Steps 2 to 30 are outlines:
-each is proposed, with options, when it's next.
+**Progress:** steps 0 and 1 are done (2026-11-24): integer arithmetic
+compiles, runs, and is checked against perl 5.42. Next: step 2, which
+is an outline and is **proposed before it is built**: it decides D23's
+exact line. Steps 2 to 30 are outlines: each is proposed, with
+options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -175,13 +176,42 @@ differences and findings:
 - Leave out: negative numbers (a unary minus, step 1), any other
   statement, any other literal, strings.
 
-### 1. Integer arithmetic
+### 1. Integer arithmetic (done)
 
 Referee: perl. Size: large for the model, medium for the build once
 the model and its tests are red.
 
 Decisions: D23 (the Int half), D13, D15 and D21 (the refusals below).
 Traps: T25, T27.
+
+**Done, 2026-11-24**, by Fable 5.2, as written below, and with these
+differences and findings:
+
+- **The model and perl agree on every line**: `t/models/arith.py`
+  writes 10,592 lines over 58 edge values, and perl 5.42 prints the
+  model's answer for each. It was committed red, before any code.
+- **A test an operator** (010 to 014), not one test: gcc at `-O1` took
+  36 seconds over the 10,592 statements as one C function. For the
+  same reason the driver now compiles the runtime at `-O1` and the
+  program's own C at `-O0`: the suite takes about six seconds.
+- **Twelve fault tests** (015 to 026), at the edges of each operator,
+  not one for each kind: a pair that should fault and doesn't is a
+  WRONG that only a fault test can show.
+- **T76 was found** probing the step's grammar: `say (1 +` with its
+  bracket closing on a later line makes perl warn, so `say`, one
+  blank and a bracket must end on its line. `say(...)` needn't.
+- **D34, a default: a fault names the line its statement starts on**,
+  as perl's own messages do. For Stevan to confirm.
+- **The table of names has perlop's whole table** (25 rows, from
+  5.42's own `perlop.pod`), and the lexer takes the longest operator
+  in it: `--`, `**`, `<=>` and the rest are refused as the operators
+  they are to perl, by name.
+- **A very long or deep expression** (some thousands of terms, or of
+  brackets) stops the compiler with a message and exit 2: its passes
+  walk the tree by recursion. perl takes them. A limit to lift when
+  a program meets it.
+- **The oracle's `fault` half met real tests** and was failed on
+  purpose: with overflow wrapping in silence, ten tests fail it.
 
 - `say EXPR;` and `say(EXPR);`, where an expression is an integer,
   `( )`, unary `-`, and binary `+`, `-`, `*`, `%`, with `perlop`'s

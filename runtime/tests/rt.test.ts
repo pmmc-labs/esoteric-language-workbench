@@ -13,13 +13,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const runtime = join(here, '..');
 const build = join(runtime, '..', 'build', 'unit');
 
-const run = (name: string): { status: number | null; output: string } => {
+const run = (name: string, arg = ''): { status: number | null; output: string } => {
     mkdirSync(build, { recursive: true });
     const bin = join(build, name);
     const cc = (process.env.CURLY_CC ?? 'cc').split(' ');
     const built = spawnSync(cc[0]!, [...cc.slice(1), '-O1', '-Wall', `-I${runtime}`, '-o', bin, join(here, `${name}.c`), join(runtime, 'rt.c')], { encoding: 'utf8' });
     assert.equal(built.status, 0, built.stderr);
-    const r = spawnSync('sh', ['-c', 'exec "$0" 2>&1', bin], { encoding: 'utf8' });
+    const r = spawnSync('sh', ['-c', 'exec "$0" "$1" 2>&1', bin, arg], { encoding: 'utf8' });
     return { status: r.status, output: r.stdout };
 };
 
@@ -27,4 +27,15 @@ test('a fault: stdout first, then the line on stderr, then exit 1', () => {
     const r = run('fault');
     assert.equal(r.output, '1\n9223372036854775807\nfault: not a value at some dir/a "file".pl line 7.\n');
     assert.equal(r.status, 1);
+});
+
+test('every operator faults on an operand that is no number', () => {
+    const cases = ['add-left', 'add-right', 'sub-left', 'sub-right', 'mul-left', 'mul-right', 'mod-left', 'mod-right', 'neg'];
+    for (const which of cases) {
+        const r = run('tags', which);
+        assert.equal(r.output, '2\nfault: not a number at tags.pl line 3.\n', which);
+        assert.equal(r.status, 1, which);
+    }
+    // And with nothing wrong, nothing faults.
+    assert.deepEqual(run('tags'), { status: 0, output: '2\n2\n' });
 });
