@@ -5,10 +5,10 @@ the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
 **Progress:** steps 0 and 1 are done (2026-11-24): integer arithmetic
-compiles, runs, and is checked against perl 5.42. Next: step 2, which
-is an outline and is **proposed before it is built**: it decides D23's
-exact line. Steps 2 to 30 are outlines: each is proposed, with
-options, when it's next.
+compiles, runs, and is checked against perl 5.42. **Step 2 is
+proposed, below, and waits on five answers from Stevan** (Q1 to Q5);
+nothing of it is built. Steps 3 to 30 are outlines: each is proposed,
+with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -289,28 +289,201 @@ differences and findings:
   (`-9223372036854775808` is a minus applied to a refused literal;
   write `-9223372036854775807 - 1`).
 
-### 2. Num, division, `**`, numeric literals
+### 2. Num, division, `**`, numeric literals (proposed, not agreed)
 
 Referee: perl. Size: large.
 
-Decides: D23 in full, against perl, before building. Which results
-are Int and which Num, operator by operator, from a model that
-enumerates and perl that confirms; **what to do about the history a
-number carries in perl** (D23's three options; `my $x = 1e15; my $y =
-$x + 1; say $x;` is the test any answer must pass or fault on). What a
-Num prints as, digit for digit, including `1e+16`, `0.1 + 0.2` (perl
-prints `0.3`), and whether `Inf` and `NaN` are values or faults (perl
-prints `Inf`, `-Inf` and `NaN` for `9**9**9`, its negation and their
-difference). `%` on a Num (perl truncates the operands: `10 % 3.7` is
-1; past the range of an integer it does something else, so that
-faults). Octal by a leading zero and as `0o17`; `.5`, `1.` and `1e3`;
-a number with two dots refused (T62); a hex float. Traps: T35, T36,
-T37, T40, T62. What
-perl warns about in a literal at compile time (`1__0`, a hex literal
-past 32 bits) is refused (D15). Division by zero is a fault. Hex, binary and octal
-literals, `_` in a literal, a literal with a point or an exponent.
-The model is Python's `float` and `fractions`, and perl agrees or the
-step stops.
+**Proposed 2026-11-24. Nothing is built, and five questions are
+Stevan's: Q1 to Q5 below.** Everything here about perl was run under
+5.42.0, and the scripts are kept:
+[`briefs/step2-perl-numbers.py`](briefs/step2-perl-numbers.py) (every
+operator over every pair of 147 edge values, 129,801 operations),
+[`briefs/step2-history.pl`](briefs/step2-history.pl) (where a number's
+past shows), [`briefs/step2-literals.py`](briefs/step2-literals.py)
+(reading and printing a float), and `briefs/claims.py`.
+
+Decisions it settles: D23 in full. Traps: T35 to T37, T40, T62, and
+T77 to T82, found writing this.
+
+#### The picture
+
+A number is an **Int** (64 bits, signed, exact) or a **Num** (a
+double). That much is D23. What this step has to say is which of the
+two each operation gives, and D23 has already answered: whichever
+perl gives. So the work was finding perl's rule. It is in perl's
+source, and it is one question asked of each operand:
+
+```
+ Int ............................ integral      42, -7, 2**63 - 1
+ Num, whole, below 2^53 ......... integral      3.0, 1e3, 1e15, 6 / 2
+ Num, anything else ............. not           1.5, 0.1, 1e16, 2**62
+```
+
+**perl works on whole numbers, exactly, when both operands are
+integral, and on doubles otherwise.** A float that happens to be whole
+is quietly treated as an integer, up to the point (2^53) where a
+double stops being able to hold every integer. That is why `1e15 + 1`
+is `1000000000000001` and `1e16 + 1` is `1e+16`, and it is the whole
+of what looked arbitrary in D23.
+
+Following it has a price, which D23 named and this step measures. A
+value in perl carries a mark of having been used as an integer, and
+[`step2-history.pl`](briefs/step2-history.pl) tried 17 earlier uses
+and 31 later looks on 41 values to find where the mark shows. **Two
+places, and no others**: a whole Num from 10^15 to 2^53 - 1 prints as
+`1e+15` before and `1000000000000000` after; and the negation of a
+Num zero is a negative zero before and a plain zero after, which only
+`atan2`, `sprintf("%g")` and a negative power can see (T79; steps 16
+and 22). The language's values carry no mark, so it faults in the
+first place (Q1) and will in the second when those builtins come.
+
+#### The rule
+
+| Operator | Both operands integral | Otherwise |
+|---|---|---|
+| `+` `-` | Exact. An Int, or `integer overflow` | The doubles, added: a Num |
+| `*` | Exact, and an Int if it fits. If not: two Ints overflow, and so does an answer from 2^63 to 2^64 - 1 (perl's unsigned integers, Q2); past that the doubles are multiplied, a Num | The doubles, multiplied: a Num |
+| `/` | The doubles, divided: a Num, so `6 / 2` is the Num 3. One exception: an Int past 2^53 that the right operand divides exactly gives the exact Int | The doubles, divided: a Num |
+| `**` | For a whole power, 0 or more: a base of 0, 1, -1 or plus or minus a power of two gives a Num, exact; any other base gives the exact Int when (bits in the base) times (the power) is at most 64; otherwise as on the right | C's `pow`: a Num |
+| `%` | As step 1 | Each operand is cut to its whole part, which must be an Int, and then as step 1: `10 % 3.7` is 1 |
+| unary `-` | An Int: negated, or `integer overflow` for -2^63. A Num: its sign changed | |
+
+`/` and `%` by zero fault, as perl dies. A Num is always finite: a
+result that isn't faults (Q3). Precedence is perlop's: `**` binds
+tighter than unary minus and groups from the right, so `-2 ** 2` is
+-4, `2 ** 3 ** 2` is 512, and `2 ** -1` is 0.5.
+
+`briefs/step2-perl-numbers.py` has this rule written out from these
+words (`language`), beside a model of perl's own code (`model`), and
+runs both against perl: the model of perl agrees with perl on all
+129,801 operations, and wherever the rule gives a value, perl gives
+the same value of the same kind. Step 1's programs mean what they
+meant: two Ints are always integral.
+
+What perl prints, and what the language does (each line was run):
+
+| Program | perl prints | The language |
+|---|---|---|
+| `say 7 / 2; say 6 / 2;` | `3.5`, `3` | the same |
+| `say 0.1 + 0.2; say 1 / 3;` | `0.3`, `0.333333333333333` | the same |
+| `say 1e3 + 1; say 1e15 + 1; say 1e16 + 1;` | `1001`, `1000000000000001`, `1e+16` | the same |
+| `say 10 ** 15; say 2 ** 10; say 2 ** 0.5; say 3 ** 40;` | `1000000000000000`, `1024`, `1.4142135623731`, `1.21576654590569e+19` | the same |
+| `say 18014398509481984 / 2; say 9223372036854775807 / 2;` | `9007199254740992`, `4.61168601842739e+18` | the same |
+| `say 1e10 * 1e10; say 5e9 * 5e9;` | `1e+20`, `2.5e+19` | the same |
+| `say 5_000_000_000 * 5_000_000_000;` | `2.5e+19` | `integer overflow`, as D23 has it: two Ints |
+| `say 1e10 * 1e9;` | `10000000000000000000` | `integer overflow`: perl's answer is an unsigned integer (Q2) |
+| `say 9223372036854775807 + 1.0;` | `9223372036854775808` | `integer overflow`, the same way |
+| `say 1e15; say 2 ** 50; say 4000000000000000 / 2;` | `1e+15`, `1.12589990684262e+15`, `2e+15` | a fault at `say`: each is a whole Num in the window (Q1). `say 1e15 + 0;` prints `1000000000000000` in both |
+| `say 1e16; say 2 ** 62;` | `1e+16`, `4.61168601842739e+18` | the same: past 2^53 perl never takes a Num for an integer |
+| `say 9**9**9; say 1e308 * 10;` | `Inf`, `Inf` | `float overflow` (Q3) |
+| `say (-8) ** 0.5`, bracketed | `NaN` | `not a number` (Q3) |
+| `say 1 / 0; say 1.5 / 0.0; say 0 / 0;` | dies, each | `division by zero` |
+| `say 10 ** 4611686018427387904;` | `0`, and `9 **` the same is `1` | `float overflow`: perl's test for "fits in 64 bits" wraps (T77) |
+
+#### The questions
+
+**Q1. Where a whole Num faults when it is made a string.** D23 says
+"10^15 or more". The measurement says the past shows only from 10^15
+to 2^53 - 1: at 2^53 and beyond perl never treats a Num as an
+integer, so `say 1e16` and `say 2 ** 62` print one way always.
+(a) **Recommended: fault from 10^15 up to, not including, 2^53**
+(9007199254740992). It agrees with perl on everything D23's line
+would have faulted needlessly. (b) As D23 has it, 10^15 or more:
+one bound to remember instead of two, and `say 1e16` faults.
+Either way `+ 0` is the way through, in perl and here: it makes the
+Int. The message needs your ear; proposed: `fault: a whole float this
+size prints two ways in perl (add 0 to print the integer)`.
+
+**Q2. Overflow with a Num in it.** D23 settled two Ints: overflow
+faults. With a Num among integral operands, perl's exact answer can
+still leave the Ints, and then: from 2^63 to 2^64 - 1 perl keeps an
+exact unsigned integer, which the language doesn't have, so that has
+to fault; beyond, perl multiplies the doubles and gives a Num.
+(a) **Recommended: as the table has it.** `1e10 * 1e10` is `1e+20`,
+as a float program expects, and `1e10 * 1e9` faults, which is odd
+but narrow and loud. For `+` and `-` the table is simpler than perl
+(any answer outside the Ints faults): the case needs an Int within
+2^53 of either end. (b) Fault whenever whole-number arithmetic
+leaves the Ints, Num or not. One sentence instead of three, and
+`1e10 * 1e10` and `1.5e10 * 1e10` fault, since both are whole.
+
+**Q3. Infinity and NaN.** perl has both as values, prints `Inf`,
+`-Inf` and `NaN`, and gets them silently from `9**9**9`, `1e308 *
+10`, `0 ** -1`, `(-8) ** 0.5`, and the literal `1e400`.
+(a) Values, as perl. Then every later step owes perl's answers for
+them: `NaN <=> 1` is undef, `-7 % (9**9**9)` is `Inf`, the strings
+`"inf"`, `"nan"` and `"Infinity"` are numbers, and a negative zero
+shows through `0 ** -1` (T79).
+(b) Infinity a value, NaN a fault. Keeps `my $min = 9**9**9;`, the
+idiom for "larger than anything". Needs `0 ** -1` to fault as a
+division by zero, and `%` to refuse an infinity.
+(c) **Recommended: both fault. A Num is finite.** `float overflow`
+for a result too large, `not a number` for one with no real answer,
+and a float literal too large for a double is refused. It is what
+the Ints already do at their ends, it removes a family of perl's
+oddest answers from every later step, and it costs the `9**9**9`
+idiom, loudly. (perl 5.40 has `inf` and `nan` builtins of its own;
+both are still experimental and warn, so neither is a way round.)
+
+**Q4. Which literals.** In, as perl has them: `1.5`, `.5`, `1e3`,
+`1.5e-3`, `1E3`; hex, binary and octal as `0x1F`, `0b101`, `0o17`,
+in either case, up to 32 bits (past that perl warns `non-portable`,
+so D15 refuses); `_` between two digits (`1_000`, `0xff_ff`; perl
+warns of any other: T82). Two cuts proposed:
+- **Octal by a leading zero, `017`: cut.** It is the trap T24 was
+  written about (`010` is 8), `0o17` says it plainly, and a leading
+  zero then stays the refusal it is today. `SURFACE.md` has it In.
+- **`1.`, a point with nothing after it: cut.** `.5` stays. Nobody
+  writes `1.` on purpose, and from step 3 a dot after a number is
+  concatenation (`say 1.5 .5;` prints `1.55`: T78).
+Also refused, with nothing to choose: a hex float (`0x1p3`: Later
+in `SURFACE.md`); a number hard against a dot or another number
+(T62, T78); a digits-only literal past 2^63 - 1, which perl turns
+into an unsigned integer and then a float in silence (T81): write
+`1e19`.
+
+**Q5. The faults' names.** `integer overflow` (also for the
+unsigned band of Q2), `division by zero`, `modulus by zero` (step
+1's), `float overflow`, `not a number`, `modulus of a number outside
+the integers` (for `1e20 % 7`: perl has an answer, by another
+route), and Q1's. Say if any should read otherwise.
+
+#### How a Num prints
+
+As perl prints it, which is C's `%.15g`: `0.1 + 0.2` is `0.3`, `1e21`
+is `1e+21`, `1 / 3` is `0.333333333333333`, `3.0` is `3`. A zero
+prints `0` whatever its sign. perl reads a decimal literal to the
+correctly rounded double, as C, Python and JavaScript do
+(`briefs/step2-literals.py`: 60,029 literals, no difference in the
+reading or the printing), so the compiler reads it with JavaScript's
+own and writes the double's bits into the C.
+
+#### The build, once the questions are answered
+
+- **`t/models/num.py` first, red before any code**: the rule above
+  from Python's integers and floats (and C's `pow`, through
+  `ctypes`), over the edges, a test an operator as `arith.py` does,
+  and a fault test for each kind of fault at each edge. The oracle
+  holds perl to the same answers. `briefs/step2-perl-numbers.py` is
+  its starting point and is not it.
+- **An adversarial review of this proposal** before the build, as the
+  rules ask; and the compiler held to the reviewer's model, as step 1
+  was.
+- **Lexer**: the numeric literals, each a token with its text; the
+  refusals of Q4. **Tree**: a `num` node beside `int`. **Names**: `/`
+  and `**` live, in the rows they already have. **Checker**: a
+  literal's range. **Code generator**: a Num literal as its 64 bits.
+  **Runtime**: the Num tag; `rt_div` and `rt_pow`; each of step 1's
+  operators asking the one question; `rt_say` for a Num; the faults.
+- **By hand**: precedence and grouping of `**`; every literal form;
+  each refusal; the lines of the table above as tests.
+- **One risk to watch on the Mac**: `**` with a fractional operand is
+  the C library's `pow`, and two libraries can differ in the last
+  bit. perl and the compiled program use the same one on the same
+  machine, but the `.expected` files are written on this one. `+ - *
+  /` are exact by IEEE and can't differ.
+- Leave out: comparison (step 4), strings as numbers (step 3),
+  `int`, `sqrt`, `abs` and the bit operators (step 22), `++`.
 
 ### 3. Strings
 
@@ -622,10 +795,11 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-One waiting: **D33**, a `#!` first line refused, taken as a default at
-step 0 because the alternative was a WRONG; to confirm, or to replace
-with the narrower rule its entry describes. D1 to D32 are agreed, and
-step 1 is written from them. The next proposal is step 2's.
+Waiting: **step 2**, written out above with its five questions.
+**D33**, a line that starts `#!` refused, taken as a default at step 0
+because the alternative was a WRONG; to confirm, or to replace with
+the narrower rule its entry describes. **D34**, a fault names the line
+its statement starts on, a default from step 1. D1 to D32 are agreed.
 
 ## Example-port table
 

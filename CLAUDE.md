@@ -62,7 +62,7 @@ default: Stevan to confirm**); T73, `use utf8;` must be on a line
 before the first character past ASCII (step 3); T74, `# line N "file"`
 comments (step 15); T75, `use v5.42#c`, which perl doesn't compile,
 refused. **Found at step 1**: T76. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T76, by step; `claims.py` has 211 programs
+keeps the programs, T1 to T82, by step; `claims.py` has 249 programs
 now. **Two adversarial reviews** were run, of the step's
 language and of the oracle check. The first found T75 and the `# line
 1` half of T72 after the compiler was green: the rule about reviewing
@@ -82,10 +82,21 @@ see its context (D18); `class`, and `package` only as a namespace
 (D19); brackets on a program's own calls (D21); a whole Num of 10^15
 or more faults when made a string (D23); the name (D32). perigrin has
 agreed to the probe corpus (D11). **Next:** step 2 (Num, `/`, `**`,
-the other numeric literals), which is an outline: it is **proposed
-first**, with the model that pins D23's exact line against perl, and
-reviewed adversarially before it is built. Not agreed: D33, D34, and
-what the decisions leave to steps, listed at the end of
+the other numeric literals) is **proposed in full in `docs/PLAN.md`
+and waits on Stevan's answers to its five questions** (Q1: where a
+whole float faults when printed, proposed 10^15 up to 2^53; Q2:
+overflow with a float in it; Q3: no infinity or NaN, proposed; Q4:
+`017` and `1.` cut, proposed; Q5: the faults' names). Nothing of it is
+built. Its rule is one question asked of each operand (an Int, or a
+whole Num below 2^53, is "integral", and perl works on integers when
+both are), written out in `docs/briefs/step2-perl-numbers.py` and
+agreeing with perl on 129,801 operations; `step2-history.pl` found the
+two places a number's past shows (T35, T79); `step2-literals.py` shows
+perl reads and prints floats as C does. Found proposing it: T77 to T82,
+T77 being a wrap-around in perl's own `**`. An adversarial review of
+the proposal was started with it. When the answers come: record them
+as decisions, then `t/models/num.py` red, then the build. Not agreed:
+D33, D34, and what the decisions leave to steps, listed at the end of
 [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Read first, in this order
@@ -242,7 +253,7 @@ in `pmmc-labs/esoteric-language-workbench`.
 | `compiler/tests/` | Unit tests, per pass |
 | `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` |
 | `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `checks/`, the oracle check's own tests; `models/` |
-| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program) and `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it) |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it) and `step2-*` (the evidence for step 2's proposal) |
 | `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
 | `build/` | Output (ignored) |
 

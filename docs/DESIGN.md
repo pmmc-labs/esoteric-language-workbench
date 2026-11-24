@@ -9,7 +9,7 @@ Anything marked **(open)** from here on is a default a later step
 proposed that he hasn't confirmed: fine to build on, but bring it up
 before baking it in further. What the decisions leave for a step to
 settle is listed at the end.
-[`TRAPS.md`](TRAPS.md) has seventy-six programs, each run under perl
+[`TRAPS.md`](TRAPS.md) has eighty-two programs, each run under perl
 5.42, where the obvious implementation would break the core rule.
 
 ## Goals
@@ -232,7 +232,9 @@ step, roughly in the order it will matter:
    doesn't fix its own output, which the core rule's wording assumes.
 3. **The exact line of D23** (step 2): which results are Int and which
    Num, operator by operator, and exactly which values fault when made
-   a string. Decided in principle; the model confirms it.
+   a string. Decided in principle; **proposed in full in `PLAN.md`,
+   step 2, with five questions for Stevan**, and a model of the rule
+   that agrees with perl on 129,801 operations.
 4. **How deep a program may recurse**, and how a test that goes 100
    deep is checked, since perl warns there (step 8).
 5. **`for my $x ($p, $q)`**, a `foreach` over variables named directly

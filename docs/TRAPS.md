@@ -78,7 +78,7 @@ rebuilding something D17 to D22 cut.
 
 | | Program | perl prints | Step | Way out |
 |---|---|---|---|---|
-| T35 | `my $x = 1e15; say $x; my $y = $x + 1; say $x;` | `1e+15`, `1000000000000000` | 2 | Fault on making a whole Num of 10^15 or more a string |
+| T35 | `my $x = 1e15; say $x; my $y = $x + 1; say $x;` | `1e+15`, `1000000000000000`. The same from 10^15 up to 2^53 - 1 and for no other value: `9007199254740992.0` and `1e16` print one way whatever came before, and so does everything below 10^15. The mark also shows through `-$x` and `--$x`, whose answers are an integer after it and a float before | 2 | Fault on making a whole Num from 10^15 to 2^53 - 1 a string (step 2's proposal, Q1; D23 said 10^15 or more) |
 | T36 | `say 4000000000000000/2; say 18014398509481984/2;` | `2e+15`, `9007199254740992` | 2 | The model enumerates `/` |
 | T37 | `say 10**15; say 7**20; say 2**50;` | `1000000000000000`, `79792266297612001`, `1.12589990684262e+15` | 2 | The model enumerates `**` |
 | T38 | `say "1e16" + 1; say 1e16 + 1;` | `10000000000000001`, `1e+16` | 3 | Fault on such a string used as a number |
@@ -182,6 +182,25 @@ Not traps, since no obvious parser takes them, but each is what perl
 does where the language refuses: `say 2 * *3;` reads `*3` as a glob,
 warns and prints `0`; `say * 2;` prints `*main::2`; `say % 2;` and
 `say(());` print an empty line, in silence.
+
+## Found proposing step 2
+
+From perl's source (`pp.c`, `sv.c`), then run. `briefs/step2-perl-
+numbers.py` is the rule and `briefs/step2-history.pl` the search for
+where a number's past shows.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T77 | `say 10 ** 4611686018427387904; say 9 ** 4611686018427387904;` | `0`, `1`: perl asks whether (bits in the base) times (the power) is at most 64, in a 64-bit unsigned, and for a vast power the product wraps, so it takes the integer path and the answer is whatever is left modulo 2^64. `3 ** 9223372036854775807` is `Inf` | 2 | Fault: the rule asks the same question of the true product, and the float answer is not finite. A bug in perl, to all appearances |
+| T78 | `say 00.5; say 0x1.8; say 1.5 .5;` | `05`, `18`, `1.55`: a dot after a whole literal is concatenation, and `1.5e3.2` is `15002` | 2, 3 | Refuse a number hard against a dot or another number (with T62); step 3 says what a dot after a blank is |
+| T79 | `my $x = 0.0; say atan2(0, -$x);` and the same with `my $t = $x + 1;` in between | `3.14159265358979`, then `0`. The negation of a float zero is a negative zero, unless the zero has been used as an integer, when it is an integer zero. `say` prints `0` for both; `sprintf("%g")` prints `-0` for one; `(-$x) ** -1` is `-Inf` or `Inf` | 16, 22 | The second place a number's past shows. Fault on a negative zero given to `atan2` or formatted with `%g`, `%e` or `%f`; and no infinities (Q3) or a fault on zero to a negative power |
+| T80 | `say 1e10 * 1e9; say 1e10 * 1e10;` | `10000000000000000000`, `1e+20`: whole floats are multiplied as integers, and the answer is an exact unsigned integer when it fits one and a float when it doesn't | 2 | Fault from 2^63 to 2^64 - 1, where perl's answer is an unsigned integer; a Num beyond (Q2) |
+| T81 | `say 9223372036854775808; say 18446744073709551616; say 1e400;` | `9223372036854775808`, `1.84467440737096e+19`, `Inf`: a literal too large for its kind becomes the next kind, in silence | 0, 2 | Refuse a digits-only literal past 2^63 - 1 (step 0 does), and a float literal that isn't finite |
+| T82 | `say 1_e3;`, and `1e_3`, `1__0`, `0x_ff`, `0_17`, `1_.5`, `1.5_` | The number, and `Misplaced _ in number` as it compiles. `1_000`, `1.5_0`, `1e1_0` and `0xff_ff` are silent | 2 | Refuse an underscore that isn't between two digits (D15) |
+
+Not traps, but perl's answers where the proposal faults: `-7 % 9**9**9`
+is `Inf`; `NaN <=> 1` is undef; `1e20 % 7` is 2, by `fmod`, where
+`1e19 % 7` is 3, by integers.
 
 ## The checks themselves
 
