@@ -1,0 +1,2 @@
+t/087-two-dots.pl:4:5: 1.5.5 is not a number in the language
+exit: 1

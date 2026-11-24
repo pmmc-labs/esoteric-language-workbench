@@ -9,13 +9,14 @@ import type { Pos } from './ast.ts';
 
 export type Token =
     | { kind: 'word'; text: string; pos: Pos }
-    | { kind: 'int'; text: string; pos: Pos }
+    | { kind: 'int' | 'num'; text: string; pos: Pos }
     | { kind: 'version'; text: string; pos: Pos }
     | { kind: ';' | '(' | ')'; text: string; pos: Pos }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
 const isDigit = (c: string) => c >= '0' && c <= '9';
+const isHexDigit = (c: string) => isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 const isWordStart = (c: string) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
 const isWord = (c: string) => isWordStart(c) || isDigit(c);
 const isBlank = (c: string) => c === ' ' || c === '\t' || c === '\n';
@@ -55,6 +56,55 @@ export const lex = (src: string): Token[] => {
         return text;
     };
 
+    // A numeric literal (D38). The token is the literal as written; what
+    // it is worth, and whether it is too large, are the parser's and the
+    // checker's. What is refused here is a shape perl warns about or reads
+    // as something else: an underscore that isn't between two digits
+    // (T82); a point with no digit after it; and a number that runs into
+    // a letter, a digit or a dot, which to perl is a hex float, a version
+    // string, or a number joined to the next as a string (T62, T78).
+    const number = (start: Pos): Token => {
+        const from = i;
+        const digitsOf = (ok: (c: string) => boolean): string => run(ch => ok(ch) || ch === '_');
+        let kind: 'int' | 'num' = 'int';
+        const parts: string[] = [];
+        const based = at() === '0' && 'xXbBoO'.includes(src[i + 1] ?? ' ');
+        if (based) {
+            const letter = src[i + 1]!.toLowerCase();
+            take(); take();
+            parts.push(digitsOf(letter === 'x' ? isHexDigit : letter === 'b' ? ch => ch === '0' || ch === '1' : ch => ch >= '0' && ch <= '7'));
+        } else {
+            if (isDigit(at())) parts.push(digitsOf(isDigit));
+            if (at() === '.' && src[i + 1] !== '.') {
+                if (!isDigit(src[i + 1] ?? '') && !isWord(src[i + 1] ?? '')) {
+                    refuse(`${src.slice(from, i)}. ends with a point: write ${src.slice(from, i)}.0`, start);
+                }
+                if (isDigit(src[i + 1] ?? '')) {
+                    take();
+                    kind = 'num';
+                    parts.push(digitsOf(isDigit));
+                }
+            }
+            const sign = src[i + 1] === '+' || src[i + 1] === '-' ? 1 : 0;
+            if ((at() === 'e' || at() === 'E') && isDigit(src[i + 1 + sign] ?? '')) {
+                take();
+                if (sign) take();
+                kind = 'num';
+                parts.push(digitsOf(isDigit));
+            }
+        }
+        if (isWord(at()) || at() === '.') {
+            refuse(`${src.slice(from, i) + run(ch => isWord(ch) || ch === '.')} is not a number in the language`, start);
+        }
+        const text = src.slice(from, i);
+        // Each run of digits: digits, and single underscores between them.
+        const wellFormed = (part: string) => part !== '' && part.split('_').every(group => group !== '');
+        if (!parts.every(wellFormed)) {
+            refuse(text.includes('_') ? `${text}: an underscore goes between two digits` : `${text} is not a number in the language`, start);
+        }
+        return { kind, text, pos: start };
+    };
+
     while (i < src.length) {
         const c = at();
         const start = pos();
@@ -71,12 +121,8 @@ export const lex = (src: string): Token[] => {
                 refuse("a line that starts '#!' is not in the language: perl can take switches from it", start);
             }
             run(ch => ch !== '\n');
-        } else if (isDigit(c)) {
-            const digits = run(isDigit);
-            // `1_000`, `0x10`, `1e3` are numbers in perl, and `42x3` is
-            // `42 x 3`: each is a later step's, and none is two tokens.
-            if (isWordStart(at())) refuse(`${digits + run(isWord)}: the only numbers so far are decimal integers`, start);
-            tokens.push({ kind: 'int', text: digits, pos: start });
+        } else if (isDigit(c) || (c === '.' && isDigit(src[i + 1] ?? ''))) {
+            tokens.push(number(start));
         } else if (isWordStart(c)) {
             let text = run(isWord);
             // A `v` and digits is a version literal, and takes the groups

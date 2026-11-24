@@ -15,7 +15,7 @@ const refused = (src: string, message: string, line: number, col: number) =>
 // An expression's grouping, every operator's operands in brackets, and a
 // star where the source had brackets of its own.
 const shape = (e: Expr): string => {
-    const s = e.kind === 'int' ? e.text
+    const s = e.kind === 'int' || e.kind === 'num' ? e.text
         : e.kind === 'unary' ? `(${e.op}${shape(e.operand)})`
         : `(${shape(e.left)} ${e.op} ${shape(e.right)})`;
     return e.bracketed ? s + '*' : s;
@@ -65,6 +65,36 @@ test("precedence and associativity are perlop's", () => {
     assert.equal(grouped('say 1 - - - 2;'), '(1 - (-(-2)))');
 });
 
+// What perl makes of each is in t/081-num-precedence.pl, which perl checks.
+test('** binds tighter than a sign before it, and groups from the right', () => {
+    assert.equal(grouped('say -2 ** 2;'), '(-(2 ** 2))');
+    assert.equal(grouped('say 2 ** 3 ** 2;'), '(2 ** (3 ** 2))');
+    assert.equal(grouped('say 2 ** -1;'), '(2 ** (-1))');
+    assert.equal(grouped('say 2 ** -2 ** 2;'), '(2 ** (-(2 ** 2)))');
+    assert.equal(grouped('say - 2 ** - 2;'), '(-(2 ** (-2)))');
+    assert.equal(grouped('say 2 * 3 ** 2;'), '(2 * (3 ** 2))');
+    assert.equal(grouped('say 2 ** 3 * 2;'), '((2 ** 3) * 2)');
+    assert.equal(grouped('say 4 / 2 * 3;'), '((4 / 2) * 3)');
+    assert.equal(grouped('say 7 / 2 % 2;'), '((7 / 2) % 2)');
+    assert.equal(grouped('say 1 - 2 / 4;'), '(1 - (2 / 4))');
+});
+
+test('what a literal is worth', () => {
+    const worth = (src: string) => { const e = argument(src); return e.kind === 'int' || e.kind === 'num' ? `${e.kind} ${e.value}` : assert.fail(); };
+    assert.equal(worth('say 1_000;'), 'int 1000');
+    assert.equal(worth('say 0x1F;'), 'int 31');
+    assert.equal(worth('say 0XfF;'), 'int 255');
+    assert.equal(worth('say 0b1_01;'), 'int 5');
+    assert.equal(worth('say 0O17;'), 'int 15');
+    assert.equal(worth('say 9223372036854775808;'), 'int 9223372036854775808');
+    assert.equal(worth('say 1.5;'), 'num 1.5');
+    assert.equal(worth('say .5_5;'), 'num 0.55');
+    assert.equal(worth('say 1e1_0;'), 'num 10000000000');
+    assert.equal(worth('say 1.5E-3;'), 'num 0.0015');
+    assert.equal(worth('say 1e400;'), 'num Infinity');
+    assert.equal(worth('say 0.1;'), 'num 0.1');
+});
+
 test('brackets group, and are remembered', () => {
     assert.equal(grouped('say 2 * (3 + 4);'), '(2 * (3 + 4)*)');
     assert.equal(grouped('say -(7 % 3);'), '(-(7 % 3)*)');
@@ -112,6 +142,7 @@ test('where an operand is wanted', () => {
 
 test('where an operator or an end is wanted', () => {
     refused('say 1 2;', "expected ';', found 2", 1, 7);
+    refused('say 1.5 .5;', "expected ';', found .5", 1, 9);
     refused('say 1 (2);', "expected ';', found '('", 1, 7);
     refused('say(1 + 2;', "expected ')', found ';'", 1, 10);
     refused('say 1 + 2);', "expected ';', found ')'", 1, 10);

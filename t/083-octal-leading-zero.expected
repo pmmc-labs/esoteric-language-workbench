@@ -1,0 +1,2 @@
+t/083-octal-leading-zero.pl:5:5: 017 starts with a zero: perl reads that as octal, which the language writes 0o17
+exit: 1

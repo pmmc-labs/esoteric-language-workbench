@@ -24,6 +24,10 @@ export const VERSION = 'v5.42';
 // before one is an operator, so the smallest Int, -2^63, has no literal.
 export const INT_MAX = 9223372036854775807n;
 
+// The largest hex, binary or octal literal (D38): perl warns that a
+// larger one is not portable.
+export const BASED_MAX = 0xFFFFFFFFn;
+
 // Operators: perlop's table, "Operator Precedence and Associativity", as
 // perl 5.42's own perlop.pod has it, highest precedence first, every row
 // of it though few are in the language yet. An operator with `in` is in;
@@ -48,10 +52,10 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'left', what: 'terms and list operators (leftward)' },
     { assoc: 'left', infix: ops('->') },
     { assoc: 'nonassoc', other: ['++', '--'] },
-    { assoc: 'right', infix: ops('**') },
+    { assoc: 'right', infix: [{ op: '**', in: true, rt: 'rt_pow' }] },
     { assoc: 'right', prefix: [...ops('!', '~', '~.', '\\'), { op: '+', in: true }, { op: '-', in: true, rt: 'rt_neg' }] },
     { assoc: 'left', infix: ops('=~', '!~') },
-    { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x' }] },
+    { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x' }] },
     { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.' }] },
     { assoc: 'left', infix: ops('<<', '>>') },
     { assoc: 'nonassoc', what: 'named unary operators' },

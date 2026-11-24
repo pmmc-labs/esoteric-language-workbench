@@ -1,0 +1,2 @@
+t/091-hex-float.pl:4:5: 0x1p3 is not a number in the language
+exit: 1

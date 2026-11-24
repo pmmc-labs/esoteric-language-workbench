@@ -35,6 +35,8 @@ const temp = (b: Block, call: string): string => {
 const genExpr = (e: Expr, b: Block): string => {
     // The checker has seen every literal: it is 0 to 2^63 - 1.
     if (e.kind === 'int') return `rt_int(INT64_C(${e.value}))`;
+    // A Num goes over as its 64 bits: no decimal is read twice.
+    if (e.kind === 'num') return `rt_num_bits(UINT64_C(0x${new BigUint64Array(new Float64Array([e.value]).buffer)[0]!.toString(16)}))`;
     if (e.kind === 'unary') {
         const operand = genExpr(e.operand, b);
         const rt = prefixOp(e.op)?.rt;

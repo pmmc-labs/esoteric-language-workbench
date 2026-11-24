@@ -60,4 +60,5 @@ const run = (args: string[]): void => {
     if (r.status !== 0) process.exit(2);
 };
 run(['-O1', '-c', '-o', `${out}.rt.o`, join(root, 'runtime', 'rt.c')]);
-run(['-O0', '-o', out, `${out}.c`, `${out}.rt.o`]);
+// -lm: `**` is the C library's pow (D35).
+run(['-O0', '-o', out, `${out}.c`, `${out}.rt.o`, '-lm']);

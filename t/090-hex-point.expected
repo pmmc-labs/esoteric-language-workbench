@@ -1,0 +1,2 @@
+t/090-hex-point.pl:4:5: 0x1.8 is not a number in the language
+exit: 1

@@ -1,0 +1,2 @@
+t/085-hex-past-32-bits.pl:4:5: 0x100000000 is past 32 bits, where perl warns that a literal is not portable
+exit: 1

@@ -1,0 +1,2 @@
+t/089-zero-zero-point.pl:4:5: 00.5 starts with a zero: perl reads that as octal, which the language writes 0o17
+exit: 1

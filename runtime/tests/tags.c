@@ -20,6 +20,10 @@ static void body(rt_ctx *cx) {
     if (strcmp(which, "mul-right") == 0) rt_mul(cx, one, never_set);
     if (strcmp(which, "mod-left") == 0) rt_mod(cx, never_set, one);
     if (strcmp(which, "mod-right") == 0) rt_mod(cx, one, never_set);
+    if (strcmp(which, "div-left") == 0) rt_div(cx, never_set, one);
+    if (strcmp(which, "div-right") == 0) rt_div(cx, one, never_set);
+    if (strcmp(which, "pow-left") == 0) rt_pow(cx, never_set, one);
+    if (strcmp(which, "pow-right") == 0) rt_pow(cx, one, never_set);
     if (strcmp(which, "neg") == 0) rt_neg(cx, never_set);
     rt_say(cx, rt_int(2));
 }

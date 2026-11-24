@@ -46,11 +46,62 @@ test('a version ends at a blank or a semicolon, as perl has it (T75)', () => {
     refused('use v5.42\r\n;', 'a control character (U+000D) is not in the language', 1, 10);
 });
 
-test('a number that runs into a word is neither', () => {
-    refused('say 1_000;', '1_000: the only numbers so far are decimal integers', 1, 5);
-    refused('say 0x10;', '0x10: the only numbers so far are decimal integers', 1, 5);
-    refused('say 1e3;', '1e3: the only numbers so far are decimal integers', 1, 5);
-    refused('say 42x3;', '42x3: the only numbers so far are decimal integers', 1, 5);
+const literals = (src: string) => lex(src).slice(0, -1).map(t => `${t.kind} ${t.text}`);
+
+test('numeric literals (D38)', () => {
+    assert.deepEqual(literals('0 42 1_000 0x1F 0XfF 0b101 0B1 0o17 0O7 0xff_ff'),
+        ['int 0', 'int 42', 'int 1_000', 'int 0x1F', 'int 0XfF', 'int 0b101', 'int 0B1', 'int 0o17', 'int 0O7', 'int 0xff_ff']);
+    assert.deepEqual(literals('1.5 .5 0.25 1e3 1E3 1.5e-3 .5E+2 1e007 1_0.2_5 1e1_0 0e0'),
+        ['num 1.5', 'num .5', 'num 0.25', 'num 1e3', 'num 1E3', 'num 1.5e-3', 'num .5E+2', 'num 1e007', 'num 1_0.2_5', 'num 1e1_0', 'num 0e0']);
+    // Leading zeros are the checker's to refuse: they lex.
+    assert.deepEqual(literals('010 00.5'), ['int 010', 'num 00.5']);
+});
+
+test('a number hard against an operator is still one number', () => {
+    assert.deepEqual(literals('2*.5'), ['int 2', 'op *', 'num .5']);
+    assert.deepEqual(literals('2**-.5'), ['int 2', 'op **', 'op -', 'num .5']);
+    assert.deepEqual(literals('1e3-1'), ['num 1e3', 'op -', 'int 1']);
+    assert.deepEqual(literals('1e-3-1'), ['num 1e-3', 'op -', 'int 1']);
+    assert.deepEqual(literals('1e+3+1'), ['num 1e+3', 'op +', 'int 1']);
+    assert.deepEqual(literals('7%.5'), ['int 7', 'op %', 'num .5']);
+    assert.deepEqual(literals('(.5)'), ['( (', 'num .5', ') )']);
+});
+
+test('a number that runs into a letter, a digit or a dot is not one (T62, T78)', () => {
+    const not = (text: string) => `${text} is not a number in the language`;
+    refused('say 42x3;', not('42x3'), 1, 5);
+    refused('say 1.5.5;', not('1.5.5'), 1, 5);
+    refused('say .5.5;', not('.5.5'), 1, 5);
+    refused('say 1..3;', not('1..3'), 1, 5);
+    refused('say 0x1.8;', not('0x1.8'), 1, 5);
+    refused('say 0x1p3;', not('0x1p3'), 1, 5);
+    refused('say 0xG;', not('0xG'), 1, 5);
+    refused('say 0b12;', not('0b12'), 1, 5);
+    refused('say 0o8;', not('0o8'), 1, 5);
+    refused('say 1e;', not('1e'), 1, 5);
+    refused('say 1e+;', not('1e'), 1, 5);
+    refused('say 1e3e3;', not('1e3e3'), 1, 5);
+    refused('say 1.5e3.2;', not('1.5e3.2'), 1, 5);
+    refused('say 0x;', not('0x'), 1, 5);
+    refused('say 1.e3;', not('1.e3'), 1, 5);
+});
+
+test('a point needs a digit after it', () => {
+    refused('say 1.;', '1. ends with a point: write 1.0', 1, 5);
+    refused('say (1.);', '1. ends with a point: write 1.0', 1, 6);
+    refused('say 1. + 2;', '1. ends with a point: write 1.0', 1, 5);
+});
+
+test('an underscore goes between two digits (T82)', () => {
+    const message = (text: string) => `${text}: an underscore goes between two digits`;
+    refused('say 1__0;', message('1__0'), 1, 5);
+    refused('say 1_;', message('1_'), 1, 5);
+    refused('say 0x_ff;', message('0x_ff'), 1, 5);
+    refused('say 0xff_;', message('0xff_'), 1, 5);
+    refused('say 1_.5;', message('1_.5'), 1, 5);
+    refused('say 1.5_;', message('1.5_'), 1, 5);
+    refused('say 1e3_;', message('1e3_'), 1, 5);
+    refused('say 0b_1;', message('0b_1'), 1, 5);
 });
 
 test('brackets and operators', () => {
@@ -66,13 +117,12 @@ test("the longest of perl's operators is the token, in the language or not (T27)
     refused('say --5;', "'--' is not in the language yet", 1, 5);
     refused('say 1--2;', "'--' is not in the language yet", 1, 6);
     refused('say ++5;', "'++' is not in the language yet", 1, 5);
-    refused('say 2 ** 3;', "'**' is not in the language yet", 1, 7);
     refused('say 2 **= 3;', "'**=' is not in the language yet", 1, 7);
     refused('say 1 <=> 2;', "'<=>' is not in the language yet", 1, 7);
     refused('say 1 -> 2;', "'->' is not in the language yet", 1, 7);
     refused('say 7 %= 2;', "'%=' is not in the language yet", 1, 7);
-    refused('say 1.5;', "'.' is not in the language yet", 1, 6);
-    refused('say 1 / 2;', "'/' is not in the language yet", 1, 7);
+    refused('say 1 . 5;', "'.' is not in the language yet", 1, 7);
+    refused('say 1 // 2;', "'//' is not in the language yet", 1, 7);
     refused('say 1, 2;', "',' is not in the language yet", 1, 6);
     // With a blank between them they are two, as they are to perl.
     assert.deepEqual(lex('- - + +').map(t => t.text), ['-', '-', '+', '+', '']);

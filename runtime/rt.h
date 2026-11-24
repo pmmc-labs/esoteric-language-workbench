@@ -9,16 +9,33 @@
 // integer fits whole; both C compilers pass the pair in registers. The
 // union gains a member per kind of value. No tag is 0: memory that was
 // never made a value then faults at the first operator that checks it.
-enum { RT_TAG_INT = 1 };
+enum { RT_TAG_INT = 1, RT_TAG_NUM = 2 };
 typedef struct {
     uint64_t tag;
-    union { int64_t i; } as;
+    union { int64_t i; double n; uint64_t bits; } as;
 } rt_value;
 
 static inline rt_value rt_int(int64_t n) {
     rt_value v;
     v.tag = RT_TAG_INT;
     v.as.i = n;
+    return v;
+}
+
+// A Num (D23): a double, and always a finite one (D37); the operators see
+// to that, and a literal that isn't was refused. The compiler hands a
+// literal over as its bits.
+static inline rt_value rt_num(double x) {
+    rt_value v;
+    v.tag = RT_TAG_NUM;
+    v.as.n = x;
+    return v;
+}
+
+static inline rt_value rt_num_bits(uint64_t bits) {
+    rt_value v;
+    v.tag = RT_TAG_NUM;
+    v.as.bits = bits;
     return v;
 }
 
@@ -37,13 +54,17 @@ int rt_run(void (*body)(rt_ctx *cx), const char *file);
 // `say`: the value as perl prints it, and a newline.
 void rt_say(rt_ctx *cx, rt_value v);
 
-// Arithmetic on Ints (D23). A result that isn't an Int faults `integer
-// overflow`; `%` takes the sign of its right operand, and faults `modulus
-// by zero`.
+// Arithmetic (D23, D35). Each is done on whole numbers when both operands
+// are integral (an Int, or a whole Num below 2^53) and on doubles
+// otherwise, as perl does it; rt.c has the rule for each. The faults:
+// `integer overflow`, `float overflow`, `not a number`, `division by
+// zero`, `modulus by zero`, `modulus of a number outside the integers`.
 rt_value rt_add(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_sub(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_mul(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_div(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_mod(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_pow(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_neg(rt_ctx *cx, rt_value a);
 
 // A fault (D13): stdout as far as it got, then

@@ -10,7 +10,7 @@ import type { Expr, Program, Stmt } from './ast.ts';
 // A token as a diagnostic names it.
 const show = (t: Token): string =>
     t.kind === 'eof' ? 'the end of the file'
-    : t.kind === 'int' || t.kind === 'version' ? t.text
+    : t.kind === 'int' || t.kind === 'num' || t.kind === 'version' ? t.text
     : `'${t.text}'`;
 
 // Something else was wanted where `t` stands. A word that is one of perl's
@@ -40,7 +40,11 @@ export const parse = (tokens: readonly Token[]): Program => {
     // operand, which may hold only operators that bind tighter than it.
     const primary = (): Expr => {
         const t = next();
-        if (t.kind === 'int') return { kind: 'int', text: t.text, value: BigInt(t.text), pos: t.pos };
+        // JavaScript reads `0x1F`, `0b101` and `0o17` as perl does, and a
+        // decimal to the nearest double, as perl does too.
+        const digits = t.text.replaceAll('_', '');
+        if (t.kind === 'int') return { kind: 'int', text: t.text, value: BigInt(digits), pos: t.pos };
+        if (t.kind === 'num') return { kind: 'num', text: t.text, value: Number(digits), pos: t.pos };
         if (t.kind === '(') {
             const inner = expression(Infinity);
             closing();

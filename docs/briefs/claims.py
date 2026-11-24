@@ -243,6 +243,7 @@ CLAIMS = [
     c('T35-window', 'TRAPS', 'my $x = 9007199254740991.0; say $x; my $t = $x + 1; say $x; my $y = 9007199254740992.0; say $y; $t = $y + 1; say $y; my $z = 1e16; $t = $z + 1; say $z;', out='9.00719925474099e+15\n9007199254740991\n9.00719925474099e+15\n9.00719925474099e+15\n1e+16\n'),
     c('T35-below', 'TRAPS', 'my $x = 999999999999999.0; say $x; my $t = $x + 1; say $x; say -$x;', out='999999999999999\n999999999999999\n-999999999999999\n'),
     c('T35-negate', 'TRAPS', 'my $x = 2e15; say -$x; my $t = $x + 1; say -$x; my $y = 2e15; --$y; say $y; my $z = 2e15; $t = $z + 1; --$z; say $z;', out='-2e+15\n-2000000000000000\n2e+15\n1999999999999999\n'),
+    c('L2-examples', 'LANGUAGE', 'say 1_000_000; say 0xff_ff; say 1.000_1; say 7 ** 20; say 4 / 2 * 3; say 2 - 3 - 4; say 7 % 3; say 7 % -3; say 1e19;', out='1000000\n65535\n1.0001\n79792266297612001\n6\n-5\n1\n-2\n1e+19\n'),
     # ---- DECISIONS.md
     c('D13-catch', 'D13', 'my $z = 0; try { say 1 / $z } catch ($e) { say "caught" }', out='caught\n'),
     c('D14-late', 'D14; BACKGROUND', 'my $r = [0]; sub f($v) { $r->[0] = $v; return $v } say f(1), $r->[0], f(0), $r->[0];', out='1000\n'),

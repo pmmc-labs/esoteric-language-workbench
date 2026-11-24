@@ -7,8 +7,12 @@
 export type Pos = { line: number; col: number };
 
 // `text` is the literal as written, since `010` and `10` are different
-// things to perl; `value` is what its digits say in decimal.
+// things to perl; `value` is what it is worth: `0x1F` and `1_000` too.
 export type Int = { kind: 'int'; text: string; value: bigint; pos: Pos; bracketed?: true };
+
+// A literal with a point or an exponent (D38). `value` is the double
+// nearest to what it says, which is how perl reads one.
+export type Num = { kind: 'num'; text: string; value: number; pos: Pos; bracketed?: true };
 
 // An operator before its operand, `-x`; `pos` is the operator's.
 export type Unary = { kind: 'unary'; op: string; operand: Expr; pos: Pos; bracketed?: true };
@@ -20,7 +24,7 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // `(x + y)`. The tree's shape already holds the grouping; this is for the
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
-export type Expr = Int | Unary | Binary;
+export type Expr = Int | Num | Unary | Binary;
 
 export type Use = { kind: 'use'; version: string; pos: Pos };
 
