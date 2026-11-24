@@ -20,7 +20,8 @@ What a row can say:
 - **Cut**: refused, and not planned. Reopening one is a proposal.
 - **New**: perl doesn't have it; an exception to D2.
 
-Nothing is built, so "In" is a plan and not a fact.
+Step 0 is built and nothing after it, so "In" is a plan and not a
+fact; [`LANGUAGE.md`](LANGUAGE.md) is what works.
 [`TRAPS.md`](TRAPS.md) has the programs that show why a row says
 what it does.
 
@@ -32,7 +33,10 @@ comparison: *in*, *out*, or *n/a*.
 | Construct | Here | Step | Chalk | Note |
 |---|---|---|---|---|
 | `use v5.42;` first | In, required | 0 | in | D16 |
-| `use utf8`, `use experimental '...'` | In | 3, 17 | in | D16 |
+| `use utf8`, `use experimental '...'` | In | 3, 17 | in | D16. On a line before the first character past ASCII, a comment's included (T73) |
+| A first line that starts `#!` | Cut | | | D33: perl takes switches from it (T72). On a later line: a comment |
+| A comment that is a line directive, `# line 100 "file"` | Later | 15 | | T74: it changes the line and file a `die` reports |
+| A carriage return, a form feed, any other control character; ^D or ^Z | Cut | | | perl takes the first two for white space, and ends the program at either of the last. Windows line endings are converted first |
 | `use Module;` of the program's own | Later | 18 | in | Compile time only |
 | `use Module qw(names)`, `Exporter` | Later | 18 | in | To be proposed |
 | `no strict`, `no warnings`, `use integer`, `use bytes` | Cut | | | D16 |

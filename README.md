@@ -7,7 +7,9 @@ it can be built with this repository's process (`docs/PROCESS.md` on
 `main`): an agent builds, a person decides, one feature a step, and every
 expected output comes from somewhere other than the compiler.
 
-Nothing here is built. It is the workbench's documents, filled in.
+Step 0 is built: `say 42;` compiles to a native binary, and a script
+holds every test to what perl 5.42 prints. The rest is the workbench's
+documents, filled in.
 
 ## The idea in one paragraph
 
@@ -46,15 +48,17 @@ again.
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | D1 to D32: who decided, why, what was rejected |
 | [`docs/SURFACE.md`](docs/SURFACE.md) | Perl construct by construct: in, a fault, later, or cut |
 | [`docs/PLAN.md`](docs/PLAN.md) | Steps 0 to 30; 0 and 1 in full |
-| [`docs/TRAPS.md`](docs/TRAPS.md) | Seventy-one programs, run under perl, where the obvious implementation would be wrong |
+| [`docs/TRAPS.md`](docs/TRAPS.md) | Seventy-four programs, run under perl 5.42, where the obvious implementation would be wrong |
 | [`docs/BACKGROUND.md`](docs/BACKGROUND.md) | What Chalk, perl5-son, Opal, Allium and Crayon taught, with paths |
-| [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: empty |
+| [`docs/LANGUAGE.md`](docs/LANGUAGE.md) | The language as built: `say`, and an integer |
 | [`t/README.md`](t/README.md) | The five kinds of golden test, and the oracle check |
+| [`docs/briefs/claims.py`](docs/briefs/claims.py) | Every statement these documents make about perl, as a program, rerun under 5.42 |
 
 ## What is decided and what isn't
 
-D1 to D32 are Stevan's, all settled on 2026-11-24. The ones that give
-the language its character:
+D1 to D32 are Stevan's, all settled on 2026-11-24; D33 is a default
+from step 0, to confirm. The ones that give the language its
+character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);
   Chalk's subset as the start (D4); no Sea of Nodes (D6).
@@ -81,20 +85,23 @@ about twenty programs the design as written would have got wrong.
 Seven decisions were rewritten, and the programs are kept in
 `docs/TRAPS.md`. One part is decided in principle and not yet pinned
 down: exactly where numbers fault because perl's printing depends on a
-number's history (D23, step 2). And everything was run under perl
-5.38.2, the one the cloud machine has; step 0 reruns it under 5.42. Read the design as a strong first
+number's history (D23, step 2). Everything was run under perl 5.38.2
+first, and step 0 reran it all under 5.42: every statement held, and
+building `say 42;` still found three traps the review hadn't
+(`docs/TRAPS.md`, T72 to T74). Read the design as a strong first
 proposal that has survived one attack, and expect the next to find
 more.
 
 ## Starting
 
-A fresh session, on this branch: "Read `CLAUDE.md`, then do step 0 of
-`docs/PLAN.md`." Step 0 copies `main`'s tree (af8e3a3) in under these
-files, keeping these where the two collide, installs perl 5.42, and
-ends with `say 42;` compiled and checked against perl.
+    make doctor     # node, cc, clang, and perl 5.42 as CURLY_PERL
+    make test
 
-This is an empty branch of the workbench: it shares no history with
-`main` and holds only these documents, as the seed of a language to
-be started from the template. `docs/BACKGROUND.md` has the four
-projects read for the design: Chalk, perl5-son, Opal in `stevan/pp`,
-and Allium.
+A fresh session, on this branch: "Read `CLAUDE.md`, then do step 1 of
+`docs/PLAN.md`."
+
+This is a branch of the workbench that shares no history with `main`:
+it began as these documents alone, the seed of a language to be
+started from the template, and step 0 brought `main`'s tree (af8e3a3)
+in under them. `docs/BACKGROUND.md` has the five projects read for the
+design: Chalk, perl5-son, Opal in `stevan/pp`, Allium and Crayon.

@@ -1,0 +1,4 @@
+one
+two
+fault: use of an undefined value at t/checks/fault-ok.pl line 10.
+exit: 1

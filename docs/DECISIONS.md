@@ -6,6 +6,7 @@ proposed it and it wasn't explicitly discussed, and is fair to revisit.
 D1 to D32 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
+D33 is a default, taken at step 0.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -20,7 +21,8 @@ Sections group entries by subject, not by time. Number by time.
 The evidence these lean on is in [`BACKGROUND.md`](BACKGROUND.md), with
 paths into the four repositories that were read. Where an entry says
 "perl prints", it was run, under perl 5.38.2, on 2026-11-24; the
-language's oracle is 5.42 (D10), and step 0 reruns them there.
+language's oracle is 5.42 (D10), and step 0 reran every one there
+(`briefs/claims.py`): all of them hold under 5.42.0.
 
 ## Scope
 
@@ -298,6 +300,22 @@ program's own (step 18). `no strict`, `no warnings`, `use integer`,
 `use bytes`, `use constant` and any other pragma are refused until a
 step proposes them. Rejected: implying the line (the file would then
 mean something else to perl, and D2 is about the file).
+
+**D33. A first line that starts `#!` is refused.** *(Default, step 0;
+not discussed.)* perl takes switches from that line, after any blanks:
+under `#!/usr/bin/perl -n`, `use v5.42; say 42;` prints nothing when
+stdin is empty and `42` once for each line when it isn't; and a `#!`
+line without the word `perl` in it names a program perl runs in its
+own place (T72). A compiler that took the line for the comment it
+looks like would print `42`: a WRONG, at step 0, which is why this
+couldn't wait to be proposed. A `#!` on any later line is a comment to
+perl and is one here. Rejected: reading the switches (`-n` loops over
+stdin and `-l` makes `print` end its line: each switch is another
+language, and the cruft D1 is about); allowing the line when it holds no switch
+(`#!/usr/bin/perl`, or `#!/usr/bin/env perl`, which is how a script is
+made runnable; it needs perl's own rule for what counts as a switch
+and as the word `perl`, and a compiled program isn't run that way).
+Fair to revisit: the second is small if it's wanted.
 
 ## The language: what the cleanup cuts
 

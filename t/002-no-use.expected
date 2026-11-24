@@ -1,0 +1,2 @@
+t/002-no-use.pl:4:1: a program begins 'use v5.42;'
+exit: 1

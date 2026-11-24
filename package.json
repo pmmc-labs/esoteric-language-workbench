@@ -1,9 +1,9 @@
 {
-    "name": "lang",
+    "name": "curly",
     "private": true,
     "type": "module",
     "scripts": {
-        "test": "node --test \"compiler/tests/**/*.test.ts\""
+        "test": "node --test \"compiler/tests/**/*.test.ts\" \"runtime/tests/**/*.test.ts\""
     },
     "devDependencies": {
         "@types/node": "^22",

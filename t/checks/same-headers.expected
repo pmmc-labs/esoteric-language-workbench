@@ -1,0 +1,4 @@
+stdin: one
+stdin: two
+args: left right
+env: set

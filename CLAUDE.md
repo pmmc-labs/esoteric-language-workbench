@@ -9,30 +9,56 @@ runtime. The driver is `curlyc`, and a program is a `.pl` file.
 
 ## Status
 
-**Nothing is built.** 2026-11-24: the design was proposed from a
-reading of Chalk, perl5-son, Opal and Allium
-([`docs/BACKGROUND.md`](docs/BACKGROUND.md)), reviewed adversarially
-against perl 5.38.2 (which refuted four of its claims about perl and
-found about twenty ways to be WRONG), read against Crayon (which added
-rows to `SURFACE.md` and a kind of trap the review had missed:
-accepted by an obvious parser, refused by perl), and decided.
-[`docs/TRAPS.md`](docs/TRAPS.md) keeps the programs, T1 to T71, by
+**Step 0 of [`docs/PLAN.md`](docs/PLAN.md) is done** (2026-11-24, by
+Fable 5.2 on a step marked medium, large for the oracle check). The
+workbench's tree is in from `main` (af8e3a3), its calculator removed.
+**The language** is `use v5.42;` and then any number of `say N;`, N a
+decimal integer from 0 to 2^63 - 1 without a leading zero, with `#`
+comments (D16, D23; [`docs/LANGUAGE.md`](docs/LANGUAGE.md)). **The
+compiler**: `lexer.ts` (the whole file, a line and column on each
+token, every character checked there: tab, newline and printable ASCII
+only), `parser.ts`, `ast.ts`, `checker.ts`, `codegen.ts`, `names.ts`
+(`use` and `say`), `errors.ts`, and the driver `bin/curlyc.ts` (D3,
+D29). **The runtime**: the two-word value (D25), the context first in
+every call (D28), `rt_run`, `rt_say`, and the fault path (D13), which
+no program can reach yet and `runtime/tests/fault.c` drives from C.
+The generated C is one statement per `say` (D31) and a `main` that
+hands the file's path to `rt_run`; it does not set the context's line
+yet (step 1, with the first fault). **Golden tests** 000 and 001
+(`same`, written by perl) and 002 to 007 (`refused`, by hand: no `use
+v5.42;`, an integer past 2^63 - 1, `010`, `08`, a `#!` first line, a
+character past ASCII); 20 unit tests. **The oracle check**
+(`t/checks.py oracle`, D10) holds every test to perl 5.42 by its
+kind, and has 26 tests of its own in `t/checks/`, each a Perl file the
+check must pass or must fail in a named way; it was broken on purpose
+fourteen ways and a fixture went red each time. Its reading rule for
+hashes is by pattern and errs toward rejecting; step 12 will meet it
+first. Green under gcc, clang, and UBSan with ASan.
+
+**perl 5.42 was installed and everything rerun under it**:
+`docs/briefs/claims.py` holds every statement these documents make
+about perl as a program, 184 of them, and all hold under 5.42.0; under
+5.38.2 they differ only where `docs/TRAPS.md` had said. T71 is settled
+(5.42 prints `x's`). **Found at step 0**: T72, a `#!` first line, from
+which perl takes switches, a WRONG in step 0's own language and so
+refused at once (**D33, a default: Stevan to confirm**); T73, `use
+utf8;` must be on a line before the first character past ASCII (step
+3); T74, `# line N "file"` comments (step 15).
+[`docs/TRAPS.md`](docs/TRAPS.md) keeps the programs, T1 to T74, by
 step.
-**D1 to D32 are all Stevan's.** The ones a builder meets first: the
-core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
-be caught (D13); perl's warnings are faults (D15); loop variables are
-read-only and containers freeze (D17); a sub can't see its context
-(D18); `class`, and `package` only as a namespace (D19); brackets on a
-program's own calls (D21); a whole Num of 10^15 or more faults when
-made a string (D23); the name (D32). perigrin has agreed to the probe
-corpus (D11). [`docs/PLAN.md`](docs/PLAN.md) has steps 0 (`say 42;`,
-and the oracle check) and 1 (integer arithmetic) in full and steps 2
-to 30 in outline; this branch holds only the documents, and step 0
-brings the workbench's tree in from `main`. **Next:** step 0, which
-also installs perl 5.42 and reruns every "perl prints" and every trap
-under it; a difference from 5.38.2 is reported before anything is
-built on it. Not agreed: what the decisions leave to steps, listed at
-the end of [`docs/DESIGN.md`](docs/DESIGN.md).
+
+**D1 to D32 are all Stevan's; D33 is a default.** The ones a builder
+meets first: the core rule (D2); a TypeScript compiler emitting C
+(D3); a fault can't be caught (D13); perl's warnings are faults (D15);
+loop variables are read-only and containers freeze (D17); a sub can't
+see its context (D18); `class`, and `package` only as a namespace
+(D19); brackets on a program's own calls (D21); a whole Num of 10^15
+or more faults when made a string (D23); the name (D32). perigrin has
+agreed to the probe corpus (D11). **Next:** step 1, integer
+arithmetic, written in full in `docs/PLAN.md`: `t/models/arith.py`
+first, red before any code. Not agreed: D33, and what the decisions
+leave to steps, listed at the end of
+[`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Read first, in this order
 
@@ -143,11 +169,11 @@ in `pmmc-labs/esoteric-language-workbench`.
 
 - Node 22.18 or later, and a C compiler as `cc`; clang as well.
 - **perl 5.42**, as `CURLY_PERL` (default `perl`). The checks fail
-  without it; they don't skip. The cloud machine's own perl is 5.38.2.
-  5.42 comes from the environment's setup script, built from
-  cpan.org's source (reachable; no network change needed) into
-  `/opt/perl-5.42`, with `CURLY_PERL=/opt/perl-5.42/bin/perl` set on
-  the environment:
+  without it; they don't skip, and `make doctor` says what is wrong.
+  The cloud machine's own perl is 5.38.2. 5.42 comes from the
+  environment's setup script, built from cpan.org's source (reachable;
+  no network change needed) into `/opt/perl-5.42`, with
+  `CURLY_PERL=/opt/perl-5.42/bin/perl` set on the environment:
 
       if [ ! -x /opt/perl-5.42/bin/perl ]; then
         cd /tmp
@@ -160,27 +186,68 @@ in `pmmc-labs/esoteric-language-workbench`.
         make install
       fi
 
-  **Not yet run.** The session that wrote this could download the
-  source and check its checksum (the one above, which is cpan.org's
-  own), but wasn't permitted to build it. Step 0 confirms the script
-  works, how long it adds to a session's start, and that `perl
-  -V:ivsize -V:nvsize` gives 8 and 8; if the build is too slow at
-  every start, it proposes something else.
+  It runs at the start of a session, and step 0 found it done: the
+  download at 17:42:29, `Configure` finished by 17:42:59, perl built
+  by 17:43:25 and installed by 17:44:05, so about a minute and forty
+  seconds on four cores before the session can work. `perl -V:ivsize
+  -V:nvsize` gives 8 and 8. The same script installs
+  `libclang-rt-18-dev`, clang's sanitizer runtime, for `make
+  sanitize`. On a Mac, any perl 5.42 will do (perlbrew, plenv, or the
+  script above with another prefix), named by `CURLY_PERL`.
 - Python 3 for `t/checks.py` and the models.
-- `t/run.sh t/000-say.pl` checks the setup; it should end
-  `1 tests, 0 failed`.
+- `make doctor` checks the setup, and `t/run.sh t/000-say.pl` should
+  end `1 tests, 0 failed`.
 
 ## Layout
 
-[As built; `docs/PLAN.md` has it as planned. Step 0 writes this.]
+| Path | |
+|---|---|
+| `bin/curlyc.ts` | The driver: `curlyc -o out file.pl` |
+| `compiler/src/` | One file per pass: `lexer.ts`, `parser.ts`, `checker.ts`, `codegen.ts`; `ast.ts`, the tree; `names.ts`, the one table of names (D29); `errors.ts` |
+| `compiler/tests/` | Unit tests, per pass |
+| `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` |
+| `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `checks/`, the oracle check's own tests; `models/` |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program) |
+| `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
+| `build/` | Output (ignored) |
+
+`docs/PLAN.md` has what is still to come: `lib/`, `examples/`,
+`t/census/`.
 
 ## Commands
 
-[The workbench's: `make test`, `make unit`, `make golden`, `make
-checks`, `make check`, `make golden-clang`, `make sanitize`, `make
-models`, `make commits`, `make hooks`; and `make doctor`, `make
-oracle` (writes each `same` and `dies` test's `.expected` from perl),
-`make census` from step 11. Step 0 writes this as it stands.]
+- `make test`: the unit tests, the golden tests, then the mechanical
+  checks (`t/checks.py`), which ask perl. A few seconds.
+- `make unit`, `make golden`, `make checks`: one at a time.
+  `t/run.sh t/000-say.pl` runs one golden test; `JOBS=1` runs them one
+  at a time.
+- `make oracle`: writes each `same` and `dies` test's `.expected` from
+  perl. That is how such a file is made; never by hand, and never from
+  the compiler. It writes nothing for a test perl warns on or whose
+  output moves with the hash seed.
+- `make doctor`: each tool's version, and a failure for a perl that
+  isn't 5.42 with 64-bit integers and doubles.
+- `make golden-clang`: the golden tests with clang as the C compiler.
+  `make sanitize`: with UBSan and ASan, every finding fatal. Neither
+  is part of `make test`. `CURLY_CC=clang make unit` does the same for
+  the runtime's own tests.
+- `make models` reruns every model and writes its files (none yet);
+  `make commits` checks the subjects since origin/main; `make hooks`
+  installs the commit-msg hook.
+- `make check`: `tsc --noEmit` (`npm install` once, for it).
+- `python3 docs/briefs/claims.py`: every statement the documents make
+  about perl, rerun. Not part of `make test`.
+- `make decisions`: `build/decisions-curly.html`, a browser of the
+  decision log.
+- `node bin/curlyc.ts -o out file.pl`: compile and link. It writes
+  `out.c` next to `out`. Exit codes: 0 ok; 1 a refusal, `FILE:LINE:COL:
+  message` on stderr and no binary; 2 usage, the toolchain, or a file
+  it can't read or write; a fault in the compiler itself is `curlyc:
+  internal error: ...` with Node's stack, and 2.
+- `make census` comes with step 11.
+- Environment: `CURLY_PERL`, the oracle (default `perl`); `CURLY_CC`,
+  the C compiler (default `cc`); `TIMEOUT`, the seconds a golden test
+  may run (default 60); `JOBS`. A compiled program reads none yet.
 
 A compiled program prints to stdout and exits 0. A fault is `fault:
 MESSAGE at FILE line N.` on stderr and exit 1, after whatever stdout

@@ -1,0 +1,12 @@
+apple,fig,pear
+1,2,3
+apple=1,fig=2,pear=3
+4,6
+pear
+fig
+apple
+3
+apple,fig,pear
+fig
+1
+apple has 1

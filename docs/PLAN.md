@@ -4,9 +4,10 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** nothing is built. Steps 0 and 1 are written in full, and
-every decision they cite is made. Next: step 0. Steps 2 to 30 are
-outlines: each is proposed, with options, when it's next.
+**Progress:** step 0 is done (2026-11-24): `say 42;` compiles, runs,
+and is checked against perl 5.42. Step 1 is written in full, and every
+decision it cites is made. Next: step 1. Steps 2 to 30 are outlines:
+each is proposed, with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -24,16 +25,17 @@ is an exception to D2 names its own.
 
 ## Proposed layout
 
-The workbench's, with these differences:
+The workbench's, with these differences. `CLAUDE.md` has the layout
+as built; what is here and not there is still to come.
 
 | Path | |
 |---|---|
 | `bin/curlyc.ts` | The driver: `curlyc -o out file.pl` |
-| `compiler/src/` | `lexer.ts`, `parser.ts`, `ast.ts`, `resolver.ts`, `checker.ts`, `codegen.ts`, `names.ts` (the one table, D29), `errors.ts` |
+| `compiler/src/` | `lexer.ts`, `parser.ts`, `ast.ts`, `resolver.ts` (step 5), `checker.ts`, `codegen.ts`, `names.ts` (the one table, D29), `errors.ts` |
 | `compiler/tests/` | Unit tests per pass |
-| `runtime/` | `rt.h`, `rt.c`, and a file per subsystem as they come (`gc.c`, `str.c`, `re.c`) |
+| `runtime/` | `rt.h`, `rt.c`, and a file per subsystem as they come (`gc.c`, `str.c`, `re.c`); `tests/`, C programs that call it directly |
 | `lib/` | The prelude and the libraries, in the language (step 23 on) |
-| `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `models/` |
+| `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `checks/`, the oracle check's own tests; `models/` |
 | `t/census/` | Other people's probes and their verdicts (step 11) |
 | `examples/` | Ports; each with a `.expected` is a golden test |
 | `docs/` | These documents, and `LANGUAGE.md` |
@@ -45,13 +47,41 @@ There is no `t/referee/` until a step needs one: perl is the referee.
 Each step says what it adds, what it decides, what tests it adds, and
 what it leaves out on purpose.
 
-### 0. Scaffold: `say 42;`
+### 0. Scaffold: `say 42;` (done)
 
 Referee: perl. Size: medium; large for `t/checks.py oracle`, which is
 new and which everything after leans on.
 
 Decisions: D3, D10, D12, D13, D16, D23 (the range of a literal), D25,
 D28, D29, D30, D31, D32, all made. Traps: T24.
+
+**Done, 2026-11-24**, by Fable 5.2, as written below, and with these
+differences and findings:
+
+- **perl 5.42 agrees with every statement these documents make about
+  perl.** `docs/briefs/claims.py` holds each as a program (184 of
+  them, the traps included) and reruns them; under 5.38.2 the same
+  programs differ only where `TRAPS.md` had said they would. Three
+  rows were corrected: T71 (5.42 prints `x's`), and T45 and T67, whose
+  `use utf8;` has to be on a line of its own (T73).
+- **Three traps were found**, T72 to T74. T72 was a WRONG in this
+  step's own language (a `#!` first line), so it is refused, by a
+  default: **D33, for Stevan to confirm.** T73 is step 3's and T74
+  step 15's.
+- **Golden tests 006 and 007** beside the six planned: the `#!` line,
+  and a character past ASCII.
+- **The fixtures in `t/checks/`** are twenty-six, not six, and each
+  check was broken on purpose, fourteen ways, to see a fixture go red.
+- **`# limit: seconds`** is a header the plan didn't have: the fixture
+  that never ends under perl would otherwise cost every `make test`
+  ten seconds.
+- **The generated C doesn't set the context's line**: nothing can
+  fault, so nothing could test it. Step 1 does, with its first fault.
+- **The table of names holds `use` and `say`**, not yet every name
+  perl knows (D21): that list is step 8's, where a sub could take one.
+- **Kept from the workbench**, beyond what was listed: `exp/` (its
+  experiments, which `MODELS.md` cites), `tools/decisions/` (`make
+  decisions` works on this log), and `docs/briefs/`.
 
 - **Start from the workbench template**: this branch holds only these
   documents, so bring `main`'s tree (af8e3a3) in under them (`git
@@ -182,6 +212,11 @@ Traps: T25, T27.
   against scalar assignment later, need it), and none of its
   conflations: `return` is not loop control, a slice is not a
   subscript, a call through a reference is not a method call.
+- **A fault's line**: the generated C stores each statement's line in
+  the context (`cx->line`) before the statement, which step 0 left at
+  0 since nothing could fault. The first `fault` test is also the
+  first real use of the oracle check's `fault` half, which has only
+  met fixtures: break it on purpose once (`t/checks/README.md`).
 - **Runtime**: `rt_add`, `rt_sub`, `rt_mul`, `rt_mod`, `rt_neg`, each
   checking its operands' tags (nothing but an Int can reach them yet;
   the check is there for step 2) and overflowing by the compilers'
@@ -229,6 +264,9 @@ strings are numbers (perl takes `"3 "`, `" 3"`, `"1e3"`, `".5"`,
 confirms); a numeric string perl reads differently from the same
 literal (T38); `use utf8` and a source that isn't ASCII; `print`. An
 unescaped `$` or `@` in double quotes is refused until step 16 (T34).
+`use utf8;` stands on a line before the first character past ASCII, a
+comment's included (T73): perl 5.42 checks the encoding a line at a
+time.
 Case-mapping past ASCII faults until a step brings perl's Unicode
 tables, which the C library doesn't have (T45); unary minus on a
 string that isn't a number faults (T47), and on a bareword is refused
@@ -399,7 +437,8 @@ it is checked (D10). Decides: how unwinding is compiled
 (`setjmp` and the shadow stack, or a test after each call); `finally`
 and `defer`; `...`. `return` inside `try` returns from the sub, so
 unwinding can't be one mechanism shared with `die`. Confirms D13 with
-tests of what `try` does not catch. Traps: T53, T65, T70.
+tests of what `try` does not catch. Which line a `die` reports, and a
+comment that changes it (T74). Traps: T53, T65, T70, T74.
 
 ### 16. Strings, the rest
 
@@ -519,8 +558,10 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-None waiting. D1 to D32 are agreed, and steps 0 and 1 are written from
-them. The next proposal is step 2's.
+One waiting: **D33**, a `#!` first line refused, taken as a default at
+step 0 because the alternative was a WRONG; to confirm, or to replace
+with the narrower rule its entry describes. D1 to D32 are agreed, and
+step 1 is written from them. The next proposal is step 2's.
 
 ## Example-port table
 

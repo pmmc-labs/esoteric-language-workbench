@@ -1,0 +1,2 @@
+fault: something at t/checks/fault-perl-refuses.pl line 6.
+exit: 1

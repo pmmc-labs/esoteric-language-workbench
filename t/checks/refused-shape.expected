@@ -1,0 +1,3 @@
+t/checks/refused-shape.pl: some message
+and more
+exit: 1

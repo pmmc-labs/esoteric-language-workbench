@@ -1,0 +1,2 @@
+t/checks/refused-ok.pl:5:5: some message
+exit: 1

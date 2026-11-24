@@ -1,0 +1,2 @@
+t/005-leading-zero-8.pl:4:5: 08 starts with a zero, which perl reads as octal: not in the language yet
+exit: 1

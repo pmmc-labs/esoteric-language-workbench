@@ -1,0 +1,2 @@
+t/006-shebang.pl:1:1: a first line that starts '#!' is not in the language: perl takes switches from it
+exit: 1

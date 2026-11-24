@@ -2,8 +2,11 @@
 
 Places where the obvious implementation runs, doesn't fault, and
 prints something perl doesn't: a WRONG (D2). Each was run under perl
-(5.38.2, on 2026-11-24; step 0 reruns them under 5.42), and each names
-the step that has to deal with it and the way out proposed. A step's
+(5.38.2 first, and again under 5.42.0 by step 0, on 2026-11-24: every
+row here is what 5.42 does), and each names
+the step that has to deal with it and the way out proposed.
+[`briefs/claims.py`](briefs/claims.py) holds every row as a program
+and reruns them all: start there when the perl changes. A step's
 builder reads its rows first, and each row becomes at least one golden
 test. A trap found later is added here, with its program, before it is
 fixed.
@@ -90,7 +93,7 @@ rebuilding something D17 to D22 cut.
 
 | | Program | perl prints | Step | Way out |
 |---|---|---|---|---|
-| T45 | `use utf8; say uc("straße"); say length(uc("straße"));` | `STRASSE`, `7` | 3 | Fault on case-mapping a code point past ASCII, until a step brings perl's tables |
+| T45 | `use utf8;` and, on a later line (T73), `say uc("straße"); say length(uc("straße"));` | `STRASSE`, `7` | 3 | Fault on case-mapping a code point past ASCII, until a step brings perl's tables |
 | T46 | `say "12" & "10"; say "12" &. "10";` | `8`, `10` | 22 | `&` is numeric under `use v5.42`; `&.` and its kin are cut |
 | T47 | `say -"foo"; say -"-foo";` | `-foo`, `+foo` | 3 | Fault: unary minus on a string that isn't a number |
 
@@ -134,11 +137,21 @@ the first fifty; these are what they showed.
 | T64 | `my $i = 5; do { say $i; $i++ } while ($i < 3);` | `5` | 6 | Agree if `do BLOCK` comes in: the block runs first |
 | T65 | `sub f() { try { 42 } catch ($e) { 0 } } say "[", f(), "]";` | `[42]` | 15 | Fault (D18): a sub that ends in `try` has no value |
 | T66 | `"abc" =~ /b/; say "xbx" =~ // ? "y" : "n";` | `y`: the empty pattern is the last one used | 19 | Refuse the empty pattern |
-| T67 | `use utf8; say "٣" =~ /^\d$/ ? "digit" : "no"; say "a\n" =~ /a$/ ? "match" : "no";` | `digit`, `match` | 19 | Agree |
+| T67 | `use utf8;` and, on a later line (T73), `say "٣" =~ /^\d$/ ? "digit" : "no"; say "a\n" =~ /a$/ ? "match" : "no";` | `digit`, `match` | 19 | Agree |
 | T68 | `my $x = (4,5,6); say $x;` | `6`, and two warnings | 9 | Refuse (D15) |
 | T69 | `say -foo;` | `-foo` | 3 | Refuse a bareword |
 | T70 | `sub f() { ... } f();` | dies, `Unimplemented at FILE line N.` | 15 | Agree, as a `die`, or refuse until then |
-| T71 | `my $name = "x"; say "$name's";` | 5.38 reads `$name::s` and warns; 5.42 turns that off | 16 | Rerun under 5.42 before deciding |
+| T71 | `my $name = "x"; say "$name's";` | `x's`, in silence (5.38 read `$name::s`, warned twice and printed an empty line) | 16 | Agree |
+
+## Found at step 0
+
+Building `say 42;` and rerunning everything above under 5.42.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T72 | A first line `#!/usr/bin/perl -n`, then `use v5.42; say 42;` | nothing, stdin being empty; once for each line of stdin otherwise. With blanks before the `#!`, the same. `#!/bin/echo hello` there, and perl runs `echo` | 0 | Refuse a first line that starts `#!` (D33); on a later line it is a comment |
+| T73 | `use v5.42;` and then, on one line, `use utf8; say uc("straße");` | doesn't compile: `Use of non-ASCII character 0xC3 illegal when 'use source::encoding "ascii"' is in effect`. On the line after `use utf8;`, it runs. In a comment with no `use utf8`, the same error | 3 | Refuse a character past ASCII on any line up to and including the one that says `use utf8;`, comments included |
+| T74 | `# line 100 "other.pl"` on a line of its own, then `say 42; die "x";` | `42`, and the `die` says `x at other.pl line 101.` With `#line 100`, the same line and this file. Indented, or with more words after the number, it is a comment | 15, 16 | To be proposed with `die` and `__LINE__`: refuse a comment perl reads as a line directive. Nothing shows the line before then (a fault's line is the language's own, D12) |
 
 ## The checks themselves
 
@@ -150,6 +163,8 @@ the first fifty; these are what they showed.
   in D10, and such a test is written so that perl finishes.
 - Two hash seeds agree on a two-key hash 48% of the time and on a
   three-key hash 25%. Hence eight seeds and the reading rule in D10.
+  (Under 5.42, over the 435 pairs of seeds 1 to 30: 211 for the keys
+  `a` and `b`, and 100 for `a`, `b` and `c`, which is 23%.)
 - A program more than 100 calls deep makes perl warn, so it can't be
   a `same` test as D10 stands. Step 8.
 - Plain `perl FILE` prints `é` as the single byte E9, in silence;
@@ -158,11 +173,17 @@ the first fifty; these are what they showed.
   `-CSDA` (D24), so "the same file, given to perl" is true only with
   a flag the file doesn't carry. Step 3 proposes whether a program
   with text past ASCII must say `use open` itself.
-- 5.38 and 5.42 are known to differ here, so the rerun under 5.42
-  (step 0) looks at these first: the apostrophe as a package
-  separator (T71); `source::encoding`, which makes a non-ASCII source
-  without `use utf8` an error; the builtins `use v5.42` imports
-  (`true`, `false`, `trim`, `ceil` and nine more; on 5.38 `sub trim`
-  wins, with a warning); `for my ($k, $v)`, experimental until 5.40;
-  `try`, stable from 5.40; `:reader`, `__CLASS__`, `:writer`, `my
-  method` and `->&`, each newer than 5.38; `^^`, `^^=`, `any`, `all`.
+- `perl -c` says `FILE syntax OK` on stderr when all is well, so
+  "nothing on stderr" for a compile means nothing but that line.
+- 5.38 and 5.42 differ here, and nowhere else that these documents
+  speak of (step 0 ran all of it under both): the apostrophe as a
+  package separator (T71); `source::encoding`, which makes a non-ASCII
+  source without `use utf8` an error, by the line (T73); the builtins
+  `use v5.42` imports (`true`, `false`, `trim`, `ceil` and nine more);
+  `for my ($k, $v)`, experimental until 5.40; `try`, stable from 5.40;
+  `:reader`, `__CLASS__`, `:writer`, `my method` and `->&`, each newer
+  than 5.38; `^^`, `^^=`, `any`, `all`.
+- A program's own `sub trim` or `sub ceil` is still the one called
+  under `use v5.42`, not the builtin, and perl says so twice as it
+  compiles (`Prototype mismatch: sub trim ($) vs none`, `Subroutine
+  trim redefined`). So it is refused on both counts (D21, D15).

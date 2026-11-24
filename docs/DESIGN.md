@@ -3,13 +3,14 @@
 This is the design as agreed on 2026-11-24. [`DECISIONS.md`](DECISIONS.md)
 has the reasons and the alternatives that were turned down,
 [`SURFACE.md`](SURFACE.md) goes through Perl construct by construct,
-and [`PLAN.md`](PLAN.md) has the build order. D1 to D32 are Stevan's.
+and [`PLAN.md`](PLAN.md) has the build order. D1 to D32 are Stevan's;
+D33 is a default from step 0.
 Anything marked **(open)** from here on is a default a later step
 proposed that he hasn't confirmed: fine to build on, but bring it up
 before baking it in further. What the decisions leave for a step to
 settle is listed at the end.
-[`TRAPS.md`](TRAPS.md) has seventy-one programs, each run under perl,
-where the obvious implementation would break the core rule.
+[`TRAPS.md`](TRAPS.md) has seventy-four programs, each run under perl
+5.42, where the obvious implementation would break the core rule.
 
 ## Goals
 
@@ -211,14 +212,19 @@ optimization plan.
 - **gcc, clang and the sanitizers** on every runtime change, as the
   workbench found it needed.
 - **Stevan's machine** after every step.
+- **The checks are tested**: `t/checks/` holds tests the oracle check
+  must fail, each in its own way, and they run with it.
 
 ## Open questions
 
 D1 to D32 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
-1. **Whether perl 5.42 agrees with what was run under 5.38.2** (step
-   0): every "perl prints" in these documents, and every trap.
+1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
+   does. Step 0 ran every "perl prints" in these documents and every
+   trap under both (`briefs/claims.py`), and the two differ only where
+   `TRAPS.md` already said they would. **Still to confirm: D33**, the
+   refusal of a `#!` first line, which step 0 took as a default.
 2. **Whether a program must say `use open ':std',
    ':encoding(UTF-8)';`** (step 3). The oracle runs perl with `-CSDA`;
    plain perl prints `é` as one byte. As it stands the file alone

@@ -5,48 +5,40 @@
 #define RT_H
 #include <stdint.h>
 
-// A value: a 63-bit integer, shifted left one bit, tag 0 (D4). An
-// immediate whose low two bits are 11 is a boolean, its value in bit 2
-// (D14); 01 is left for what comes next.
-typedef intptr_t rt_value;
-#define RT_INT_TAG 0
-#define RT_INT_SHIFT 1
-#define RT_INT_MIN (-(INT64_C(1) << 62))
-#define RT_INT_MAX ((INT64_C(1) << 62) - 1)
-#define RT_IMM_TAG 3
-#define RT_TRUE ((rt_value)7)
-#define RT_FALSE ((rt_value)3)
+// A value is two words, a tag and a payload (D25), so that a 64-bit
+// integer fits whole; both C compilers pass the pair in registers. The
+// union gains a member per kind of value. No tag is 0: memory that was
+// never made a value then faults at the first operator that checks it.
+enum { RT_TAG_INT = 1 };
+typedef struct {
+    uint64_t tag;
+    union { int64_t i; } as;
+} rt_value;
 
-// Multiplied, not shifted: a left shift of a negative value is undefined
-// before C23, and UBSan says so; the compiler emits the shift anyway.
-static inline rt_value rt_int(int64_t n) { return (rt_value)(n * (1 << RT_INT_SHIFT)) | RT_INT_TAG; }
-static inline int64_t rt_int_of(rt_value v) { return (int64_t)v >> RT_INT_SHIFT; }
-static inline int rt_is_int(rt_value v) { return (v & 1) == RT_INT_TAG; }
-static inline rt_value rt_bool(int b) { return b ? RT_TRUE : RT_FALSE; }
+static inline rt_value rt_int(int64_t n) {
+    rt_value v;
+    v.tag = RT_TAG_INT;
+    v.as.i = n;
+    return v;
+}
 
-rt_value lang_main(void);
-rt_value rt_add(rt_value a, rt_value b);
-rt_value rt_sub(rt_value a, rt_value b);
-rt_value rt_mul(rt_value a, rt_value b);
-rt_value rt_div(rt_value a, rt_value b);
-rt_value rt_mod(rt_value a, rt_value b);
-rt_value rt_lt(rt_value a, rt_value b);
-rt_value rt_le(rt_value a, rt_value b);
-rt_value rt_gt(rt_value a, rt_value b);
-rt_value rt_ge(rt_value a, rt_value b);
-rt_value rt_eq(rt_value a, rt_value b);
-rt_value rt_ne(rt_value a, rt_value b);
-rt_value rt_bit_and(rt_value a, rt_value b);
-rt_value rt_bit_or(rt_value a, rt_value b);
-rt_value rt_bit_xor(rt_value a, rt_value b);
-rt_value rt_bit_shl(rt_value a, rt_value b);
-rt_value rt_bit_shr(rt_value a, rt_value b);
-rt_value rt_pow(rt_value a, rt_value b);
-// A budget (D24, D27): rt_within puts one in force and returns the limit
-// it replaced; rt_within_end restores it and passes the body's value on.
-int64_t rt_within(rt_value n);
-rt_value rt_within_end(int64_t saved, rt_value v);
-int rt_test(rt_value v);
-void rt_print(rt_value v);
-void rt_fault(const char *what) __attribute__((noreturn));
+// The context (D28): everything the runtime knows that isn't a value,
+// passed first to every runtime function and every compiled sub, so that
+// nothing is global and a second context can one day run beside this one.
+typedef struct rt_ctx {
+    const char *file;   // the program's path, as the compiler was given it
+    int64_t line;       // the line of the statement that is running
+} rt_ctx;
+
+// Run a compiled program: make its context, call its body, return the
+// status main should. The generated C's main is this and nothing else.
+int rt_run(void (*body)(rt_ctx *cx), const char *file);
+
+// `say`: the value as perl prints it, and a newline.
+void rt_say(rt_ctx *cx, rt_value v);
+
+// A fault (D13): stdout as far as it got, then
+// `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and
+// nothing can catch it.
+void rt_fault(rt_ctx *cx, const char *what) __attribute__((noreturn));
 #endif
