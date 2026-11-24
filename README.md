@@ -83,9 +83,9 @@ The first draft was given to a reviewer with a real perl and one
 instruction: break it. It found four false statements about perl and
 about twenty programs the design as written would have got wrong.
 Seven decisions were rewritten, and the programs are kept in
-`docs/TRAPS.md`. One part is decided in principle and not yet pinned
-down: exactly where numbers fault because perl's printing depends on a
-number's history (D23, step 2). Everything was run under perl 5.38.2
+`docs/TRAPS.md`. The part that was only decided in principle then,
+where numbers fault because perl's printing depends on a number's
+history, has since been measured and settled (D35, D36, step 2). Everything was run under perl 5.38.2
 first, and step 0 reran it all under 5.42: every statement held, and
 building `say 42;` still found four traps the first review hadn't
 (`docs/TRAPS.md`, T72 to T75), two of them by a second review, of
