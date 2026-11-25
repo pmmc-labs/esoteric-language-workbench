@@ -2040,9 +2040,14 @@ it.
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for).
-Not agreed: five questions wait for Stevan, Q1 to Q5 below, and
-nothing is built.** Everything here about perl was run under 5.42.0
+**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
+and answered the same day: D67 (Q1, as recommended, by the builder's
+reading of his words), D68 (Q2: the recommendation as a default, on
+his condition that it box nothing in, which the entry spells out),
+D69 (Q3, as recommended), D70 (Q4: not the recommendation; a sub that
+ends in `say` is worth `true`, as in perl), D71 (Q5, as recommended)
+and D72 (what had nothing to choose). The text is kept as it was
+proposed. Nothing is built.** Everything here about perl was run under 5.42.0
 and is in `briefs/claims.py` (59 rows, `T1-args` to `T60-label`).
 Traps: T1, T19, T28, T31, T55, T60, and T132 to T142, found writing
 this. The outline this replaces said: named subs with signatures,

@@ -248,7 +248,7 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 509 of them now, and all hold under 5.42.0,
+about perl as a program, 510 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
 keeps the programs, T1 to T142, by step (T119 to T124 found proposing
 step 6, T132 to T142 proposing step 8, T125 to T130 by the review of step 5, T131 building step 6).
@@ -288,7 +288,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D66 are all Stevan's** (D57 a default of the builder's at
+**D1 to D72 are all Stevan's** (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -319,13 +319,17 @@ proposal round it: poison must check wherever a string is read and
 again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
 green after step 6 and again after step 7. **Next: step
-8**, subs. **It is proposed and not agreed** (2026-11-25,
-`docs/PLAN.md`): five questions wait for Stevan, Q1 (a fault at the
-100th open call of one sub unless the program says `no warnings
-'recursion';`), Q2 (the open frames may hold 4 MB, about 3,800 calls
-deep), Q3 (D57 through a call), Q4 (a sub that ends in `say`), Q5 (a
-sub that returns nothing where perl wants a list). Nothing of it is
-built. T132 to T142 were found proposing it, and its 59 statements
+8**, subs. **It is proposed and answered** (2026-11-25,
+`docs/PLAN.md`; D67 to D72): a fault at the 100th open call of one
+sub unless the program says `no warnings 'recursion';` (D67, as the
+builder read Stevan's answer: the entry says how); the open frames
+may hold 4 MB, about 3,800 calls deep, a default that D68 keeps out
+of the language so that step 29 can take calls off the C stack; D57
+through a call (D69); a sub that ends in `say` is worth `true` (D70,
+his, against the recommendation); a sub that returns nothing faults
+where perl wants a list (D71). **Its adversarial review had not
+reported when this was written, and nothing of it is built**: the
+review's findings amend the proposal first, then the model, red. T132 to T142 were found proposing it, and its 59 statements
 about perl are in `claims.py`; `briefs/step8-names.py` and
 `step8-stack.c` are its evidence for names and for the limit. What step 7
 hands it: a sub opens a frame and closes it on every way out; its

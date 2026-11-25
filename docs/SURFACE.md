@@ -70,6 +70,11 @@ comparison: *in*, *out*, or *n/a*.
 | `__SUB__` | In | 14 | | |
 | `__FILE__`, `__LINE__` | In | 16 | | |
 | `sub f;`, a forward declaration | Cut | | | Nothing needs one (D21) |
+| `no warnings 'recursion';`, with the pragmas | In | 8 | | D67: without it the 100th open call of one sub is a fault |
+| Recursion past the implementation's limit | Fault | 8 | | D68: `recursion too deep`; perl has no limit |
+| A sub that ends in `say` or `print`, and its value used | In | 8 | | D70: `true`, as perl |
+| A sub that returns nothing, as an argument or `say`'s | Fault | 8 | | D71, until step 10: perl passes no argument |
+| A row of dots in which a later piece calls a sub that can change a variable an earlier piece reads | Cut | | | D69, T132 |
 | Signature placeholders `$`, `@`, `%`; defaults with `//=` and `\|\|=`; a default that reads an earlier parameter | In | 8 | | |
 | `my $x = $x`: the right side sees the outer `$x` | In | 5 | | T58 |
 | `my` in a condition, `if ((my $n = f()) > 3)` | In | 5 | | |

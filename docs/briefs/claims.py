@@ -548,6 +548,7 @@ CLAIMS = [
     c('T139-or', 'TRAPS; PLAN 8', 'sub a5() { my $v = 3; return $v or 9 } say a5();', out='3\n', err='Possible precedence issue with control flow operator \\(return\\)'),
     c('T139-top', 'TRAPS; PLAN 8', 'say "a"; return; say "b";', out='a\n', err="Can't return outside a subroutine", exit=255),
     c('T140', 'TRAPS; PLAN 8', 'sub f() { say "hi" } my $x = f(); say $x; sub g() { print "" } say g(); sub w() { my $i = 0; while ($i < 3) { $i++ } } my $v = w(); say defined($v) ? "d[$v]" : "u";', out='hi\n1\n1\nd[]\n'),
+    c('D70', 'DECISIONS', 'use builtin "is_bool"; sub f() { say "hi" } sub g() { print "" } my $x = f(); say is_bool($x) ? "bool" : "not"; $x = g(); say is_bool($x) ? "bool" : "not"; say f() + g(); sub h($c) { say "hi" if $c } $x = h(0); say "[$x]";', out='hi\nbool\nbool\nhi\n2\n[0]\n', err='is experimental'),
     c('T140-last', 'TRAPS; PLAN 8', 'sub a1() { my $x = 5; } say a1(); sub a2() { my $x; } my $v = a2(); say defined($v) ? "d" : "u"; my $i = 3; sub a3() { $i++ } say a3(); say $i; sub a4($x) { $x * 2 } say a4(4); sub a5() { 42; } say a5();', out='5\nu\n3\n4\n8\n42\n'),
     c('T140-useless', 'TRAPS; PLAN 8', 'sub f($x) { $x * 2; return 1 } say f(2);', out='1\n', err='Useless use of multiplication \\(\\*\\) in void context'),
     c('T140-quiet', 'TRAPS; PLAN 8', 'sub f($x) { if ($x) { $x * 2 } } f(2); sub h() { "s" } h(); sub k($x) { $x } k(1); say "ok";', out='ok\n'),

@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D66 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D72 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -11,7 +11,9 @@ D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
 3's, D46 to what the review of step 3 left open, D47 to D51 to step
 4's, and D52 to D56 to step 5's. D57 was a default the builder of
 step 5 took, which he confirmed the same day. D58 to D62 are his
-answers to step 6's proposal, and D63 to D66 to step 7's.
+answers to step 6's proposal, D63 to D66 to step 7's, and D67 to D72
+to step 8's (D67 as the builder read him, and D68's number the
+builder's default).
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -302,8 +304,8 @@ undef); those are the rows marked Fault in `SURFACE.md`, and they are
 a list. What perl does silently stays: `"12" + 1` is 13, `"3 " + 1` is
 4, `$count{$word}++` on a missing key is 1, `$total{$k} += 5` and
 `$s .= "x"` on undef don't warn and work. Exceptions, each for its
-reason: the recursion warning at 100 calls deep (how deep a program may go is
-step 8's to propose), and warnings about experimental features. Rejected: perl's guesses, with a warning (the
+reason: warnings about experimental features. (The recursion warning
+at 100 calls deep was one until step 8: D67 makes it a fault.) Rejected: perl's guesses, with a warning (the
 cruft D1 is about, and every guess would then have to be implemented
 exactly); undef as an empty string in silence, with only the numeric
 guesses faulting (friendlier to code that prints, but two rules, and
@@ -317,7 +319,7 @@ list.** *(User: accepted as proposed, 2026-11-24.)* That line is what makes the 
 mean the same
 thing to perl: strict, warnings, `say`, signatures, `try`, the Unicode
 string rules, and a source that is ASCII unless `use utf8` follows.
-Accepted besides: `use utf8`, `use experimental 'class'` (and the other
+Accepted besides: `use utf8`, `no warnings 'recursion'` (D67), `use experimental 'class'` (and the other
 experimental names a step brings), and `use` of a module of the
 program's own (step 18). `no strict`, `no warnings`, `use integer`,
 `use bytes`, `use constant` and any other pragma are refused until a
@@ -1223,6 +1225,128 @@ runtime, never the program's. No finalisers. Left for their steps:
 marking through a value that holds values, and a mark stack (9, 13);
 a variable that outlives its frame (14); unwinding frames at a caught
 `die` (15); a heap for each context (29).
+
+**D67. A sub may have 100 calls of itself open only in a program that
+says `no warnings 'recursion';`.** *(User, 2026-11-25; step 8, Q1:
+"lets add `no warnings 'recursion'` to the perl 5.42 prelude, that
+recursion limit is too small." Read as the recommendation, and if he
+meant the line to be required of every program, or to change nothing
+here, this entry is where to say so.)* perl warns `Deep recursion on
+subroutine` when one sub has 100 calls of itself open at once, each
+sub counted by itself, and carries on (T142). The line joins D16's
+list: after `use v5.42;`, with the other pragmas, before the first
+statement, and nowhere else. With it nothing happens at 100, here or
+in perl; without it the 100th open call of one sub is a fault that
+names the sub and the line to add. So D15 loses the exception it had
+kept for this, the file means the same to perl either way, and the
+oracle check keeps its rule that perl's stderr is empty (D10): a test
+that goes deep carries the line. Rejected: no fault at 100 and the
+pragma accepted only to keep tests silent (a program perl warns of
+would run here without a word); a fault at 100 always (no recursion
+over a list of a hundred things); perl's rule in full, that the
+pragma covers the calls written in its scope (a line at the top is
+the whole file, and one rule).
+
+**D68. Past a limit the implementation sets, recursion is a fault,
+and the limit is not part of the language.** *(User, 2026-11-25; step
+8, Q2: "I would like to avoid being too tied to the C-stack, but this
+is perhaps something to discuss later when we talk about concurrency
+... I want to avoid boxing ourselves in such that we can't fix it
+later." The number is the builder's default, and is fair to
+revisit.)* perl keeps its calls on the heap and has no limit; a
+compiled sub here is a C function, and the C stack ends. Today the
+frames that are open may hold 4 MB, counted as 16 bytes a slot and
+1 KB a call, which is more than a call takes under any build measured
+(`briefs/step8-stack.c`), so the count runs out with half of an 8 MB
+stack left: about 3,800 calls deep for a small sub. Past it,
+`recursion too deep`. **What keeps this open for step 29**: the
+language promises only that there is a limit and that reaching it is
+a fault, so a higher limit, or none, changes no program that ran; no
+test but the limit's own two knows the number; the count is of
+frames' bytes, kept in the context, and not of the C stack's
+addresses, so it means the same wherever frames come to live; the
+generated C reaches a slot only as `f[n]` and a frame only through
+`rt_enter` and `rt_leave`, so where slots are kept is the runtime's
+business; and the runtime never calls generated code (step 10's
+`sort` with a block is the first thing that will want to, and has to
+say how). **What does tie it**: a sub is a C function and a call is
+a C call (D3, D31). Being clean of the C stack between statements,
+as perl is, is another code generator, and concurrency (step 29) is
+where that is decided. Rejected for now: the body run on a stack the
+runtime makes (about 60,000 deep; a thread or a hand-made stack on
+two systems, which step 29 will choose anyway); frames on the heap
+and no C recursion (not D31's C).
+
+**D69. D57, through a call.** *(User: accepted as recommended,
+2026-11-25; step 8, Q3.)* A concatenation is refused when a later
+piece calls a sub that can assign or step a variable an earlier piece
+reads, "can" worked out over the whole program: the sub's own body
+and defaults, and those of every sub it calls. perl joins a row of
+dots as one operation and reads each piece late, so `$x . "-" . ch()`
+is `b-c` when `ch` sets `$x` to `b` (T132). Only a file variable can
+be changed by a call. Step 14's code references will have to say "any
+sub" where they can't tell. Rejected: refusing wherever an earlier
+piece reads a file variable that any sub assigns and a later piece
+calls anything (no walk over the calls, and it refuses `$count . ": "
+. name($k)` in any program with a sub that counts); joining a row as
+perl does (D57).
+
+**D70. A sub that ends in `say` or `print` is worth `true`, as in
+perl.** *(User, 2026-11-25; step 8, Q4: "The return value of say is
+documented to be `true` I believe, which would print `1`. If this is
+a problem, then do what you recommend." It is not a problem, so the
+recommendation, no value, is what was turned down.)* perl's `say` and
+`print` return the boolean true (`is_bool` says so), and a sub whose
+last statement is one returns it. Here that is the one place either
+has a value: they stay statements everywhere else, `my $x = say 1;`
+is still refused. Under a modifier, `say "hi" if $c;`, the last
+statement is an `if`, and the sub has no value (D18). perl's `say`
+returns false when the write fails; the runtime doesn't look, and a
+closed or failing stdout is outside what a program here can arrange
+(step 21 meets it). Rejected: no value, like a sub that ends in an
+`if` (a fault where perl has a plain answer, and D2 prefers the
+answer).
+
+**D71. A sub that returns nothing faults where perl wants a list,
+until step 10.** *(User: accepted as recommended, 2026-11-25; step 8,
+Q5.)* `return;` and an empty body give undef to a scalar call, as in
+perl. To a list they give no values, so `g(f())` calls `g` with no
+arguments and `say f();` prints an empty line (T133); there are no
+lists yet, so that is a fault, `f returned nothing where a list is
+wanted`, one of D15's list of faults where perl is silent. Step 10
+brings list returns and can agree. Rejected: an argument list whose
+length is known only as it runs, now, for this one case.
+
+**D72. What a sub is.** *(User: seen with the proposal, 2026-11-25;
+step 8: nothing to choose.)* `sub NAME(PARAMETERS) { ... }` at the top
+level, before or after its calls; a signature always. A parameter is
+`$name`, `$name = EXPR`, `$name //= EXPR`, `$name ||= EXPR`, or a
+placeholder, required ones first; a copy (D17); a default is worked
+out at each call that needs it, left to right, and resolved before
+its own parameter exists (T138). **A call** is `NAME(ARGUMENTS)`, an
+expression and a statement; an argument that is a variable is read
+when the sub is entered (D14, T1), and what a sub returns is a copy.
+**A wrong number of arguments is a fault** (D13), after every
+argument has run. **`return` is a statement**: alone or with an
+expression, with an `if` or `unless` modifier, in a sub (T139). **A
+sub's value** without a `return` is its last statement's when that is
+an expression, and a value alone is a statement in that one place
+(T140); D70 has `say`; any other ending has none, and using it
+faults (D18). **Context** is perl's three, passed on by `return
+f()`, a last statement `f()`, the arms of `? :` and the right of
+`||`, `&&` and `//`. **A file variable has a slot of its own, undef
+as the program starts, and its `my` stores nothing** (T134); a sub
+may name those declared at the top level before it. **A sub's name**
+is ASCII, at most 251 characters, not a word of perl's (D21), not one
+perl calls by itself (`BEGIN`, `AUTOLOAD`, `import` and the rest),
+not `v` and digits (T136), and not used twice; a call of a sub the
+program doesn't have is refused. **Refused besides**: a minus hard
+against a one-letter name (T135); a blank between a call's name and
+its bracket after `say` or `print` (T136); two commas together
+(T137); a parameter named `$a`, `$b` or `$_`, or named twice, and a
+`my` in the body of a parameter's name (T141); a sub in a block, a
+loop or a sub (T31). **A fault's line** is the statement's (D34),
+the caller's again after a call returns.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

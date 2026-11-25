@@ -244,7 +244,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D66 are decided. What is left is what the decisions hand to a
+D1 to D72 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
@@ -260,8 +260,12 @@ step, roughly in the order it will matter:
    16 and 22); `--` on a Num (T93, step 5); and **whether a variable's
    past can show anywhere the rules don't fault**, which step 5 has to
    ask again once there are variables to have one.
-4. **How deep a program may recurse**, and how a test that goes 100
-   deep is checked, since perl warns there (step 8).
+4. **How deep a program may recurse**: settled for now, D67 and D68
+   (step 8). A program that says `no warnings 'recursion';` may go
+   past perl's 100, and the limit past that is the implementation's,
+   4 MB of frames today. **Left for step 29**: whether a call stays a
+   C call at all; perl is clean of the C stack between statements,
+   and D68 lists what was kept open so that this can be too.
 5. **`for my $x ($p, $q)`**, a `foreach` over variables named directly
    (step 9); and an element read in an expression that also removes it
    (D14, step 9).
