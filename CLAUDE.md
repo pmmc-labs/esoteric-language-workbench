@@ -467,6 +467,11 @@ prints floats as C does; run it on a new machine), and
 operand: 41,594 operations, perl having more than one answer for
 9,596, the rule never giving a value perl doesn't). One risk to watch
 on the Mac: `**` with a fractional operand is the C library's `pow`.
+**Roles come up at step 17, not 27**: Stevan wants them a key part of
+the object system, and step 17's proposal takes them up; `PLAN.md`,
+step 17, names the two repositories to read first
+(`stevan/p5-roles-algebra`, `stevan/p5-core-role-tests`). Nothing
+about them is decided.
 Not agreed: what the decisions leave to steps, listed at the end of
 [`docs/DESIGN.md`](docs/DESIGN.md).
 
