@@ -3,15 +3,14 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D56 are all Stevan's, and D57 is **(open)**: a refusal the
-builder of step 5 took and Stevan has not yet seen. D1 to D9 are from
-the first conversation, and
+D1 to D57 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
 D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
 3's, D46 to what the review of step 3 left open, D47 to D51 to step
-4's, and D52 to D56 to step 5's.
+4's, and D52 to D56 to step 5's. D57 was a default the builder of
+step 5 took, which he confirmed the same day.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1053,9 +1052,9 @@ the line its statement starts on, as perl's warning does, not the
 line of the `if` (T118).
 
 **D57. In a concatenation, a later piece may not change a variable an
-earlier piece reads. (open)** *(Default: taken building step 5,
-2026-11-25, as the safe side of a difference from perl; Stevan has
-not confirmed it.)* perl compiles a row of dots into one operation
+earlier piece reads.** *(User: a default taken building step 5, as
+the safe side of a difference from perl, and accepted as recommended
+when he saw it, 2026-11-25.)* perl compiles a row of dots into one operation
 that reads every piece when it runs, so `my $x = 3; say $x . "a" .
 ($x = 5);` is `5a5`, where the first dot on its own would have made
 `3a` before the assignment ran (T117). D14's late reads don't cover

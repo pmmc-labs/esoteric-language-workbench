@@ -8,8 +8,7 @@ be a session or two each.
 and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic, and variables,
 assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
-on 2026-11-25). One thing of step 5's is open, D57, a refusal the
-build took that Stevan has not seen. Steps 6 to 30 are outlines: each
+on 2026-11-25). Steps 6 to 30 are outlines: each
 is proposed, with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
@@ -1101,11 +1100,11 @@ agreed below, and with these differences and findings:
   existed.** A row of dots is one operation to perl, which reads
   every piece of it late: `$x . "a" . ($x = 5)` is `5a5` (T117). And
   an empty bare block is an anonymous hash (T116). The second is
-  refused. The first is **D57, which is open**: a concatenation in
+  refused. The first is **D57**: a concatenation in
   which a later piece changes a variable an earlier piece reads is
-  refused. It is a refusal, the safe side, but it was not in what
-  Stevan agreed, and T110's row had `$x . ""` down as a value, which
-  it isn't beside another dot.
+  refused. It was not in what Stevan agreed, and he took it when he
+  saw it, the same day. T110's row had `$x . ""` down as a value,
+  which it isn't beside another dot.
 - **The compiler went green on the model's 32 tests the first time
   it ran**, which is what a model written first is for; what was
   wrong was found by asking perl about what the model doesn't write.

@@ -138,7 +138,7 @@ Precedence and associativity are `perlop`'s. Chalk's
 | An assignment to anything but a variable: `($x) = 5`, `($x = 5) = 7`, `(1 ? $x : $y) = 8` | Cut | | D17, D56: values flow, places don't; the first is a list assignment (step 9) |
 | `++ --` | In | 5 | D52: by what the variable holds. A string is stepped as its number and is then a Num; one that isn't a number faults (perl's string increment is cut; its `--` gives -1 in silence); a fault where perl has two answers (T113) |
 | A variable changed in the statement that reads it: `$x + ($x = 5)` | In | 5 | D14: read when its operator runs, as in perl (T110) |
-| A concatenation whose later piece changes a variable an earlier piece reads: `$x . "a" . ($x = 5)` | Cut | | D57 (open), T117: perl joins a row of dots as one operation and reads each piece late |
+| A concatenation whose later piece changes a variable an earlier piece reads: `$x . "a" . ($x = 5)` | Cut | | D57, T117: perl joins a row of dots as one operation and reads each piece late |
 | Chained comparisons, `1 < $x < 10`, `$a == $b == $c`, `"a" lt $s lt "c"` | Later | 4 | In perl since 5.32; refused, never read left to right (T33) |
 | Mixing the non-associative operators, `1 <=> 2 == -1`, `1 .. 2 .. 3`, `0 < $o isa P` | Cut | | perl refuses each; the parser must too (T51, T52) |
 | Unary `+` | In | 1 | `say +(1 + 2) * 3` is 9: perl's own way round T25. `+{` is always a hash |

@@ -114,7 +114,7 @@ no variable on its right where a value is tested for truth, through
 statement that only has a value, or two joined by a word operator
 (`$x = 1 and $y = 2;`); an assignment to anything but a bare
 variable; a step on anything but a variable; an empty bare block
-(T116); and **D57, which is open**: a concatenation in which a later
+(T116); and **D57**: a concatenation in which a later
 piece changes a variable an earlier piece reads, because perl joins a
 row of dots as one operation and reads each piece late (`$x . "a" .
 ($x = 5)` is `5a5`, T117).
@@ -212,9 +212,8 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D56 are all Stevan's, and D57 is open** (the builder's,
-taken at step 5 as the safe side; he has not seen it). The ones a
-builder meets first: the
+**D1 to D57 are all Stevan's** (D57 a default of the builder's at
+step 5, which he confirmed). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
 be caught (D13); perl's warnings are faults (D15); loop variables are
 read-only and containers freeze (D17); a sub can't see its context
@@ -228,8 +227,7 @@ and the tests, and the compiler is held to its model as steps 3 and
 4 were. Until then step 5's claim, that a variable's past shows
 nowhere the language doesn't fault, rests on the builder's evidence
 alone (`docs/briefs/step5-increments.py`: `++`, `--` and the
-assigning operators under seven pasts of the variable). **Waiting on
-Stevan: D57.** **Next: step 6**, loops, which is an outline and has
+assigning operators under seven pasts of the variable). **Next: step 6**, loops, which is an outline and has
 to be proposed; write its model before its compiler, as step 5 did,
 and test that a `my` in a block is undef again each time round. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each

@@ -58,7 +58,7 @@ again.
 
 ## What is decided and what isn't
 
-D1 to D56 are Stevan's, settled on 2026-11-24 and 25 (D57 is open: taken while building step 5, not yet confirmed). The ones that give the language its
+D1 to D57 are Stevan's, settled on 2026-11-24 and 25. The ones that give the language its
 character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);
