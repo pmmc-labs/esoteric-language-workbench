@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D75 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D80 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -15,7 +15,8 @@ answers to step 6's proposal, D63 to D66 to step 7's, and D67 to D72
 to step 8's (D68's number is the builder's default, which he said
 to stay with). D73 and D74 were the builder's defaults, from the
 review of step 8 and from building it, which he confirmed; D75 is
-his, on seeing the build.
+his, on seeing the build. D76 to D80 are his answers to step 9's
+proposal, as its review had amended it.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1321,7 +1322,8 @@ closed or failing stdout is outside what a program here can arrange
 answer).
 
 **D71. A sub that returns nothing faults where perl wants a list,
-until step 10.** *(User: accepted as recommended, 2026-11-25; step 8,
+until step 10.** *(Retired at step 9 by D79: there are lists, and it
+is no value in one.)* *(User: accepted as recommended, 2026-11-25; step 8,
 Q5.)* `return;` and an empty body give undef to a scalar call, as in
 perl. To a list they give no values, so `g(f())` calls `g` with no
 arguments and `say f();` prints an empty line (T133); there are no
@@ -1429,6 +1431,103 @@ every closing brace taken out of every `same` test that has a block
 (31 tests, 5,505 semicolons, `briefs/step8-semicolons.py`), perl
 compiles each in silence and prints the same, and so does the
 compiler. Rejected: the rule as it was.
+
+**D76. A list is a row of values, copied as it is built; a later part
+of an expression or a list may not change what an earlier part
+names.** *(User: accepted as recommended, 2026-11-25; step 9, Q1, as
+its adversarial review widened it.)* perl's lists are rows of the
+containers themselves, so a change made after a list was begun shows
+through it: `my @b = ($x, bump());` has the `$x` that `bump` left,
+`$a[0] + chg()` what `chg` stored, `(@a, chg())` the stored element
+(T149, T157). Past a store perl's own answer stops being a rule:
+`$a[1] * splice(@a, 0, 1)` is 2, and one shape reads a value that
+was freed. So here an element, a slice, an array and `$#a` are read
+where they stand, a scalar variable that is an item of a list is
+copied into it, and **the program is refused when a part worked out
+later can change one of them**: by an assignment, a step, a store to
+an element, a change of an array's size, itself or through a sub it
+calls, worked out over the whole program as D69 is. "Later" is the
+other operand, a later item or argument, a default of the sub being
+called, an index of an assignment's target, a later piece of a row
+of dots. One message, which says to take the value into a `my`
+first. What is still agreed with, because the generated C keeps the
+place and not the value: a scalar variable as an operand (D14) and
+as an argument of a call (D73). Rejected: an element as a place read
+late, with the array pinned against a change of size until the
+operator has run (more of perl kept, a pin in the runtime, and
+nothing for the scalar in a list); reading early and refusing
+nothing (`$a[0] + ($a[0] = 10)` is 11 where perl has 20).
+
+**D77. `for my $x ($p, $q)` walks copies, and is refused when the
+loop can change a scalar its list names.** *(User: accepted as
+recommended, 2026-11-25; step 9, Q2, as its review widened it.)* perl
+walks the variables themselves (T13), and an array can be frozen
+where a scalar can't. The refusal is of a loop whose block, or a sub
+the block calls, can assign or step a scalar variable named anywhere
+in the loop's list, whatever it stands in there (`substr($s, 0, 1)`
+is `$s` to perl's `foreach`: T162). Rejected: refusing every scalar
+named in the list; leaving it refused.
+
+**D78. A list assignment is a statement.** *(User: accepted as
+recommended, 2026-11-25; step 9, Q3.)* `if ((my @r = f()))`, `my $n =
+(my ($p, $q) = @a);` and `my $c = () = LIST;` are the count of the
+right side in perl (T151), and refused here; `my @r = f(); if (@r)`
+says it. As a sub's last statement it has no value, like an `if`
+(D18): perl gives the count to a scalar and the targets to a list
+(T168). Rejected: the count, as perl has it (one more thing an
+assignment can be).
+
+**D79. A sub that returns nothing is no value in a list.** *(User:
+accepted as recommended, 2026-11-25; step 9, Q4. Retires D71's
+fault.)* `my @c = none();` is empty, `(1, none(), 2)` is two values,
+`g(none())` calls `g` with nothing, `say none();` prints an empty
+line: as perl has them. D71 made these a fault for want of lists.
+Where one value is wanted it is undef, as before. Step 10 widens
+"one value or none" to any number.
+
+**D80. What an array and a list are.** *(User: seen with the proposal
+and its review, 2026-11-25; step 9: nothing to choose.)* **An array**,
+`@a`, is a variable of its own name (`@x` and `$x` are two), and
+assigning one copies it. **A list** flattens. **An element**,
+`$a[I]`: I a whole number by `substr`'s rule; a read past either end
+is undef and makes nothing; a store past the end makes the array
+longer; before the start it is a fault. **The order**, which is
+perl's (T158, T159, T163): `$a[I] = V` works out V's calls, then I,
+then reads V and stores; `$a[I] OP= V`, a step, `||=` and its kin
+work out I, make the target (the array grows to hold it, or it is
+the fault), then V; a list assignment works out its right side, then
+every target's index, then stores; a list slice works out its
+indexes before its list. **Where one value is wanted** an array is
+its count (T21, T150), `(LIST)[N]` that element, and a slice, a
+range, a comma list, `splice` and a list assignment are refused
+(T151, T68). **`pop` and `shift`** take brackets unless the array
+ends the expression, and always name an array (T152); `push` and
+`unshift` need a value to add; `splice` has brackets, and its offset
+and length go by the index's rule (T165). **A range** is whole
+numbers, each end cut toward zero; a string or an undef end is a
+fault (T154). **A slice of an empty list is empty** in a list
+(T164). **`foreach`**: the block once for each value of a copy of
+the list, `$x` read-only, and **every array named anywhere in the
+list frozen** until the loop is left by any way (D17, T162): a store
+to an element or a change of size, from anywhere, is the fault `an
+array was changed while a foreach is over it`. A range freezes
+nothing, so `for my $i (0 .. $#a) { $a[$i] *= 2 }` is how an array
+is changed in a loop. A `foreach` over one range counts and builds
+nothing, and faults where perl's does, on an end below -2^63 + 513
+(T166). An element or a slice past either end in a `foreach`'s
+list, and a slice past either end in a call's arguments, is a fault
+(T161: perl makes the elements). **A file's array** has a slot of its
+own, empty as the program starts, and its `my` stores nothing
+(T156). **Refused besides**: `@a[one index]` (T167); `defined` and
+`length` of an array, a comma after an assignment's right side, `[`
+after a call's own brackets, `$a[0][0]`, `my ($x, $x)`, an array
+among a list assignment's targets that is not the last (T168); `for
+my $x ()` (T155); and, until their steps, a slice on the left of
+`=`, `$#a = N`, `exists` and `delete` of an element, `for my ($i,
+$x)`, a `for` with no `my`, `return` of a list, `@rest` in a
+signature, `@a` in a string. **Built as two sub-steps** (Q5): 9a is
+arrays, lists, elements, the builtins and D76; 9b is `foreach`,
+ranges, the freeze and D77.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

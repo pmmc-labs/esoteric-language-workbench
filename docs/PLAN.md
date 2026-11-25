@@ -2524,11 +2524,14 @@ see.
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for).
-Not agreed: five questions wait for Stevan, Q1 to Q5 below, and
-nothing is built. Its adversarial review found eleven ways to be
-WRONG: "What the review found", at the end, says what each is and
-how the proposal is amended, and Q1 and Q2 are to be read with it.**
+**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
+and agreed the same day: Stevan took the recommendation on each
+question, as the review had amended it, which are now D76 (Q1), D77
+(Q2), D78 (Q3), D79 (Q4), and D80 (what had nothing to choose, the
+review's amendments, and Q5: two sub-steps). Its adversarial review
+found eleven ways to be WRONG: "What the review found", at the end,
+says what each is and how the proposal is amended. The text is kept
+as it was proposed.**
 Everything here about perl was run under 5.42.0
 and is in `briefs/claims.py` (52 rows, `T5-more` to `PLAN9-later`,
 and the review's 23, `T157` to `T168-repeat`).

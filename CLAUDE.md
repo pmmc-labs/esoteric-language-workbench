@@ -305,7 +305,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D75 are all Stevan's** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
+**D1 to D80 are all Stevan's** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -336,14 +336,18 @@ proposal round it: poison must check wherever a string is read and
 again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
 green after step 6 and again after step 7. **Next: step
-9**, arrays and lists. **It is proposed and not agreed**
-(2026-11-25, `docs/PLAN.md`): five questions wait for Stevan, Q1 (an
-element is read where it stands, and an expression whose later part
-can change its array is refused), Q2 (`for my $x ($p, $q)` copies,
-and is refused when the block can assign `$p`), Q3 (a list
-assignment is a statement), Q4 (a sub that returns nothing is no
-value in a list: D71's fault ends), Q5 (two sub-steps, 9a arrays and
-lists, 9b `foreach` and the freeze). T149 to T156 were found
+9**, arrays and lists. **It is proposed and agreed** (2026-11-25,
+`docs/PLAN.md`; D76 to D80, each the recommendation as the review
+had amended it): a list is a row of values copied as it is built, and
+a later part of an expression or a list may not change what an
+earlier part names, refused by one walk over the whole program
+(D76); `for my $x ($p, $q)` copies, and is refused when the loop can
+change a scalar its list names (D77); a list assignment is a
+statement (D78); a sub that returns nothing is no value in a list,
+and D71's fault ends (D79); D80 has what an array and a list are,
+the order of an assignment to an element, and the freeze. **Two
+sub-steps: 9a arrays, lists, elements and the builtins; 9b `foreach`
+and the freeze.** T149 to T156 were found
 proposing it, with 52 statements about perl. **Its adversarial review
 found eleven ways to be WRONG** (T157 to T168,
 `briefs/step9-review/`): perl's lists hold every container, a scalar
