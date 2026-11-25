@@ -206,6 +206,13 @@ def perl_problem():
                 f'with 64-bit integers and doubles (CLAUDE.md, Toolchain)')
     return None
 
+def knobs():
+    """What every test assumes of the runtime, from t/knobs.sh, where
+    t/run.sh has it from too: a variable already set stands."""
+    found = dict(re.findall(r'^: "\$\{(\w+)=(\w*)\}"$', open('t/knobs.sh').read(), re.M))
+    assert found, 't/knobs.sh has no knob in the shape this reads'
+    return {name: os.environ.get(name, value) for name, value in found.items()}
+
 # What a program may print before it is stopped. A loop that prints without
 # end would otherwise fill this process's memory in the seconds it is
 # allowed: perl carries on where the language faults, so a test whose loop
@@ -401,6 +408,7 @@ def program_stdout(path, hdr):
     if c.returncode != 0:
         return f'it does not compile: {clip(c.stderr)}', None
     env = dict(os.environ)
+    env.update(knobs())
     env.update(pair.split('=', 1) for pair in words(hdr.get('env', '')))
     r = run_capped([binary, *words(hdr.get('args', ''))], env, printf_b(hdr.get('stdin', '')), int(os.environ.get('TIMEOUT', '60')))
     if r is None:

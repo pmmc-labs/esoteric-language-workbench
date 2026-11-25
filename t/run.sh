@@ -30,10 +30,11 @@ export TIMEOUT
 OUTPUT_BLOCKS=${OUTPUT_BLOCKS-16384}
 export OUTPUT_BLOCKS
 
-# What every test assumes of the runtime. Add each knob here as the
-# runtime gains it, so that no test depends on the machine it runs on:
-# the collector's stress interval, poison and heap cap (step 7), the
-# virtual clock and the random seed (step 22). (None exist at step 0.)
+# What every test assumes of the runtime. Add each knob as the runtime
+# gains it, so that no test depends on the machine it runs on: the
+# collector's stress interval, poison and heap cap (step 7, in
+# t/knobs.sh), the virtual clock and the random seed (step 22).
+. ./t/knobs.sh
 
 # The value of one header, from the comments before the first statement.
 header() {

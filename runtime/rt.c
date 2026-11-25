@@ -28,6 +28,7 @@
 // stays there until the program ends: there is no collector yet (step 7).
 typedef struct rt_block {
     struct rt_block *next;
+    uint64_t size;          // of the whole block, this header and the string
 } rt_block;
 
 static void release(rt_ctx *cx) {
@@ -38,8 +39,28 @@ static void release(rt_ctx *cx) {
     }
 }
 
+// A knob (D63): a whole number in digits, and unset, empty or 0 is off.
+// Anything else stops the program before it starts: a knob that was
+// misread would be a test that passed for the wrong reason.
+static uint64_t knob(const char *name, uint64_t most) {
+    const char *text = getenv(name);
+    if (text == NULL || text[0] == '\0') return 0;
+    uint64_t n = 0;
+    for (const char *p = text; *p; p++) {
+        int overflowed = *p < '0' || *p > '9' || __builtin_mul_overflow(n, (uint64_t)10, &n) || __builtin_add_overflow(n, (uint64_t)(*p - '0'), &n);
+        if (overflowed || n > most) {
+            fprintf(stderr, "curly: %s is '%s': it is a whole number from 0 to %" PRIu64 ", in digits\n", name, text, most);
+            exit(2);
+        }
+    }
+    return n;
+}
+
 int rt_run(void (*body)(rt_ctx *cx), const char *file) {
-    rt_ctx cx = { .file = file, .line = 0, .out_utf8 = 0, .heap = NULL };
+    rt_ctx cx = { .file = file, .line = 0, .out_utf8 = 0, .heap = NULL, .held = 0 };
+    cx.stress = knob("CURLY_GC_STRESS", UINT32_MAX);
+    cx.poison = knob("CURLY_GC_POISON", 1);
+    cx.cap = knob("CURLY_HEAP_CAP", (uint64_t)1 << 62);
     body(&cx);
     release(&cx);
     return 0;
@@ -49,8 +70,13 @@ int rt_run(void (*body)(rt_ctx *cx), const char *file) {
 // fill through `*bytes`: the one place a string is made, and it is not
 // changed after the function that made it returns.
 static const rt_str *str_new(rt_ctx *cx, uint64_t len, uint64_t chars, char **bytes) {
-    rt_block *block = malloc(sizeof(rt_block) + sizeof(rt_str) + len + 1);
+    uint64_t size = sizeof(rt_block) + sizeof(rt_str) + len + 1;
+    // The cap is on what is held (D65).
+    if (cx->cap != 0 && (size > cx->cap || cx->held > cx->cap - size)) rt_fault(cx, "out of memory");
+    rt_block *block = malloc(size);
     if (block == NULL) rt_fault(cx, "out of memory");
+    block->size = size;
+    cx->held += size;
     block->next = cx->heap;
     cx->heap = block;
     rt_str *s = (rt_str *)(block + 1);

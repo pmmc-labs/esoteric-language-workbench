@@ -87,8 +87,13 @@ typedef struct rt_ctx {
     const char *file;       // the program's path, as the compiler was given it
     int64_t line;           // the line of the statement that is running
     int out_utf8;           // `use open ':std', ':encoding(UTF-8)';` was said (D39)
-    struct rt_block *heap;  // every string made so far: nothing is freed until
-                            // the program ends, or the collector comes (step 7)
+    struct rt_block *heap;  // every string made and not yet collected
+    uint64_t held;          // the bytes of them, headers and all
+    // The knobs (D63), read from the environment as the program starts.
+    // 0 is off.
+    uint64_t stress;        // CURLY_GC_STRESS: a collection at every nth allocation
+    uint64_t poison;        // CURLY_GC_POISON: a collected string's memory is kept
+    uint64_t cap;           // CURLY_HEAP_CAP: `out of memory` when more would be held
 } rt_ctx;
 
 // Run a compiled program: make its context, call its body, return the

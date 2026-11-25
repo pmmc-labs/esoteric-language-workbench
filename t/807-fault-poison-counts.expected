@@ -1,0 +1,4 @@
+0
+500
+fault: out of memory at t/807-fault-poison-counts.pl line 11.
+exit: 1
