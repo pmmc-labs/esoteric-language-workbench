@@ -1530,7 +1530,8 @@ arrays, lists, elements, the builtins and D76; 9b is `foreach`,
 ranges, the freeze and D77.
 
 **D81. What building step 9 settled.** *(User: defaults of the
-builder's, 2026-11-25, for Stevan to confirm or change.)* **D77
+builder's, 2026-11-25, confirmed when he saw them: "D81 is
+confirmed".)* **D77
 holds for the end of a range too**: `for my $i (1 .. $n) { $n-- }`
 is refused, though perl fixes a range's ends as the loop starts and
 would have agreed (T172). D77's words are "named anywhere in the

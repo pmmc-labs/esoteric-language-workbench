@@ -306,7 +306,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D80 and D82 to D86 are all Stevan's, and D81 is the builder's defaults at step 9, for him to confirm** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
+**D1 to D86 are all Stevan's** (D81 defaults of the builder's at step 9, which he confirmed) (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
