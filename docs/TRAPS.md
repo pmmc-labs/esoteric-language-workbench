@@ -288,6 +288,23 @@ These are about how perl reads the words.
 |---|---|---|---|---|
 | T109 | `say substr("abcdef", not 0, 1);` and `say index("abcabc", "c", 0 or 3);` | `abcdef`, in silence: `not` takes a list, and takes `0, 1`, so this is `substr("abcdef", "")`. The second doesn't compile: `or` binds more loosely than the commas | 4 | In a list of arguments a word operator is in brackets of its own (D51) |
 
+## Found by the review of step 4
+
+A reader with only the proposal's words and perl, on the step 3
+reviewer's model extended: 1.26 million random statements over the
+whole grammar, 950,000 comparisons, and a search of pasts by another
+method than the builder's (every state perl can put a variable in,
+found breadth-first through 134 kinds of use, then every look in
+every state: 18 million looks, and 207,000 whole programs). **The
+claim that no comparison, test of truth or boolean turns on a past
+the language doesn't fault was not refuted.** Two findings: the word
+operators in a list of arguments, which the build had met (T109), and
+this one.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T115 | `say(!(undef) == 1);` and `say(! defined 1 == 0);` | `1` each, and as it compiles, `Possible precedence problem between ! and numeric eq (==)`: new in perl 5.42. It warns when an unbracketed `!` is the left operand of `== != < > <= >=` or `eq ne lt gt le ge`, unless it has folded the `!` to a constant (`!1 == 0` is silent) or the right operand is a `!` too; not for `<=>` or `cmp`. With variables every `!$x == $y` warns | 4 | Refuse an unbracketed `!` on the left of any comparison, a unary plus before it or not (D50) |
+
 ## Found proposing step 5
 
 `briefs/step5-increments.py` asks perl what `++`, `--` and the

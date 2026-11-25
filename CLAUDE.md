@@ -80,7 +80,9 @@ brackets, which perl chains (D50, T108); bare `undef` before anything
 perl could take for its argument (T105: `undef * 2` is undef of a
 glob); `and`, `or`, `xor` after `say`'s argument (T106), any word
 operator bare in a list of arguments (T109), an operator that binds
-tighter than `not` after `not (...)` (T107), all D51; `^^`, `~~`; any
+tighter than `not` after `not (...)` (T107), all D51; an unbracketed
+`!` on the left of a comparison, which perl 5.42 warns of (T115);
+`^^`, `~~`; any
 pragma or spelling of one outside D16's list; `--`,
 `++` and every other operator of perl's, as the longest token perl
 would take (T27); a line that starts `#!` (D33).
@@ -110,8 +112,8 @@ on which the model and perl agree, and 62 programs that each fault
 once), 170 to 179 by hand with perl's answers, 200 to 237 refusals
 by hand (step 3); 300 to 307 and 320 to 359 from `t/models/bool.py`
 (about 13,000 lines, and 40 programs that each fault once), 360 to
-364 by hand with perl's answers, 380 to 406 refusals by hand (step
-4); 66 unit tests, the runtime's own in C. **The oracle
+364 by hand with perl's answers, 380 to 407 refusals by hand (step
+4); 67 unit tests, the runtime's own in C. **The oracle
 check** (`t/checks.py oracle`, D10) holds every test to perl 5.42 by
 its kind, **run plain, with no switches** (D39), and has 43 tests of
 its own in `t/checks/`; its seeds are eight of 64 hex digits
@@ -132,9 +134,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 386 of them now, and all hold under 5.42.0,
+about perl as a program, 389 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T114, by step. **Found at step 0**: T72 (a
+keeps the programs, T1 to T115, by step. **Found at step 0**: T72 (a
 line that starts `#!`, D33), T73 (`use utf8;` on a line before the
 first character past ASCII), T74 (`# line N "file"` comments, step
 15), T75 (`use v5.42#c`). **At step 1**: T76. **Proposing step 2**:
@@ -148,7 +150,13 @@ review of step 3**: T100 to T103; the reviewer's model and generator
 are kept, `docs/briefs/step3-review/`, and the compiler agrees with
 them and with perl on 54,969 of the 55,002 random statements the
 model prints for, refusing the other 33 by two rules where it is the
-stricter. T102 became D46: perl works a constant `x` out as it
+stricter. **By the review of step 4**: T115, and nothing else new;
+its search of pasts (18 million looks, by the states perl can put a
+variable in) did not refute step 4's claim, the first of three to
+stand. Its model is kept too, `docs/briefs/step4-review/`, and the
+compiler agrees with it and perl on 36,866 of 37,103 statements,
+refusing 236 where it is the stricter. T102
+became D46: perl works a constant `x` out as it
 compiles, so `say "before"; say "b" x 999999999999999;` prints
 nothing under perl (it runs out of memory before the program starts),
 where the language prints `before` and faults; a perl without the
@@ -346,7 +354,7 @@ in `pmmc-labs/esoteric-language-workbench`.
 | `compiler/tests/` | Unit tests, per pass |
 | `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` |
 | `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `checks/`, the oracle check's own tests; `models/` |
-| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py` and `step4-comparisons.py` (the evidence for those steps' rules), `step3-mutations.py` and `step4-mutations.py` (the runtime broken on purpose) and `step3-review/` (the reviewer's model of step 3, and the script that ran the compiler against it) |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py`, `step4-comparisons.py` and `step5-increments.py` (the evidence for those steps' rules), `step3-mutations.py` and `step4-mutations.py` (the runtime broken on purpose), and `step3-review/` and `step4-review/` (each reviewer's model, and the script that ran the compiler against it) |
 | `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
 | `build/` | Output (ignored) |
 

@@ -379,6 +379,9 @@ CLAIMS = [
     c('T114-spellings', 'TRAPS; PLAN 5', 'my $x = 1; say $ x; ($x) = 4; say $x; my $a = 1; my $b = 2; say $a + $b; our $o = 1; say $o;', out='1\n4\n3\n1\n'),
     c('T114-braces', 'TRAPS; PLAN 5', 'my $x = 1; say ${x};', out='1\n', err='Ambiguous use of \\$\\{x\\} resolved to \\$x'),
     c('T30-again', 'TRAPS; PLAN 5', 'my $x = 10 if 1; say $x; my $y = 0; unless ($y) { say "a" } elsif (1) { say "b" } unless (1) { say "c" } else { say "d" }', out='10\na\nd\n'),
+    c('T115', 'TRAPS; D50', 'say(!(undef) == 1);', out='1\n', err='Possible precedence problem between ! and numeric eq'),
+    c('T115-more', 'TRAPS; D50', 'say(! defined 1 == 0); say(+!defined(1) le 1);', out='1\n1\n', err='(?s)Possible precedence problem between ! and numeric eq.*between ! and string le'),
+    c('T115-quiet', 'TRAPS; D50', 'say(!1 == 0); say((!defined(1)) == 0); say(!defined(1) <=> 0); say(!defined(1) == !1); say(!(undef) + 0 == 1);', out='1\n1\n0\n1\n1\n'),
     # ---- found by the review of step 2
     c('T91', 'TRAPS', 'say 1;\nsay 1.' + '0' * 249 + ';', compiles=False, err='Number too long'),
     c('T91-250', 'TRAPS', 'say 1.' + '0' * 248 + '; say 0x' + '0' * 300 + '1F;', out='1\n31\n'),

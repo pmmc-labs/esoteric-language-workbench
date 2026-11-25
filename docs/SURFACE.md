@@ -125,6 +125,7 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `== != < <= > >= <=>` | In | 4 | D49. A non-number faults (D15); two integral operands compare exactly, and otherwise as floats, as in perl (T39) |
 | `eq ne lt le gt ge cmp` | In | 4 | D49. A number is compared as it prints; undef faults (D15) |
 | `! && \|\| //`, `not and or xor` | In | 4 | D49. Truth is perl's: undef, `""`, `0`, `"0"` are false. `&& \|\| // and or` give an operand, and don't work the right one out unless it is needed |
+| An unbracketed `!` on the left of a comparison, `!$x == $y` | Cut | | D50, T115: perl 5.42 warns of a precedence problem |
 | `and`, `or`, `xor` after `say`'s argument; a word operator bare in a list of arguments; an operator that binds tighter than `not` after `not (...)` | Cut | | D51: perl reads each another way (T106, T107, T109) |
 | `?:` | In | 4 | Not as an lvalue |
 | `= += -= *= /= %= **= .= x= &&= \|\|= //= &= \|= ^= <<= >>=` | In | 5 | On undef, `+=`, `-=`, `.=`, `\|\|=`, `//=` and `++` are perl's, silently; `*=`, `/=`, `**=`, `%=`, `x=` fault (perl warns) |

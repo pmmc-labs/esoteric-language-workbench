@@ -182,6 +182,14 @@ export const parse = (tokens: readonly Token[]): Program => {
             const infix = t.kind === 'op' ? infixOp(t.text) : undefined;
             if (!infix || infix.row >= limit) return left;
             next();
+            // `!$x == $y` is `(!$x) == $y`, and perl 5.42 warns of a
+            // precedence problem as it compiles, unless it can fold the
+            // `!` away (T115). A unary plus before the `!` doesn't hide it.
+            let first = left;
+            while (first.kind === 'unary' && !first.bracketed && prefixOp(first.op)?.rt === undefined) first = first.operand;
+            if (PRECEDENCE[infix.row]!.assoc.startsWith('chain') && first.kind === 'unary' && !first.bracketed && prefixOp(first.op)?.bang) {
+                refuse(`'${first.op}' before '${t.text}': perl warns of a precedence problem; write ${first.op}(... ${t.text} ...), or (${first.op}...) ${t.text} ...`, first.pos);
+            }
             const right = expression(infix.assoc === 'right' ? infix.row + 1 : infix.row);
             left = { kind: 'binary', op: t.text, left, right, pos: t.pos };
             // perl chains two comparisons of one row, `1 < 5 < 3` being

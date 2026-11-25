@@ -86,8 +86,10 @@ export type Assoc = 'left' | 'right' | 'nonassoc' | 'chained' | 'chain/na';
 // about after a named unary operator (T94). `when`: the operator works its
 // right operand out only when this runtime test says so of its left, and
 // its value is one operand or the other (D49). `logic`: it takes an undef,
-// and may follow a bare `undef` (D48).
-export type Op = { op: string; in?: true; rt?: string; list?: true; sign?: true; when?: string; logic?: true };
+// and may follow a bare `undef` (D48). `bang`: perl warns of a precedence
+// problem when the operator, unbracketed, is the left operand of a
+// comparison (T115).
+export type Op = { op: string; in?: true; rt?: string; list?: true; sign?: true; when?: string; logic?: true; bang?: true };
 export type Level = {
     assoc: Assoc;
     prefix?: readonly Op[];     // before its operand
@@ -106,7 +108,7 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'left', infix: ops('->') },
     { assoc: 'nonassoc', other: ['++', '--'] },
     { assoc: 'right', infix: [{ op: '**', in: true, rt: 'rt_pow' }] },
-    { assoc: 'right', prefix: [{ op: '!', in: true, rt: 'rt_not' }, ...ops('~', '~.', '\\'), { op: '+', in: true, sign: true }, { op: '-', in: true, rt: 'rt_neg', sign: true }] },
+    { assoc: 'right', prefix: [{ op: '!', in: true, rt: 'rt_not', bang: true }, ...ops('~', '~.', '\\'), { op: '+', in: true, sign: true }, { op: '-', in: true, rt: 'rt_neg', sign: true }] },
     { assoc: 'left', infix: ops('=~', '!~') },
     { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x', in: true, rt: 'rt_repeat', list: true }] },
     { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.', in: true, rt: 'rt_concat' }] },

@@ -379,3 +379,18 @@ test('the word operators: after say, in a list of arguments, after not (...) (D5
     assert.equal(grouped('say not (1);'), '(not1*)');
     assert.equal(grouped('say((not 0) || 1);'), '((not0)* || 1)*');
 });
+
+test('an unbracketed ! on the left of a comparison (T115)', () => {
+    const message = (op: string) => `'!' before '${op}': perl warns of a precedence problem; write !(... ${op} ...), or (!...) ${op} ...`;
+    refused('say !1 == 0;', message('=='), 1, 5);
+    refused('say ! defined 1 lt 2;', message('lt'), 1, 5);
+    refused('say +!1 < 2;', message('<'), 1, 6);
+    refused('say !!1 != 2;', message('!='), 1, 5);
+    refused('say !1 <=> 2;', message('<=>'), 1, 5);
+    assert.equal(grouped('say((!1) == 0);'), '((!1)* == 0)*');
+    assert.equal(grouped('say !(1 == 0);'), '(!(1 == 0)*)');
+    assert.equal(grouped('say 0 == !1;'), '(0 == (!1))');
+    assert.equal(grouped('say !1 + 1 == 1;'), '(((!1) + 1) == 1)');
+    assert.equal(grouped('say !1 && 2 == 2;'), '((!1) && (2 == 2))');
+    assert.equal(grouped('say -1 == -1;'), '((-1) == (-1))');
+});

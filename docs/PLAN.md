@@ -865,7 +865,26 @@ differences and findings:
   so beside it an Int's double is on the same side as the Int).
 - 364 and 360 to 363 are by hand with perl's answers: how the new
   rows group, each line chosen so that a wrong grouping prints
-  something else; 380 to 406 are the refusals.
+  something else; 380 to 407 are the refusals.
+- **The adversarial review of the definition** ran beside the build:
+  1.26 million random statements over the whole grammar, 950,000
+  comparisons, and a search of pasts by a method of its own (every
+  state perl can put a variable in, found breadth-first through 134
+  kinds of use, then every look in every state: 18 million looks; and
+  207,000 whole programs). **The claim that no comparison, test of
+  truth or boolean turns on a past the language doesn't fault was not
+  refuted**, the first of three such claims to stand. Two findings.
+  One the build had met (T109). The other is new in perl 5.42: it
+  warns of a precedence problem when an unbracketed `!` is the left
+  operand of a comparison, `!$x == $y` (T115). Refused now, test 407;
+  D50 carries it.
+- **The compiler was held to the reviewer's model and to perl**
+  (`briefs/step4-review/compiler.py`), as step 3's was: 83,000
+  random statements, of which the model prints for 37,103. The
+  compiler prints what perl prints for 36,866 and refuses 236, by
+  rules where it is the stricter (a bare `not` as a last argument,
+  `!` before `<=>`). The one left over is D46's case: a constant
+  perl can't build, in an operand that is never worked out.
 
 **Proposed 2026-11-25, and agreed the same day: Stevan took the
 recommendation on each question below, which are now D47 (Q1), D48

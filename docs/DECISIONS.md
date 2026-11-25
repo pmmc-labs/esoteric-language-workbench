@@ -939,7 +939,11 @@ refused.** *(User: accepted as recommended, 2026-11-25; step 4, Q4.)*
 Since 5.32 perl chains them: `1 < 5 < 3` is `1 < 5 && 5 < 3`, and `1
 != 1 == 0` is `(1 != 1) && (1 == 0)`, false, where reading from the
 left gives true (T108); `<=>` and `cmp` don't chain and don't compile
-in one (T51). `1 < 2 == 1` is two rows and is fine. Rejected for now:
+in one (T51). `1 < 2 == 1` is two rows and is fine. **And an
+unbracketed `!` on the left of a comparison is refused**, `!$x ==
+$y`: it is `(!$x) == $y`, and perl 5.42 warns of a precedence problem
+as it compiles, unless it has folded the `!` away (T115, found by the
+review of this step). Rejected for now:
 chaining as perl does (it reads well, `0 <= $i < $n`, and needs the
 rule that the middle operand is worked out once); a later step can
 take it without breaking a program this accepts.

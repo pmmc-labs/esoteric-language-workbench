@@ -573,7 +573,10 @@ a number that is zero; the empty string; the string `"0"`; and
 ### not, and, or
 
 `!` turns a truth round and gives a boolean; it binds as tightly as a
-minus sign, so `!1 + 1` is `(!1) + 1`, which is 1.
+minus sign, so `!1 + 1` is `(!1) + 1`, which is 1. Before a
+comparison it wants brackets, one way or the other: `!$x == $y` is
+refused, because it means `(!$x) == $y`, which is rarely what was
+meant, and perl warns of it. Write `!($x == $y)`, or `$x != $y`.
 
 `&&` and `||` are "and" and "or", and they give back **one of their
 operands**, not a boolean:
