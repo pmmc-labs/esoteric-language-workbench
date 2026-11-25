@@ -7,6 +7,11 @@
 // (D14). So an expression's C is either a value fixed when it was made (a
 // temporary, a literal) or a place, and where an operator gives one of
 // two operands (`||`, `? :`) its C is a pointer to whichever it gave.
+//
+// A loop is C's `for (;;)` with its test inside it, and `last` and `next`
+// are each a `goto`, to a label after the loop or at the end of its block:
+// C's own `break` and `continue` reach only the nearest loop. They are the
+// only jumps there are (D31).
 import { NAMES, PRAGMAS, infixOp, prefixOp, stepOp } from './names.ts';
 import type { Expr, If, Program, Stmt } from './ast.ts';
 import type { Resolution } from './resolver.ts';
@@ -168,6 +173,14 @@ const genWhole = (e: Expr, line: number, out: Out, use: (c: string) => string[])
 
 const indent = (lines: string[]): string[] => lines.map(l => `    ${l}`);
 
+// The expressions of one part of a `for`, left to right, in a C block of
+// their own for their temporaries; nothing, for an empty part.
+const genParts = (es: readonly Expr[], line: number, out: Out): { vars: string[]; code: string[] } => {
+    const b: Code = { vars: [], decls: [], lines: [], temps: 0, strings: out.strings, names: out.names };
+    es.forEach(e => genExpr(e, b));
+    return { vars: b.vars, code: es.length ? ['{', ...indent([`cx->line = ${line};`, ...b.decls, ...b.lines]), '}'] : [] };
+};
+
 // An `if` chain from arm `n` on: this arm's test, its block, and the rest
 // of the chain as its `else`. A test's variables and temporaries are in
 // the C block the chain opens, or the `else` it is in, so they are seen
@@ -213,6 +226,48 @@ const genStmt = (s: Stmt, out: Out): string[] => {
     }
     case 'block': return ['{', ...indent(s.body.flatMap(t => genStmt(t, out))), '}'];
     case 'if': return ['{', ...indent(genArms(s, 0, out)), '}'];
+    // The test is worked out in the loop's own C block, each time round:
+    // so what it declares is new each time, and the block of the loop,
+    // inside it, sees it (T119). The block's own variables are in a C
+    // block of their own for the same reason. A fault in the test names
+    // the loop's line, and under a modifier the statement's, which is
+    // where the node is (D62).
+    case 'while': {
+        const test = genWhole(s.test, s.pos.line, out, c => [`if (${s.negate ? 'rt_is_true' : 'rt_is_false'}(cx, ${c})) break;`]);
+        const id = out.names.loops.get(s);
+        return [
+            'for (;;) {',
+            ...indent([...test.vars, ...test.code, '{', ...indent(s.body.flatMap(t => genStmt(t, out))), '}', `next_${id}: RT_UNUSED;`]),
+            '}',
+            `last_${id}: RT_UNUSED;`,
+        ];
+    }
+    // What the first part declares is one variable for the whole loop, in
+    // the C block the loop stands in. `next` comes out before the third
+    // part, which runs; `last` after the loop, where it doesn't.
+    case 'for': {
+        const first = genParts(s.first, s.pos.line, out);
+        const test = s.test === undefined ? [] : genWhole(s.test, s.pos.line, out, c => [`if (rt_is_false(cx, ${c})) break;`]).code;
+        const each = genParts(s.each, s.pos.line, out);
+        const id = out.names.loops.get(s);
+        return [
+            '{',
+            ...indent([
+                ...first.vars, ...first.code,
+                'for (;;) {',
+                ...indent([...(test.length ? ['{', ...indent(test), '}'] : []), '{', ...indent(s.body.flatMap(t => genStmt(t, out))), '}', `next_${id}: RT_UNUSED;`, ...each.code]),
+                '}',
+                `last_${id}: RT_UNUSED;`,
+            ]),
+            '}',
+        ];
+    }
+    case 'jump': {
+        const name = NAMES.get(s.name);
+        const id = out.names.jumps.get(s);
+        if (name?.kind !== 'jump' || id === undefined) throw new Error(`${s.name} was not resolved`);
+        return [`goto ${name.leaves ? 'last' : 'next'}_${id};`];
+    }
     }
 };
 

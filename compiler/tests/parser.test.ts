@@ -129,6 +129,11 @@ const stmt = (s: Stmt): string =>
     s.kind === 'call' ? `${s.name} ${shape(s.args[0]!)};`
     : s.kind === 'do' ? `${shape(s.expr)};`
     : s.kind === 'block' ? `{ ${s.body.map(stmt).join(' ')} }`
+    : s.kind === 'while' ? (s.modifier
+        ? `[${stmt(s.body[0]!)} ${s.negate ? 'until' : 'while'} ${shape(s.test)}]`
+        : `${s.label ? s.label.name + ': ' : ''}${s.negate ? 'until' : 'while'} ${shape(s.test)} { ${s.body.map(stmt).join(' ')} }`)
+    : s.kind === 'for' ? `${s.label ? s.label.name + ': ' : ''}for (${s.first.map(shape).join(', ')}; ${s.test ? shape(s.test) : ''}; ${s.each.map(shape).join(', ')}) { ${s.body.map(stmt).join(' ')} }`
+    : s.kind === 'jump' ? `${s.name}${s.label ? ' ' + s.label.name : ''};`
     : s.kind === 'if' ? (s.modifier
         ? `[${stmt(s.arms[0]!.body[0]!)} ${s.arms[0]!.negate ? 'unless' : 'if'} ${shape(s.arms[0]!.test)}]`
         : s.arms.map(a => `${a.negate ? 'unless' : 'if'} ${shape(a.test)} { ${a.body.map(stmt).join(' ')} }`).join(' els')
@@ -261,6 +266,84 @@ test('what a block and an if may not be', () => {
     refused('if (1) { say 1; } if 2;', "expected '(' after if, found 2", 1, 22);
     refused('{ say 1; } if 2;', "expected '(' after if, found 2", 1, 15);
     refused('if () { }', "expected a value, found ')'", 1, 5);
+});
+
+// What perl makes of each is in t/740-loop-shapes.pl, which perl checks.
+test('while, until and for, with a label or without (D61, D62)', () => {
+    assert.equal(program('while ($x) { say 1; }'), 'while $x { say 1; }');
+    assert.equal(program('until ($x) { }'), 'until $x {  }');
+    assert.equal(program('OUTER: while ($x) { next OUTER; last; }'), 'OUTER: while $x { next OUTER; last; }');
+    assert.equal(program('A_1:\n  for (;;) { last A_1 if $x; }'), 'A_1: for (; ; ) { [last A_1; if $x] }');
+    assert.equal(program('for (my $i = 0, my $j = 9; $i < $j; $i++, $j--) { say $i; }'),
+        'for ((my $i = 0), (my $j = 9); ($i < $j); ($i++), ($j--)) { say $i; }');
+    assert.equal(program('for ($i = 0; ; ) { }'), 'for (($i = 0); ; ) {  }');
+    assert.equal(program('for (; $i < 3; ) { }'), 'for (; ($i < 3); ) {  }');
+    assert.equal(program('for (;; $i++) { }'), 'for (; ; ($i++)) {  }');
+    assert.equal(program('for (; $i or $j; ) { }'), 'for (; ($i or $j); ) {  }');
+    assert.equal(program('$i++ while $i < 3;'), '[($i++); while ($i < 3)]');
+    assert.equal(program('say $i until $i;'), '[say $i; until $i]');
+    assert.equal(program('next unless $x;'), '[next; unless $x]');
+    assert.equal(program('while ($x) { } while ($y) { }'), 'while $x {  } while $y {  }');
+    assert.equal(program('$x = undef while $y;'), '[($x = undef); while $y]');
+    assert.equal(program('if ($x) { L: until ($y) { last L; } }'), 'if $x { L: until $y { last L; } }');
+    const [w] = parse(lex('  L: until ($x) {\n last L; }')).body;
+    assert.ok(w?.kind === 'while');
+    assert.deepEqual([w.pos, w.negate, w.label], [{ line: 1, col: 6 }, true, { name: 'L', pos: { line: 1, col: 3 } }]);
+    assert.deepEqual(w.body[0], { kind: 'jump', name: 'last', label: { name: 'L', pos: { line: 2, col: 7 } }, pos: { line: 2, col: 2 } });
+    // A modified statement is at its start, as under if.
+    const [m] = parse(lex('$i++\n  while $i;')).body;
+    assert.ok(m?.kind === 'while');
+    assert.deepEqual([m.pos, m.modifier], [{ line: 1, col: 1 }, true]);
+});
+
+test('what a loop may not be', () => {
+    const list = 'for over a list is not in the language yet: this for is for (FIRST; TEST; EACH)';
+    refused('while () { }', 'while () is while (1), to perl: say that, or for (;;)', 1, 7);
+    refused('until () { }', "expected a value, found ')'", 1, 8);
+    refused('for my $i (1, 2) { }', list, 1, 5);
+    refused('for (1, 2) { }', list, 1, 5);
+    refused('for ($x) { }', list, 1, 5);
+    refused('foreach (;;) { }', "'foreach' is not in the language", 1, 1);
+    refused('do { } while ($x);', "'do' is not in the language", 1, 1);
+    refused('while ($x) say 1;', "expected '{', found 'say'", 1, 12);
+    refused('while $x { }', "expected '(' after while, found '$x'", 1, 7);
+    refused('while ($x) { } else { }', 'else without an if before it', 1, 16);
+    refused('for (;;;) { }', "expected a value, found ';'", 1, 8);
+    refused('for ($i = 0 or 1; ; ) { }', "'or' in a part of a for joins the parts on either side of it, to perl: bracket what it joins", 1, 13);
+    refused('for (; $i < 3, $j; ) { }', "expected ';', found ','", 1, 14);
+    refused('say 1 while $x if $y;', "expected ';', found 'if'", 1, 16);
+    refused('say ("a")\nwhile $x;', "say (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with 'while' after them: write say(...)", 1, 5);
+});
+
+test('a label is on a loop, in capitals, hard against its colon (D61)', () => {
+    const on = (name: string) => `a label is on a loop: after ${name}: comes while, until or for`;
+    refused('outer: while ($x) { }', 'a label is written in capitals: OUTER:', 1, 1);
+    refused('Outer: while ($x) { }', 'a label is written in capitals: OUTER:', 1, 1);
+    refused('OUTER : while ($x) { }', 'a label is hard against its colon: OUTER:', 1, 7);
+    refused('L: say 1;', on('L'), 1, 4);
+    refused('L: { say 1; }', on('L'), 1, 4);
+    refused('L: if ($x) { }', on('L'), 1, 4);
+    refused('A: B: while ($x) { }', on('A'), 1, 4);
+    refused('L: $i++ while $x;', on('L'), 1, 4);
+    refused('L:', on('L'), 1, 3);
+});
+
+test('last and next are statements: alone, with a label, under if or unless (T120)', () => {
+    const after = (word: string) => `after '${word}' comes ';', a label in capitals, or an if or unless: perl takes anything else for an expression that names a label`;
+    refused('last + 1;', after('last'), 1, 6);
+    refused('last $l;', after('last'), 1, 6);
+    refused('last "L";', after('last'), 1, 6);
+    refused('next while $x;', after('next'), 1, 6);
+    refused('last() if $x;', after('last'), 1, 5);
+    refused('next outer;', after('next'), 1, 6);
+    refused('last L M;', after('last'), 1, 8);
+    refused('last L while $x;', after('last'), 1, 8);
+    const value = (word: string) => `${word} is a statement, not a value: write '${word} if ...;' or '${word} unless ...;'`;
+    refused('say last;', value('last'), 1, 5);
+    refused('my $v = next;', value('next'), 1, 9);
+    refused('$x = $y ? last : next;', value('last'), 1, 11);
+    refused('$x++ and last;', "'and' after a statement joins it to what follows, to perl, which binds 'and' more loosely than '=': write it as an if", 1, 6);
+    refused('last if $x while $y;', "expected ';', found 'while'", 1, 12);
 });
 
 test('undef before a variable or a brace is undef of it, to perl (T105)', () => {

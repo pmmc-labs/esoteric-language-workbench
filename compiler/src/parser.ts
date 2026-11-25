@@ -3,9 +3,9 @@
 // operator means comes from the table of names; the rules of the language
 // (which `use`, which integers) are the checker's.
 import { refuse } from './errors.ts';
-import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, OPERATORS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, prefixOp, stepOp } from './names.ts';
+import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, OPERATORS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, prefixOp, stepOp } from './names.ts';
 import type { Token } from './lexer.ts';
-import type { Arm, Expr, Program, Stmt, Var } from './ast.ts';
+import type { Arm, Expr, Label, Program, Stmt, Var } from './ast.ts';
 
 // A token as a diagnostic names it. A string is shown if it is short.
 const show = (t: Token): string =>
@@ -21,6 +21,12 @@ const unexpected = (t: Token, wanted: string): never =>
     t.kind === 'word' && OPERATORS.has(t.text) && !infixOp(t.text) && !prefixOp(t.text)
         ? refuse(`'${t.text}' is not in the language yet`, t.pos)
         : refuse(`expected ${wanted}, found ${show(t)}`, t.pos);
+
+// `if`, `unless`, `while` and `until`, which may follow a statement.
+const isModifier = (t: Token): boolean => {
+    const kind = t.kind === 'word' ? NAMES.get(t.text)?.kind : undefined;
+    return kind === 'if' || kind === 'while';
+};
 
 export const parse = (tokens: readonly Token[]): Program => {
     let i = 0;
@@ -86,7 +92,7 @@ export const parse = (tokens: readonly Token[]): Program => {
             // an expression, the operators that take an undef, and a
             // modifier: `$x = undef if $y;`.
             const follows = open.kind === 'op' ? infixOp(open.text)?.logic
-                : open.kind === 'word' ? NAMES.get(open.text)?.kind === 'if'
+                : open.kind === 'word' ? isModifier(open)
                 : open.kind !== 'int' && open.kind !== 'num' && open.kind !== 'str' && open.kind !== 'version' && open.kind !== 'var' && open.kind !== '{';
             if (name.bare && !follows) {
                 refuse(`${head.text} before ${show(open)}: perl takes what follows ${head.text} for its argument; write (${head.text})`, head.pos);
@@ -182,6 +188,8 @@ export const parse = (tokens: readonly Token[]): Program => {
         }
         const name = t.kind === 'word' ? NAMES.get(t.text) : undefined;
         if (name?.kind === 'constant' || name?.kind === 'unary' || name?.kind === 'function' || name?.kind === 'statement') return apply(t);
+        // perl takes `$done and last` and `$x ? last : next` (T120).
+        if (name?.kind === 'jump') return refuse(`${t.text} is a statement, not a value: write '${t.text} if ...;' or '${t.text} unless ...;'`, t.pos);
         return unexpected(t, 'a value');
     };
 
@@ -259,8 +267,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         // the semicolon or a modifier, and perl wants either on the line
         // the brackets are on (T128); anything else is refused for what
         // it is, below.
-        const modifier = after.kind === 'word' && NAMES.get(after.text)?.kind === 'if';
-        if (head.kind === 'word' && head.asFunction && (after.kind === ';' || modifier)) {
+        if (head.kind === 'word' && head.asFunction && (after.kind === ';' || isModifier(after))) {
             refuse(`${head.text} (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ${show(after)} after them: write ${head.text}(...)`, open.pos);
         }
         return { ...inner, bracketed: true };
@@ -312,10 +319,80 @@ export const parse = (tokens: readonly Token[]): Program => {
             return { kind: 'call', name: head.text, args, pos: head.pos };
         }
         if (name?.kind === 'elsif' || name?.kind === 'else') return refuse(`${head.text} without an if before it`, head.pos);
+        // `last;`, `next NAME;`, and nothing else after either but an
+        // `if` or `unless`: to perl what follows is an expression that
+        // names a label, and `last + 1;` dies looking for a loop called
+        // 1 (T120).
+        if (name?.kind === 'jump') {
+            next();
+            const word = peek();
+            const label: Label | undefined = word.kind === 'word' && isLabel(word.text) ? { name: next().text, pos: word.pos } : undefined;
+            const after = peek();
+            if (after.kind !== ';' && !(after.kind === 'word' && NAMES.get(after.text)?.kind === 'if')) {
+                refuse(`after '${head.text}' comes ';', a label in capitals, or an if or unless: perl takes anything else for an expression that names a label`, after.pos);
+            }
+            return label === undefined ? { kind: 'jump', name: head.text, pos: head.pos } : { kind: 'jump', name: head.text, label, pos: head.pos };
+        }
         if (head.kind === ';' || head.kind === '}' || head.kind === ')' || head.kind === 'eof') return unexpected(next(), 'a statement');
         const expr = expression(AND_ROW);
         loose();
         return { kind: 'do', expr, pos: head.pos };
+    };
+
+    // The expressions of the first or the third part of a `for`, with
+    // commas between them (D60), as far as `end`.
+    const part = (end: ';' | ')'): Expr[] => {
+        const items: Expr[] = [];
+        while (peek().kind !== end) {
+            if (items.length > 0) {
+                const comma = next();
+                if (comma.kind !== ',') unexpected(comma, `',' or '${end}'`);
+            }
+            items.push(expression(COMMA_ROW));
+            const after = peek();
+            if (after.kind === 'op' && infixOp(after.text)) {
+                refuse(`'${after.text}' in a part of a for joins the parts on either side of it, to perl: bracket what it joins`, after.pos);
+            }
+        }
+        next();
+        return items;
+    };
+
+    // `while (T) { }`, `until (T) { }` and `for (F; T; E) { }`, the word
+    // next, under a label or not.
+    const loop = (label: Label | undefined): Stmt => {
+        const head = next();
+        const name = NAMES.get(head.text);
+        const open = next();
+        if (open.kind !== '(') {
+            // `for my $x (LIST)` and its kin are step 9's.
+            if (name?.kind === 'for') refuse("for over a list is not in the language yet: this for is for (FIRST; TEST; EACH)", open.pos);
+            unexpected(open, `'(' after ${head.text}`);
+        }
+        if (name?.kind === 'while') {
+            // `while ()` is `while (1)` to perl, and `until ()` nothing (T123).
+            if (peek().kind === ')' && !name.until) refuse("while () is while (1), to perl: say that, or for (;;)", open.pos);
+            const test = bracketed();
+            const body = block();
+            return { kind: 'while', test, body, pos: head.pos, ...(name.until ? { negate: true as const } : {}), ...(label ? { label } : {}) };
+        }
+        // A `for` with no `;` in its brackets is a loop over a list.
+        let depth = 0;
+        let semicolons = 0;
+        for (let j = i; tokens[j]!.kind !== 'eof' && depth >= 0; j++) {
+            const kind = tokens[j]!.kind;
+            depth += kind === '(' ? 1 : kind === ')' ? -1 : 0;
+            if (kind === ';' && depth === 0) semicolons += 1;
+            if (kind === '{' && depth === 0) break;
+        }
+        if (semicolons === 0) refuse("for over a list is not in the language yet: this for is for (FIRST; TEST; EACH)", open.pos);
+        const first = part(';');
+        let test: Expr | undefined;
+        if (peek().kind !== ';') test = expression(Infinity);
+        semicolon();
+        const each = part(')');
+        const body = block();
+        return { kind: 'for', first, each, body, pos: head.pos, ...(test ? { test } : {}), ...(label ? { label } : {}) };
     };
 
     const statement = (): Stmt => {
@@ -341,6 +418,22 @@ export const parse = (tokens: readonly Token[]): Program => {
             if (body.length === 0) refuse("an empty block is an anonymous hash, to perl: put a statement in it, or take it out", head.pos);
             return { kind: 'block', body, pos: head.pos };
         }
+        // A label, `NAME:`, and the loop it is on (D61).
+        if (head.kind === 'word' && name === undefined && tokens[i + 1]?.kind === ':') {
+            next();
+            const colon = next();
+            if (!isLabel(head.text)) refuse(`a label is written in capitals: ${head.text.toUpperCase()}:`, head.pos);
+            if (colon.pos.line !== head.pos.line || colon.pos.col !== head.pos.col + head.text.length) {
+                refuse(`a label is hard against its colon: ${head.text}:`, colon.pos);
+            }
+            const word = peek();
+            const kind = word.kind === 'word' ? NAMES.get(word.text)?.kind : undefined;
+            if (kind !== 'while' && kind !== 'for') {
+                refuse(`a label is on a loop: after ${head.text}: comes while, until or for`, word.pos);
+            }
+            return loop({ name: head.text, pos: head.pos });
+        }
+        if (name?.kind === 'while' || name?.kind === 'for') return loop(undefined);
         if (name?.kind === 'if') {
             next();
             const arms = [arm(head, name.unless === true)];
@@ -362,16 +455,20 @@ export const parse = (tokens: readonly Token[]): Program => {
             return otherwise === undefined ? { kind: 'if', arms, pos: head.pos } : { kind: 'if', arms, otherwise, pos: head.pos };
         }
         const inner = simple();
-        // `STATEMENT if TEST;`, `STATEMENT unless TEST;`
+        // `STATEMENT if TEST;`, `unless`, `while`, `until`
         const word = peek();
         const modifier = word.kind === 'word' ? NAMES.get(word.text) : undefined;
-        if (modifier?.kind !== 'if') {
+        if (modifier?.kind !== 'if' && modifier?.kind !== 'while') {
             semicolon();
             return inner;
         }
         next();
         const test = expression(Infinity);
         semicolon();
+        if (modifier.kind === 'while') {
+            return modifier.until ? { kind: 'while', test, negate: true, body: [inner], modifier: true, pos: inner.pos }
+                : { kind: 'while', test, body: [inner], modifier: true, pos: inner.pos };
+        }
         const one: Arm = modifier.unless ? { test, negate: true, body: [inner], pos: word.pos } : { test, body: [inner], pos: word.pos };
         return { kind: 'if', arms: [one], modifier: true, pos: inner.pos };
     };

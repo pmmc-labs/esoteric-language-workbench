@@ -35,6 +35,12 @@ const uses = (src: string): string => {
         else if (s.kind === 'if') {
             s.arms.forEach(a => { expr(a.test); a.body.forEach(stmt); });
             s.otherwise?.forEach(stmt);
+        } else if (s.kind === 'while') {
+            expr(s.test);
+            s.body.forEach(stmt);
+        } else if (s.kind === 'for') {
+            [...s.first, ...(s.test ? [s.test] : []), ...s.each].forEach(expr);
+            s.body.forEach(stmt);
         }
     };
     program.body.forEach(stmt);
@@ -85,4 +91,61 @@ test('an if is a scope for its tests, and each of its blocks one inside it', () 
 test("a modifier's statement and test are in the scope they stand in", () => {
     assert.equal(uses('my $x; $x++ if $x; say $x unless $x;'), 'x0* x0 x0 x0 x0');
     refused('say $y if my $y = 1;', '$y is not declared: my $y', 1, 5);
+});
+
+// What perl makes of each is in t/741-loop-scopes.pl, which perl checks.
+test('a loop is a scope for its test, or its first part (T119)', () => {
+    assert.equal(uses('my $y; while ((my $x = $y) < 3) { say $x; my $x; $x++; }'), 'y0* x1* y0 x1 x2* x2');
+    assert.equal(uses('my $x; until (my $x = 1) { $x++; } $x++;'), 'x0* x1* x1 x0');
+    assert.equal(uses('for (my $i = 0; $i < 3; $i++) { my $i = 9; say $i; }'), 'i0* i0 i0 i1* i1');
+    assert.equal(uses('my $i = 5; for (my $i = 0, my $j = $i; $i < $j; $i++) { say $j; } say $i;'), 'i0* i1* j2* i0 i1 j2 i1 j2 i0');
+    assert.equal(uses('my $i; $i++ while $i < 3; say $i until $i;'), 'i0* i0 i0 i0 i0');
+    refused('my $y; while ((my $x = $y) < 3) { } say $x;', '$x is not declared: my $x', 1, 41);
+    refused('for (my $i = 0; $i < 3; $i++) { } say $i;', '$i is not declared: my $i', 1, 39);
+    refused('for (my $i = 0, my $j = $i; ; ) { }', '$i is not declared: my $i', 1, 25);
+    refused('for (my $i = 0, my $i = 1; ; ) { }', 'my $i again in one scope: perl warns that it masks the first', 1, 17);
+    refused('for (; ; $k++) { my $k; }', '$k is not declared: my $k', 1, 10);
+    refused('say $y while my $y;', '$y is not declared: my $y', 1, 5);
+});
+
+// Each `last` and `next` of a program, in the order written, with the
+// number of the loop it is for: loops are numbered as they are met.
+const jumps = (src: string): string => {
+    const program = parse(lex(src));
+    const names = resolve(program);
+    return [...names.jumps].sort(([a], [b]) => a.pos.line - b.pos.line || a.pos.col - b.pos.col).map(([j, loop]) => `${j.name}->${loop}`).join(' ');
+};
+
+test('each last and next to its loop: the nearest, or the one its label names (D61)', () => {
+    assert.equal(jumps('A: while (1) { while (1) { last; next A; last A; } next; }'), 'last->1 next->0 last->0 next->0');
+    assert.equal(jumps('L: while (1) { L: for (;;) { last L; } last L; }'), 'last->1 last->0');
+    assert.equal(jumps('while (1) { if (1) { if (1) { last; } } }'), 'last->0');
+    assert.equal(jumps('W: while (1) { { { next W; } } }'), 'next->0');
+    assert.equal(jumps('my $x; for (;;) { $x++ while 1; last; }'), 'last->0');
+    assert.equal(jumps('while (1) { } until (1) { next; }'), 'next->1');
+    assert.equal(jumps('while (1) { { say 1; } last; }'), 'last->0');
+    assert.equal(jumps('A: while (1) { B: while (1) { C: while (1) { next B; last A; next C; } } }'), 'next->1 last->0 next->2');
+});
+
+test('a last or next with no loop for it', () => {
+    refused('last;', 'last outside a loop', 1, 1);
+    refused('if (1) { next; }', 'next outside a loop', 1, 10);
+    refused('while (1) { } last;', 'last outside a loop', 1, 15);
+    refused('while (1) { last NOPE; }', 'no loop called NOPE is round this last', 1, 18);
+    refused('A: while (1) { } while (1) { next A; }', 'no loop called A is round this next', 1, 35);
+    refused('while (1) { A: while (1) { } last A; }', 'no loop called A is round this last', 1, 35);
+});
+
+// To perl a bare block is a loop that runs once: perl's answers are in
+// docs/briefs/claims.py (T32).
+test('a last or next with no label, and a bare block the nearest thing round it (D59)', () => {
+    const message = (word: string, line: number) =>
+        `${word} with no label would leave only the bare block that begins on line ${line}, to perl: label the loop it is for, and say ${word} NAME`;
+    refused('while (1) { { last; } }', message('last', 1), 1, 15);
+    refused('{ next; }', message('next', 1), 1, 3);
+    refused('while (1) {\n {\n if (1) { last; }\n }\n}', message('last', 2), 3, 11);
+    refused('while (1) { { say 1; next if 1; } }', message('next', 1), 1, 22);
+    // An if's block is no loop, and a loop inside the bare block is one.
+    assert.equal(jumps('while (1) { { while (1) { last; } } }'), 'last->1');
+    assert.equal(jumps('while (1) { if (1) { last; } else { next; } }'), 'last->0 next->0');
 });

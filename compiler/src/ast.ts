@@ -74,7 +74,22 @@ export type Block = { kind: 'block'; body: readonly Stmt[]; pos: Pos };
 export type Arm = { test: Expr; negate?: true; body: readonly Stmt[]; pos: Pos };
 export type If = { kind: 'if'; arms: readonly Arm[]; otherwise?: readonly Stmt[]; modifier?: true; pos: Pos };
 
-export type Stmt = Use | Pragma | Call | Do | Block | If;
+// A loop's label, `NAME:` (D61).
+export type Label = { name: string; pos: Pos };
+
+// `while (T) { }`, and `until` with `negate`; `STATEMENT while T;` with
+// `modifier`, its body the statement, which tests first all the same.
+export type While = { kind: 'while'; test: Expr; negate?: true; body: readonly Stmt[]; label?: Label; modifier?: true; pos: Pos };
+
+// `for (FIRST; TEST; EACH) { }`: FIRST and EACH are expressions with
+// commas between them (D60), and no TEST is true.
+export type For = { kind: 'for'; first: readonly Expr[]; test?: Expr; each: readonly Expr[]; body: readonly Stmt[]; label?: Label; pos: Pos };
+
+// `last;` and `next;`, with a label or without (D62). `name` is the word.
+export type Jump = { kind: 'jump'; name: string; label?: Label; pos: Pos };
+
+export type Loop = While | For;
+export type Stmt = Use | Pragma | Call | Do | Block | If | While | For | Jump;
 
 // `end` is where the file ends, for a diagnostic about what isn't there.
 export type Program = { kind: 'program'; body: readonly Stmt[]; end: Pos };

@@ -157,7 +157,7 @@ const checkExpr = (e: Expr, my: boolean): void => {
     checkLiteral(e);
     checkConcat(e);
     if (e.kind === 'my' && !my) {
-        refuse(`my $${e.name} here: a my begins a statement, or stands in the test of an if, where it is always reached`, e.pos);
+        refuse(`my $${e.name} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`, e.pos);
     }
     if (e.kind === 'ternary') {
         tested(e.test);
@@ -213,6 +213,20 @@ const checkPragma = (p: Pragma): void => {
     }
 };
 
+// One of the expressions of the first part of a `for`, or of its third:
+// what could be a statement, and a `my` in the first part only (D60).
+const checkPart = (e: Expr, first: boolean): void => {
+    if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my') {
+        refuse('this part of the for only has a value, and nothing is done with it: perl warns that it is useless', e.pos);
+    }
+    const my = e.kind === 'my' ? e : e.kind === 'assign' && e.target.kind === 'my' ? e.target : undefined;
+    if (my === undefined) return checkExpr(e, false);
+    if (!first) refuse(`my $${my.name} in the third part of a for: a my is in the first part, and is one variable for the whole loop`, my.pos);
+    if (e.kind !== 'assign') return;
+    checkConcat(e);
+    checkExpr(e.value, false);
+};
+
 // A statement below the top of the file. `modified`: it stands before an
 // `if` or `unless` modifier, where a `my` may be skipped and leave the
 // last value behind (T30).
@@ -248,6 +262,22 @@ const checkStmt = (s: Stmt, modified = false): void => {
             arm.body.forEach(b => checkStmt(b, s.modifier === true));
         }
         return s.otherwise?.forEach(b => checkStmt(b));
+    // A loop's test is a test as an `if`'s is (D53, D62), and a `my` under
+    // a `while` modifier is as one under `if` (T119).
+    case 'while':
+        tested(s.test);
+        checkExpr(s.test, !s.modifier);
+        return s.body.forEach(b => checkStmt(b, s.modifier === true));
+    case 'for':
+        s.first.forEach(e => checkPart(e, true));
+        if (s.test) {
+            tested(s.test);
+            checkExpr(s.test, false);
+        }
+        s.each.forEach(e => checkPart(e, false));
+        return s.body.forEach(b => checkStmt(b));
+    // Which loop it is for is the resolver's to say.
+    case 'jump': return;
     }
 };
 

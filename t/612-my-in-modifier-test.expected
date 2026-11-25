@@ -1,2 +1,2 @@
-t/612-my-in-modifier-test.pl:6:11: my $x here: a my begins a statement, or stands in the test of an if, where it is always reached
+t/612-my-in-modifier-test.pl:6:11: my $x here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached
 exit: 1

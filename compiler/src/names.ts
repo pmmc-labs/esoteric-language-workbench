@@ -25,6 +25,12 @@ export type Name =
     | { kind: 'if'; unless?: true }
     | { kind: 'elsif' }
     | { kind: 'else' }
+    // The words of step 6's (D62). `until` is a `while` whose test is
+    // turned round; both are modifiers too. `for` is the C-style loop.
+    // `last` leaves its loop, and `next` goes on to its next time round.
+    | { kind: 'while'; until?: true }
+    | { kind: 'for' }
+    | { kind: 'jump'; leaves?: true }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -48,6 +54,11 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['unless', { kind: 'if', unless: true }],
     ['elsif', { kind: 'elsif' }],
     ['else', { kind: 'else' }],
+    ['while', { kind: 'while' }],
+    ['until', { kind: 'while', until: true }],
+    ['for', { kind: 'for' }],
+    ['last', { kind: 'jump', leaves: true }],
+    ['next', { kind: 'jump' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);
@@ -182,6 +193,9 @@ export const stepOp = (op: string): StepOp | undefined => STEPS.get(op);
 
 // The names a variable may not have (D55): perl's `sort` owns `$a` and
 // `$b`, and `$_` is its own thing.
+// A label: capitals, digits and `_`, a capital first (D61).
+export const isLabel = (word: string): boolean => /^[A-Z][A-Z0-9_]*$/.test(word);
+
 // The longest name perl takes: one more is `Identifier too long` (T126).
 export const NAME_MAX_LENGTH = 251;
 

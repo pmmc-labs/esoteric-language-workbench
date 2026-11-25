@@ -158,7 +158,7 @@ test('a statement that only has a value, which perl warns is useless (T114)', ()
 });
 
 test('where a my may stand: at the head of a statement, or in the test of an if (D56)', () => {
-    const here = (name: string) => `my $${name} here: a my begins a statement, or stands in the test of an if, where it is always reached`;
+    const here = (name: string) => `my $${name} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`;
     refused('use v5.42;\nsay my $x;', here('x'), 2, 5);
     refused('use v5.42;\nmy $y;\n$y = my $x = 1;', here('x'), 3, 6);
     refused('use v5.42;\nmy $x = my $y = 1;', here('y'), 2, 9);
@@ -258,4 +258,39 @@ test("'.=' of an assignment of a concatenation, which perl never makes (T129)", 
 test('use and the pragmas are at the top, not in a block', () => {
     refused('use v5.42;\n{ use v5.42; }', "'use v5.42;' here: the version is the first statement, and is said once", 2, 3);
     refused('use v5.42;\nif (1) { use utf8; }', "'use utf8' goes at the top, after 'use v5.42;' and before anything else", 2, 10);
+});
+
+test('the parts of a for: what could be statements, and a my in the first only (D60)', () => {
+    const at = (src: string, message: string, col: number) => refused(`use v5.42;\nmy $i; my $j;\n${src}`, message, 3, col);
+    const useless = 'this part of the for only has a value, and nothing is done with it: perl warns that it is useless';
+    at('for ($i + 1; ; ) { }', useless, 9);
+    at('for (; ; $i) { }', useless, 10);
+    at('for ($i = 0, 5; ; ) { }', useless, 14);
+    at('for (; ; $i++, $j == 1) { }', useless, 19);
+    at('for (; ; my $k = 1) { }', 'my $k in the third part of a for: a my is in the first part, and is one variable for the whole loop', 10);
+    at('for (; (my $c = $i) < 3; ) { }', 'my $c here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached', 9);
+    at('for ($j = my $k = 1; ; ) { }', 'my $k here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached', 11);
+    for (const src of ['for (my $k = 0, my $m = $i; $k < $m; $k++, $m--) { }', 'for (my $k; ; ) { last; }', 'for ($i = 0, $j = 1; ; $i += 1, $j .= "a") { last; }',
+        'for (;;) { last; }', 'for (my $k = 0; $k < 3; ++$k) { my $k = 1; }']) {
+        accepted(`use v5.42;\nmy $i; my $j;\n${src}`);
+    }
+});
+
+test("a loop's test is a test, and a my under while is as one under if (D53, T119)", () => {
+    const tested = "'=' where a value is tested, with nothing but a constant on its right: perl warns that == was meant";
+    const at = (src: string, message: string, col: number) => refused(`use v5.42;\nmy $i; my $j;\n${src}`, message, 3, col);
+    at('while ($i = 5) { }', tested, 11);
+    at('until ($i = 5) { }', tested, 11);
+    at('for (; $i = 5; ) { }', tested, 11);
+    at('$i++ while $i = 0;', tested, 15);
+    at('while (!($i = 5)) { }', tested, 13);
+    at('while ($i = 0 && $j) { }', tested, 11);
+    at('my $x = 5 while $i;', 'my under a modifier: when the test fails, perl leaves in the variable what it last held; declare it in a statement of its own', 1);
+    at('say 1 while my $x;', 'my $x here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached', 13);
+    at('while ($i) { use utf8; }', "'use utf8' goes at the top, after 'use v5.42;' and before anything else", 14);
+    at('while ($i) { $i + 1; }', 'this statement only has a value, and nothing is done with it: perl warns that it is useless', 14);
+    for (const src of ['while ((my $d = $i) < 3) { }', 'until (my $d = $i) { }', 'while ($i = $j) { }', 'while (1) { last; }', '$i++ until $i > 3;',
+        'while ($i += 1) { last; }', 'for (; $i = $j; ) { last; }']) {
+        accepted(`use v5.42;\nmy $i; my $j;\n${src}`);
+    }
 });
