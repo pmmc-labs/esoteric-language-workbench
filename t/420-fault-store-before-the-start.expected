@@ -1,0 +1,4 @@
+1
+first
+fault: an element before the start of the array at t/420-fault-store-before-the-start.pl line 13.
+exit: 1

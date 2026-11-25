@@ -1,3 +1,0 @@
-1
-fault: none returned nothing where a list is wanted at t/930-fault-nothing-said.pl line 6.
-exit: 1

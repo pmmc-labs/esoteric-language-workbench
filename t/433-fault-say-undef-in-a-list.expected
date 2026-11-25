@@ -1,0 +1,4 @@
+1
+123!
+fault: undef where a string is wanted at t/433-fault-say-undef-in-a-list.pl line 13.
+exit: 1

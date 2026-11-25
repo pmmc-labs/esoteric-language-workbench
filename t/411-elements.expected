@@ -1,0 +1,50 @@
+3:<z><2><3>
+3:<z><2><l>
+4:<z><2><l><n>
+7:<z><2><l><n><undef><undef><far>
+7:<z><2><l><n><undef><undef><m1>
+7:<first><2><l><n><undef><undef><m1>
+7:<first><frac><l><n><undef><undef><m1>
+7:<first><frac><str><n><undef><undef><m1>
+3:<undef><undef><1>
+1:<undef>
+4:<7><ab><0><undef>
+4:<6><ab><0><undef>
+4:<18><ab><0><undef>
+4:<9><ab><0><undef>
+4:<4><ab><0><undef>
+4:<16><ab><0><undef>
+4:<16><abc><0><undef>
+4:<16><abcabc><0><undef>
+4:<16><abcabc><was false><undef>
+4:<16><abcabc><was false><undef>
+4:<16><abcabc><was true><undef>
+4:<16><abcabc><was true><was undef>
+4:<16><abcabc><was true><was undef>
+6:<16><abcabc><was true><was undef><undef><1>
+7:<16><abcabc><was true><was undef><undef><1><s>
+8:<16><abcabc><was true><was undef><undef><1><s><-1>
+10:<16><abcabc><was true><was undef><undef><1><s><-1><undef><made>
+12:<16><abcabc><was true><was undef><undef><1><s><-1><undef><made><undef><undef>
+13:<16><abcabc><was true><was undef><undef><1><s><-1><undef><made><undef><undef><stored>
+17
+15:<17><abcabc><was true><was undef><undef><1><s><-1><undef><made><undef><undef><stored><undef><1>
+17
+15:<18><abcabc><was true><was undef><undef><1><s><-1><undef><made><undef><undef><stored><undef><2>
+17
+15:<17><abcabc><was true><was undef><undef><1><s><-1><undef><made><undef><undef><stored><undef><1>
+17
+15:<16><abcabc><was true><was undef><undef><1><s><-1><undef><made><undef><undef><stored><undef><0>
+3:<1><2><2>
+2
+3:<3><2><3>
+3:<12><2><3>
+3:<2><2><3>
+3:<1><7><7>
+30
+2
+3:<10><20><30>
+3:<10><30><30>
+4:<30><30><30><at the count>
+value of a store
+35

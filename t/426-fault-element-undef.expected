@@ -1,0 +1,4 @@
+1
+4
+fault: undef where a number is wanted at t/426-fault-element-undef.pl line 12.
+exit: 1

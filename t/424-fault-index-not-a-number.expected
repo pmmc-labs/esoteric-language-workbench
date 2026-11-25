@@ -1,0 +1,4 @@
+1
+3
+fault: not a numeric string at t/424-fault-index-not-a-number.pl line 12.
+exit: 1

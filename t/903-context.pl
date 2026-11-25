@@ -186,15 +186,39 @@ for (if303(1), $k303 = 0; $k303 < 2; mod303($k303), $k303++) {
 }
 mod303(1) while ($k303++) < 4;
 say(retif303(1));
-sub decl304() {
+sub none304() {
+    return;
+}
+sub empty304() {
+}
+sub show304($p = 'default', $q = 'second') {
+    return ((defined($p) ? (('[' . $p) . ']') : 'undef') . ' ') . (defined($q) ? (('[' . $q) . ']') : 'undef');
+}
+sub tail304($p) {
+    return $p || (+none304());
+}
+say(none304());
+say(empty304());
+say(show304(none304()));
+say(show304(empty304()));
+say(show304(none304(), 1));
+say(show304(1, none304()));
+say(show304(1 ? empty304() : 0));
+say(show304(0 ? empty304() : 0));
+say(show304(tail304(0)));
+say(show304(tail304(4)));
+say(show304(!none304()));
+say(show304(none304() // 'scalar'));
+say(tail304(0));
+sub decl305() {
     my $x;
 }
-sub undef304() {
+sub undef305() {
     return (undef);
 }
-sub show304($p = 'default') {
+sub show305($p = 'default') {
     return defined($p) ? (('[' . $p) . ']') : 'undef';
 }
-say(show304(decl304()));
-say(show304(undef304()));
-say(show304());
+say(show305(decl305()));
+say(show305(undef305()));
+say(show305());

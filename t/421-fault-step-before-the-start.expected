@@ -1,0 +1,4 @@
+1
+undef
+fault: an element before the start of the array at t/421-fault-step-before-the-start.pl line 13.
+exit: 1

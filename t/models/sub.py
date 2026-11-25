@@ -29,8 +29,9 @@ brackets and a unary plus hand their own on (T146).
 What a call is worth: the value of the `return` that ended it, a copy;
 with no `return`, the value of its last statement if that is an
 expression with no modifier; `true` if that is a `say` (D70). `return;`
-and an empty body give undef to a scalar call, and to a list they are a
-fault (D71). A sub that ends any other way has no value, and that is a
+and an empty body give undef to a scalar call, and to a list they give
+no value at all (D79, which retired D71's fault): as an argument it is
+no argument, and `say` of it prints an empty line. A sub that ends any other way has no value, and that is a
 fault unless the call was void (D18, T145). Nothing is skipped under void
 (T148).
 
@@ -94,14 +95,6 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/sub.py 928 > t/928-fault-ends-in-return-if.expected
     python3 t/models/sub.py --program 929 > t/929-fault-no-value-handed-on.pl
     python3 t/models/sub.py 929 > t/929-fault-no-value-handed-on.expected
-    python3 t/models/sub.py --program 930 > t/930-fault-nothing-said.pl
-    python3 t/models/sub.py 930 > t/930-fault-nothing-said.expected
-    python3 t/models/sub.py --program 931 > t/931-fault-nothing-as-argument.pl
-    python3 t/models/sub.py 931 > t/931-fault-nothing-as-argument.expected
-    python3 t/models/sub.py --program 932 > t/932-fault-nothing-handed-on.pl
-    python3 t/models/sub.py 932 > t/932-fault-nothing-handed-on.expected
-    python3 t/models/sub.py --program 933 > t/933-fault-empty-body-in-list.pl
-    python3 t/models/sub.py 933 > t/933-fault-empty-body-in-list.expected
     python3 t/models/sub.py --program 934 > t/934-fault-in-the-sub.pl
     python3 t/models/sub.py 934 > t/934-fault-in-the-sub.expected
     python3 t/models/sub.py --program 935 > t/935-fault-after-the-call.pl
@@ -132,7 +125,13 @@ class Return(Exception):
         self.value = value
 
 NO_VALUE = 'has no value: it does not end in a return or an expression'
-NOTHING = 'returned nothing where a list is wanted'
+
+class Absent:
+    """What a sub that returns nothing gives a list: no value (D79)."""
+    def __repr__(self):
+        return 'ABSENT'
+
+ABSENT = Absent()
 
 def arity(name, got, least, most):
     """The fault for a wrong number of arguments, or None."""
@@ -172,7 +171,9 @@ class Run(loop.Run):
                 results = []
                 for a in e[2]:
                     self.ctx = LIST
-                    results.append(self.ev(a))
+                    r = self.ev(a)
+                    if r is not ABSENT:
+                        results.append(r)
                 return self.call(e[1], results, want)
             if kind == 'decl' and self.top():
                 # `my $x OP E` at the top level: the operator, on what the
@@ -228,10 +229,7 @@ class Run(loop.Run):
         for s in body[:-1]:
             self.run(s)
         if not body:
-            if want == LIST:
-                self.at = id(self.subs[name])
-                raise Fault(f'{name} {NOTHING}')
-            return UNDEF
+            return ABSENT if want == LIST else UNDEF
         last = body[-1]
         if last[0] == 'do':
             self.at = id(last)
@@ -253,9 +251,7 @@ class Run(loop.Run):
             self.at = id(s)
             want = self.wants[-1]
             if s[1] is None:
-                if want == LIST:
-                    raise Fault(f'{self.names[-1]} {NOTHING}')
-                raise Return(UNDEF)
+                raise Return(ABSENT if want == LIST else UNDEF)
             self.ctx = want
             raise Return(get(self.ev(s[1])))
         if kind == 'my' and self.top():
@@ -268,7 +264,8 @@ class Run(loop.Run):
             # The value first: working it out may print.
             self.at = id(s)
             self.ctx = LIST
-            line = logic.printed(get(self.ev(s[1]))) + '\n'
+            v = get(self.ev(s[1]))
+            line = ('' if v is ABSENT else logic.printed(v)) + '\n'
             self.out += line
             return
         if kind == 'do':
@@ -719,6 +716,19 @@ def context_cases():
         calls += [say_(ucall(f('retif'), 1))]
         return subs + calls
     case(void)
+    # No value to a list (D79): as an argument it is none, through `? :`,
+    # `||`, a unary plus and a `return` too, and `say` of it is an empty
+    # line. (930 to 933 were the tests of D71's fault for these.)
+    def absent(f, g, G):
+        none, empty, show = f('none'), f('empty'), f('show')
+        return [sub(none, [], ret()), sub(empty, []), sub(show, [opt('p', 'default'), opt('q', 'second')], ret(join(logic.shown(P), ' ', logic.shown(Q)))),
+                sub(f('tail'), [req('p')], ret(('||', P, ('+', ucall(none))))),
+                say_(ucall(none)), say_(ucall(empty)),
+                say_(ucall(show, ucall(none))), say_(ucall(show, ucall(empty))), say_(ucall(show, ucall(none), 1)), say_(ucall(show, 1, ucall(none))),
+                say_(ucall(show, ('?:', 1, ucall(empty), 0))), say_(ucall(show, ('?:', 0, ucall(empty), 0))),
+                say_(ucall(show, ucall(f('tail'), 0))), say_(ucall(show, ucall(f('tail'), 4))), say_(ucall(show, ('!', ucall(none)))),
+                say_(ucall(show, ('//', ucall(none), 'scalar'))), say_(ucall(f('tail'), 0))]
+    case(absent)
     # One value to a list: a `my` with nothing, an undef returned.
     case(lambda f, g, G: [sub(f('decl'), [], do(('decl0', 'x'))), sub(f('undef'), [], ret(UNDEF)), sub(f('show'), [opt('p', 'default')], ret(logic.shown(P))),
                           say_(ucall(f('show'), ucall(f('decl')))), say_(ucall(f('show'), ucall(f('undef')))), say_(ucall(f('show')))])
@@ -804,13 +814,6 @@ def faults():
         '928': ('fault-ends-in-return-if', [sub('ends', [req('p')], ('mod', ret('yes'), 'if', P))], say_(ucall('ends', 1)), say_(ucall('ends', 0))),
         '929': ('fault-no-value-handed-on', [sub('ends', [req('p')], ('block', [say_('in')])), sub('tail', [req('p')], ret(('?:', P, 5, ucall('ends', P))))],
                 block(say_(ucall('tail', 1)), do(ucall('tail', 0))), ('my', 'v', ucall('tail', 0))),
-        # A sub that returns nothing, where perl wants a list (D71).
-        '930': ('fault-nothing-said', [none], ('my', 'v', ucall('none')), say_(ucall('none'))),
-        '931': ('fault-nothing-as-argument', [none, show], say_(ucall('show', ('!', ucall('none')))), say_(ucall('show', ucall('none')))),
-        '932': ('fault-nothing-handed-on', [none, show, sub('tail', [req('p')], ret(('||', P, ('+', ucall('none')))))],
-                block(('my', 'v', ucall('tail', 0)), say_(ucall('show', ucall('tail', 4)))), say_(ucall('show', ucall('tail', 0)))),
-        '933': ('fault-empty-body-in-list', [sub('empty', []), show], block(do(ucall('empty')), say_(ucall('show', ('//', ucall('empty'), 'scalar')))),
-                say_(ucall('show', ('?:', 1, ucall('empty'), 0)))),
         # The line: the sub's own statement while it runs, the caller's
         # again after it has returned, and the `sub`'s for a default.
         '934': ('fault-in-the-sub', [sub('div', [req('p')], ('my', 'x', 10), say_('in'), ret(('/', ('$', 'x'), P)))], say_(ucall('div', 5)), say_(ucall('div', 0))),

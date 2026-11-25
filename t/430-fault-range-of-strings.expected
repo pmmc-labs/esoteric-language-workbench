@@ -1,0 +1,4 @@
+1
+3
+fault: a string as the end of a range at t/430-fault-range-of-strings.pl line 11.
+exit: 1

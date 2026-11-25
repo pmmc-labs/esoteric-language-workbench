@@ -1,0 +1,4 @@
+1
+0
+fault: a number outside the integers where a whole number is wanted at t/429-fault-splice-length-too-large.pl line 13.
+exit: 1

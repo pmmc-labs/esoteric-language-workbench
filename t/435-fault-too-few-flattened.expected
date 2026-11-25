@@ -1,0 +1,4 @@
+1
+1,2
+fault: too few arguments for two: got 1, expected 2 at t/435-fault-too-few-flattened.pl line 15.
+exit: 1

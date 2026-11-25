@@ -1,0 +1,4 @@
+1
+undef
+fault: a number outside the integers where a whole number is wanted at t/425-fault-index-too-large.pl line 12.
+exit: 1

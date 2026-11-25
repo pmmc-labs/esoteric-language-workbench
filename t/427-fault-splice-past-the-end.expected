@@ -1,0 +1,4 @@
+1
+9
+fault: splice past the end of the array at t/427-fault-splice-past-the-end.pl line 13.
+exit: 1
