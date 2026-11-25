@@ -264,8 +264,23 @@ with perl on the statements `compiler.py` there draws.
 |---|---|---|---|---|
 | T100 | `say ("(");` and `say (")" . "a");` | `(` and `)a`, each with `say (...) interpreted as function`: after `say`, one space and a bracket, perl looks for the closing bracket in the text of the line, and counts one inside a string or a comment. `say("(");`, two spaces, or a tab: silent | 3 | T76's rule by the text, as perl has it: the brackets close on the line, counted as characters, and `;` follows |
 | T101 | `say(("a") x 3);` and `say "before"; say(("") x 9223372036854775807);` | `aaa`; then `before`, `Out of memory during list extend`, and exit 255. In `say`'s list of arguments, `x` with its left operand in brackets repeats a list: three values, or 2^63 of them. `say +("a") x 3` is the same; `length(("a") x 3)` and `("a") x 3 . ""` repeat a string | 3 | Refuse `(...) x N` where it is the whole argument of `say` or `print`, through brackets and unary plus. Step 9, which brings lists, says what it is there |
-| T102 | `say "before"; say length("b" x 999999999999999);` | Nothing at all: perl works a constant `x` out as it compiles, runs out of memory doing it, and stops before the program starts (`panic: fold_constants`). The language prints `before` and faults: **not the beginning of what perl prints**, which D12 promises | 3 | **Open, Stevan's.** Nothing built is changed by it. Every count is a constant until step 5; after that only a constant count is affected. No test asks perl for more than a megabyte; one count past what a string can be at all, 2^63 - 1 of `ab`, perl refuses as it runs, and that is test 148 |
+| T102 | `say "before"; say length("b" x 999999999999999);` | Nothing at all: perl works a constant `x` out as it compiles, runs out of memory doing it, and stops before the program starts (`panic: fold_constants`). The language prints `before` and faults: **not the beginning of what perl prints**, which D12 promises | 3 | D46: a perl that runs out of memory as it compiles is outside D12's promise. Every count is a constant until step 5; after that only a constant count is affected. No test asks perl for more than a megabyte; one count past what a string can be at all, 2^63 - 1 of `ab`, perl refuses as it runs, and that is test 148 |
 | T103 | `my $x = "1.99999999999999999"; say substr("abcdefgh", $x);` and the same with `my $t = $x + 0.5;` first | `bcdefgh`, then `cdefgh`. Where a whole number is wanted, perl takes the digits before the point of a string it hasn't used as a float, and the double, cut, of one it has; and this string's double is 2. `"ab" x "0.99999999999999995"` is empty, or `ab`; `chr` goes the other way round | 3 | Where a whole number is wanted, a string with a point whose digits before it are not its number cut toward zero faults (D40) |
+
+## Found proposing step 4
+
+`briefs/step4-comparisons.py` asks perl for every comparison, test of
+truth, and use of a boolean as a number, under every past of each
+operand. Nothing there turns on a past that D40 doesn't already fault.
+These are about how perl reads the words.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T104 | `say(0 \|\| ("a") x 3);` and `say(1 ? ("a") x 3 : "b");` | `aaa` both, as three values: the list that `say`'s argument is (T101) reaches the right operand of `\|\|`, `&&`, `//`, `or` and `and`, and both branches of `?:`. Not the left operand, and not through `xor`, `!`, a comparison or a dot | 4 | T101's refusal follows the same path down |
+| T105 | `say "before"; say undef * 2;` and `say undef + 1;` | `before`, an empty line and `Use of uninitialized value in say`: `undef` takes an argument, and `*2` is one to it, a glob. `% 2` is a hash. `undef + 1`, `- 1`, `< 1`, `<=> 1`, `x 3`, `/ 2` and `.5` don't compile. `undef == 1`, `undef . "a"`, `undef // 1` are read as written | 4 | Bare `undef` may be followed by `)`, `,`, `;`, `?`, `:` or a logical operator, and by nothing else; elsewhere it is written `(undef)` |
+| T106 | `say 0 or 2;` and `say true and false;` | `0`, with `Useless use of a constant`; `1`, with nothing at all. `or`, `and` and `xor` bind more loosely than `say` does: it is `(say 0) or 2` | 4 | Refuse a word operator after `say`'s argument; inside brackets, `say(0 or 2)`, it is the argument's |
+| T107 | `say(not 0 \|\| 1);` and `say(not(0) \|\| 1);` | An empty line, then `1`: `not` takes everything to its right that binds tighter, unless a bracket follows it, and then the bracket is all it takes. `not (0) + 1` is 2 | 4 | Q5: refuse an operator that binds tighter than `not` after `not (...)`, or agree with perl |
+| T108 | `say 1 != 1 == 0;` | An empty line: perl chains it, `(1 != 1) && (1 == 0)`, where reading from the left gives `1`. `1 < 2 == 1` isn't a chain, the two being of different rows, and `1 == 2 <=> 3` doesn't compile (T33, T51) | 4 | Refuse two operators of one row with no brackets between them |
 
 ## The checks themselves
 

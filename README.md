@@ -57,7 +57,7 @@ again.
 
 ## What is decided and what isn't
 
-D1 to D45 are Stevan's, all settled on 2026-11-24. The ones that give the language its
+D1 to D46 are Stevan's, settled on 2026-11-24 and 25. The ones that give the language its
 character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);
@@ -75,7 +75,7 @@ character:
 - Gradual types, roles with a metaobject protocol, and concurrency are
   planned later steps (D5).
 
-What isn't decided is what those hand to a step: fifteen items at the
+What isn't decided is what those hand to a step: fourteen items at the
 end of `docs/DESIGN.md`.
 
 ## How far to trust it

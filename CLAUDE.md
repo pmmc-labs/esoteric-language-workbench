@@ -107,9 +107,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 328 of them now, and all hold under 5.42.0,
+about perl as a program, 354 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T103, by step. **Found at step 0**: T72 (a
+keeps the programs, T1 to T108, by step. **Found at step 0**: T72 (a
 line that starts `#!`, D33), T73 (`use utf8;` on a line before the
 first character past ASCII), T74 (`# line N "file"` comments, step
 15), T75 (`use v5.42#c`). **At step 1**: T76. **Proposing step 2**:
@@ -123,20 +123,19 @@ review of step 3**: T100 to T103; the reviewer's model and generator
 are kept, `docs/briefs/step3-review/`, and the compiler agrees with
 them and with perl on 54,969 of the 55,002 random statements the
 model prints for, refusing the other 33 by two rules where it is the
-stricter. **One finding is open,
-and Stevan's: T102.** perl works a constant `x` out as it compiles,
-so `say "before"; say "b" x 999999999999999;` prints nothing under
-perl (it runs out of memory before the program starts), where the
-language prints `before` and faults: not the beginning of what perl
-prints, which D12 promises. Nothing built is changed by it, and no
-test asks perl for a large string. What the
+stricter. T102 became D46: perl works a constant `x` out as it
+compiles, so `say "before"; say "b" x 999999999999999;` prints
+nothing under perl (it runs out of memory before the program starts),
+where the language prints `before` and faults; a perl without the
+memory for what a program asks is outside what D12 promises. No test
+asks perl for a large string. What the
 review of the oracle check left open is listed in `docs/TRAPS.md`,
 "The checks themselves", by the step that has to close it (15: a
 `dies` test that also warns; 21 and 22: files, the environment, the
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D45 are all Stevan's.** The ones a builder meets first: the
+**D1 to D46 are all Stevan's.** The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
 be caught (D13); perl's warnings are faults (D15); loop variables are
 read-only and containers freeze (D17); a sub can't see its context
@@ -144,7 +143,16 @@ read-only and containers freeze (D17); a sub can't see its context
 a program's own calls (D21); a number is integral or it isn't (D35),
 and a value has no past (D36, D40, D45); the name (D32). perigrin has
 agreed to the probe corpus (D11). **Next: step 4**, booleans, undef,
-comparison and logic, to be proposed. **What step 5 must ask again**:
+comparison and logic, is **proposed in full in `docs/PLAN.md` and
+waits on Stevan's answers to its five questions** (Q1: a boolean as a
+number and a string, as perl has it; Q2: where bare `undef` may
+stand, perl taking what follows it for an argument, T105; Q3: `&&`
+and `||` give an operand; Q4: chained comparisons, refused or perl's;
+Q5: the word operators, which bind more loosely than `say`, T106, and
+the bracket after `not`, T107). Nothing of step 4 is built.
+`docs/briefs/step4-comparisons.py` holds the proposed rule for
+comparing to perl under every past of each operand: 57,376
+comparisons, no new fault needed. **What step 5 must ask again**:
 once there are variables, whether a value's past shows anywhere the
 rules don't fault. The claim was refuted once (T92), by a review,
 after the builder's own search had passed it. The evidence is kept:

@@ -6,9 +6,10 @@ be a session or two each.
 
 **Progress:** steps 0 to 3 are done (2026-11-24): arithmetic on Ints
 and Nums, and strings, compile, run, and are checked against perl
-5.42. **Next: step 4**, booleans and comparison, to be proposed.
-Steps 4 to 30 are outlines: each is proposed, with options, when it's
-next.
+5.42. **Step 4, booleans, undef, comparison and logic, is proposed,
+below, and waits on five answers from Stevan** (Q1 to Q5); nothing of
+it is built. Steps 5 to 30 are outlines: each is proposed, with
+options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -587,16 +588,13 @@ differences and findings:
   value's past shows nowhere the rule doesn't fault was refuted again,
   in this one place, and holds on the 82 million cases with it
   closed**); and a sign on the line below a named unary operator.
-- **One finding is open: T102.** perl works a constant `x` out as it
-  compiles, so a count too large for memory stops perl before the
-  program starts, having printed nothing, where the language prints
-  what came before and faults. That isn't the beginning of what perl
-  prints (D12). Options, for Stevan: leave it, and say in D12 that
-  perl running out of memory as it compiles is outside the promise;
-  or have the compiler work constant counts out too and refuse the
-  program, which is a constant folder the language doesn't otherwise
-  need. Until step 5 every count is a constant; after it, only
-  constant ones are affected.
+- **One finding was a question, T102, and is D46 now.** perl works a
+  constant `x` out as it compiles, so a count too large for memory
+  stops perl before the program starts, having printed nothing, where
+  the language prints what came before and faults. That isn't the
+  beginning of what perl prints (D12). Stevan's answer (2026-11-25):
+  a perl that runs out of memory as it compiles is outside the
+  promise. The other option was a constant folder in the compiler.
 - **The compiler was held to the reviewer's model and to perl**
   (`briefs/step3-review/compiler.py`): 106,000 random statements over
   the whole grammar, half of them with newlines and comments for
@@ -831,19 +829,200 @@ then change under programs already written against it.
   `-CSDA` if Q1 is (b).
 - Leave out: everything listed above as later.
 
-### 4. Booleans, undef, comparison, logic
+### 4. Booleans, undef, comparison, logic (proposed, not agreed)
 
-Referee: perl. Size: large, for the model of comparing an Int with a
-Num (T39). Traps: T33, T39.
+Referee: perl. Size: large.
 
-`true`, `false`, `undef`, `defined`; the numeric and string
-comparisons, `<=>` and `cmp`; `!`, `&&`, `||`, `//`, `not`, `and`, `or`,
-`xor`; `?:`. Truth is perl's. Decides: what a boolean prints as and
-adds as (perl: `true` is `1`, `false` is `""` as a string and 0 as a
-number, in silence); undef in a comparison or a concatenation faults
-(D15); chained comparisons refused (T33), and the mixes perl itself
-refuses (T51). The expected grouping in a precedence test comes from
-perl, `perl -MO=Deparse,-p`, which prints the brackets perl sees.
+**Proposed 2026-11-25. Nothing is built, and five questions are
+Stevan's: Q1 to Q5 below.** Everything here about perl was run under
+5.42.0: [`briefs/step4-comparisons.py`](briefs/step4-comparisons.py)
+(every comparison, test of truth and boolean in arithmetic, under
+every past of each operand) and `briefs/claims.py`. Traps: T33, T39,
+T51, and T104 to T108, found writing this.
+
+#### The picture
+
+Two more kinds of value, and the operators that ask questions.
+
+```
+            as a number      as a string       true?
+ undef      a fault          a fault           no
+ false      0                ""                no
+ true       1                "1"               yes
+ Int, Num   itself           as say prints     unless it is zero
+ Str        by D40           itself            unless it is "" or "0"
+```
+
+A comparison gives a **boolean**: `true` or `false`, which are also
+words a program may write. **undef** is the one value that is no
+value: asking whether something is defined, or true, is all that may
+be done with it. Then the ladder, perlop's, tightest first; this step
+adds what is in capitals:
+
+```
+ **
+ NOT-SIGN !, and the signs - +
+ * / % x
+ + - .
+ length uc lc ord chr DEFINED            (the named unary operators)
+ < > <= >= LT GT LE GE
+ == != <=> EQ NE CMP
+ &&
+ || //
+ ? :
+ NOT
+ AND
+ OR XOR
+```
+
+**What I expected to be the hard part wasn't.** Steps 2 and 3 each
+claimed that a value's past shows nowhere their rule doesn't fault,
+and each had that refuted by a review. So before writing this I asked
+perl first: 57,376 numeric comparisons, each under 25 pairs of pasts
+(fresh, used as a float, as an integer, as a string, as both), 12,412
+string comparisons and tests of truth, and 2,400 uses of a boolean in
+arithmetic. perl has more than one answer for 8,609 of the
+comparisons, every one of them a string D40 already faults on. The
+rule is D35's one question again and needs no new fault. (The reason
+is in perl's source: it marks a number as carrying a float only when
+the float is exactly the number, so two whole numbers past 2^53 that
+differ are never compared as the one double they share.) The review
+will try to refute it with more pasts than my five.
+
+What is hard is how perl reads the words, which is where Q2, Q4 and
+Q5 come from.
+
+#### The language at step 4
+
+- **`true` and `false`**, bare; and the results of the comparisons,
+  of `!`, `not`, `xor` and `defined`. Q1.
+- **`undef`**, bare, and **`defined`**, a named unary operator like
+  `length`. Q2.
+- **`== != < <= > >=`** and **`<=>`**: both operands as numbers
+  (D40: a string that isn't a number faults). Both integral, the
+  whole numbers compared exactly; otherwise the doubles compared, so
+  `9007199254740993 == 2 ** 53` is true, as in perl (T39). `<=>` is
+  the Int -1, 0 or 1.
+- **`eq ne lt le gt ge`** and **`cmp`**: both operands as strings, a
+  number being what `say` prints for it (so `10 lt 9` is true, `0.1 +
+  0.2 eq 0.3` is true where `==` is false, and D36's fault applies),
+  compared character by character. No locale.
+- **Truth is perl's**: false is undef, `false`, a number that is
+  zero, the empty string, and the string `"0"`. `"0.0"`, `"00"` and
+  `" "` are true.
+- **`!`**, at the level of the signs, gives a boolean. **`&&`, `||`
+  and `//`** give one of their operands, not a boolean: `2 || 3` is
+  2, `0 && 1` is 0, and `//` asks defined, not true. The right
+  operand is not worked out unless it is needed, so `1 || 1 / 0` is
+  1, and a fault there doesn't happen. **`? :`**, grouping from the
+  right, works out one branch.
+- **`not`, `and`, `or`, `xor`**: `not` and `xor` give booleans, `and`
+  and `or` an operand. Q5.
+- Faults: `undef where a number is wanted`, `undef where a string is
+  wanted` (which is what `say undef` is).
+
+Left for later, and refused: `^^` (new in 5.40), `~~`, the bit
+operators and shifts, `<` `>` chains (Q4), `unless`-style words,
+assignment.
+
+#### The questions
+
+**Q1. What a boolean is, when it isn't being tested.** perl prints
+`true` as `1` and `false` as an empty string, adds them as 1 and 0,
+and says nothing: `say 1 == 2;` prints an empty line, `true + 1` is
+2, `false . "x"` is `x`. And false is not the empty string: `"" == 0`
+warns and `false == 0` doesn't.
+(a) **Recommended: as perl.** A boolean is a kind of its own; as a
+number it is the Int 1 or 0, as a string `"1"` or `""`, in silence.
+D15 already says what perl does silently stays, and `$count += $x >
+3` is ordinary Perl. The script holds "the Int 1 or 0" to perl beside
+every other operand under every past.
+(b) A boolean is only for testing: as a number or a string it faults,
+printing included. Stricter than perl in the way a typed language
+would be, and `say $a == $b` stops.
+
+**Q2. Where `undef` may stand.** To perl `undef` is an operator that
+takes an argument, the thing to make undefined, and it takes what
+follows for one whenever it can (T105): `undef * 2` is undef of a
+glob called `2`, in silence; `undef + 1`, `undef < 1` and `undef x
+3` don't compile; `undef == 1` and `undef // 1` are read as written.
+(a) **Recommended: bare `undef` may be followed by `)`, `,`, `;`,
+`?`, `:` or a logical operator (`//`, `||`, `&&`, `and`, `or`,
+`xor`), and by nothing else.** That is every place it is useful.
+Before any other operator it is refused, with a message that says to
+write `(undef)`; and there it faults when the program runs, since
+undef is no number and no string (D15). `undef(...)` with an
+argument is the operator on a variable, already cut.
+(b) Always in brackets, `(undef)`, wherever it is an operand: one
+rule, and `$x // undef` needs brackets it doesn't need in perl.
+With either: **`length(undef)` is undef**, in silence, as perl has
+it, and `defined`, `//`, `!` and the tests of truth take an undef;
+everything else that wants a number or a string of it faults.
+
+**Q3. Nothing to choose, but worth your eye: `&&` and `||` give an
+operand.** `say 0 || "x";` prints `x` and `say 5 && 7;` prints 7. It
+is what makes `$x || "default"` work, and it means these two are not
+"boolean operators" in the language's types later (step 25). The
+alternative, booleans only, isn't Perl.
+
+**Q4. Chains.** Since 5.32 perl chains comparisons of one row: `1 < 5
+< 3` is `1 < 5 && 5 < 3`, false; `1 != 1 == 0` is `(1 != 1) && (1 ==
+0)`, false, where reading from the left gives true (T108). `<=>` and
+`cmp` don't chain and don't compile in one.
+(a) **Recommended: refuse two operators of one row with no brackets
+between them**, as `SURFACE.md` already has it (Later). `1 < 2 == 1`
+is fine, being two rows. Nothing is lost that brackets or `&&` don't
+say.
+(b) Chain as perl does. It is in the language of the day, `0 <= $i <
+$n` reads well, and it costs the rule that the middle operand is
+worked out once. A later step can take it without breaking a program
+that (a) accepts.
+
+**Q5. `not`, `and`, `or`, `xor`.** Two traps.
+The first has one answer. These bind more loosely than `say` does:
+`say 0 or 2;` is `(say 0) or 2`, prints `0`, and perl warns; `say
+true and false;` prints `1` and perl says nothing at all (T106). So
+**a word operator after `say`'s argument is refused**, and inside
+brackets, `say(0 or 2)`, it is the argument's. `... or die` comes
+with `die` (step 15).
+The second is a choice. `not 0 || 1` is `not (0 || 1)`, false. But
+`not(0) || 1`, and `not (0) || 1`, are `(not 0) || 1`, which is 1: a
+bracket after `not` is all it takes, as after `length` (T107).
+(a) **Recommended: refuse an operator that binds tighter than `not`
+after `not (...)`.** `not ($a == $b)` is fine; `not ($a) || $b` is
+refused, with a message that says which brackets to add. It is T25's
+rule for `say (...)`, for the same reason: the two readings differ in
+silence.
+(b) As perl, which is also what D41 does for `length ("ab") . "c"`.
+Consistent, and a known trap kept.
+
+#### The build, once the questions are answered
+
+- **`t/models/bool.py` first, red before any code.** The comparisons
+  over the Ints, Nums and strings at the edges of D35 and D40 (it
+  imports `str.py` and `num.py`); truth of every kind of value; what
+  each operator gives, operand or boolean; a boolean wherever a
+  number or a string is wanted; and a fault test for each fault at
+  its edge, an undef in each place that wants a value.
+- **An adversarial review of this proposal**, started with it: the
+  definition against perl, and the claim that no comparison turns on
+  a past the rule doesn't fault.
+- **By hand, with perl's answers**: precedence and grouping, each
+  line chosen so that two readings print differently; what each
+  operator leaves unevaluated, by a fault that doesn't happen;
+  spellings (`1<2`, `"a"lt"b"`, `1?2:3`); each refusal.
+- **Lexer**: `true`, `false` and `undef` end a value, so an operator
+  comes next; the word operators after a value. **Parser**: the
+  rows, `? :`, the rule for one row; what may follow `undef`. **The
+  checker**: T101's list context goes down through the right of `||`,
+  `&&`, `//`, `or`, `and` and both branches of `? :` (T104).
+  **Generated C**: the first branches. An operand that may not be
+  worked out is a block of its own, entered or not: `if` and a
+  temporary, no `goto`. **Runtime**: two tags, undef and boolean;
+  `rt_truth`; the comparisons; every operator's fault for an undef.
+- Leave out: variables, so `defined $x` and `$x // 1` wait for step
+  5; `if` and the other statements (5, 6); `^^`; chains unless Q4 is
+  (b).
 
 ### 5. Lexical scalars, assignment, blocks, `if`
 
@@ -1115,7 +1294,8 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-None waiting. D1 to D45 are agreed. **Step 4 is next to propose.**
+Waiting: **step 4**, written out above with its five questions. D1
+to D46 are agreed.
 
 ## Example-port table
 

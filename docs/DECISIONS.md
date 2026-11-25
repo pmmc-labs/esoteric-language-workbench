@@ -3,12 +3,12 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D45 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D46 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
-D35 to D38 are his answers to step 2's proposal, and D39 to D45 to
-step 3's.
+D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
+3's, and D46 to what the review of step 3 left open.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -193,7 +193,9 @@ answers).
 
 **D12. What agreement means: when a program ends normally, its stdout
 and exit status are perl's; when it faults, its stdout up to the fault
-is the start of perl's.** *(User: accepted as proposed, 2026-11-24.)* Ending normally is falling off
+is the start of perl's.** *(User: accepted as proposed, 2026-11-24.
+D46 says what it promises of a perl that runs out of memory as it
+compiles: nothing.)* Ending normally is falling off
 the end, or `exit`. The second half is the whole rule in one line: the
 language may stop early and loudly, and may not say anything perl
 wouldn't have said. stderr is the language's own: a fault's text and a
@@ -203,6 +205,22 @@ warning's needn't match perl's. A program that ends with an uncaught
 Rejected: matching stderr (perl's messages are not a language, and
 most of them become faults); matching the status of a `die` (it would
 drag in `$!` after every system call).
+
+**D46. perl running out of memory as it compiles is outside what D12
+promises.** *(User: picked from two options, 2026-11-25; found by the
+review of step 3, T102.)* perl works a constant expression out as it
+compiles, so `say "before"; say "b" x 999999999999999;` prints nothing
+under perl: it stops for lack of memory before the program starts
+(`panic: fold_constants`). The language prints `before` and then
+faults, `repeated string too long`, which is not the beginning of what
+perl printed. D12 stands as it reads for a perl that has the memory
+for what the program asks; what a perl without it does, and when, is
+the machine's and not the language's. Only a constant count is
+affected (until step 5 they all are), and no test asks perl for a
+long string. Rejected: having the compiler work constant counts out
+and refuse the program (D12 exact, at the price of a constant folder
+the language doesn't otherwise need, which would have to agree with
+perl's about what a constant is).
 
 **D13. Three ways to stop, and only one can be caught.** *(User: picked from three options, 2026-11-24.)*
 

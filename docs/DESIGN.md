@@ -231,7 +231,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D45 are decided. What is left is what the decisions hand to a
+D1 to D46 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
@@ -247,34 +247,27 @@ step, roughly in the order it will matter:
    16 and 22); `--` on a Num (T93, step 5); and **whether a variable's
    past can show anywhere the rules don't fault**, which step 5 has to
    ask again once there are variables to have one.
-4. **A constant perl can't compute as it compiles** (T102, found by
-   the review of step 3): `say "before"; say "b" x 999999999999999;`
-   prints nothing under perl, which runs out of memory before the
-   program starts, and `before` here, then a fault. D12 promises the
-   beginning of what perl prints. To decide: say in D12 that perl
-   running out of memory as it compiles is outside the promise, or
-   have the compiler work constant counts out and refuse the program.
-5. **How deep a program may recurse**, and how a test that goes 100
+4. **How deep a program may recurse**, and how a test that goes 100
    deep is checked, since perl warns there (step 8).
-6. **`for my $x ($p, $q)`**, a `foreach` over variables named directly
+5. **`for my $x ($p, $q)`**, a `foreach` over variables named directly
    (step 9); and an element read in an expression that also removes it
    (D14, step 9).
-7. **`sort`'s comparator** (step 10): frozen so that an effect faults,
+6. **`sort`'s comparator** (step 10): frozen so that an effect faults,
    or perl's merge ported.
-8. **Reading through undef** (step 13): proposed as a fault. And
+7. **Reading through undef** (step 13): proposed as a fault. And
    **dereference without braces**, `@$x` and `$$x[0]`: proposed as
    cut, leaving `->@*` and `@{ }`, as Stevan's style guide has it.
-9. **A closure over a loop variable** (step 14): refused until then,
+8. **A closure over a loop variable** (step 14): refused until then,
    and too common an idiom to leave refused.
-10. **`finally` and `defer`; how `warn` is tested** (step 15).
-11. **Modules** (step 18): `package Name;` is decided (D19); imports,
+9. **`finally` and `defer`; how `warn` is tested** (step 15).
+10. **Modules** (step 18): `package Name;` is decided (D19); imports,
    and how files are found, are not.
-12. **Regex captures** (step 19): `$1`, or only named and returned.
-13. **Bytes**, for binary files, as a type apart from strings (with
+11. **Regex captures** (step 19): `$1`, or only named and returned.
+12. **Bytes**, for binary files, as a type apart from strings (with
     step 21).
-14. **The syntax of a type** (step 25); whether roles erase by
+13. **The syntax of a type** (step 25); whether roles erase by
     flattening into classes, which would keep perl as their oracle
     (step 27); the shape of concurrency, and D13 revisited with it
     (step 29).
-15. **The extension of a file that carries type annotations** (step
+14. **The extension of a file that carries type annotations** (step
     25). A program is a `.pl` file until then.
