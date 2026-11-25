@@ -2,11 +2,18 @@
 // in a temporary (D31), every runtime call taking the context first (D28).
 // The C is linked with runtime/rt.c by the driver.
 //
-// A variable is a C local, and is never copied into a temporary: an
-// operand that is the variable itself is read when its operator runs
-// (D14). So an expression's C is either a value fixed when it was made (a
-// temporary, a literal) or a place, and where an operator gives one of
-// two operands (`||`, `? :`) its C is a pointer to whichever it gave.
+// A variable is never copied into a temporary: an operand that is the
+// variable itself is read when its operator runs (D14). So an
+// expression's C is either a value fixed when it was made (a temporary, a
+// literal) or a place, and where an operator gives one of two operands
+// (`||`, `? :`) its C is a pointer to whichever it gave.
+//
+// Every variable and every temporary is a slot of its function's frame,
+// `f[n]`, where the collector can see it (D66): the variables first, each
+// at its depth among those in scope, and then the temporaries, which every
+// statement numbers from the first again. Nothing a program can still use
+// is anywhere else when a runtime call is made, and that is the whole of
+// what the collector asks of this file.
 //
 // A loop is C's `for (;;)` with its test inside it, and `last` and `next`
 // are each a `goto`, to a label after the loop or at the end of its block:
@@ -35,15 +42,20 @@ export const cString = (text: string): string => {
 // branch is good after the branch; `lines`, its statements. `strings` is
 // the whole program's: the string literals, each a constant at the top
 // of the C file, in the order met.
-type Code = { vars: string[]; decls: string[]; lines: string[]; temps: number; strings: string[]; names: Resolution };
+type Code = { vars: string[]; decls: string[]; lines: string[]; temps: number; values: number; strings: string[]; names: Resolution; frame: Frame };
+
+// What the function being generated needs of its frame: the most
+// temporaries any one statement of it has.
+type Frame = { temporaries: number };
 
 // An expression's C, and whether it has an address: a variable, a
 // temporary, or what a pointer points at.
 type C = { c: string; place: boolean };
 
 const temp = (b: Code, call: string): C => {
-    const t = `t${++b.temps}`;
-    b.decls.push(`rt_value ${t} RT_UNUSED;`);
+    const t = `f[${b.names.variables + b.values}]`;
+    b.values += 1;
+    b.frame.temporaries = Math.max(b.frame.temporaries, b.values);
     b.lines.push(`${t} = ${call};`);
     return { c: t, place: true };
 };
@@ -55,8 +67,9 @@ const pointTo = (b: Code, v: C): string => `&${v.place ? v.c : temp(b, v.c).c}`;
 const variable = (b: Code, e: Expr): string => {
     if (e.kind !== 'var' && e.kind !== 'my') throw new Error('not a variable');
     const id = b.names.of.get(e);
-    if (id === undefined) throw new Error(`$${e.name} was not resolved`);
-    return `v${id}_${e.name}`;
+    const slot = id === undefined ? undefined : b.names.slots[id];
+    if (slot === undefined) throw new Error(`$${e.name} was not resolved`);
+    return `f[${slot}]`;
 };
 
 // The C for an expression's value, once the statements appended to `b`
@@ -83,9 +96,10 @@ const genExpr = (e: Expr, b: Code): C => {
         return { c: name.c, place: false };
     }
     case 'var': return { c: variable(b, e), place: true };
-    // `my $x`: an undef, in the C block the statement stands in.
+    // `my $x`: an undef, each time the `my` is reached, whatever the slot
+    // held for a variable before it.
     case 'my':
-        b.vars.push(`rt_value ${variable(b, e)} RT_UNUSED = rt_undef();`);
+        b.vars.push(`${variable(b, e)} = rt_undef(); // my $${e.name}`);
         return { c: variable(b, e), place: true };
     // The right side first, and then the variable is read, if the
     // operator reads it, and set. The value is the variable.
@@ -158,7 +172,7 @@ const genExpr = (e: Expr, b: Code): C => {
     }
 };
 
-type Out = { strings: string[]; names: Resolution };
+type Out = { strings: string[]; names: Resolution; frame: Frame };
 
 // The C of an expression that is a statement's or a test's, and what it
 // is worth. A fault names the line its statement starts on (D34), a test's
@@ -166,7 +180,7 @@ type Out = { strings: string[]; names: Resolution };
 // `vars` are the variables it declares, which belong to the C block the
 // statement stands in.
 const genWhole = (e: Expr, line: number, out: Out, use: (c: string) => string[]): { vars: string[]; code: string[] } => {
-    const b: Code = { vars: [], decls: [], lines: [], temps: 0, strings: out.strings, names: out.names };
+    const b: Code = { vars: [], decls: [], lines: [], temps: 0, values: 0, strings: out.strings, names: out.names, frame: out.frame };
     const c = genExpr(e, b).c;
     return { vars: b.vars, code: [`cx->line = ${line};`, ...b.decls, ...b.lines, ...use(c)] };
 };
@@ -176,7 +190,7 @@ const indent = (lines: string[]): string[] => lines.map(l => `    ${l}`);
 // The expressions of one part of a `for`, left to right, in a C block of
 // their own for their temporaries; nothing, for an empty part.
 const genParts = (es: readonly Expr[], line: number, out: Out): { vars: string[]; code: string[] } => {
-    const b: Code = { vars: [], decls: [], lines: [], temps: 0, strings: out.strings, names: out.names };
+    const b: Code = { vars: [], decls: [], lines: [], temps: 0, values: 0, strings: out.strings, names: out.names, frame: out.frame };
     es.forEach(e => genExpr(e, b));
     return { vars: b.vars, code: es.length ? ['{', ...indent([`cx->line = ${line};`, ...b.decls, ...b.lines]), '}'] : [] };
 };
@@ -274,16 +288,21 @@ const genStmt = (s: Stmt, out: Out): string[] => {
 // `file` is the program's path as the driver was given it, which is the
 // path perl is given too (D10): a fault names it.
 export const generate = (program: Program, names: Resolution, file: string): string => {
-    const out: Out = { strings: [], names };
+    const out: Out = { strings: [], names, frame: { temporaries: 0 } };
     const body = program.body.flatMap(s => genStmt(s, out));
+    // A frame has a slot at least: C has no array of none.
+    const slots = Math.max(1, names.variables + out.frame.temporaries);
     return [
         '#include "rt.h"',
         '',
         ...out.strings,
         ...(out.strings.length ? [''] : []),
         'static void curly_main(rt_ctx *cx) {',
-        '    (void)cx;',
+        `    rt_value f[${slots}];`,
+        '    rt_frame frame;',
+        `    rt_enter(cx, &frame, f, ${slots});`,
         ...indent(body),
+        '    rt_leave(cx, &frame);',
         '}',
         '',
         'int main(void) {',

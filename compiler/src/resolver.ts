@@ -21,9 +21,17 @@ import type { Expr, Jump, Loop, My, Pos, Program, Stmt, Var } from './ast.ts';
 // which one each variable in the tree means, and `names` what each is
 // called. A loop is a number too: `loops` gives each its own, and `jumps`
 // says which loop each `last` and `next` is for.
+//
+// `slots` says where each declaration's value is kept as the program runs
+// (D66): the slot of its function's frame that is its depth among the
+// variables in scope, so that the variables of a block that has ended
+// leave their slots to the next one. `variables` is how many slots that
+// takes, at most.
 export type Resolution = {
     of: ReadonlyMap<Var | My, number>;
     names: readonly string[];
+    slots: readonly number[];
+    variables: number;
     loops: ReadonlyMap<Loop, number>;
     jumps: ReadonlyMap<Jump, number>;
 };
@@ -35,7 +43,13 @@ type Round = { loop: Loop } | { bare: Pos };
 export const resolve = (program: Program): Resolution => {
     const of = new Map<Var | My, number>();
     const names: string[] = [];
+    const slots: number[] = [];
+    let inScope = 0;
+    let variables = 0;
     const scopes: Map<string, number>[] = [new Map()];
+    const close = (): void => {
+        inScope -= scopes.pop()!.size;
+    };
     const loops = new Map<Loop, number>();
     const jumps = new Map<Jump, number>();
     const round: Round[] = [];
@@ -87,13 +101,16 @@ export const resolve = (program: Program): Resolution => {
             const scope = scopes.at(-1)!;
             if (scope.has(d.name)) refuse(`my $${d.name} again in one scope: perl warns that it masks the first`, d.pos);
             scope.set(d.name, of.get(d)!);
+            slots[of.get(d)!] = inScope;
+            inScope += 1;
+            variables = Math.max(variables, inScope);
         }
     };
 
     const inner = (body: readonly Stmt[]): void => {
         scopes.push(new Map());
         body.forEach(statement);
-        scopes.pop();
+        close();
     };
 
     const statement = (s: Stmt): void => {
@@ -117,7 +134,7 @@ export const resolve = (program: Program): Resolution => {
             round.push({ loop: s });
             inner(s.body);
             round.pop();
-            scopes.pop();
+            close();
             return;
         case 'for':
             loops.set(s, loops.size);
@@ -128,7 +145,7 @@ export const resolve = (program: Program): Resolution => {
             round.push({ loop: s });
             inner(s.body);
             round.pop();
-            scopes.pop();
+            close();
             return;
         case 'jump': {
             if (s.label !== undefined) {
@@ -162,12 +179,12 @@ export const resolve = (program: Program): Resolution => {
                 inner(arm.body);
             }
             if (s.otherwise) inner(s.otherwise);
-            scopes.pop();
+            close();
             return;
         default: return;
         }
     };
 
     program.body.forEach(statement);
-    return { of, names, loops, jumps };
+    return { of, names, slots, variables, loops, jumps };
 };

@@ -22,21 +22,104 @@
 #define SPLIT "a string with a point this close to the next whole number has two values in perl"
 #define NEG_LARGE "a minus before a string that is a whole number this large has two answers in perl"
 
-// ---- the heap
+// ---- the heap, and its collector (D26, D66)
 
-// Every string a program makes is a block on the context's list, and
-// stays there until the program ends: there is no collector yet (step 7).
+// Every string a program makes is a block on the context's list: this
+// header, the rt_str, its bytes. One that no slot of any frame holds is
+// garbage, and a collection frees it.
+//
+// The rule everything here leans on: a value the program can still use is
+// in a slot whenever a collection can happen, and one can happen only
+// inside `str_new`. So a runtime function allocates at most once, as the
+// last thing it does (its operands are still in its caller's slots, and
+// what it makes is in a slot before anything allocates again), or it
+// opens a frame of its own for what it makes.
 typedef struct rt_block {
     struct rt_block *next;
     uint64_t size;          // of the whole block, this header and the string
+    uint64_t marked;        // reached, in the collection that is running
 } rt_block;
 
-static void release(rt_ctx *cx) {
-    while (cx->heap) {
-        rt_block *next = cx->heap->next;
-        free(cx->heap);
-        cx->heap = next;
+// With no knob set, the first collection comes after this many bytes, and
+// each one after when as many have been allocated as were live after the
+// last, or this many if that is more: the heap about doubles between two.
+#define FIRST_COLLECTION ((uint64_t)1 << 20)
+
+static void free_list(rt_block *list) {
+    while (list) {
+        rt_block *next = list->next;
+        free(list);
+        list = next;
     }
+}
+
+static void release(rt_ctx *cx) {
+    free_list(cx->heap);
+    free_list(cx->dead);
+    cx->heap = NULL;
+    cx->dead = NULL;
+}
+
+// A string that is being read. One that was collected is a root the
+// collector was not shown: its bytes are poison, and under the poison
+// knob its memory is still its own, so this is seen every time.
+static const rt_str *alive(rt_ctx *cx, const rt_str *s) {
+    if (s->where == RT_STR_DEAD) rt_internal(cx, "a string was used after it was collected");
+    return s;
+}
+
+void rt_enter(rt_ctx *cx, rt_frame *frame, rt_value *slots, uint64_t count) {
+    memset(slots, 0, count * sizeof(rt_value));
+    frame->prev = cx->frames;
+    frame->count = count;
+    frame->slots = slots;
+    cx->frames = frame;
+}
+
+void rt_leave(rt_ctx *cx, rt_frame *frame) {
+    if (cx->frames != frame) rt_internal(cx, "a frame was closed that is not the newest");
+    cx->frames = frame->prev;
+}
+
+void rt_collect(rt_ctx *cx) {
+    cx->collections += 1;
+    // Mark: every slot of every frame. A string holds no other value, so
+    // this goes no deeper (arrays will: step 9).
+    for (rt_frame *frame = cx->frames; frame; frame = frame->prev) {
+        for (uint64_t k = 0; k < frame->count; k++) {
+            rt_value v = frame->slots[k];
+            if (v.tag != RT_TAG_STR) continue;
+            if (v.as.s->where == RT_STR_DEAD) rt_internal(cx, "a slot holds a string that was collected");
+            if (v.as.s->where == RT_STR_HEAP) ((rt_block *)v.as.s - 1)->marked = 1;
+        }
+    }
+    // Sweep: what was not reached is poisoned, and freed; or, under the
+    // poison knob, kept where nothing will be put in its place.
+    uint64_t live = 0;
+    rt_block **link = &cx->heap;
+    while (*link) {
+        rt_block *block = *link;
+        if (block->marked) {
+            block->marked = 0;
+            live += block->size;
+            link = &block->next;
+            continue;
+        }
+        *link = block->next;
+        cx->objects -= 1;
+        rt_str *s = (rt_str *)(block + 1);
+        memset((char *)(s + 1), '~', s->len);
+        s->where = RT_STR_DEAD;
+        if (cx->poison) {
+            block->next = cx->dead;
+            cx->dead = block;
+        } else {
+            cx->held -= block->size;
+            free(block);
+        }
+    }
+    cx->since = 0;
+    cx->threshold = live > FIRST_COLLECTION ? live : FIRST_COLLECTION;
 }
 
 // A knob (D63): a whole number in digits, and unset, empty or 0 is off.
@@ -57,26 +140,52 @@ static uint64_t knob(const char *name, uint64_t most) {
 }
 
 int rt_run(void (*body)(rt_ctx *cx), const char *file) {
-    rt_ctx cx = { .file = file, .line = 0, .out_utf8 = 0, .heap = NULL, .held = 0 };
+    rt_ctx cx = { .file = file, .threshold = FIRST_COLLECTION };
     cx.stress = knob("CURLY_GC_STRESS", UINT32_MAX);
     cx.poison = knob("CURLY_GC_POISON", 1);
     cx.cap = knob("CURLY_HEAP_CAP", (uint64_t)1 << 62);
     body(&cx);
+    // The generated C closes what it opens; a frame still here would be
+    // one the next function's collections walked after its slots were gone.
+    if (cx.frames != NULL) rt_internal(&cx, "a frame was left open");
     release(&cx);
     return 0;
 }
 
 // A new string of `len` bytes and `chars` characters, for the caller to
 // fill through `*bytes`: the one place a string is made, and it is not
-// changed after the function that made it returns.
+// changed after the function that made it returns. And the one place a
+// collection can happen: before the string is made, so that what is made
+// is never looked at before it is in a slot.
 static const rt_str *str_new(rt_ctx *cx, uint64_t len, uint64_t chars, char **bytes) {
     uint64_t size = sizeof(rt_block) + sizeof(rt_str) + len + 1;
-    // The cap is on what is held (D65).
-    if (cx->cap != 0 && (size > cx->cap || cx->held > cx->cap - size)) rt_fault(cx, "out of memory");
+    cx->allocations += 1;
+    int collected = 0;
+    // The stress knob: every nth allocation (D63). Otherwise, when enough
+    // has been allocated since the last (D66).
+    if ((cx->stress != 0 && cx->allocations % cx->stress == 0) || cx->since > cx->threshold) {
+        rt_collect(cx);
+        collected = 1;
+    }
+    // The cap is on what is held (D65): what is alive, and under poison
+    // the dead that are kept. Garbage is not held once it is collected, so
+    // a collection comes before the fault.
+    if (cx->cap != 0 && (size > cx->cap || cx->held > cx->cap - size)) {
+        if (!collected) rt_collect(cx);
+        collected = 1;
+        if (size > cx->cap || cx->held > cx->cap - size) rt_fault(cx, "out of memory");
+    }
     rt_block *block = malloc(size);
+    if (block == NULL && !collected) {
+        rt_collect(cx);
+        block = malloc(size);
+    }
     if (block == NULL) rt_fault(cx, "out of memory");
     block->size = size;
+    block->marked = 0;
     cx->held += size;
+    cx->since += size;
+    cx->objects += 1;
     block->next = cx->heap;
     cx->heap = block;
     rt_str *s = (rt_str *)(block + 1);
@@ -85,6 +194,7 @@ static const rt_str *str_new(rt_ctx *cx, uint64_t len, uint64_t chars, char **by
     s->len = len;
     s->chars = chars;
     s->bytes = p;
+    s->where = RT_STR_HEAP;
     *bytes = p;
     return s;
 }
@@ -151,22 +261,31 @@ static int format_number(rt_ctx *cx, rt_value v, char buf[32]) {
 }
 
 // A boolean as a string (D47): `1`, or nothing.
-static const rt_str STR_TRUE = { 1, 1, "1" };
-static const rt_str STR_FALSE = { 0, 0, "" };
+static const rt_str STR_TRUE = { 1, 1, "1", RT_STR_CONSTANT };
+static const rt_str STR_FALSE = { 0, 0, "", RT_STR_CONSTANT };
+
+// A number as a string, for as long as one operation runs: on the C
+// stack, in its caller's own (D66). It is never made on the heap, so
+// reading a number as a string is no allocation, and a function that
+// reads two and makes one string allocates once.
+typedef struct {
+    rt_str s;
+    char bytes[32];
+} scratch;
 
 // A value where a string is wanted (D24): a Str is itself, a number is
 // what `say` prints for it, a boolean is `1` or the empty string, and an
 // undef is a fault: perl warns, and goes on with the empty string (D48).
-static const rt_str *to_str(rt_ctx *cx, rt_value v) {
-    if (v.tag == RT_TAG_STR) return v.as.s;
+static const rt_str *to_str(rt_ctx *cx, rt_value v, scratch *number) {
+    if (v.tag == RT_TAG_STR) return alive(cx, v.as.s);
     if (v.tag == RT_TAG_BOOL) return v.as.i ? &STR_TRUE : &STR_FALSE;
     if (v.tag == RT_TAG_UNDEF) rt_fault(cx, "undef where a string is wanted");
-    char buf[32];
-    int len = format_number(cx, v, buf);
-    char *bytes;
-    const rt_str *s = str_new(cx, (uint64_t)len, (uint64_t)len, &bytes);
-    memcpy(bytes, buf, (size_t)len);
-    return s;
+    int len = format_number(cx, v, number->bytes);
+    number->s.len = (uint64_t)len;
+    number->s.chars = (uint64_t)len;
+    number->s.bytes = number->bytes;
+    number->s.where = RT_STR_SCRATCH;
+    return &number->s;
 }
 
 // ---- printing
@@ -184,7 +303,8 @@ static void emit(rt_ctx *cx, rt_value v, int newline) {
     const char *bytes = buf;
     size_t len;
     if (v.tag == RT_TAG_STR || v.tag == RT_TAG_BOOL || v.tag == RT_TAG_UNDEF) {
-        const rt_str *s = to_str(cx, v);
+        scratch none;
+        const rt_str *s = to_str(cx, v, &none);
         if (s->len != s->chars) {
             int size;
             for (uint64_t at = 0; at < s->len; at += (uint64_t)size) {
@@ -347,7 +467,7 @@ static number numeric(rt_ctx *cx, rt_value v) {
         x.n = v.as.n;
         return x;
     case RT_TAG_STR:
-        return from_string(cx, v.as.s);
+        return from_string(cx, alive(cx, v.as.s));
     case RT_TAG_BOOL:
         // The Int 1 or 0, and nothing less: perl has one answer for a
         // boolean beside any operand, whatever its past (D47).
@@ -615,7 +735,7 @@ rt_value rt_pow(rt_ctx *cx, rt_value a, rt_value b) {
 rt_value rt_neg(rt_ctx *cx, rt_value a) {
     number x = numeric(cx, a);
     if (a.tag == RT_TAG_STR) {
-        if (a.as.s->bytes[0] == '+') rt_fault(cx, "a minus before a string that starts with a plus");
+        if (alive(cx, a.as.s)->bytes[0] == '+') rt_fault(cx, "a minus before a string that starts with a plus");
         double d = as_double(x);
         if (d == trunc(d) && fabs(d) >= TWO_53) rt_fault(cx, NEG_LARGE);
         return rt_num(-d);
@@ -657,7 +777,7 @@ static rt_value step(rt_ctx *cx, rt_value a, int d) {
         if (fabs(f) >= TWO_53 || fabs(f + d) >= TWO_53) {
             rt_fault(cx, "++ or -- on a string that is a whole number this large has two answers in perl");
         }
-        const rt_str *s = a.as.s;
+        const rt_str *s = alive(cx, a.as.s);
         int digits = s->len > 1 && s->bytes[0] == '0';
         for (uint64_t at = 0; digits && at < s->len; at++) digits = digit(s->bytes[at]);
         if (d > 0 && digits) rt_fault(cx, "++ on a string of digits that begins with a zero has two answers in perl");
@@ -713,11 +833,17 @@ rt_value rt_concat_to(rt_ctx *cx, rt_value a, rt_value b) {
     return rt_concat(cx, a.tag == RT_TAG_UNDEF ? rt_string(&STR_FALSE) : a, b);
 }
 
+// (An operand is read after the allocation, which may have been a
+// collection: so it is looked at again there. Under stress a root that
+// was missed is collected in the very operation that reads it.)
 rt_value rt_concat(rt_ctx *cx, rt_value a, rt_value b) {
-    const rt_str *s = to_str(cx, a);
-    const rt_str *t = to_str(cx, b);
+    scratch x, y;
+    const rt_str *s = to_str(cx, a, &x);
+    const rt_str *t = to_str(cx, b, &y);
     char *bytes;
     const rt_str *joined = str_new(cx, s->len + t->len, s->chars + t->chars, &bytes);
+    alive(cx, s);
+    alive(cx, t);
     memcpy(bytes, s->bytes, s->len);
     memcpy(bytes + s->len, t->bytes, t->len);
     return rt_string(joined);
@@ -727,7 +853,8 @@ rt_value rt_concat(rt_ctx *cx, rt_value a, rt_value b) {
 // which cuts to 0), and repeats nothing. A string of 2^31 characters or
 // more is refused here: perl would make it if the machine could.
 rt_value rt_repeat(rt_ctx *cx, rt_value a, rt_value count) {
-    const rt_str *s = to_str(cx, a);
+    scratch x;
+    const rt_str *s = to_str(cx, a, &x);
     number c = numeric(cx, count);
     if (below_zero(c)) rt_fault(cx, "negative repeat count");
     uint64_t n = (uint64_t)whole_number(cx, c);
@@ -735,6 +862,7 @@ rt_value rt_repeat(rt_ctx *cx, rt_value a, rt_value count) {
     if (s->chars == 0) n = 0;
     char *bytes;
     const rt_str *repeated = str_new(cx, s->len * n, s->chars * n, &bytes);
+    alive(cx, s);
     for (uint64_t k = 0; k < n; k++) memcpy(bytes + k * s->len, s->bytes, s->len);
     return rt_string(repeated);
 }
@@ -742,17 +870,20 @@ rt_value rt_repeat(rt_ctx *cx, rt_value a, rt_value count) {
 // The length of an undef is undef, in perl and here (D48).
 rt_value rt_length(rt_ctx *cx, rt_value a) {
     if (a.tag == RT_TAG_UNDEF) return a;
-    return rt_int((int64_t)to_str(cx, a)->chars);
+    scratch x;
+    return rt_int((int64_t)to_str(cx, a, &x)->chars);
 }
 
 // `uc` and `lc` change the ASCII letters. Past ASCII perl has tables,
 // under which a string can change length (T45); until they come, a
 // character past ASCII is a fault.
 static rt_value change_case(rt_ctx *cx, rt_value a, char from, char to, const char *fault) {
-    const rt_str *s = to_str(cx, a);
+    scratch x;
+    const rt_str *s = to_str(cx, a, &x);
     if (s->len != s->chars) rt_fault(cx, fault);
     char *bytes;
     const rt_str *changed = str_new(cx, s->len, s->chars, &bytes);
+    alive(cx, s);
     for (uint64_t at = 0; at < s->len; at++) {
         char c = s->bytes[at];
         bytes[at] = c >= from && c <= from + 25 ? (char)(c - from + to) : c;
@@ -769,7 +900,8 @@ rt_value rt_lc(rt_ctx *cx, rt_value a) {
 }
 
 rt_value rt_ord(rt_ctx *cx, rt_value a) {
-    const rt_str *s = to_str(cx, a);
+    scratch x;
+    const rt_str *s = to_str(cx, a, &x);
     if (s->len == 0) return rt_int(0);
     int size;
     return rt_int((int64_t)decode(s->bytes, &size));
@@ -804,7 +936,8 @@ rt_value rt_chr(rt_ctx *cx, rt_value a) {
 // (perl warns, and gives undef); otherwise the piece is moved in to what
 // the string has. `has_count` is 0 for the two-argument form.
 static rt_value substring(rt_ctx *cx, rt_value a, rt_value offset, rt_value count, int has_count) {
-    const rt_str *s = to_str(cx, a);
+    scratch x;
+    const rt_str *s = to_str(cx, a, &x);
     int64_t off = whole_number(cx, numeric(cx, offset));
     int64_t n = has_count ? whole_number(cx, numeric(cx, count)) : 0;
     int64_t size = (int64_t)s->chars;
@@ -821,6 +954,7 @@ static rt_value substring(rt_ctx *cx, rt_value a, rt_value offset, rt_value coun
     uint64_t to = offset_of(s, (uint64_t)end);
     char *bytes;
     const rt_str *piece = str_new(cx, to - from, (uint64_t)(end - start), &bytes);
+    alive(cx, s);
     memcpy(bytes, s->bytes + from, to - from);
     return rt_string(piece);
 }
@@ -837,9 +971,7 @@ rt_value rt_substr3(rt_ctx *cx, rt_value a, rt_value offset, rt_value count) {
 // moved into the string; -1 if nowhere. Bytes are compared: a match can
 // only begin at a character, since the first byte of one is never a later
 // byte of another.
-static rt_value find(rt_ctx *cx, rt_value a, rt_value b, int64_t position) {
-    const rt_str *s = to_str(cx, a);
-    const rt_str *t = to_str(cx, b);
+static rt_value find(const rt_str *s, const rt_str *t, int64_t position) {
     if (position < 0) position = 0;
     if (position > (int64_t)s->chars) position = (int64_t)s->chars;
     for (uint64_t at = offset_of(s, (uint64_t)position); at + t->len <= s->len; at++) {
@@ -849,15 +981,19 @@ static rt_value find(rt_ctx *cx, rt_value a, rt_value b, int64_t position) {
 }
 
 rt_value rt_index2(rt_ctx *cx, rt_value a, rt_value b) {
-    return find(cx, a, b, 0);
+    scratch x, y;
+    const rt_str *s = to_str(cx, a, &x);
+    const rt_str *t = to_str(cx, b, &y);
+    return find(s, t, 0);
 }
 
 rt_value rt_index3(rt_ctx *cx, rt_value a, rt_value b, rt_value position) {
-    // The two strings are made before the position is a number, as the
+    // The two strings are read before the position is a number, as the
     // arguments are written.
-    const rt_str *s = to_str(cx, a);
-    const rt_str *t = to_str(cx, b);
-    return find(cx, rt_string(s), rt_string(t), whole_number(cx, numeric(cx, position)));
+    scratch x, y;
+    const rt_str *s = to_str(cx, a, &x);
+    const rt_str *t = to_str(cx, b, &y);
+    return find(s, t, whole_number(cx, numeric(cx, position)));
 }
 
 // ---- truth and comparison
@@ -871,7 +1007,10 @@ int rt_is_true(rt_ctx *cx, rt_value v) {
     case RT_TAG_BOOL: return v.as.i != 0;
     case RT_TAG_INT: return v.as.i != 0;
     case RT_TAG_NUM: return v.as.n != 0.0;
-    case RT_TAG_STR: return !(v.as.s->len == 0 || (v.as.s->len == 1 && v.as.s->bytes[0] == '0'));
+    case RT_TAG_STR: {
+        const rt_str *s = alive(cx, v.as.s);
+        return !(s->len == 0 || (s->len == 1 && s->bytes[0] == '0'));
+    }
     default: rt_fault(cx, "not a value");
     }
 }
@@ -917,8 +1056,9 @@ static int compare_numbers(rt_ctx *cx, rt_value a, rt_value b) {
 // Two operands as strings: -1, 0 or 1. Bytes are compared, which is the
 // order of the characters: UTF-8 keeps it.
 static int compare_strings(rt_ctx *cx, rt_value a, rt_value b) {
-    const rt_str *s = to_str(cx, a);
-    const rt_str *t = to_str(cx, b);
+    scratch x, y;
+    const rt_str *s = to_str(cx, a, &x);
+    const rt_str *t = to_str(cx, b, &y);
     int c = memcmp(s->bytes, t->bytes, s->len < t->len ? s->len : t->len);
     if (c != 0) return (c > 0) - (c < 0);
     return (s->len > t->len) - (s->len < t->len);
@@ -958,4 +1098,11 @@ void rt_fault(rt_ctx *cx, const char *what) {
     fprintf(stderr, "fault: %s at %s line %" PRId64 ".\n", what, cx->file, cx->line);
     release(cx);
     exit(1);
+}
+
+void rt_internal(rt_ctx *cx, const char *what) {
+    fflush(stdout);
+    fprintf(stderr, "internal: %s at %s line %" PRId64 ".\n", what, cx->file, cx->line);
+    release(cx);
+    exit(2);
 }

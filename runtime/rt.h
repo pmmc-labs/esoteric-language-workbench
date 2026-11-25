@@ -19,10 +19,21 @@ enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_
 // made. `len` is its bytes and `chars` its characters, which are the same
 // number when every character is ASCII. The byte after the last is a NUL,
 // which is not part of the string; a string may hold NULs of its own.
+//
+// `where` says whose its memory is (D26, D66). A constant is a literal of
+// the program or the runtime's own, and is 0 so that a constant written
+// as its three first members is one. A heap string was made as the
+// program ran, and is the collector's. A scratch string is a number as a
+// string, on the C stack for as long as one operation runs, and never
+// what a runtime function returns. A dead one was a heap string, and was
+// collected: nothing may read it.
+enum { RT_STR_CONSTANT = 0, RT_STR_HEAP = 1, RT_STR_SCRATCH = 2, RT_STR_DEAD = 3 };
+
 typedef struct rt_str {
     uint64_t len;
     uint64_t chars;
     const char *bytes;
+    uint64_t where;
 } rt_str;
 
 typedef struct {
@@ -80,6 +91,17 @@ static inline rt_value rt_bool(int truth) {
     return v;
 }
 
+// A frame (D66): every variable and temporary of one function, as slots
+// the collector can see. A slot whose tag is 0 holds no value yet. The
+// frames are a list from the context, the newest first; the generated C
+// opens one as a function begins and closes it as it returns, and a
+// runtime function that makes more than one value opens one too.
+typedef struct rt_frame {
+    struct rt_frame *prev;
+    uint64_t count;
+    rt_value *slots;
+} rt_frame;
+
 // The context (D28): everything the runtime knows that isn't a value,
 // passed first to every runtime function and every compiled sub, so that
 // nothing is global and a second context can one day run beside this one.
@@ -87,8 +109,16 @@ typedef struct rt_ctx {
     const char *file;       // the program's path, as the compiler was given it
     int64_t line;           // the line of the statement that is running
     int out_utf8;           // `use open ':std', ':encoding(UTF-8)';` was said (D39)
+    rt_frame *frames;       // the roots: the newest frame, and through it the rest
     struct rt_block *heap;  // every string made and not yet collected
-    uint64_t held;          // the bytes of them, headers and all
+    struct rt_block *dead;  // under poison, the collected: kept, never handed out again
+    uint64_t held;          // the bytes of both, headers and all: what the cap is on
+    uint64_t since;         // bytes allocated since the last collection
+    uint64_t threshold;     // and how many of them bring the next
+    // Counted for the runtime's own tests, and used by nothing else.
+    uint64_t allocations;   // strings made, ever
+    uint64_t collections;   // collections run
+    uint64_t objects;       // strings on the heap now
     // The knobs (D63), read from the environment as the program starts.
     // 0 is off.
     uint64_t stress;        // CURLY_GC_STRESS: a collection at every nth allocation
@@ -99,6 +129,16 @@ typedef struct rt_ctx {
 // Run a compiled program: make its context, call its body, return the
 // status main should. The generated C's main is this and nothing else.
 int rt_run(void (*body)(rt_ctx *cx), const char *file);
+
+// Open a frame of `count` slots, all holding no value, and close it: the
+// newest must be the one closed.
+void rt_enter(rt_ctx *cx, rt_frame *frame, rt_value *slots, uint64_t count);
+void rt_leave(rt_ctx *cx, rt_frame *frame);
+
+// A collection, now (D26): every heap string that no slot of any frame
+// holds is freed. The runtime runs one by itself inside an allocation,
+// when the knobs or the bytes allocated say so; this is for its tests.
+void rt_collect(rt_ctx *cx);
 
 // `use open ':std', ':encoding(UTF-8)';` (D39): from here a character
 // past ASCII may be printed.
@@ -191,4 +231,9 @@ rt_value rt_str_cmp(rt_ctx *cx, rt_value a, rt_value b);
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and
 // nothing can catch it.
 void rt_fault(rt_ctx *cx, const char *what) __attribute__((noreturn));
+
+// A bug in the compiler or the runtime, found as the program ran (D66):
+// `internal: WHAT at FILE line N.` on stderr, after what the program
+// printed, and exit status 2. Never the program's doing.
+void rt_internal(rt_ctx *cx, const char *what) __attribute__((noreturn));
 #endif
