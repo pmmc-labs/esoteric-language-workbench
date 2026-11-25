@@ -1,0 +1,6 @@
+1
+5
+in
+in
+fault: ends has no value: it does not end in a return or an expression at t/929-fault-no-value-handed-on.pl line 6.
+exit: 1

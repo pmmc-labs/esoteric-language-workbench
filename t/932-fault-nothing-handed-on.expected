@@ -1,0 +1,4 @@
+1
+4
+fault: none returned nothing where a list is wanted at t/932-fault-nothing-handed-on.pl line 6.
+exit: 1

@@ -1,0 +1,4 @@
+1
+scalar
+fault: empty returned nothing where a list is wanted at t/933-fault-empty-body-in-list.pl line 5.
+exit: 1

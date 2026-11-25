@@ -1,0 +1,4 @@
+1
+3
+fault: modulus by zero at t/939-fault-three-deep.pl line 12.
+exit: 1

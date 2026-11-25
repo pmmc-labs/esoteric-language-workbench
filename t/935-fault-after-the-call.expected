@@ -1,0 +1,6 @@
+1
+in
+2
+in
+fault: division by zero at t/935-fault-after-the-call.pl line 11.
+exit: 1

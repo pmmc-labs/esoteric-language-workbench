@@ -1,0 +1,6 @@
+1
+in
+2
+in
+fault: division by zero at t/934-fault-in-the-sub.pl line 8.
+exit: 1

@@ -1,0 +1,5 @@
+1
+2
+1
+fault: division by zero at t/936-fault-in-a-default.pl line 5.
+exit: 1

@@ -1,0 +1,4 @@
+1
+2
+fault: undef where a number is wanted at t/938-fault-undef-argument.pl line 6.
+exit: 1

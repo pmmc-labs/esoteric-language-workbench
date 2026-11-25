@@ -1,0 +1,3 @@
+1
+fault: undef where a number is wanted at t/937-fault-void-works-it-out.pl line 6.
+exit: 1

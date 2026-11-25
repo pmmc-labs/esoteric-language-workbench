@@ -1,0 +1,4 @@
+1
+1
+fault: none returned nothing where a list is wanted at t/931-fault-nothing-as-argument.pl line 6.
+exit: 1

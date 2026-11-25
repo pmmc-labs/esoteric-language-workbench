@@ -1,0 +1,4 @@
+1
+1,2
+fault: too few arguments for two: got 1, expected 2 at t/920-fault-too-few.pl line 10.
+exit: 1

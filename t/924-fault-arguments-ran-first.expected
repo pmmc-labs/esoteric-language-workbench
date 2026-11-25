@@ -1,0 +1,9 @@
+1
+a
+b
+a,b
+c
+d
+e
+fault: too many arguments for two: got 3, expected 2 at t/924-fault-arguments-ran-first.pl line 14.
+exit: 1
