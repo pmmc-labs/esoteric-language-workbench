@@ -14,6 +14,8 @@ KIND is the generator a program is drawn from:
            a condition, shadowing
   past     gen_past.py: a value of every kind and edge, read-only statements,
            then ++ -- OP= and one observation
+  cat      gen_cat.py: strings, rows of dots, `.=`, assignments inside
+           expressions: where perl makes one operation of several
 
 and KIND-min (late-min is prec) prints a kind's trees with the fewest
 brackets, KIND-bare with the fewest brackets and `say E;` for `say(E);`.
@@ -46,7 +48,7 @@ import collections, os, random, re, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, '..', '..', '..')
 sys.path.insert(0, HERE)
-import model, minshow, gen_late, gen_struct, gen_past
+import model, minshow, gen_late, gen_struct, gen_past, gen_cat
 
 PERL = os.environ.get('CURLY_PERL', 'perl')
 ENV = dict(os.environ, PERL_HASH_SEED='1')
@@ -61,6 +63,8 @@ def draw(kind, r, state):
         p = gen_late.program(r)
     elif base == 'struct':
         p = gen_struct.program(r)
+    elif base == 'cat':
+        p = gen_cat.program(r)
     elif base == 'past':
         if 'inits' not in state: state['inits'] = gen_past.inits()
         p = gen_past.program(r, state['inits'])
@@ -291,6 +295,17 @@ class Text:
         self.out, self.fault = None, None
 
 
+def lost_assignment(prog):
+    """`T .= (U = A . B)`, found through brackets, a unary plus, and whatever gives one
+    operand or the other: perl 5.42 never assigns U."""
+    def found(e):
+        e = model.strip(e)
+        if e[0] == 'log': return found(e[2]) or found(e[3])
+        if e[0] == 'tern': return found(e[2]) or found(e[3])
+        return e[0] == 'asg' and e[1] == '=' and model.strip(e[3])[0] == 'bin' and model.strip(e[3])[1] == '.'
+    return any(e[0] == 'asg' and e[1] == '.=' and found(e[3]) for e in model.walk(prog))
+
+
 def report(name):
     print()
     for k, v in sorted(counts.items(), key=lambda kv: -kv[1]): print('%7d  %s' % (v, k))
@@ -298,7 +313,9 @@ def report(name):
     by = collections.OrderedDict()
     for it, why in wrong:
         m = re.search(r"(Found = in conditional|Lost precision|Reversed [-+]= operator|masks earlier|Useless use|syntax error|Identifier too long|isn't numeric|uninitialized|did not finish|BREAKS)", why)
-        by.setdefault(m.group(1) if m else 'prints what perl does not', []).append((it, why))
+        key = m.group(1) if m else 'prints what perl does not'
+        if not m and it.prog is not None and lost_assignment(it.prog): key = 'prints what perl does not: .= of an assigned concatenation'
+        by.setdefault(key, []).append((it, why))
     for k, v in by.items(): print('%7d    of them: %s' % (len(v), k))
     print()
     for k, v in sorted(kinds.items(), key=lambda kv: -kv[1]): print('%7d  %s' % (v, k))
@@ -308,7 +325,7 @@ def report(name):
         for k, v in examples.items(): f.write('==== the first of: %s\n%s\n' % (k, v))
     print('\nthe WRONG programs, and the first of each kind: ' + logname)
     for k, v in by.items():
-        for it, why in v[:2 if k != 'prints what perl does not' else 6]: print('==== WRONG (%s)\n%s## the compiler %s' % (k, it.alone, why[:600]))
+        for it, why in v[:2 if k != 'prints what perl does not' else 8]: print('==== WRONG (%s)\n%s## the compiler %s' % (k, it.alone, why[:600]))
 
 
 if __name__ == '__main__':

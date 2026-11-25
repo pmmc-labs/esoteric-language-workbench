@@ -29,14 +29,21 @@ def tails():
 
 
 def main():
-    items = []
-    for tail in tails():
-        for blank in BLANKS:
-            for head, end in SHAPES:
-                items.append(compiler.Text(len(items), 'my $x = 6;\nmy $y = 2;\n%s$x%s%s%s' % (head, blank, tail, end)))
+    # handles.py [shapes=0,2,4] [quick] [PART/OF]: some of the shapes; fewer operands and blanks; a slice
+    global OPERANDS, BLANKS
+    shapes = SHAPES
     part, of = 0, 1
     for a in sys.argv[1:]:
         if '/' in a: part, of = map(int, a.split('/'))
+        if a.startswith('shapes='): shapes = [SHAPES[int(n)] for n in a[7:].split(',')]
+        if a == 'quick':
+            OPERANDS = ['2', '$y', '-2', '+2', '.5', '"2"', '(2)', 'true', '++$y']
+            BLANKS = [' ', '\n', ' # c\n']
+    items = []
+    for tail in tails():
+        for blank in BLANKS:
+            for head, end in shapes:
+                items.append(compiler.Text(len(items), 'my $x = 6;\nmy $y = 2;\n%s$x%s%s%s' % (head, blank, tail, end)))
     items = [it for n, it in enumerate(items) if n % of == part]
     print('%d texts' % len(items), flush=True)
     while items:
@@ -45,4 +52,5 @@ def main():
     compiler.report('handles')
 
 
-main()
+if __name__ == '__main__':
+    main()

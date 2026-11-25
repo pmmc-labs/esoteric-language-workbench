@@ -330,6 +330,25 @@ about a statement that spans lines.
 | T117 | `my $x = 3; say $x . "a" . ($x = 5);`, `say((1 ? $x . "" : 0) . ($x = 5));`, `say(($x . "a") . ($x = 5));` | `5a5`, `55`, `5a5`: perl joins a row of dots as one operation (`multiconcat`) and reads every piece when it runs, brackets or not, and after folding what it can. `my $y = $x . "a"; say $y . ($x = 5);` is `3a5`, and so are `($x . "a") x 1 . ($x = 5)` and `($x + 0) . "a" . ($x = 5)` | 5 | D57: refuse a concatenation in which a later piece changes a variable an earlier piece reads |
 | T118 | `say 1` / `if` / `$u + 1;` on three lines, `$u` undef; the same in an `elsif (` whose test is on the next line | The warning names the line of `say`, the first of the statement, and the line of the `elsif`: not the line the test or the `if` is on | 5 | A modifier's test is at its statement's line; an `elsif`'s at the `elsif` (tests 547 to 549) |
 
+## Found proposing step 6
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T119 | `my $i = 0; while ((my $x .= "a") && $i++ < 3) { print $x, " " }`; `while ($i < 4) { $i++; next if $i == 2; my $x; $x++; print $x }`; `my $x = 5 while $i++ < 3; say $x;` | `a a a`, `111`, and an empty line with `Use of uninitialized value`: a `my` in a loop's condition or its block is undef again each time round, a `next` before it or not, and one under a `while` modifier is undef afterwards. A `my` in the first part of a C-style `for` is one variable for the whole loop, and gone after it | 6 | Agree; a `my` under a `while` or `until` modifier is refused, as under `if` (T30) |
+| T120 | `while ($i++ < 3) { last + 1; }`; `last $l;` and `last "L";` inside `L: while` | The first dies as it runs, `Label not found for "last 1"`; the others leave the loop: what follows `last` or `next` is an expression for a label's name. And `last` is an expression itself: `$i == 2 and last;`, `my $x = last;`, `say last;`, `last while 1;`, `last() if ...;` all leave the loop, in silence | 6 | `last` and `next` are statements: alone, with a label, and with an `if` or `unless` modifier. Anything else is refused |
+| T121 | `L: say 1;`, `M: if (...) {...}`, `outer: while`, `N : while`; `last NOPE;`; `A: B: while (...) { last A; }`; `L: while (...) { L: while (1) { last L; } ... }` | perl takes a label on any statement, in any case, with a blank before the colon. A label that names no loop round the `last` dies only when the `last` runs, `Label not found for "last NOPE"`, after whatever came first; so does `A` of `A: B:`, since only the label nearest the loop names it. Of two loops with one label the inner is meant | 6 | A label is on a loop, one to a loop, capitals, hard against its colon; a `last` or `next` that names one no loop round it has is refused as it compiles |
+| T122 | `for (my $i = 0, my $j = 9; $i < $j; $i++, $j--)`; `for (...; $i < 3, $j > 7; ...)`; `for ($i + 1; ...)`; `for (...; ...; my $k = $i++)`; `foreach (my $i = 0; $i < 3; $i++)` | The first is the loop it looks like. A comma in the condition warns `Useless use of numeric lt (<) in void context`, and only its last part is tested. A first or third part that only has a value warns `Useless use of addition (+) in void context`. A `my` in the second or third part is taken, and `foreach` is `for` | 6 | Q3: a comma joins assignments and steps in the first and third parts only; `my` in the first only; the word is `for` |
+| T123 | `while () { last if $i++ > 2; }`; `until () { ... }` | `4`: an empty condition is true for `while`, and `until ()` doesn't compile. `for (;;)` is the loop with no condition | 6 | Refuse `while ()`: `while (1)` or `for (;;)` says it |
+| T124 | A `while` whose condition warns the second time it is tested, over several lines | The warning names the line of the last statement the block ran, not the line of the `while`: perl keeps no line for a condition, and says the one it was last at. The first time, it is the `while`'s line. In a C-style `for` it is the line of the `for`, for the condition and the third part, every time; under a modifier, the line the statement starts on (T118) | 6 | A fault in a loop's condition names the line of its `while`, `until` or `for` (D34): the language's own line, where perl's is an accident |
+
+`do BLOCK while COND` is T64: the block runs before the test. T64 has
+more to it: a `last` in that block leaves the loop *round* the `do`,
+in silence (`while ($i++ < 3) { do { last; } while (0); say "in"; }`
+prints nothing), and with no loop round it dies, `Can't "last" outside
+a loop block`. T32 has more too: `next` in a bare block leaves the
+block, as `last` does, and one `last` inside two bare blocks leaves
+the inner.
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

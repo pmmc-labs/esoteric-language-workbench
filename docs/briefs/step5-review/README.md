@@ -33,8 +33,10 @@ left is, `++` and `--` by what the variable holds, late reads, blocks,
 | `gen_fh.py` | The proposal's file-handle rule as text, held to perl |
 | `classify_found.py` | perl's `Found = in conditional` held to a rule over `gen_struct.py`'s programs |
 | `compiler.py` | **The compiler held to perl**, with the generators above: `python3 docs/briefs/step5-review/compiler.py KIND SEED COUNT`. Programs go forty to a file, each in a block; what differs is run again alone before it is called WRONG. `plant` puts two known WRONG programs in, as its own check |
+| `gen_cat.py` | Strings: rows of dots, `.=`, assignments inside expressions, constant tests: where perl makes one operation of several (kind `cat` of `compiler.py`) |
+| `spacing.py` | The compiler's reading of a text held to perl's, where the blanks are: a generated program cut into tokens and joined again with nothing, a blank, a newline or a comment between each two; through `compiler.py` |
 | `handles.py` | The compiler's file-handle refusal: a variable first after `say`, `print`, `substr(`, `index(`, each blank, each operator spelled both ways, each operand; through `compiler.py` |
-| `shapes.py`, `shapes/` | Programs written by hand, a paragraph each, given to the compiler and perl: `python3 docs/briefs/step5-review/shapes.py docs/briefs/step5-review/shapes/*.txt` |
+| `shapes.py`, `shapes/` | Programs written by hand, a paragraph each, given to the compiler and perl: `python3 docs/briefs/step5-review/shapes.py docs/briefs/step5-review/shapes/*.txt`. **`shapes/findings.txt` is what the review found WRONG in the compiler as it was built (d7883c5), one program of each kind**: all twelve should come to be refused, faults, or the same as perl |
 | `probe.py` | The same paragraphs given to `perl -c` and perl alone, with `-d` for what perl parsed |
 
 Each `gen_*.py` and `compiler.py` says in its first lines how to break

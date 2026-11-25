@@ -1,0 +1,44 @@
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1";
+$t .= ($u = $x . $z);
+say $t;
+say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a";
+$t .= (1 ? ($u = $x . "-") : 0);
+say $t . "|" . $u;
+---
+my $x = 1; my $y = 3;
+if ($x = 0 && $y) { say "a"; }
+say $x;
+---
+my $x = 0; my $y = 3;
+say "a" if $x = "p" . (1 || $y);
+say $x;
+---
+my $x = 5;
+say substr($x -1, 0);
+---
+my $x = "abc";
+say index($x .5, "c");
+---
+my $x = 5;
+say substr(($x -1), 0);
+---
+my $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1;
+say $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+---
+my $x = 9007199254740994.0;
+$x++;
+say $x;
+---
+my $x = -9007199254740994.0;
+--$x;
+say $x + 9007199254740000;
+---
+my $y = 2;
+my $x =- $y;
+say $x;
+---
+my $y = 2; my $x = 0;
+$x =+ $y;
+say $x;

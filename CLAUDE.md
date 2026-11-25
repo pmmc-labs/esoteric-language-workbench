@@ -178,9 +178,10 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 402 of them now, and all hold under 5.42.0,
+about perl as a program, 433 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T118, by step. **Found at step 0**: T72 (a
+keeps the programs, T1 to T124, by step (T119 to T124 found proposing
+step 6). **Found at step 0**: T72 (a
 line that starts `#!`, D33), T73 (`use utf8;` on a line before the
 first character past ASCII), T74 (`# line N "file"` comments, step
 15), T75 (`use v5.42#c`). **At step 1**: T76. **Proposing step 2**:
@@ -227,9 +228,15 @@ and the tests, and the compiler is held to its model as steps 3 and
 4 were. Until then step 5's claim, that a variable's past shows
 nowhere the language doesn't fault, rests on the builder's evidence
 alone (`docs/briefs/step5-increments.py`: `++`, `--` and the
-assigning operators under seven pasts of the variable). **Next: step 6**, loops, which is an outline and has
-to be proposed; write its model before its compiler, as step 5 did,
-and test that a `my` in a block is undef again each time round. `docs/briefs/step4-comparisons.py`
+assigning operators under seven pasts of the variable). **Next: step 6**, loops, is **proposed in full
+in `docs/PLAN.md` and waits on Stevan's answers to its four
+questions** (Q1: `do BLOCK while`, left out; Q2: an unlabelled `last`
+or `next` in a bare block, which leaves only the block to perl,
+refused; Q3: the comma in a C-style `for`, in its first and third
+parts; Q4: labels, on loops only, in capitals, checked as the program
+compiles). Nothing of step 6 is built; write its model before its
+compiler, as step 5 did, and test that a `my` in a block is undef
+again each time round. The runtime gains nothing at step 6. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
 operand: 57,376 comparisons, no new fault needed. **What every step
 must ask again**: whether a value's past shows anywhere the

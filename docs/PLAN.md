@@ -8,8 +8,10 @@ be a session or two each.
 and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic, and variables,
 assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
-on 2026-11-25). Steps 6 to 30 are outlines: each
-is proposed, with options, when it's next.
+on 2026-11-25). **Step 6, loops, is proposed, below, and waits on
+four answers from Stevan** (Q1 to Q4); nothing of it is built. Steps
+7 to 30 are outlines: each is proposed, with options, when it's
+next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -1324,19 +1326,232 @@ if you would rather meet that at step 10.
   assigning operators are the operators.
 - Leave out: everything listed above as later.
 
-### 6. Loops
+### 6. Loops (proposed, not agreed)
 
 Referee: perl. Size: medium.
 
-`while`, `until`, their postfix forms, the C-style `for`, `last` and
-`next`, labels. A bare block is a loop that runs once, for `last` and
-`next` (T32). `last` and `next` are allowed only inside a loop of the
-same sub, as written (T60). **A `my` in a loop's block is undef again
-each time round**: step 5's mutation run could not see a compiler
-that got that wrong, there being no way to enter a block twice. If `do BLOCK while` is wanted, it runs the
-block first (T64). The comma operator, in a C-style `for`'s slots
-only. A program can now run for a long time: `t/run.sh`'s
-watchdog matters from here.
+**Proposed 2026-11-25. Nothing is built, and four questions are
+Stevan's: Q1 to Q4 below; Q5 is six things with nothing to choose
+that are worth his eye.** Everything here about perl was run under
+5.42.0 and is in `briefs/claims.py` (31 rows, `T32-next` to
+`PLAN6-cut`). Traps: T32, T64, and T119 to T124, found writing this.
+The outline this replaces said: `while`, `until`, their postfix
+forms, the C-style `for`, `last` and `next`, labels; a bare block as
+a loop that runs once (T32); the comma in a C-style `for`'s slots
+only; `do BLOCK while` if wanted (T64).
+
+#### The picture
+
+Step 5 gave a program places and choices. This step lets it **go
+round**.
+
+```
+ while (TEST) { ... }        test, block, test, block, ... until the test fails
+ until (TEST) { ... }        the same, until the test holds
+ for (FIRST; TEST; EACH) { ... }
+                             FIRST once; then test, block, EACH, test, block, EACH, ...
+ $i++ while $i < 10;         one statement, round and round: test first
+ last;   next;               out of the loop; on to its next time round
+ OUTER: while (...) { while (...) { next OUTER; } }
+```
+
+A loop is three places a program can be sent to, and that is all the
+compiler adds:
+
+```
+           +--> TEST --false--------------------------+
+           |      | true                              |
+           |    BLOCK  ... next; --+   ... last; -----+
+           |      |                |                  |
+           |      v                v                  v
+           +--- EACH <-------------+               after the loop
+```
+
+`next` goes to EACH (which is nothing in a `while`), `last` goes to
+after the loop, and the end of the block goes to EACH too. A label
+says which loop's two places are meant. **The runtime gains
+nothing**: every operation a loop runs is one steps 1 to 5 already
+have.
+
+Two things that were true by construction until now have to be made
+true:
+
+**A variable declared in a block is new each time round.** perl makes
+a `my` in a loop's block, or in a `while`'s condition, undef again on
+every pass (T119). In the generated C it is a local declared inside
+the loop's C block with its undef, so it is; but step 5's mutation
+run could not see a compiler that got it wrong, and this step's
+tests must.
+
+**The same operation now runs more than once.** A value has no past
+here; in perl an *operation* has one too, a scratch value of its own
+that it reuses each time it runs. Nothing known turns on it, and the
+model will ask anyway: every edge table of steps 2 to 5 again,
+inside a loop, with the kind of each operand changing from one time
+round to the next.
+
+#### The language at step 6
+
+- **`while (TEST) { ... }`** and **`until (TEST) { ... }`**. The
+  test is a test as an `if`'s is: D53 holds (`while ($x = 5)` is
+  refused; perl warns of it in all four kinds of loop), and a `my`
+  may stand in it, visible in the block, new each time round, gone
+  after the loop.
+- **`for (FIRST; TEST; EACH) { ... }`**: the C-style loop. Each part
+  may be empty; no TEST is true, so `for (;;)` runs until a `last`.
+  FIRST and EACH are what a statement may be: an assignment or a
+  step, and in FIRST a `my`, which is one variable for the whole
+  loop and gone after it (Q3 for the comma).
+- **`STATEMENT while TEST;`** and **`STATEMENT until TEST;`**: the
+  test comes first, so `say $i++ while $i < 3;` prints nothing when
+  `$i` is 5. The statement is `say`, `print`, an assignment or a
+  step, as under `if`, and one modifier to a statement.
+- **`last;`** and **`next;`**, each with a label or without, and with
+  an `if` or `unless` modifier: `last if $i > 5;`, `next OUTER
+  unless $ok;`. In a C-style `for`, `next` runs EACH and then the
+  test.
+- **Labels** (Q4).
+
+Left for later, and refused: `foreach` and `for` over a list, with a
+variable or without (9, 10), and postfix `for` (10); `do BLOCK`, so
+`do BLOCK while` (Q1); `redo`, `goto` and `continue` blocks (cut);
+`last` and `next` anywhere but in a loop of their own, which until
+subs (8) means anywhere outside one.
+
+#### The questions
+
+**Q1. `do { ... } while (TEST);`**, the loop that runs its block
+before the first test (T64). It is not a loop to perl: it is `do
+BLOCK`, an expression, with a `while` modifier that perl special-
+cases to test afterwards. So `last` and `next` in its block don't
+see it. They leave the loop *round* it, in silence, or with none
+round it die as they run (`Can't "last" outside a loop block`).
+(a) **Recommended: leave it out for now.** `do BLOCK` is its own
+construct with a value and a context (D18), and belongs with whatever
+step takes it. The loop is written `while (1) { ...; last unless
+TEST; }` in the meantime.
+(b) Take it at this step, as a loop form of its own, with `last` and
+`next` refused inside its block unless they are in an inner loop.
+More surface, for one trap fenced off.
+
+**Q2. `last` and `next` in a bare block** (T32). To perl a bare
+block is a loop that runs once. So `while (...) { { last; } say
+"still here"; }` never leaves the `while`: the `last` leaves the
+inner braces, and so does a `next`. `if` blocks are not loops, and
+there `last` does what it looks like. This is the trap in the step,
+and perl says nothing about it.
+(a) As perl, which is the plan's reading and what T32's row says:
+agree. It keeps the idiom of a block one can jump out of, `{ ...;
+last if $done; ... }`.
+(b) **Recommended: refuse a `last` or `next` with no label when the
+nearest thing round it that perl counts as a loop is a bare block.**
+The message says which braces it would leave, and to label the loop:
+`W: while (...) { { last W; } }` is the `while` to perl as well. A
+bare block is then a scope and nothing else, which is all step 5 made
+it. This is T25's and T107's habit: where the reading a person takes
+and perl's differ in silence, refuse. It reverses the plan's reading,
+and since (a) accepts strictly more programs, it can be reversed
+later without breaking one.
+
+**Q3. The comma in a C-style `for`** (T122). `for (my $i = 0, my $j
+= 9; $i < $j; $i++, $j--)` is the two-ended loop, and the only place
+the outline lets a comma operator in.
+(a) **Recommended: in FIRST and EACH only, joining what could each
+be a statement**: assignments, steps, and in FIRST a `my`. Not in
+the TEST, where perl tests the last part alone and warns that the
+others are useless.
+(b) No comma: one expression to a part. Simpler by a little; the
+two-ended loop becomes a `while` with its steps in the block, where
+a `next` then skips them.
+
+**Q4. Labels** (T121). `OUTER: while (...) { ... next OUTER; ... }`.
+perl takes a label on any statement, in any case, checks nothing as
+it compiles, and looks the name up when the `last` runs: a wrong
+name is a death in the middle of a run.
+(a) **Recommended: labels now, cut down to what they are for.** A
+label goes on a `while`, `until` or C-style `for`, one to a loop,
+written in capitals, digits and `_`, hard against its colon. `last
+NAME` and `next NAME` must name a loop that is round them, or the
+program is refused as it compiles. Of two loops with one name the
+inner is meant, as in perl. Not on a bare block (the surface cuts
+that already), not on `if` or any other statement.
+(b) No labels until something needs them. Then Q2's (b) has no way
+to say "the outer loop" from inside a bare block, so (b) here goes
+with (a) there.
+
+**Q5. Nothing to choose, worth your eye.**
+- **`last` and `next` are statements, not expressions** (T120). perl
+  takes `$done and last;`, `$x ? last : next;`, `my $v = last;`,
+  `last + 1;` (which dies looking for a loop called `1`) and `last
+  $name;`. Here: `last;`, `last NAME;`, and each with an `if` or
+  `unless` modifier, which says everything the first two do. It
+  follows from D56, a statement being one thing; it is also the one
+  item on this list that cuts an idiom people write (`... or next;`).
+  `or die` comes with `die` (15), and that is the place to ask
+  whether `or next` comes with it.
+- **A `my` new each time round** (T119), as above: in a block, in a
+  `while`'s or `until`'s test. In a C-style `for` a `my` is in FIRST
+  only: perl takes one in the TEST or EACH too, and nobody means it.
+  A `my` under a `while` or `until` modifier is refused, as under
+  `if`.
+- **`while ()` is refused** (T123): it is `while (1)` to perl, where
+  `until ()` doesn't compile. `while (1)` or `for (;;)` says it.
+- **The line a fault names** (T124): in a loop's test or its EACH,
+  the line of the `while`, `until` or `for`; under a modifier, the
+  line its statement starts on. perl agrees for `for` and for a
+  modifier. For a `while`'s test it agrees the first time and after
+  that names the line of whichever statement the block ran last,
+  which is an accident of how it keeps its place and not something
+  to copy. The tests check a fault's line by hand; perl's warning
+  line was never part of what the oracle compares.
+- **A program can run for ever now.** `t/run.sh` already stops a
+  test after `TIMEOUT` seconds and fails it; this step makes that
+  check fail on purpose, with a loop that never ends, before
+  trusting it.
+- **No collector until step 7**: a string made in a loop stays until
+  the program ends. Nothing a program can see, short of running out
+  of memory; the model keeps its loops short, and step 7 is next for
+  this reason.
+
+#### The build, once the questions are answered
+
+- **`t/models/loop.py` first, red before any code**, on `var.py`:
+  each kind of loop taken no times, once and many; `last` and `next`
+  from each depth, through `if` blocks and (by Q2) bare blocks, with
+  labels and without; `next` in a C-style `for` reaching EACH; a
+  `my` in a block and in a test, read each time round before it is
+  set; the edge tables of steps 2 to 5 inside a loop, the operands'
+  kinds changing each time round. Fault tests: a fault the third
+  time round, with what the first two printed before it; in a test
+  the first time and a later time, in EACH, under a modifier, each
+  for its line.
+- **By hand, with perl's answers**: the shapes (`while` after `}`
+  with no semicolon between, a label and its loop on two lines, an
+  empty block, empty parts of a `for`); nested loops with one label
+  twice; each refusal with what perl does in its comment.
+- **Lexer**: nothing new but the words; the colon is there already.
+  **Parser**: the three loops, a label before one, `last` and
+  `next`, the parts of a `for` and their commas, the two new
+  modifiers. **Resolver**: a loop's scopes (a `for`'s FIRST is round
+  its TEST, EACH and block); each `last` and `next` to its loop, by
+  label or nearest; the refusals for one with no loop, or a name
+  that isn't round it, or (Q2) a bare block in the way. **Checker**:
+  D53 in a loop's test; where a `my` may stand. **Generated C**:
+  `for (;;)` with the test inside it; the block in a C block of its
+  own, so its variables are made again each time round; `last` and
+  `next` as `goto` to a label after the loop or at the end of its
+  block, since C's own `break` and `continue` reach only the nearest
+  loop. D31's "no `goto`" was for an operand that may not be worked
+  out; this is the first jump, and the only kind. **Runtime**:
+  nothing.
+- **Break it on purpose**: step 5's unseen mutation first (a `my`
+  not made undef again), then each jump sent to the wrong place,
+  each test turned round, EACH skipped by `next`.
+- **Review**: the rule asks for an adversarial review of a *large*
+  step's proposal, and this one is medium, with no new values and no
+  new arithmetic. None is planned; the step 5 review is still out,
+  and what it finds may touch this step's base.
+- Leave out: everything listed above as later.
 
 ### 7. The collector
 
