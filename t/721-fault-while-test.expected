@@ -1,0 +1,4 @@
+1
+after
+fault: not a numeric string at t/721-fault-while-test.pl line 15.
+exit: 1

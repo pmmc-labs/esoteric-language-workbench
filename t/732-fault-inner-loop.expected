@@ -1,0 +1,6 @@
+1
+6
+3
+6
+fault: division by zero at t/732-fault-inner-loop.pl line 18.
+exit: 1

@@ -1,0 +1,7 @@
+1
+0
+1
+0
+1
+fault: division by zero at t/728-fault-until-modifier.pl line 12.
+exit: 1

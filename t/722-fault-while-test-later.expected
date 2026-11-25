@@ -1,0 +1,9 @@
+1
+0
+1
+2
+0
+1
+2
+fault: division by zero at t/722-fault-while-test-later.pl line 16.
+exit: 1

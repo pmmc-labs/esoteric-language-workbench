@@ -1,0 +1,5 @@
+1
+2
+3
+fault: division by zero at t/726-fault-for-first.pl line 14.
+exit: 1

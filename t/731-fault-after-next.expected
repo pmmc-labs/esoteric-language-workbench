@@ -1,0 +1,4 @@
+1
+6
+fault: division by zero at t/731-fault-after-next.pl line 17.
+exit: 1

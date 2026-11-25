@@ -264,12 +264,17 @@ class Run:
             if logic.truth(get(self.ev(test))) == (word == 'if'):
                 self.run(inner)
 
+# The kinds of expression a later model adds, each with how it is written.
+MORE = {}
+
 def text(e, top=True):
     """The expression as source: whatever isn't a literal or a variable in
     brackets."""
     if not isinstance(e, tuple):
         return logic.text(e, top)
     kind = e[0]
+    if kind in MORE:
+        return MORE[kind](e, top)
     if kind == '$':
         return '$' + e[1]
     if kind == 'call':

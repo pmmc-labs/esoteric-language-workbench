@@ -1,0 +1,7 @@
+1
+2
+1
+2
+1
+fault: division by zero at t/723-fault-until-test.pl line 15.
+exit: 1

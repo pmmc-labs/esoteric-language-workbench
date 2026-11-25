@@ -1,0 +1,7 @@
+1
+2
+1
+2
+1
+fault: division by zero at t/725-fault-for-test.pl line 12.
+exit: 1
