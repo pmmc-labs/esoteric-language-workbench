@@ -1,0 +1,2 @@
+t/597-empty-block.pl:7:1: an empty block is an anonymous hash, to perl: put a statement in it, or take it out
+exit: 1

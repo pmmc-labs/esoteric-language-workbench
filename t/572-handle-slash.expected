@@ -1,0 +1,2 @@
+t/572-handle-slash.pl:6:5: say $x /2: perl takes $x for a file handle here; put a blank after the '/', or none before it
+exit: 1

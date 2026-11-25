@@ -1,0 +1,2 @@
+t/590-my-in-operand.pl:5:12: my $x here: a my begins a statement, or stands in the test of an if, where it is always reached
+exit: 1

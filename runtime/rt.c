@@ -627,7 +627,8 @@ static rt_value step(rt_ctx *cx, rt_value a, int d) {
     number x = numeric(cx, a);
     if (a.tag == RT_TAG_STR) {
         double f = as_double(x);
-        if (f == trunc(f) && (fabs(f) >= TWO_53 || fabs(f + d) >= TWO_53)) {
+        // Every double of 2^53 and up is whole.
+        if (fabs(f) >= TWO_53 || fabs(f + d) >= TWO_53) {
             rt_fault(cx, "++ or -- on a string that is a whole number this large has two answers in perl");
         }
         const rt_str *s = a.as.s;

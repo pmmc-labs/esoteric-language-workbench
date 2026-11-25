@@ -1,0 +1,4 @@
+1
+1
+fault: ++ or -- on a string that is a whole number this large has two answers in perl at t/551-step-string-edge-up.pl line 13.
+exit: 1

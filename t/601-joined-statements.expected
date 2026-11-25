@@ -1,0 +1,2 @@
+t/601-joined-statements.pl:7:8: 'and' after a statement joins it to what follows, to perl, which binds 'and' more loosely than '=': write it as an if
+exit: 1

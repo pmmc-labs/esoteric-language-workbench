@@ -20,7 +20,7 @@ What a row can say:
 - **Cut**: refused, and not planned. Reopening one is a proposal.
 - **New**: perl doesn't have it; an exception to D2.
 
-Steps 0 to 2 are built and nothing after them, so "In" is a plan and
+Steps 0 to 5 are built and nothing after them, so "In" is a plan and
 not a fact; [`LANGUAGE.md`](LANGUAGE.md) is what works.
 [`TRAPS.md`](TRAPS.md) has the programs that show why a row says
 what it does.
@@ -50,9 +50,13 @@ comparison: *in*, *out*, or *n/a*.
 | `package Name { }`, `__PACKAGE__`, imports | Later | 18 | | |
 | `BEGIN`, `END`, `INIT`, `CHECK`, `UNITCHECK` | Cut | | in | D20; `BEGIN` as evaluation is parked |
 | `__DATA__`, `__END__`, POD | Cut; POD later | 16 | out | POD is a comment, when someone wants it |
-| `my $x`, `my @a`, `my %h`, `my (...)` | In | 5, 9, 12 | in | |
-| `my` under a statement modifier, or right of `&&`, `\|\|`, `//` | Cut | | | D21: perl keeps the old value |
+| `my $x`, `my @a`, `my %h`, `my (...)` | In | 5, 9, 12 | in | D56: `my $x` at the head of a statement, or in the test of an `if`; a name is ASCII (D55) |
+| `my` under a statement modifier, right of `&&`, `\|\|`, `//`, in a branch of `? :`, or anywhere else inside an expression | Cut | | | D21, D56: perl keeps the old value, or may not reach it (T30) |
 | A second `my` of a name in one scope | Cut | | | D15: perl warns |
+| A variable with no `my` in sight | Cut | | | perl doesn't compile it, under `use v5.42` |
+| `${name}`, `$ name` | Cut | | | D55: perl warns of the first where it could be a block (T114) |
+| A variable first after `say` or `print`, a blank, and what could begin a value: `say $x -1;` | Cut | | | D56, T111: a file handle, to perl, which dies |
+| A statement that only has a value, `$x + 1;`; two joined by a word operator, `$x = 1 and $y = 2;` | Cut | | | D56: perl warns of each (T114) |
 | `state` | In | 14 | in | |
 | `our`, package variables, `$Pkg::x` | Cut | | in | D19 |
 | `local` | Cut | | in | D17; parked |
@@ -68,7 +72,7 @@ comparison: *in*, *out*, or *n/a*.
 | `my $x = $x`: the right side sees the outer `$x` | In | 5 | | T58 |
 | `my` in a condition, `if ((my $n = f()) > 3)` | In | 5 | | |
 | `my (undef, $x) = ...` | In | 9 | | |
-| `my $a`, `my $b` | Cut | | | T61: perl warns, and `sort` then misbehaves |
+| `my $a`, `my $b`; `$a`, `$b` and `$_` as names | Cut | | | D55, T61: perl warns, and `sort` then misbehaves; and perl lets them by without a `my` |
 | `\my $x`, `foreach \my %h (...)` | Cut | | | Not in the `use v5.42` bundle |
 | Attributes other than the class ones | Cut | | | `:lvalue` among them |
 
@@ -76,8 +80,10 @@ comparison: *in*, *out*, or *n/a*.
 
 | Construct | Here | Step | Chalk | Note |
 |---|---|---|---|---|
-| `if`, `elsif`, `else`, `unless` | In | 5 | in | |
-| `EXPR if COND`, `unless` | In | 5 | in | |
+| `if`, `elsif`, `else`, `unless` | In | 5 | in | Braces always; a fault in a test names the line of its `if` or `elsif` |
+| `unless` with `else` or `elsif` | Cut | | | D54 |
+| `EXPR if COND`, `unless` | In | 5 | in | The statement is `say`, `print`, an assignment or a step; a fault in the test names the statement's line (T118) |
+| `=` with no variable on its right, where a value is tested for truth: `if ($x = 5)` | Cut | | | D53, T112: perl warns that `==` was meant; through `!`, `not` and `+` too |
 | `while`, `until`, postfix forms | In | 6 | in | |
 | `for (init; cond; step)` | In | 6 | in | |
 | `foreach my $x (LIST)` | In | 9 | in | `$x` is read-only; every container that can reach the list is frozen (D17) |
@@ -89,7 +95,7 @@ comparison: *in*, *out*, or *n/a*.
 | `last`, `next`, labels | In | 6 | in | Only inside a loop of the same sub, as written |
 | `last` or `next` reaching a loop from a called sub, or from a `map`, `grep` or `sort` block | Cut | | | T59, T60: perl leaves the outer loop |
 | `redo`, `goto`, `continue` blocks | Cut | | out, `redo` in | |
-| Bare blocks | In | 5 | in | A loop that runs once, for `last` and `next` (step 6); a label on one: cut |
+| Bare blocks | In | 5 | in | A loop that runs once, for `last` and `next` (step 6); a label on one: cut. An empty one is an anonymous hash to perl, and refused (T116) |
 | `return`, `return LIST` | In | 8, 10 | in | D18 |
 | Ending a sub in `if`, `unless`, a loop, a block or `try`, and using its value | Fault | 8 | | D18: perl returns the condition, or the `try`'s value |
 | `wantarray` | Cut | | in | D18 |
@@ -128,8 +134,11 @@ Precedence and associativity are `perlop`'s. Chalk's
 | An unbracketed `!` on the left of a comparison, `!$x == $y` | Cut | | D50, T115: perl 5.42 warns of a precedence problem |
 | `and`, `or`, `xor` after `say`'s argument; a word operator bare in a list of arguments; an operator that binds tighter than `not` after `not (...)` | Cut | | D51: perl reads each another way (T106, T107, T109) |
 | `?:` | In | 4 | Not as an lvalue |
-| `= += -= *= /= %= **= .= x= &&= \|\|= //= &= \|= ^= <<= >>=` | In | 5 | On undef, `+=`, `-=`, `.=`, `\|\|=`, `//=` and `++` are perl's, silently; `*=`, `/=`, `**=`, `%=`, `x=` fault (perl warns) |
-| `++ --` | In | 5 | On a non-numeric string: fault (perl's string increment is cut; its `--` gives -1 in silence) |
+| `= += -= *= /= %= **= .= x= &&= \|\|= //=` | In | 5 | D56. The left side is a variable, bare. On undef, `+=`, `-=`, `.=`, `\|\|=`, `//=` and `++` are perl's, silently; `*=`, `/=`, `**=`, `%=`, `x=` fault (perl warns). `&= \|= ^= <<= >>=` come with their operators |
+| An assignment to anything but a variable: `($x) = 5`, `($x = 5) = 7`, `(1 ? $x : $y) = 8` | Cut | | D17, D56: values flow, places don't; the first is a list assignment (step 9) |
+| `++ --` | In | 5 | D52: by what the variable holds. A string is stepped as its number and is then a Num; one that isn't a number faults (perl's string increment is cut; its `--` gives -1 in silence); a fault where perl has two answers (T113) |
+| A variable changed in the statement that reads it: `$x + ($x = 5)` | In | 5 | D14: read when its operator runs, as in perl (T110) |
+| A concatenation whose later piece changes a variable an earlier piece reads: `$x . "a" . ($x = 5)` | Cut | | D57 (open), T117: perl joins a row of dots as one operation and reads each piece late |
 | Chained comparisons, `1 < $x < 10`, `$a == $b == $c`, `"a" lt $s lt "c"` | Later | 4 | In perl since 5.32; refused, never read left to right (T33) |
 | Mixing the non-associative operators, `1 <=> 2 == -1`, `1 .. 2 .. 3`, `0 < $o isa P` | Cut | | perl refuses each; the parser must too (T51, T52) |
 | Unary `+` | In | 1 | `say +(1 + 2) * 3` is 9: perl's own way round T25. `+{` is always a hash |

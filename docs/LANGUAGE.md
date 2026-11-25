@@ -8,7 +8,8 @@ What the language is meant to become is in [`DESIGN.md`](DESIGN.md),
 and [`SURFACE.md`](SURFACE.md) says, for each construct of Perl,
 whether it will be in. Neither is a description of what works. This
 is, and so far it is short: a program can do arithmetic, build
-strings, compare and choose, and print.
+strings, compare and choose, keep values in variables, take one path
+or another, and print.
 
 ## A program
 
@@ -84,8 +85,11 @@ first, so no line may start that way. After a statement on its line,
 
 ## Statements
 
-Every statement ends with a semicolon, the last one too, and there is
-no empty statement: `;;` is refused.
+Every statement ends with a semicolon, the last one in a block too,
+and there is no empty statement: `;;` is refused. A block and an `if`
+end with their closing brace. The statements are `say` and `print`,
+the ones that work on variables (a `my`, an assignment, `++` and
+`--`), blocks, and `if` and `unless`; each is described below.
 
 ## say and print
 
@@ -106,8 +110,7 @@ prints
     print "no newline";
     print "\n";
 
-They are the only statements there are yet, and each takes exactly one
-expression, with brackets round it or without: `say "a", "b";` waits
+Each takes exactly one expression, with brackets round it or without: `say "a", "b";` waits
 for lists. Neither has a value, so neither can stand inside an
 expression. What is said of `say` below goes for `print` too.
 
@@ -611,9 +614,9 @@ three consequences, and each is refused where it would bite:
 
 ### undef
 
-`undef` is the value that is no value. There is not much a program
-can do with one yet, there being no variables to be empty, but it is
-what `length` gives for an undef, and the tests take it:
+`undef` is the value that is no value: what a variable holds before
+it is given one, and what `length` gives for an undef. The tests take
+it:
 
     say defined undef ? "yes" : "no";   # no
     say undef // "fallback";            # fallback
@@ -632,6 +635,219 @@ one of `//`, `||`, `&&`, `and`, `or`, `xor`, `?` and `:`. Anywhere
 else it goes in brackets, `(undef) + 1`, because perl takes whatever
 follows a bare `undef` for something to make undefined: `undef * 2`
 is not a multiplication to perl, and `undef + 1` doesn't compile.
+
+## Variables
+
+A variable holds one value. `my` declares it, and it must be declared
+before it is used:
+
+    use v5.42;
+    my $count = 3;
+    my $name;
+    say $count + 1;                             # 4
+    say defined $name ? "named" : "no name";    # no name
+
+A variable declared without a value holds undef until it is given
+one. Using it as a number or a string before then is a fault, as any
+undef is.
+
+A name is a letter or an underscore, then letters, digits and
+underscores, all ASCII, hard against its dollar: `$total`, `$x2`,
+`$_tmp`. Three names are refused, `$a`, `$b` and `$_`, because perl
+keeps them for itself and lets them by without a `my`. `${name}` and
+`$ name`, which perl takes, are refused too.
+
+A variable is visible from the statement after its `my` to the end of
+the block it is declared in. So `my $x = $x + 1;` in an inner block
+makes a new `$x` from the outer one, and at the top of a program,
+where there is no outer one, it is refused. A second `my` of a name
+in the same block is refused (perl warns that it masks the first);
+in an inner block it is a new variable, which hides the outer one
+until the block ends.
+
+A `my` begins a statement. It can't stand in the middle of one, `say
+my $x;`, or under a modifier, `my $x = 5 if $y;`, where perl would
+leave in the variable whatever it last held when the test fails. The
+one other place is the test of an `if`, described below.
+
+### Assignment
+
+`=` puts a value in a variable. Its left side is a variable, or a
+`my`, and nothing else: no brackets round it, no expression.
+
+    my $x = 1;
+    $x = $x + 1;
+    my $y = $x = 10;      # right to left: both are 10
+
+An assignment has a value, which is the variable, so it can stand
+inside an expression in brackets: `say 1 + ($x = 5);` prints 6 and
+leaves 5 in `$x`. Assignment binds more loosely than everything but
+`not`, `and`, `or` and `xor`, so the whole of `$x = $y || 2` or `$x =
+$n > 0 ? "some" : "none"` is assigned.
+
+The assigning operators are `+=`, `-=`, `*=`, `/=`, `%=`, `**=`,
+`.=`, `x=`, `||=`, `&&=` and `//=`. `$x += 2` is `$x = $x + 2`, and
+so on for each:
+
+    my $total = 10;
+    $total += 5;          # 15
+    $total .= "!";        # the string 15!
+    my $name;
+    $name //= "nobody";   # nobody: it was undef
+    $name ||= "somebody"; # still nobody: it is true
+
+`||=`, `&&=` and `//=` work their right side out only if they are
+going to assign it. A variable that holds undef may be the left side
+of `+=` and `-=`, where it counts as 0, and of `.=`, where it is the
+empty string; perl says nothing about those either. Under `*=`, `/=`,
+`%=`, `**=` and `x=` an undef is the fault it would be without the
+`=`.
+
+### ++ and --
+
+`$x++` and `++$x` add one to a variable, and `$x--` and `--$x` take
+one away. They are hard against the variable and work on nothing else:
+`++5` and `($x)++` are refused. Before the variable, the value of the
+expression is the variable afterwards; after it, the value is what the
+variable held before.
+
+    my $n = 5;
+    say $n++;     # 5
+    say $n;       # 6
+    say --$n;     # 5
+
+What is left in the variable depends on what it held. An Int goes up
+or down by one, and faults with `integer overflow` at either end. An
+undef becomes 1 or -1, and `$x++` on an undef is worth 0. A boolean
+becomes the Int. A Num goes up or down by one as arithmetic would have
+it: `++` on 5.0 leaves the Int 6, `--` leaves the Num 4.
+
+A string must be a number, and is stepped as one: `"12"` becomes 13,
+and `"1.5"` becomes 2.5. In perl `++` on a string that isn't a number
+makes the next string in a sequence of its own (`"aa"` to `"ab"`);
+here that is the fault `not a numeric string`.
+
+perl has two answers for some steps, by what the variable was used as
+before, and each of those is a fault, as everywhere: `++` on a string
+of digits that begins with a zero (`"009"` becomes the string `010`,
+or the number 10); `++` or `--` on a string that is a whole number
+whose size is 2^53 or more, before the step or after it; `--` on a
+whole Num that would reach 2^53 below zero; and a Num too large for
+one more or less to change it.
+
+### When a variable is read
+
+A variable is read when the operator it is an operand of runs, not
+when it is written down. That only shows when the same statement
+changes it:
+
+    my $x = 3;
+    say $x + ($x = 5);      # 10: both operands are $x, read after the assignment
+    say $x++ + $x;          # 11: 5, and then the 6 that is in $x by then
+
+perl does the same, and the language follows it. What is "the
+variable" here: `$x` itself, in brackets or after a unary plus; an
+assignment, and `++$x` and `--$x`, whose value is the variable; and
+whichever operand `||`, `&&`, `//`, `or`, `and` or `? :` gives.
+Anything else is a value, worked out where it stands: `$x++`, `-$x`,
+`$x + 0`.
+
+One place is refused. perl joins a row of dots as a single operation
+and reads every piece of it late, so in perl `$x . "a" . ($x = 5)` is
+`5a5`. In a concatenation, **a later piece may not change a variable
+that an earlier piece reads**: make the change a statement of its
+own. A change in an earlier piece is fine, `($x = 5) . $x`, and so is
+a change to another variable.
+
+### A statement that is an expression
+
+An assignment, a `++` or `--`, and a `my` are statements. Nothing
+else that is only an expression is: `$x + 1;` and `$x;` are refused,
+since perl warns that each is useless. And a statement is one of
+them, not two joined: `$x = 1 and $y = 2;` is refused (perl warns of
+it too): write it as an `if`.
+
+### say and a variable
+
+After `say` or `print`, perl takes a variable for a file handle when
+it is followed by a blank and then by something that could begin a
+value: in `say $x -1;` perl reads `-1` as the thing to print and `$x`
+as where to print it, and stops. The language refuses each such
+shape, with a message that says so: a blank after the variable and
+then a `-` or `+` hard against what follows, a dot and a digit, a
+slash hard against what follows, or a `*`, `%`, `<` or `&` hard
+against a name. `say $x - 1;` and `say $x-1;` are what they look
+like, to perl and here.
+
+## Blocks, if and unless
+
+A block is statements in braces. It runs them in order, and a
+variable declared in it ends with it:
+
+    my $x = 1;
+    {
+        my $x = 2;
+        say $x;     # 2
+    }
+    say $x;         # 1
+
+A block on its own must have a statement in it: `{ }` is something
+else to perl (an empty hash), and is refused.
+
+`if` runs its block when its test is true, by the rules of truth
+above. It may be followed by any number of `elsif`s, each with a test
+and a block, and by an `else`; one block runs at most, the first
+whose test is true, and the tests after that one are not worked out.
+
+    my $n = 15;
+    if ($n % 15 == 0) {
+        say "FizzBuzz";
+    } elsif ($n % 5 == 0) {
+        say "Buzz";
+    } elsif ($n % 3 == 0) {
+        say "Fizz";
+    } else {
+        say $n;
+    }
+
+The test is in brackets and each block in braces, always; the word is
+`elsif`, and `else if` is refused. A block of an `if` may be empty.
+
+`unless` runs its block when its test is false. It takes no `else`
+and no `elsif`: that is an `if` written backwards, and is refused.
+
+A `my` may stand in the test of an `if` or an `unless`, where it is
+always reached. The variable is then visible in the blocks of that
+`if`, in the tests of its later `elsif`s, and not after it:
+
+    if ((my $rest = $n % 7) > 3) {
+        say "more than three over: " . $rest;
+    } else {
+        say "at most three over: " . $rest;
+    }
+
+It can't stand on the right of `&&`, `||` or `//` or in a branch of `?
+:` there, where it might not be reached.
+
+A statement may be followed by `if TEST` or `unless TEST` in place of
+a block:
+
+    say "negative" if $n < 0;
+    $n = 0 unless defined $n;
+
+The statement before the modifier is `say`, `print`, an assignment or
+a `++` or `--`: not a `my`, not a block, not another `if`. One
+modifier to a statement.
+
+**A `=` where a value is tested for truth is refused when its right
+side has no variable in it**: `if ($x = 5)` is almost always a
+mistyped `==`, and perl warns of it. That goes for the test of an
+`if`, `unless` or modifier, the left of `&&`, `||`, `//`, `and` and
+`or`, the test of `? :`, and any of those through a `!` or `not`.
+`if ($x = $y)` and `if ((my $r = $n % 7) > 3)` are fine.
+
+A fault in a test names the line of its `if` or `elsif`; in the test
+of a modifier, the line its statement starts on.
 
 ## When a program stops
 

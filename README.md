@@ -7,9 +7,10 @@ it can be built with this repository's process (`docs/PROCESS.md` on
 `main`): an agent builds, a person decides, one feature a step, and every
 expected output comes from somewhere other than the compiler.
 
-Steps 0 to 4 are built: arithmetic on integers and floats, strings,
-comparison and logic compile to a native binary, and a script holds every test to
-what perl 5.42 prints. The rest is the workbench's
+Steps 0 to 5 are built: arithmetic on integers and floats, strings,
+comparison and logic, variables, assignment, blocks and `if` compile
+to a native binary, and a script holds every test to what perl 5.42
+prints. The rest is the workbench's
 documents, filled in.
 
 ## The idea in one paragraph
@@ -57,7 +58,7 @@ again.
 
 ## What is decided and what isn't
 
-D1 to D51 are Stevan's, settled on 2026-11-24 and 25. The ones that give the language its
+D1 to D56 are Stevan's, settled on 2026-11-24 and 25 (D57 is open: taken while building step 5, not yet confirmed). The ones that give the language its
 character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);

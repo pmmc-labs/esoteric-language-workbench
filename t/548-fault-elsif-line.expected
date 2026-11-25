@@ -1,0 +1,2 @@
+fault: undef where a number is wanted at t/548-fault-elsif-line.pl line 10.
+exit: 1

@@ -1,0 +1,2 @@
+t/580-name-a.pl:4:4: $a is not a name a variable may have
+exit: 1

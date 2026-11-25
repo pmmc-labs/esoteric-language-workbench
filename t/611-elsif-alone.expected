@@ -1,0 +1,2 @@
+t/611-elsif-alone.pl:5:1: elsif without an if before it
+exit: 1

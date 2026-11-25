@@ -1,0 +1,2 @@
+t/573-handle-print-dot.pl:5:7: print $x .5: perl takes $x for a file handle here; put a blank after the '.', or none before it
+exit: 1

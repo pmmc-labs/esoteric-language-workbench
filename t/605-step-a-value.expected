@@ -1,0 +1,2 @@
+t/605-step-a-value.pl:4:5: '++' is for a variable: ++$x
+exit: 1

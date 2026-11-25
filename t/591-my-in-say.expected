@@ -1,0 +1,2 @@
+t/591-my-in-say.pl:4:5: my $x here: a my begins a statement, or stands in the test of an if, where it is always reached
+exit: 1

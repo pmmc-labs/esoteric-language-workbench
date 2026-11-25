@@ -1,0 +1,2 @@
+t/602-else-if.pl:7:8: expected '{', found 'if'
+exit: 1

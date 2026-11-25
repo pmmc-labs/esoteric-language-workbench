@@ -1,0 +1,2 @@
+t/577-condition-assign-and.pl:6:9: '=' where a value is tested, with nothing but a constant on its right: perl warns that == was meant
+exit: 1

@@ -1,0 +1,45 @@
+zero
+else
+elsif
+the last else
+first
+0
+second test: 2
+2
+unless
+00 is true
+0.0 is true
+true
+a blank is true
+undef is false
+not undef
+not undef, in a word
+defined-or
+and
+or
+or, in a word
+xor
+brackets
+three deep
+changed inside
+modifier
+unless modifier
+11
+11
+22
+undef
+4
+5
+a test with a step
+6
+a test with an assignment
+ternary and modifier
+one line
+two statements
+a block in an if
+an if in a block
+after it
+middling
+length
+eq
+index

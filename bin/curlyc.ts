@@ -48,8 +48,10 @@ if (!back.equals(bytes)) {
 let c: string;
 try {
     const program = parse(lex(text));
+    // The passes in D29's order: names, then the rules, then the C.
+    const names = resolve(program);
     check(program);
-    c = generate(program, resolve(program), src);
+    c = generate(program, names, src);
 } catch (e) {
     try { rmSync(out, { force: true }); } catch { /* not a file of ours to remove */ }
     if (e instanceof CompileError) { console.error(`${src}:${e.line}:${e.col}: ${e.message}`); process.exit(1); }

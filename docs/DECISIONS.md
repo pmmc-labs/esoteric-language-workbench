@@ -3,7 +3,9 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D56 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D56 are all Stevan's, and D57 is **(open)**: a refusal the
+builder of step 5 took and Stevan has not yet seen. D1 to D9 are from
+the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -1040,6 +1042,38 @@ an `if`; an expression that only has a value is refused (perl warns).
 And **after `say` or `print`, a variable followed by a blank and
 something that could begin a value is refused**, by perl's own list:
 perl takes the variable for a file handle, and dies (T26, T111).
+*Building it* added nothing to choose and four things to say. A
+statement is **one** assignment: `$x = 1 and $y = 2;` is two joined,
+to perl, which also warns of the first (`Found = in conditional`), and
+is refused. An **empty bare block**, `{ }`, is an anonymous hash to
+perl and a statement that only has a value (T116): refused; an empty
+block of an `if` is fine. `$x = undef if $y;` is taken: a modifier is
+not undef's argument. And a **fault in the test of a modifier** names
+the line its statement starts on, as perl's warning does, not the
+line of the `if` (T118).
+
+**D57. In a concatenation, a later piece may not change a variable an
+earlier piece reads. (open)** *(Default: taken building step 5,
+2026-11-25, as the safe side of a difference from perl; Stevan has
+not confirmed it.)* perl compiles a row of dots into one operation
+that reads every piece when it runs, so `my $x = 3; say $x . "a" .
+($x = 5);` is `5a5`, where the first dot on its own would have made
+`3a` before the assignment ran (T117). D14's late reads don't cover
+it: `$x . "a"` is a value everywhere else. How far a row reaches
+turns on what perl folds away first (`(1 ? $x . "" : 0) . ($x = 5)`
+is a row, and `55`), on brackets (none stop it) and on its length.
+So the pieces of a concatenation are found through brackets, a unary
+plus, both sides of `||` `&&` `//` `or` `and`, and all three parts of
+`? :`; the left side of `.=` is the first piece; and a piece that
+assigns to or steps a variable which any piece before it reads is
+refused, with a message that says to make the change a statement of
+its own. It refuses more than it must (`$x . ++$x` is `44` both ways,
+and `length($x) . ($x = 5)` reads a value), because the exact rule is
+perl's optimiser. A change in an *earlier* piece is fine and is what
+it looks like: `($x = 5) . $x`, `$x++ . $x`. Rejected: joining a row
+as perl does, in the generated C (it would need perl's folding rules
+to know what a row is, and step 16's interpolation will meet the same
+thing and can decide it once); leaving it, which is WRONG.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

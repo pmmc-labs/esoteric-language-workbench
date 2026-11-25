@@ -1,0 +1,2 @@
+t/598-concat-change.pl:6:20: a later piece of a concatenation changes $x, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own
+exit: 1

@@ -1,0 +1,2 @@
+t/606-step-brackets.pl:6:13: expected ';', found '++'
+exit: 1

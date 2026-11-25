@@ -1,0 +1,2 @@
+t/581-name-b-undeclared.pl:5:5: $b is not a name a variable may have
+exit: 1

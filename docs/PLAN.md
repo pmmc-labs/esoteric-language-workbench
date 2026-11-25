@@ -6,11 +6,11 @@ be a session or two each.
 
 **Progress:** steps 0 to 3 were done on 2026-11-24: arithmetic on Ints
 and Nums, and strings, compile, run, and are checked against perl
-5.42. So do booleans, undef, comparison and logic: **steps 0 to 4
-are done** (step 4 on 2026-11-25). **Step 5, variables, assignment,
-blocks and `if`, is proposed, below, and waits on four answers from
-Stevan** (Q1 to Q4); nothing of it is built. Steps 6 to 30 are
-outlines: each is proposed, with options, when it's next.
+5.42. So do booleans, undef, comparison and logic, and variables,
+assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
+on 2026-11-25). One thing of step 5's is open, D57, a refusal the
+build took that Stevan has not seen. Steps 6 to 30 are outlines: each
+is proposed, with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -1079,13 +1079,76 @@ Consistent, and a known trap kept.
   5; `if` and the other statements (5, 6); `^^`; chains unless Q4 is
   (b).
 
-### 5. Lexical scalars, assignment, blocks, `if` (proposed, not agreed)
+### 5. Lexical scalars, assignment, blocks, `if` (done)
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-25. Nothing is built, and four questions are
-Stevan's: Q1 to Q4 below; Q5 is four things with nothing to choose
-that are worth his eye.** Everything here about perl was run under
+**Built 2026-11-25**, by Fable 5.2 (the size the line asks for), as
+agreed below, and with these differences and findings:
+
+- **The model was written first, and was red before there was any
+  code** (`t/models/var.py`, commit 529a134). It is the first model
+  of statements: a program is a list of them run against scopes of
+  places, and an expression gives a place or a value, so that a late
+  read is the model's own and not the compiler's. It writes 500 to
+  504, about 5,000 lines on which perl 5.42 agrees with it (every
+  `++` and `--` over D52's table, fresh and after the variable has
+  been used each way; every assigning operator over step 3's and 4's
+  values; each shape of late read; scopes; `if` chains with each arm
+  taken and not), and 29 programs that fault once each, 520 to 546
+  and 550, 551.
+- **Holding the model to perl found two things before the compiler
+  existed.** A row of dots is one operation to perl, which reads
+  every piece of it late: `$x . "a" . ($x = 5)` is `5a5` (T117). And
+  an empty bare block is an anonymous hash (T116). The second is
+  refused. The first is **D57, which is open**: a concatenation in
+  which a later piece changes a variable an earlier piece reads is
+  refused. It is a refusal, the safe side, but it was not in what
+  Stevan agreed, and T110's row had `$x . ""` down as a value, which
+  it isn't beside another dot.
+- **The compiler went green on the model's 32 tests the first time
+  it ran**, which is what a model written first is for; what was
+  wrong was found by asking perl about what the model doesn't write.
+  `if (!($x = 5))`, `if (not $x = 5)` and `if (+($x = 5))` warn in
+  perl and were accepted: D53's rule now goes through `!`, `not` and
+  a unary plus (T112's row said perl was quiet under `!`; it is, in
+  `say(!($x = 5))`, and not in a condition). `$x = undef if $y;` was
+  refused and is plain perl. A fault in the test of a modifier that
+  spans lines named the line of the `if`, where perl names the line
+  the statement starts on (T118). After `$x++` the lexer expected a
+  value, so `$x++ or ...` and `$x++ x 3` didn't parse.
+- **A statement is one assignment**: `$x = 1 and $y = 2;` is refused
+  (D56 says what a statement is; perl also warns of this one, `Found
+  = in conditional`).
+- **A new pass**, `resolver.ts`, as D29 drew it: each variable to its
+  `my`, by number, before any C is made. It runs before the checker.
+- **The generated C**: a variable is a C local in the C block of its
+  scope, never copied into a temporary, so it is read when the
+  runtime call that uses it is made (D14). Where an operator gives
+  one of two operands (`||`, `? :`) the C keeps a pointer to it, and
+  a statement's temporaries are all declared at its top so that a
+  pointer set in a branch is good after it.
+- **The runtime and the code generator were broken 74 ways on
+  purpose** (`briefs/step5-mutations.py`: 37 in `rt.c`, 37 in the
+  compiler, the second kind new with this step). 71 were caught the
+  first time. One was a hole: a string that is exactly 2^53, stepped
+  back under it, had no test at its edge (550 and 551 now). One was
+  a check that could never matter, and is gone from the runtime
+  (every double of 2^53 and up is whole). And one no program of this
+  step can see: a `my` that isn't made undef again when its block is
+  entered a second time. **Step 6 must test that**, with its first
+  loop.
+- 560 to 565 are by hand with perl's answers (how `++`, `--` and
+  assignment group; the shapes after `say $x` that are not a file
+  handle; scopes; `if`; the assigning operators; the concatenations
+  D57 lets through); 547 to 549 are faults whose line is the point;
+  570 to 613 are the 44 refusals, each with what perl does in its
+  comment, run to write it.
+
+**Proposed 2026-11-25, and agreed the same day: Stevan took the
+recommendation on each question below, which are now D52 (Q1), D53
+(Q2), D54 (Q3), D55 (Q4) and D56 (Q5, what had nothing to choose).**
+The text is kept as it was proposed. Everything here about perl was run under
 5.42.0: [`briefs/step5-increments.py`](briefs/step5-increments.py)
 (`++`, `--` and the assigning operators under every past of the
 variable) and `briefs/claims.py`. Traps: T1, T26, T30, T43, T44, T58,
@@ -1269,7 +1332,9 @@ Referee: perl. Size: medium.
 `while`, `until`, their postfix forms, the C-style `for`, `last` and
 `next`, labels. A bare block is a loop that runs once, for `last` and
 `next` (T32). `last` and `next` are allowed only inside a loop of the
-same sub, as written (T60). If `do BLOCK while` is wanted, it runs the
+same sub, as written (T60). **A `my` in a loop's block is undef again
+each time round**: step 5's mutation run could not see a compiler
+that got that wrong, there being no way to enter a block twice. If `do BLOCK while` is wanted, it runs the
 block first (T64). The comma operator, in a C-style `for`'s slots
 only. A program can now run for a long time: `t/run.sh`'s
 watchdog matters from here.

@@ -237,8 +237,10 @@ optimization plan.
 
 ## Open questions
 
-D1 to D51 are decided. What is left is what the decisions hand to a
-step, roughly in the order it will matter:
+D1 to D56 are decided, and D57 is **(open)**: a refusal the builder of
+step 5 took, in a concatenation that changes a variable it has already
+read, which Stevan has not yet confirmed. What is left is what the
+decisions hand to a step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
    does. Step 0 ran every "perl prints" in these documents and every

@@ -1,0 +1,3 @@
+else
+fault: undef where a number is wanted at t/549-fault-after-brace-line.pl line 9.
+exit: 1

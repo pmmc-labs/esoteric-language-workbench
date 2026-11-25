@@ -1,0 +1,2 @@
+t/585-my-twice.pl:5:1: my $x again in one scope: perl warns that it masks the first
+exit: 1

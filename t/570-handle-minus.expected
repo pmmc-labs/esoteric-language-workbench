@@ -1,0 +1,2 @@
+t/570-handle-minus.pl:5:5: say $x -1: perl takes $x for a file handle here; put a blank after the '-', or none before it
+exit: 1

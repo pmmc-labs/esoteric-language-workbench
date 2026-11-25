@@ -1,0 +1,2 @@
+t/584-name-blank.pl:5:5: after '$' comes a name: a letter or '_', then letters, digits and '_'
+exit: 1

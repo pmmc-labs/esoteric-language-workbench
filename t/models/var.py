@@ -104,6 +104,10 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/var.py 545 > t/545-fault-in-condition.expected
     python3 t/models/var.py --program 546 > t/546-late-read-fault.pl
     python3 t/models/var.py 546 > t/546-late-read-fault.expected
+    python3 t/models/var.py --program 550 > t/550-step-string-edge.pl
+    python3 t/models/var.py 550 > t/550-step-string-edge.expected
+    python3 t/models/var.py --program 551 > t/551-step-string-edge-up.pl
+    python3 t/models/var.py 551 > t/551-step-string-edge-up.expected
 """
 
 import math
@@ -131,7 +135,8 @@ def step(op, v):
         return int(v.truth) + d
     if strings.is_str(v):
         x = float(strings.as_number(v)[0])
-        if x == math.trunc(x) and (abs(x) >= 2**53 or abs(x + d) >= 2**53):
+        # Every double of 2^53 and up is whole.
+        if abs(x) >= 2**53 or abs(x + d) >= 2**53:
             raise Fault(STEP_STRING)
         if d > 0 and len(v) > 1 and v[0] == '0' and all('0' <= c <= '9' for c in v):
             raise Fault(STEP_ZERO)
@@ -491,6 +496,10 @@ FAULTS = {
     # The assignment is made before the fault that follows it in the statement.
     '546': ('late-read-fault', ('block', [('my', 'v', 1), ('say', ('/', 10, ('set', '=', 'v', 5))), shown(V)]),
             ('block', [('my', 'v', 1), ('say', ('/', V, ('set', '=', 'v', 0)))])),
+    # A string that is 2^53 already, stepped back under it: found by
+    # breaking the runtime (docs/briefs/step5-mutations.py).
+    '550': ('step-string-edge', quiet('9007199254740991', stepped('--')), quiet('9007199254740992', stepped('--'))),
+    '551': ('step-string-edge-up', quiet('-9007199254740991', stepped('++')), quiet('-9007199254740992', stepped('++'))),
 }
 
 def commands():

@@ -1,0 +1,2 @@
+t/586-undeclared.pl:6:5: $y is not declared: my $y
+exit: 1

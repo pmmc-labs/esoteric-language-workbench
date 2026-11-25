@@ -176,7 +176,10 @@ const genArms = (s: If, n: number, out: Out): string[] => {
     const arm = s.arms[n];
     if (arm === undefined) return (s.otherwise ?? []).flatMap(t => genStmt(t, out));
     const rest = genArms(s, n + 1, out);
-    const test = genWhole(arm.test, arm.pos.line, out, c => [
+    // A test's fault names the line of its `if` or `elsif`; under a
+    // modifier, the line the statement before it starts on, as perl has
+    // it for both.
+    const test = genWhole(arm.test, s.modifier ? s.pos.line : arm.pos.line, out, c => [
         `if (${arm.negate ? 'rt_is_false' : 'rt_is_true'}(cx, ${c})) {`,
         ...indent(arm.body.flatMap(t => genStmt(t, out))),
         ...(rest.length ? ['} else {', ...indent(rest), '}'] : ['}']),
