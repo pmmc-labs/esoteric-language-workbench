@@ -266,9 +266,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 655 of them now, and all hold under 5.42.0,
+about perl as a program, 675 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T184, by step (T119 to T124 found proposing
+keeps the programs, T1 to T192, by step (T119 to T124 found proposing
 step 6, T132 to T142 proposing step 8, T143 to T148 by its review, T125 to T130 by the review of step 5, T131 building step 6).
 **T131 is the one to remember**: where the language faults perl may
 carry on, so a loop that only the fault would end never ends under
@@ -306,7 +306,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D86 are all Stevan's** (D81 defaults of the builder's at step 9, which he confirmed) (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
+**D1 to D86 are all Stevan's, and D87 is the builder's defaults on step 10's review, for him to confirm** (D81 defaults of the builder's at step 9, which he confirmed) (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -392,7 +392,7 @@ on the left of `=`, `$#a = N`, `@a` in a string. **Step 9's
 proposal** was reviewed adversarially before it was built: eleven
 ways to be WRONG (T157 to T168, `briefs/step9-review/`), which is
 where "named anywhere" and the written orders come from. **Next:
-step 10**, list operators, `$_` and list returns: **proposed and agreed** (2026-11-25, `docs/PLAN.md`; D82 to D86, each the recommendation: perl's merge ported for `sort`, with the licence of `pp_sort.c` to account for when the repository gets one (D82); the generated code drives the sort and the runtime never calls a block (D83); `grep` and `map` are a count where one value is wanted (D84); a block always, and `$_` always written (D85); three sub-steps, 10a list returns, 10b `$_`, 10c `sort` (D86). T173 to T184 were found writing it, with 46 statements about perl). Its adversarial review was running when this was written; nothing is built.
+step 10**, list operators, `$_` and list returns: **proposed and agreed** (2026-11-25, `docs/PLAN.md`; D82 to D86, each the recommendation: perl's merge ported for `sort`, with the licence of `pp_sort.c` to account for when the repository gets one (D82); the generated code drives the sort and the runtime never calls a block (D83); `grep` and `map` are a count where one value is wanted (D84); a block always, and `$_` always written (D85); three sub-steps, 10a list returns, 10b `$_`, 10c `sort` (D86). T173 to T184 were found writing it, with 46 statements about perl). **Its adversarial review found six ways to be WRONG** (T185 to T192, `briefs/step10-review/`; the proposal is amended at its end, "What the review found", and D87 has the builder's defaults on it, for Stevan to confirm): `grep`, `sort` and `reverse` hand on the containers they were given, so they name what their list names for D76's walk, and `join`'s separator is the first item of its list; perl's in-place `@a = sort BLOCK @a` drops elements that were never stored, so an undef there is a fault; a `sort` with a block makes elements past the end, so D80's fault holds in its list; a word that is not perl's own first after `sort` is a comparator's name or a string to perl, and is refused; `map`, `grep` and `sort` take no brackets of their own. What stood: the numeric past (108,416 comparisons, every difference already a fault) and the blocks perl throws away (21,600 sorts). Nothing is built.
 `map`, `grep` and `sort` with a block are the first things that want
 the runtime to call generated code, and D68 says the proposal has to
 say how.
@@ -623,7 +623,7 @@ in `pmmc-labs/esoteric-language-workbench`.
 | `compiler/tests/` | Unit tests, per pass |
 | `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` (`collect.c` is the collector's, `deep.c` the limit on recursion's, `arrays.c` arrays, the freeze and a foreach's own) |
 | `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `knobs.sh`, what every test assumes of the runtime; `checks.py`; `checks/`, the oracle check's own tests; `harness/`, the test runner's own; `models/` (`arith`, `num`, `str`, `bool`, `var`, `loop`, `sub`, `list`, `each`) |
-| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py`, `step4-comparisons.py` and `step5-increments.py` (the evidence for those steps' rules), `step3-mutations.py` to `step8-mutations.py`, `step9a-mutations.py` and `step9b-mutations.py` (the runtime, and from step 5 the compiler, broken on purpose; each is a record of its step and stops at a piece of text a later step has changed), `step8-names.py` and `step8-stack.c` (step 8's evidence for which names a sub may have, and for the limit on recursion), `step3-review/`, `step4-review/` and `step5-review/` (each reviewer's model, and the scripts that ran the compiler against it), `step7-review/` (the reviewer's prototype of the collector), and `step8-review/` and `step9-review/` (the findings of those steps' reviews, with their programs) |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py`, `step4-comparisons.py` and `step5-increments.py` (the evidence for those steps' rules), `step3-mutations.py` to `step8-mutations.py`, `step9a-mutations.py` and `step9b-mutations.py` (the runtime, and from step 5 the compiler, broken on purpose; each is a record of its step and stops at a piece of text a later step has changed), `step8-names.py` and `step8-stack.c` (step 8's evidence for which names a sub may have, and for the limit on recursion), `step3-review/`, `step4-review/` and `step5-review/` (each reviewer's model, and the scripts that ran the compiler against it), `step7-review/` (the reviewer's prototype of the collector), and `step8-review/`, `step9-review/` and `step10-review/` (the findings of those steps' reviews, with their programs) |
 | `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
 | `build/` | Output (ignored) |
 

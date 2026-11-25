@@ -1617,6 +1617,34 @@ Q5.)* 10a: list returns, D18's fault, slurpy parameters, `join`,
 `reverse`. 10b: `$_`, `for (LIST)`, the `for` modifier, `map`,
 `grep`. 10c: `sort`.
 
+**D87. What step 10's review changed.** *(User: defaults of the
+builder's, 2026-11-25, on the review's findings, for Stevan to
+confirm or change; none changes D82 to D86.)* **For D76's walk,
+`grep`, `sort` and `reverse` name what their list names**, a scalar
+counted as an item, and `join`'s separator is the first item of its
+list (T185, T186: perl hands the containers on, and reads the
+separator late); `map` names nothing. **An undef in an array sorted
+in place is a fault** (T187): perl's in-place `@a = sort BLOCK @a`
+drops the elements that were never stored, a past of the array's
+that is not kept here; rejected, keeping that past through every
+route that fills a slot. **D80's fault for an element or a slice
+past the end holds in a `sort`'s list** (T188). **A word that is not
+perl's own, first after `sort`, is refused** (T189: perl takes a
+sub's name for the comparator, and `true` for a string). **`map`,
+`grep` and `sort` are written without brackets of their own**
+(T190); `join` and `reverse` with or without. **A `sort` of one
+value**, with no block or one of the four perl throws away, checks
+that value as a comparison would (T190). **`join`'s separator is
+made a string always** (T190). **Under a `for` modifier** there is
+no `last`, `next`, `return` or second modifier (T191, T192). **A
+slurpy parameter is filled at its turn** (T191). **In a `map`,
+`grep` or `sort` block**: no `return` at any depth; `last` and
+`next` only to a loop inside the block; no `{` first; the last
+statement is a value, `or` and `and` and a scalar assignment
+included, and a list assignment is refused there (T192, D78).
+**T143's refusals end** where a list is wanted. **`map` and `grep`
+may be statements.**
+
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as

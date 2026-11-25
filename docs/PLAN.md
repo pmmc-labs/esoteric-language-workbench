@@ -2982,8 +2982,10 @@ Referee: perl. Size: large.
 **Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
 and agreed the same day: Stevan took the recommendation on each
 question, which are now D82 (Q1, with a note on the licence), D83
-(Q2), D84 (Q3), D85 (Q4) and D86 (Q5). Its adversarial review is
-still to be folded in. The text is kept as it was proposed.**
+(Q2), D84 (Q3), D85 (Q4) and D86 (Q5). Its adversarial review
+found six ways to be WRONG: "What the review found", at the end,
+says what each is and how the proposal is amended (D87). The text
+is kept as it was proposed.**
 Everything here about perl was run under 5.42.0 and is in
 `briefs/claims.py` (46 rows, `T173` to `T184-global`). Traps: T3,
 T4, T6, T8, T10, T15 to T18, T20, T23, T29, T41, T54, T59, T61, and
@@ -3227,6 +3229,77 @@ returns, D18's fault, slurpy parameters, `join`, `reverse`. 10b:
   leaves the values it sorted with a past that shows (it turns
   strings to numbers in place); `$_` and `$a` reached in ways the
   lexical rule does not see; contexts D18's shapes miss.
+
+#### What the review found
+
+**Six ways to be WRONG, eleven shapes perl warns of or refuses, and
+a dozen places the text left a builder to guess**
+(`briefs/step10-review/`, with its programs and two harnesses; T185
+to T192, 20 more rows of `claims.py`). None changes an answer to Q1
+to Q5. One line covers the three largest: `grep`, `sort` and
+`reverse` hand on the containers they were given, as a list does; a
+`sort` with a block treats its list as `map` and `grep` do; and what
+perl does for a `sort` turns on whether it could throw the block
+away, which it does for `{ $a <=> $b }` and its three kin, the only
+block this proposal had tried. The amendments, which D87 records:
+
+- **`grep`, `sort` and `reverse` name what their list names** (T185,
+  W1): for D76's walk, with a scalar counted as an item. `(reverse(@a),
+  chg())` has what `chg` stored, in perl. `map` copies and names
+  nothing.
+- **`join`'s separator is the first item of its list**, for that
+  walk (T186, W2): perl reads it when `join` runs.
+- **An undef in an array sorted in place is a fault** (T187, W3).
+  `@a = sort BLOCK @a` is done in place by perl, which drops every
+  element that was never stored, and whether one was is a past of
+  the array's that the language does not keep. In place is `@a = sort
+  ... @a`, through brackets on either side; `reverse sort` and a
+  `sort` into another array are not.
+- **Past the end, in a `sort`'s list too** (T188, W4): D80's fault,
+  whatever the block. The proposal's "not of a `sort`" was wrong.
+- **A word first after `sort`** that is not one of perl's own words
+  is refused (T189, W5 and W6): a sub's name, with its brackets too,
+  is the comparator to perl, and `true` there is the string `true`.
+  `sort +k(), 3` and a block say what was meant.
+- **A `sort` of one value** with no block, or with one of the four
+  blocks perl throws away, looks at that value as a comparison would
+  (T190): perl turns every value to a number or a string before it
+  sorts, and warns.
+- **`map`, `grep` and `sort` take no brackets of their own**: `sort
+  (@a), 9` warns (T190), `sort(k(), 3)` and `sort k(), 3` differ,
+  and `[` after them does not compile. `join(...)` and `reverse(...)`
+  are functions, with brackets or without.
+- **`join`'s separator is made a string whatever the list holds**
+  (T190): an undef there faults with nothing to join.
+- **Under a `for` modifier**: not `last`, `next` or `return` (T191:
+  `last for 1, 2;` leaves the modifier's own loop), and not a second
+  modifier (T192). `for () { }` is refused, as T155.
+- **A slurpy parameter is filled when its turn comes**, after every
+  default, from where the arguments are (T191), as each parameter
+  before it is.
+- **A binder's list sees the `$_` outside it**; and `$_`, `$a` and
+  `$b` are seen through a block that binds another of them (T191).
+- **In a block**: `return` at any depth is refused; `last` and
+  `next` are refused when their loop is outside the block, and fine
+  for a loop inside it (T192). A `{` first is refused (T192: a hash,
+  to perl). A block's last statement is a value: two joined by `or`
+  or `and` too (`$a <=> $b or $a cmp $b`), and an assignment to a
+  scalar; a list assignment has none (D78) and is refused there.
+- **T111's refusal knows `$_`, `$a` and `$b`** (T192): `say $_ -1`
+  is a file handle to perl. `$_[0]` is refused.
+- **T143's refusals end**: `(LIST) x N` after `return`, as a last
+  statement and in a `map` block is a list, and list-shaped for D18.
+- **`map` and `grep` may be statements** (perl does not warn);
+  `sort`, `reverse` and `join` alone are a statement that only has a
+  value.
+- **What stood**: the numeric past, which the proposal asked about
+  first. 108,416 comparisons of perl with perl through 32 routes;
+  1,106 differ, and the compiler already faults on every one. The
+  blocks perl throws away decide as the block would, pair by pair:
+  21,600 sorts, values on both sides of 2^53 among them. The order
+  of comparisons is the same in place, into a copy and under
+  `reverse`, over 3,000 arrays. Context is syntax, 75 calls; D18's
+  shapes, 47 `return`s.
 
 ### 11. The census
 

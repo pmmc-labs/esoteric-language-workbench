@@ -259,7 +259,8 @@ optimization plan.
 
 ## Open questions
 
-D1 to D86 are decided. What is left is what the decisions hand to a
+D1 to D87 are decided (D87 the builder's defaults on step 10's
+review, to be confirmed). What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
