@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D72 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D72 are all Stevan's, and D73 is a default he has not yet seen: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -1358,6 +1358,36 @@ its bracket after `say` or `print` (T136); two commas together
 `my` in the body of a parameter's name (T141); a sub in a block, a
 loop or a sub (T31). **A fault's line** is the statement's (D34),
 the caller's again after a call returns.
+
+**D73. What the review of step 8 changed.** *(default: the builder's,
+2026-11-25, each on the safe side of a difference from perl that the
+review found, T143 to T148; for Stevan to see.)* **A sub is handed
+where its arguments are, and copies each as its parameter's turn
+comes**, a default running in between: perl's order, so `f(undef,
+$g)` with a `//=` default that changes `$g` gives the second
+parameter the new `$g` (T144). The arguments stay in the caller's
+slots until then, which is what keeps them from the collector.
+**`(...) x N` is refused as an argument, in a `return` and as a last
+statement**, through brackets, a unary plus, `? :` and `|| && //`,
+as it is for `say` (T101, T143): it is a list there, and step 10 can
+agree. **A last statement with a modifier has no value**, as an `if`
+has none (D18, T145), and a value alone with a modifier is refused.
+**Context goes down through brackets, a unary plus, both arms of `?
+:` and the right of `|| && // and or`** (T146); `xor`, `!`, `not` and
+the left of every operator are scalar. A call that is a statement, a
+`for`'s first or third part, or under a modifier is void; a test is
+scalar. **Nothing is skipped under void** (T148). **After `say` or
+`print`, behind any opening brackets, a call that comes first has its
+bracket touching its name** (T136). **A sub's name is not `v`, a
+digit, and digits or underscores**, and the table of perl's names is
+perl's own keyword list, whole, with a check that each word of it is
+refused (T28). **A minus hard against one letter that is not followed
+by another is refused by the lexer**, wherever it stands (T135).
+**`my $x += 10;` at the top level is the operator on what the
+variable holds** (T147), as T134. Rejected: refusing a `//=` or `||=`
+default that calls a sub when a parameter follows (agreeing costs a
+calling convention and nothing else); agreeing with T145 (the test's
+own value when it fails: T19, decided the other way in D18).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

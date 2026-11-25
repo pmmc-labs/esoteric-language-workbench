@@ -248,10 +248,10 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 510 of them now, and all hold under 5.42.0,
+about perl as a program, 524 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T142, by step (T119 to T124 found proposing
-step 6, T132 to T142 proposing step 8, T125 to T130 by the review of step 5, T131 building step 6).
+keeps the programs, T1 to T148, by step (T119 to T124 found proposing
+step 6, T132 to T142 proposing step 8, T143 to T148 by its review, T125 to T130 by the review of step 5, T131 building step 6).
 **T131 is the one to remember**: where the language faults perl may
 carry on, so a loop that only the fault would end never ends under
 perl; a test of that kind filled 19 GB of disk. A fault test's loop
@@ -328,9 +328,15 @@ may hold 4 MB, about 3,800 calls deep, a default he said to stay with, which D68
 of the language so that step 29 can take calls off the C stack; D57
 through a call (D69); a sub that ends in `say` is worth `true` (D70,
 his, against the recommendation); a sub that returns nothing faults
-where perl wants a list (D71). **Its adversarial review had not
-reported when this was written, and nothing of it is built**: the
-review's findings amend the proposal first, then the model, red. T132 to T142 were found proposing it, and its 59 statements
+where perl wants a list (D71). **Its adversarial review found four ways to be WRONG and three
+shapes perl refuses** (T143 to T148, `briefs/step8-review/`), and
+**D73, a default Stevan has not yet seen**, says what was done about
+each: a sub copies each argument as its parameter's turn comes;
+`(...) x N` is refused as an argument, in a `return` and as a last
+statement; a last statement with a modifier has no value; context
+goes down through brackets, a unary plus and `and`/`or`. **Nothing
+of step 8 is built: the model comes next, red** (`docs/PLAN.md`, "The
+build", with the review's holes as tests). T132 to T142 were found proposing it, and its 59 statements
 about perl are in `claims.py`; `briefs/step8-names.py` and
 `step8-stack.c` are its evidence for names and for the limit. What step 7
 hands it: a sub opens a frame and closes it on every way out; its

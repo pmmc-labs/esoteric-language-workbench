@@ -409,6 +409,31 @@ caller's loop, with a warning.
 | T141 | `sub f($x, $x) { ... }`; `sub f($x) { my $x = 5; ... }` | Each warns as it compiles, `"my" variable $x masks earlier declaration in same scope`, and the second `$x` wins. A parameter of a file variable's name hides it in silence | 8 | Refuse the first two (D15); agree with the third |
 | T142 | `sub d($n) { return $n == 0 ? 0 : 1 + d($n - 1) } say d(98);`, `say d(99);`; `ev` and `od` calling each other, 150 deep and 250; `{ no warnings "recursion"; say d(200); }` | Nothing; `Deep recursion on subroutine "main::d"`, once, when the 100th call of `d` is open; nothing at 150, where each has 75 or 76 open, and a warning for each at 250. The pragma silences the calls written in its scope: round the first call only, the warning still comes from the call inside `d`. At the top of the file it silences all | 8 | Q1 of step 8 |
 
+## Found by the review of step 8
+
+`briefs/step8-review/FINDINGS.md` has each with its program. T135 has
+more to it: `-t(2)` is defined, an empty string; the file test is
+taken wherever a minus is hard against one letter (`!-e(3)`, `(-e(3))`,
+an argument `-e(3)`, `-e (3)`), and `$q -e(3)` and `26-e(3)` don't
+compile; so the refusal is the lexer's. T136 too: the file-handle
+guess is made for the first word after `say` or `print` through any
+number of opening brackets (`say((f (1)));` doesn't compile before
+`sub f`, 22 shapes of 22), and a version string is `v`, a digit, and
+then digits or underscores (`v1_0`). T28: `else elsif for foreach
+unless until while` were in neither list `step8-names.py` used, and
+none is a sub's name (66 of 3,455, then, not 59 of 3,448). And T132 is
+not a rule to write expected output from: `"<" . ($x . "-") . ch()`
+is `<a-c` where `($x . "-") . ch()` is `b-c`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T143 | `sub g($p = "d") {...} my $n = 0; say g(("a") x $n);`; `cnt(("a") x 2)`; `sub three() { return ("a") x 3 }`; `sub last2($x) { ($x) x 2 }` | `g`'s default; two arguments; three values to a list and `aaa` to a scalar: a bracketed left operand of `x` repeats a *list* in an argument, a `return` and a last statement, through `? :` and `\|\|` too (T101, which a call can now count). In a default it is scalar, `aa` | 8 | Refuse it in those three places, as T101 does for `say`, until step 10 |
+| T144 | `my $g = 1; sub bump() { $g = 9; return 5 } sub f($x //= bump(), $y = 0) {...} say f(undef, $g);` | `5,9`: perl copies each argument when it reaches that parameter, and a `//=` or `\|\|=` default runs in between. `f(undef, $g + 0)` is `5,1` | 8 | Agree: a sub is handed where its arguments are, and copies each as its parameter's turn comes |
+| T145 | `sub a($x, $c) { $x * 2 if $c } say a(4, 0);`; `sub c($x, $c) { $x = 7 unless $c } say c(4, 3);` | `0` and `3`: a last statement under a modifier is worth its test when the test stops it. No `Useless use` for the value alone | 8 | A last statement with a modifier has no value, as an `if` (D18); a value alone with a modifier is refused |
+| T146 | `cnt((none()))`, `cnt(+none())`, `cnt((1 and none()))`, `cnt((none()), "z")` with `sub none() { return; }` | No argument each time, and `"z"` the first: list context goes down through brackets, a unary plus, and the right of `and` and `or`, as through `? :` and `\|\|`. `xor`, `!` and the left of anything are scalar | 8 | The flag is passed down through all of them, so D71's fault is reached |
+| T147 | `bump(); my $x += 10; say $x;` with `sub bump() { $x++ }` after; `my $s .= "a";`, `my $d //= 10;` | `11`, `qa`, `1`: T134 for a `my` with an assigning operator | 8 | Agree, as T134 |
+| T148 | `my $n; sub v($x) { $x * 2 } v($n);` | A warning, `Use of uninitialized value $x in multiplication`: a void call still works its value out | 8 | Agree: nothing is skipped under void, so the fault comes |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

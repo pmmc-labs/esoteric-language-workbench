@@ -2048,7 +2048,9 @@ his condition that it box nothing in, which the entry spells out),
 D69 (Q3, as recommended), D70 (Q4: not the recommendation; a sub that
 ends in `say` is worth `true`, as in perl), D71 (Q5, as recommended)
 and D72 (what had nothing to choose). The text is kept as it was
-proposed. Nothing is built.** Everything here about perl was run under 5.42.0
+proposed, and **its adversarial review found four ways to be WRONG:
+"What the review found", at the end, and D73 for what was done about
+each**. Nothing is built.** Everything here about perl was run under 5.42.0
 and is in `briefs/claims.py` (59 rows, `T1-args` to `T60-label`).
 Traps: T1, T19, T28, T31, T55, T60, and T132 to T142, found writing
 this. The outline this replaces said: named subs with signatures,
@@ -2381,6 +2383,51 @@ runs. That is step 10's work, done early for one case.
 - Leave out: lists in or out of a sub, `@rest`, `%opts` (9, 10, 12);
   anonymous subs, `my sub`, closures, a sub in a block (14); `die`
   (15); `Name::f()` (18); any change to what steps 0 to 7 mean.
+
+#### What the review found
+
+A reader with the proposal and perl, before anything was built
+(`briefs/step8-review/`: `FINDINGS.md`, the programs it cites with
+perl's output, and its two harnesses). Each finding was run again by
+the builder and is in `claims.py`. **D73 has what was done about
+each**, defaults of the builder's on the safe side, for Stevan to
+see.
+
+- **Four ways to be WRONG.** `(...) x N` is a list in an argument, a
+  `return` and a last statement, and a call can count it (T143). A
+  `//=` or `||=` default runs before the arguments after it are
+  copied, so "copies its arguments ... as the sub begins" is not what
+  perl does (T144). A last statement under a modifier is worth its
+  test (T145), which the proposal said only of `return`. And list
+  context goes down through brackets, a unary plus and the right of
+  `and` and `or`, none of which the proposal named (T146).
+- **Three shapes perl refuses**: `say((f (1)));` before `sub f`, the
+  file-handle guess through brackets; `v1_0` as a name; and seven
+  loop and branch words that neither list behind the names sweep had
+  (T136, T28).
+- **Sentences put right**: `-t(2)` is defined; the minus rule is the
+  lexer's, wherever a minus is hard against one letter (T135);
+  "perl agrees" on a fault's line holds in nine shapes and not for a
+  `return` alone on a line with its expression on the next, where
+  perl names the expression's line and D34 the statement's.
+- **Holes in the test plan**, each a test and a mutation now: the
+  order of copies and defaults; a void call still works its value
+  out (T148); `my $x += 10;` after a call that set `$x` (T147); the
+  walk of D69 through an argument, a builtin, a default and a second
+  sub, with two subs that call each other, and the row inside an
+  argument, a `return` and a default; the minus rule's seven
+  positions and the `say` rule's; the flag for a call in a `for`'s
+  parts and under a modifier (void) and in a loop's test (scalar).
+- **What held**: late reads in 53 expressions and 28 argument
+  shapes; 31 shapes of signature; 24 of what a sub is worth; T134 in
+  20 programs; the pragma silences the recursion warning and nothing
+  else; 213,685 names of one to three characters, each in 33
+  positions the builder's sweep didn't try, both orders; and **a
+  value has no past through a sub**: 63 values after nine kinds of
+  use, through nine routes, 35 operations on each copy, 136,710
+  comparisons of perl with perl, none different.
+- **Not checked by it**: the generated C, the collector's roots and
+  D68's numbers, nothing being built; clang, the sanitizers, the Mac.
 
 ### 9. Arrays and lists
 

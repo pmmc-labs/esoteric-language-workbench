@@ -17,6 +17,11 @@ isa try catch finally weaken blessed reftype refaddr indexed is_tainted
 is_weak unweaken; __END__ __DATA__). 12 only when called before the
 definition: v0 to v9, v65, v1_0, which perl reads as version strings. None
 fails only when called after. It is a record, not a test.
+
+The review of step 8 found what this missed (briefs/step8-review/): `else
+elsif for foreach unless until while` are in neither list used here, and
+none is a sub's name to perl, so it is 66 of 3,455. They are not added:
+a sub named for a loop word, called blind, filled the reviewer's machine.
 """
 import itertools, os, subprocess, sys, string, tempfile
 from concurrent.futures import ThreadPoolExecutor
