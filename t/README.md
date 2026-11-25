@@ -48,12 +48,21 @@ person either:
   requires its stdout to be the start of perl's stdout for the same
   file (D12): the language stopped early, and said nothing perl
   wouldn't have. The program must end under perl, within the time
-  allowed.
+  allowed: where the language faults perl may only warn and carry on,
+  so a loop that the fault alone would end never ends under perl
+  (T131). Count such a loop by something the fault doesn't touch.
 - **`refused`**: by hand. The compiler's message,
   `FILE:LINE:COL: message`, then `exit: 1`. The test passes when the
   program does not compile and says exactly that. perl isn't asked.
 - **`new`**: a feature perl doesn't have. Its decision names the model
   or the referee that writes the output.
+
+From step 6 a program can run for ever. `t/run.sh` kills a test after
+`$TIMEOUT` seconds (60) and fails it, and stops one that prints more
+than `$OUTPUT_BLOCKS` blocks of 512 bytes (16384: 8 MB), which a loop
+that prints as it goes reaches long before the first; `t/checks.py`
+does the same to perl, at 16 MB. Both are made to bite by
+`t/harness/run.test.ts` and `t/checks/same-prints-for-ever.pl`.
 
 perl and the compiler are given the same path, from the repository's
 root (`t/000-say.pl`): a fault's line and a refusal's carry it, and so

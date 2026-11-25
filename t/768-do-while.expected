@@ -1,0 +1,2 @@
+t/768-do-while.pl:6:1: 'do' is not in the language
+exit: 1

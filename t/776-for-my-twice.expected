@@ -1,0 +1,2 @@
+t/776-for-my-twice.pl:5:17: my $k again in one scope: perl warns that it masks the first
+exit: 1

@@ -1,0 +1,2 @@
+t/761-two-labels.pl:6:4: a label is on a loop: after A: comes while, until or for
+exit: 1

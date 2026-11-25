@@ -342,7 +342,8 @@ test('last and next are statements: alone, with a label, under if or unless (T12
     refused('say last;', value('last'), 1, 5);
     refused('my $v = next;', value('next'), 1, 9);
     refused('$x = $y ? last : next;', value('last'), 1, 11);
-    refused('$x++ and last;', "'and' after a statement joins it to what follows, to perl, which binds 'and' more loosely than '=': write it as an if", 1, 6);
+    refused('$x++ and last;', value('last'), 1, 10);
+    refused('$x == 2 or next;', value('next'), 1, 12);
     refused('last if $x while $y;', "expected ';', found 'while'", 1, 12);
 });
 

@@ -1,0 +1,2 @@
+t/785-while-else.pl:7:3: else without an if before it
+exit: 1

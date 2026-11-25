@@ -1,0 +1,2 @@
+t/758-label-blank-before-colon.pl:5:7: a label is hard against its colon: OUTER:
+exit: 1

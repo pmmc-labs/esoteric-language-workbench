@@ -278,6 +278,12 @@ export const parse = (tokens: readonly Token[]): Program => {
     // one (D56).
     const loose = (): void => {
         const after = peek();
+        // `$done and last;`: the commonest of them, and the answer is an
+        // `if` (T120).
+        const then = tokens[i + 1];
+        if (after.kind === 'op' && infixOp(after.text) && then?.kind === 'word' && NAMES.get(then.text)?.kind === 'jump') {
+            refuse(`${then.text} is a statement, not a value: write '${then.text} if ...;' or '${then.text} unless ...;'`, then.pos);
+        }
         if (after.kind === 'op' && infixOp(after.text)) {
             refuse(`'${after.text}' after a statement joins it to what follows, to perl, which binds '${after.text}' more loosely than '=': write it as an if`, after.pos);
         }

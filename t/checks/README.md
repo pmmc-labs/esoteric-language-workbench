@@ -32,6 +32,7 @@ test is tested apart, on `t/000-say.pl`.)
 | `same-latin1-no-open` | `é` without `use open`: perl prints one byte, and the `.expected` has two. With `-CSDA`, which the oracle once passed, the check would pass it |
 | `same-wide-no-open` | `☺` without `use open`: perl warns of a wide character. With `-CSDA` it wouldn't |
 | `same-died` | perl dies: a `dies` test called `same` |
+| `same-prints-for-ever` | A loop that prints without end: perl is stopped at 16 MB of output, not when the checker's memory is full (step 6) |
 | `same-perl-refuses` | perl can't compile it |
 | `same-seeds` | Sorted, so it reads well, but the order is still perl's |
 | `same-unsorted-keys` | One key, so the seeds agree; only reading finds it |

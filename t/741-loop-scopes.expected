@@ -1,0 +1,38 @@
+test's: 0
+block's
+test's: 1
+block's
+outer
+until's: 3
+until's: 2
+outer
+for's: 0
+block's again
+for's: 1
+block's again
+outer
+6 and 10
+8 and 10
+5
+inner 10
+inner 11
+outer 0
+inner 10
+inner 11
+outer 1
+undef
+undef
+undef
+undef
+undef
+undef
+1 1
+12 2
+123 3
+a
+a
+10
+20
+undef
+1
+outer

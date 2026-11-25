@@ -1,0 +1,2 @@
+t/763-last-in-a-ternary.pl:7:20: last is a statement, not a value: write 'last if ...;' or 'last unless ...;'
+exit: 1

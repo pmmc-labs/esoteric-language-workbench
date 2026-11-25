@@ -1,0 +1,2 @@
+t/779-until-modifier-assign-constant.pl:5:15: '=' where a value is tested, with nothing but a constant on its right: perl warns that == was meant
+exit: 1

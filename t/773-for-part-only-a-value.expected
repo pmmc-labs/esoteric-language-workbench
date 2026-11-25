@@ -1,0 +1,2 @@
+t/773-for-part-only-a-value.pl:5:9: this part of the for only has a value, and nothing is done with it: perl warns that it is useless
+exit: 1

@@ -409,6 +409,8 @@ CLAIMS = [
     c('T129-fine', 'TRAPS; D57', 'my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u .= $x); say $u; $t = $t . ($u = $x . $z); say $u; $t .= ($u = $z . $x) . "b"; say $u; $t .= ($u = $x x 2); say $u; $t .= ($u = $x . $z . $x); say $u; say $t;', out='ua\na1\n1a\naa\na1a\ntuaa11abaaa1a\n'),
     c('T130', 'TRAPS; D52', 'my $x = 9007199254740994.0; $x++; say $x;', out='9.007199254741e+15\n', err='Lost precision when incrementing 9007199254740994.000000 by 1'),
     c('T130-edges', 'TRAPS; D52', 'my $p = 9007199254740992.0; my $x = $p; $x--; $x = -$p; $x++; $x = $p; $x++; $x = -$p; $x--; $x = $p + 2; $x--; $x = -$p - 2; $x++; say "done";', out='done\n', err='(?s)^(Lost precision when (in|de)crementing \\S+ by 1 at \\S+ line \\d+\\.\\n){4}$'),
+    # ---- building step 6
+    c('T131', 'TRAPS; t/README', 'my $i = 9223372036854775806; my $k = 0; while ($k++ < 3) { $i++; } say $i; $i = "zero"; $k = 0; while ($i == 0 && $k++ < 2) { print $k; } say "";', out='9223372036854775809\n12\n', err='(?s)^(Argument "zero" isn\'t numeric in numeric eq \\(==\\) at \\S+ line 2\\.\\n)$'),
     # ---- proposing step 6
     c('T32-next', 'TRAPS; PLAN 6', 'my $i = 0; while ($i++ < 3) { { next; } print $i; } say ""; $i = 0; while ($i++ < 3) { { { last; } print "a"; } print $i; } say ""; { last; say "no"; } say "after";', out='123\na1a2a3\nafter\n'),
     c('T32-if', 'TRAPS; PLAN 6', 'my $i = 0; while ($i++ < 3) { if ($i == 2) { next; } print $i; } say ""; $i = 0; W: while ($i++ < 3) { { last W; } say "no"; } say $i;', out='13\n1\n'),

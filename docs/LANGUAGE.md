@@ -9,7 +9,7 @@ and [`SURFACE.md`](SURFACE.md) says, for each construct of Perl,
 whether it will be in. Neither is a description of what works. This
 is, and so far it is short: a program can do arithmetic, build
 strings, compare and choose, keep values in variables, take one path
-or another, and print.
+or another, go round a loop, and print.
 
 ## A program
 
@@ -89,7 +89,8 @@ Every statement ends with a semicolon, the last one in a block too,
 and there is no empty statement: `;;` is refused. A block and an `if`
 end with their closing brace. The statements are `say` and `print`,
 the ones that work on variables (a `my`, an assignment, `++` and
-`--`), blocks, and `if` and `unless`; each is described below.
+`--`), blocks, `if` and `unless`, the loops `while`, `until` and
+`for`, and `last` and `next`; each is described below.
 
 ## say and print
 
@@ -668,7 +669,8 @@ until the block ends.
 A `my` begins a statement. It can't stand in the middle of one, `say
 my $x;`, or under a modifier, `my $x = 5 if $y;`, where perl would
 leave in the variable whatever it last held when the test fails. The
-one other place is the test of an `if`, described below.
+other places are the test of an `if`, a `while` or an `until`, and
+the first part of a `for`, described below.
 
 ### Assignment
 
@@ -865,6 +867,144 @@ well. That goes for the test of an
 
 A fault in a test names the line of its `if` or `elsif`; in the test
 of a modifier, the line its statement starts on.
+
+## Loops
+
+`while` runs its block as long as its test is true, testing before
+each time round. `until` runs it as long as the test is false.
+
+    my $n = 3;
+    while ($n > 0) {
+        say $n;
+        $n--;
+    }
+    until ($n == 3) {
+        $n++;
+    }
+
+The test is in brackets and the block in braces, as with `if`, and
+the test is a test in every way an `if`'s is: `while ($n = 5)` is
+refused. A loop that should run until something inside it says stop
+is `while (1) { ... }`. `while () { ... }`, which perl takes for the
+same thing, is refused.
+
+`for` is the loop with three parts:
+
+    for (my $i = 0; $i < 3; $i++) {
+        say $i;
+    }
+
+The first part runs once. Then the test; if it is true, the block,
+then the third part, then the test again. Any part may be left out,
+and a `for` with no test runs until it is told to stop: `for (;;) {
+... }`.
+
+The first and third parts are what could be statements: an
+assignment or a `++` or `--`, and in the first part a `my`. Each may
+be several of those with commas between, which run left to right:
+
+    for (my $lo = 0, my $hi = 9; $lo < $hi; $lo++, $hi--) {
+        say $lo . " " . $hi;
+    }
+
+That is the only place a comma joins expressions. The test is one
+expression. `for` with a list to go through, `for my $x (1, 2, 3)`,
+waits for lists, and `foreach` with it.
+
+A statement may be followed by `while TEST` or `until TEST`, and then
+it runs again and again, the test first each time:
+
+    $n++ while $n < 10;
+    say $n-- until $n < 8;
+
+so `say "never" while 0;` prints nothing. The statement is `say`,
+`print`, an assignment or a `++` or `--`, as under `if`.
+
+perl's `do { ... } while (TEST);`, which runs its block before the
+first test, is not in the language. Write `while (1) { ...; last
+unless TEST; }`.
+
+### What is new each time round
+
+A variable declared in a loop's block is a new variable each time
+round, undef until it is given a value:
+
+    my $i = 0;
+    while ($i++ < 3) {
+        my $seen;
+        say defined $seen ? "still here" : "new";    # new, three times
+        $seen = $i;
+    }
+
+So is one declared in the test of a `while` or an `until`, which the
+block can see: `while ((my $left = $total - $used) > 0) { ... }`.
+Neither is visible after the loop.
+
+A `my` in the first part of a `for` is one variable for the whole
+loop, as it has to be for the loop to count, and is gone after the
+loop too. A `my` may not stand in a `for`'s test or its third part,
+or before a `while` or `until` modifier.
+
+### last and next
+
+`last;` leaves the loop it is in, and `next;` goes on to the loop's
+next time round: in a `for`, the third part runs and then the test.
+
+    for (my $i = 0; $i < 10; $i++) {
+        next if $i % 2;         # odd: on to the next one
+        last if $i > 6;         # and no further than 6
+        say $i;                 # 0, 2, 4, 6
+    }
+
+They are statements, and take an `if` or an `unless` after them and
+nothing else. perl takes them inside expressions as well, `$done and
+last;`; here that is `last if $done;`.
+
+They go through the blocks of an `if`, as above and as in:
+
+    while (1) {
+        if ($n > 100) {
+            last;
+        }
+        $n *= 2;
+    }
+
+**But not through a bare block.** To perl a block on its own is a
+loop that runs once, so in `while (...) { { last; } ... }` the `last`
+leaves the inner braces and the `while` carries on, with nothing said.
+A `last` or `next` whose nearest surrounding loop or bare block is a
+bare block is refused, with a message that says which braces it would
+have left. Give the loop a label and say which loop is meant.
+
+### Labels
+
+A loop may have a label, and `last` and `next` may name it, to leave
+or go on with a loop further out than the nearest:
+
+    ROW: for (my $row = 0; $row < 3; $row++) {
+        for (my $col = 0; $col < 3; $col++) {
+            next ROW if $col > $row;
+            say $row . "," . $col;
+        }
+    }
+
+A label is written in capitals, digits and underscores, starting with
+a capital, hard against its colon, before a `while`, an `until` or a
+`for`: one label to a loop, and on nothing else. A `last` or `next`
+that names a label must be inside a loop with that label, or the
+program is refused. (perl looks for the loop only when the `last`
+runs, and stops the program there if there is none.) If two loops,
+one inside the other, have the same label, the inner one is meant.
+
+### Faults in a loop
+
+A fault in a loop's test, or in the first or third part of a `for`,
+names the line of the `while`, `until` or `for`. Under a `while` or
+`until` modifier it names the line the statement starts on.
+
+A loop that never ends is a program that never ends; nothing stops
+it. And until the language has a collector (the next step), every
+string a loop makes stays in memory until the program ends.
 
 ## When a program stops
 

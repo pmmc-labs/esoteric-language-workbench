@@ -1,0 +1,2 @@
+t/752-last-in-lone-bare-block.pl:5:5: last with no label would leave only the bare block that begins on line 4, to perl: label the loop it is for, and say last NAME
+exit: 1

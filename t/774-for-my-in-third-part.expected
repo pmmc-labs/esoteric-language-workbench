@@ -1,0 +1,2 @@
+t/774-for-my-in-third-part.pl:5:16: my $k in the third part of a for: a my is in the first part, and is one variable for the whole loop
+exit: 1

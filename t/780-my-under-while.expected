@@ -1,0 +1,2 @@
+t/780-my-under-while.pl:6:1: my under a modifier: when the test fails, perl leaves in the variable what it last held; declare it in a statement of its own
+exit: 1

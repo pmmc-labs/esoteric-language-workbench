@@ -347,6 +347,11 @@ def loop_cases():
         block(('my', 'i', 0), ('while', None, ('<', I, 3), [('mod', up, 'while', ('<', I, 2)), say_i, up])),
         block(('my', 'i', 0), ('while', None, ('<', step('i'), 3), [])),
         block(('my', 'i', 0), ('for', None, [], ('<', step('i'), 3), [], []), shown(I)),
+        # The expressions of a part run left to right: the second sees
+        # what the first did.
+        block(('for', None, [my('k', 0), my('m', 0)], ('<', K, 3), [step('k'), set_('m', ('*', K, 10))], [('say', join(K, ':', M))])),
+        block(('for', None, [my('k', 0), my('m', 0)], ('<', K, 3), [set_('m', ('*', K, 10)), step('k')], [('say', join(K, ':', M))])),
+        block(('my', 'i', 0), ('my', 'j', 0), ('for', None, [set_('i', 1), set_('j', ('+', I, 1))], ('<', I, 3), [set_('j', I, '+='), step('i')], [('say', join(I, ':', J))])),
     ]
     return out
 
@@ -512,9 +517,9 @@ FAULTS = {
     '723': ('fault-until-test', block(('my', 'i', 2), ('until', None, ('||', ('==', I, 0), ('<', ('/', 10, I), 2)), [say_(I), do(step('i', '--'))])),
             block(('my', 'i', 2), ('until', None, ('<', ('/', 10, I), 2), [say_(I), do(step('i', '--'))]))),
     # In the third part of a `for`, in its test, and in its first part.
-    # (perl warns of nothing at an overflow and carries on as a float, so
-    # the loop must end on something else: a test that the fault alone
-    # would end runs for ever under perl.)
+    # (perl says nothing at an overflow and carries on, unsigned and then
+    # as a float, so the loop must end on something else: a test that the
+    # fault alone would end runs for ever under perl.)
     '724': ('fault-for-each', block(('for', None, [my('i', MAX - 2), my('k', 0)], ('<', K, 2), [step('i'), step('k')], [say_(I)])),
             block(('for', None, [my('i', MAX - 2), my('k', 0)], ('<', K, 5), [step('i'), step('k')], [say_(I)]))),
     '725': ('fault-for-test', block(('for', None, [my('i', 2)], ('&&', ('>', I, 0), ('>', ('/', 10, I), 1)), [step('i', '--')], [say_(I)])),

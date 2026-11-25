@@ -1,0 +1,2 @@
+t/756-label-of-another-loop.pl:10:10: no loop called A is round this next
+exit: 1

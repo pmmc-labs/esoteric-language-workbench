@@ -374,6 +374,12 @@ a loop block`. T32 has more too: `next` in a bare block leaves the
 block, as `last` does, and one `last` inside two bare blocks leaves
 the inner.
 
+## Found building step 6
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T131 | `my $i = 9223372036854775806; while ($i > 0) { $i++; say $i; }` | Without end: where the language stops with `integer overflow`, perl goes on in silence, `9223372036854775808` and up as an unsigned integer and past 2^64 as a float, and the loop the fault would have ended runs for ever. The same for any fault perl only warns of (`"zero" == 0` warns once and is true). Run by a test it filled 19 GB of disk in two minutes, and a checker that kept perl's output in memory would have filled that | 6 | A fault test's loop is counted by something the fault doesn't touch. And the harness doesn't trust that: a test that prints past a limit is stopped by the system, in `t/run.sh` and in `t/checks.py` |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

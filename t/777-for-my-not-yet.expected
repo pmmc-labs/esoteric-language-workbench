@@ -1,0 +1,2 @@
+t/777-for-my-not-yet.pl:5:25: $k is not declared: my $k
+exit: 1

@@ -1,0 +1,2 @@
+t/757-label-in-small-letters.pl:5:1: a label is written in capitals: OUTER:
+exit: 1

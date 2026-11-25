@@ -24,7 +24,11 @@ undef, comparisons and logic, and imports both; `var.py` is step 5's
 variables, and the first model of statements: a program is a list of
 them, run against scopes of places, and an expression's value is a
 place or a value, so that a variable changed in the statement that
-reads it is read as late as perl reads it (D14). `str.py` lists its commands in
+reads it is read as late as perl reads it (D14); `loop.py` is step
+6's loops, on `var.py`: a `last` or a `next` is a Python exception
+that the loop it is for catches. Every loop a model writes must end
+under perl as well as under the language, and a fault may end it
+under one only (T131). `str.py` lists its commands in
 its docstring and checks the list against its own table of tests as
 it starts: `python3 t/models/str.py --commands` prints the list when
 a test is added.

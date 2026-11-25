@@ -41,7 +41,7 @@ sanitize:
 	@CURLY_CC="clang -fsanitize=undefined,address -fno-sanitize-recover=all" ./t/run.sh
 
 unit:
-	node --test "compiler/tests/**/*.test.ts" "runtime/tests/**/*.test.ts"
+	node --test "compiler/tests/**/*.test.ts" "runtime/tests/**/*.test.ts" "t/harness/*.test.ts"
 
 golden:
 	@./t/run.sh

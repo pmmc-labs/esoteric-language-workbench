@@ -206,17 +206,41 @@ def perl_problem():
                 f'with 64-bit integers and doubles (CLAUDE.md, Toolchain)')
     return None
 
+# What a program may print before it is stopped. A loop that prints without
+# end would otherwise fill this process's memory in the seconds it is
+# allowed: perl carries on where the language faults, so a test whose loop
+# only the fault would end is such a loop (step 6).
+OUTPUT_LIMIT = 16 * 1024 * 1024
+
+class Runaway(Exception):
+    pass
+
+def run_capped(argv, env, stdin, limit):
+    """A program run to its end, with what it printed. None if it didn't
+    end in `limit` seconds. What it prints goes to two files, each with
+    the system's limit on its size: past it the program is stopped
+    (SIGXFSZ), and that is a Runaway."""
+    import resource, signal, tempfile
+    def cap():
+        resource.setrlimit(resource.RLIMIT_FSIZE, (OUTPUT_LIMIT, OUTPUT_LIMIT))
+    with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+        try:
+            r = subprocess.run(argv, env=env, input=stdin, stdout=out, stderr=err, timeout=limit, preexec_fn=cap)
+        except subprocess.TimeoutExpired:
+            return None
+        if r.returncode == -signal.SIGXFSZ:
+            raise Runaway(f'{os.path.basename(argv[0])} printed more than {OUTPUT_LIMIT >> 20} MB, and was stopped: a test ends, and says little')
+        out.seek(0)
+        err.seek(0)
+        return subprocess.CompletedProcess(argv, r.returncode, out.read(), err.read())
+
 def run_perl(flags, path, hdr, seed, limit):
     """perl on a test, from the repository's root and by the path the
     compiler is given, with the test's stdin, arguments and environment
     and nothing else of this process's. None if it didn't end in time."""
     env = {'PATH': os.environ.get('PATH', ''), 'PERL_HASH_SEED': str(seed)}
     env.update(pair.split('=', 1) for pair in words(hdr.get('env', '')))
-    try:
-        return subprocess.run([PERL, *flags, path, *words(hdr.get('args', ''))], env=env,
-                              input=printf_b(hdr.get('stdin', '')), capture_output=True, timeout=limit)
-    except subprocess.TimeoutExpired:
-        return None
+    return run_capped([PERL, *flags, path, *words(hdr.get('args', ''))], env, printf_b(hdr.get('stdin', '')), limit)
 
 def clip(data, n=300):
     text = data.decode('utf-8', 'replace')
@@ -378,10 +402,8 @@ def program_stdout(path, hdr):
         return f'it does not compile: {clip(c.stderr)}', None
     env = dict(os.environ)
     env.update(pair.split('=', 1) for pair in words(hdr.get('env', '')))
-    try:
-        r = subprocess.run([binary, *words(hdr.get('args', ''))], env=env, input=printf_b(hdr.get('stdin', '')),
-                           capture_output=True, timeout=int(os.environ.get('TIMEOUT', '60')))
-    except subprocess.TimeoutExpired:
+    r = run_capped([binary, *words(hdr.get('args', ''))], env, printf_b(hdr.get('stdin', '')), int(os.environ.get('TIMEOUT', '60')))
+    if r is None:
         return 'the compiled program did not finish', None
     return None, r.stdout
 
@@ -392,6 +414,8 @@ def oracle_one(path, write=False):
         return problems
     try:
         return oracle_kind(path, hdr, write)
+    except Runaway as e:
+        return [str(e)]
     except (ValueError, OSError, subprocess.CalledProcessError) as e:
         # A header the shell or the system won't take: say so, and go on
         # to the next test.

@@ -1,0 +1,2 @@
+t/781-while-variable-after.pl:8:5: $x is not declared: my $x
+exit: 1

@@ -1,0 +1,2 @@
+t/784-continue-block.pl:7:3: 'continue' is not in the language
+exit: 1

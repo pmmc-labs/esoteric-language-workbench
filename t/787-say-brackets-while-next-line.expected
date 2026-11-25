@@ -1,0 +1,2 @@
+t/787-say-brackets-while-next-line.pl:6:5: say (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with 'while' after them: write say(...)
+exit: 1

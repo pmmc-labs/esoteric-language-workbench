@@ -1,0 +1,2 @@
+t/783-redo.pl:7:5: 'redo' is not in the language
+exit: 1

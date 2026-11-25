@@ -1,0 +1,2 @@
+t/760-label-on-a-bare-block.pl:4:4: a label is on a loop: after L: comes while, until or for
+exit: 1

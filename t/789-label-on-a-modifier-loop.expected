@@ -1,0 +1,2 @@
+t/789-label-on-a-modifier-loop.pl:6:4: a label is on a loop: after L: comes while, until or for
+exit: 1

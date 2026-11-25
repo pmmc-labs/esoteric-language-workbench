@@ -23,6 +23,12 @@ cd "$(dirname "$0")/.." || exit 2
 # (macOS has no timeout(1), hence the watchdog.)
 TIMEOUT=${TIMEOUT-60}
 export TIMEOUT
+# And one that prints more than $OUTPUT_BLOCKS blocks of 512 bytes is
+# stopped by the system (SIGXFSZ), and fails: a loop that prints without
+# end fills a disk in the time the watchdog allows it (step 6). The
+# largest test prints a hundredth of this.
+OUTPUT_BLOCKS=${OUTPUT_BLOCKS-16384}
+export OUTPUT_BLOCKS
 
 # What every test assumes of the runtime. Add each knob here as the
 # runtime gains it, so that no test depends on the machine it runs on:
@@ -40,9 +46,10 @@ header() {
 # The watchdog leaves a file to say it killed the test, since its own
 # output can't go down the pipe to diff: diff would wait for it.
 output() {
-    rm -f "$1.killed"
+    rm -f "$1.killed" "$1.output"
     set -f                                  # $3 and $4 are split into words, not globbed
-    env $4 "./$1" $3 <"$2" 2>&1 &
+    # What it prints goes to a file, which is what the limit is on.
+    ( ulimit -f "$OUTPUT_BLOCKS"; exec env $4 "./$1" $3 <"$2" >"$1.output" 2>&1 ) &
     set +f
     pid=$!
     ( sleep "$TIMEOUT" && : >"$1.killed" && kill "$pid" ) >/dev/null 2>&1 &
@@ -50,6 +57,13 @@ output() {
     wait "$pid" 2>/dev/null
     status=$?
     kill "$watchdog" 2>/dev/null
+    # 153 is 128 and SIGXFSZ: what it printed is not worth a diff.
+    if [ $status -eq 153 ]; then
+        echo "stopped: it printed more than $OUTPUT_BLOCKS blocks of 512 bytes"
+    else
+        cat "$1.output"
+    fi
+    rm -f "$1.output"
     [ -f "$1.killed" ] && echo "killed after ${TIMEOUT}s"
     [ $status -eq 0 ] || echo "exit: $status"
 }

@@ -1,0 +1,2 @@
+t/751-next-in-bare-block.pl:6:7: next with no label would leave only the bare block that begins on line 6, to perl: label the loop it is for, and say next NAME
+exit: 1

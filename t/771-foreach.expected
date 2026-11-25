@@ -1,0 +1,2 @@
+t/771-foreach.pl:4:1: 'foreach' is not in the language
+exit: 1

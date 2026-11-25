@@ -1,0 +1,2 @@
+t/772-for-comma-in-test.pl:7:14: expected ';', found ','
+exit: 1

@@ -998,3 +998,20 @@ use open ':std', ':encoding(UTF-8)';
     }
     say(defined($i) ? (('[' . $i) . ']') : 'undef');
 }
+{
+    for (my $k = 0, my $m = 0; $k < 3; $k++, $m = ($k * 10)) {
+        say(($k . ':') . $m);
+    }
+}
+{
+    for (my $k = 0, my $m = 0; $k < 3; $m = ($k * 10), $k++) {
+        say(($k . ':') . $m);
+    }
+}
+{
+    my $i = 0;
+    my $j = 0;
+    for ($i = 1, $j = ($i + 1); $i < 3; $j += $i, $i++) {
+        say(($i . ':') . $j);
+    }
+}

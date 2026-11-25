@@ -1,0 +1,2 @@
+t/788-last-as-a-value.pl:6:9: last is a statement, not a value: write 'last if ...;' or 'last unless ...;'
+exit: 1

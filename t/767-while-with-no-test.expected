@@ -1,0 +1,2 @@
+t/767-while-with-no-test.pl:6:7: while () is while (1), to perl: say that, or for (;;)
+exit: 1

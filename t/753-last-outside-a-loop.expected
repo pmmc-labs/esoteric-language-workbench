@@ -1,0 +1,2 @@
+t/753-last-outside-a-loop.pl:5:1: last outside a loop
+exit: 1

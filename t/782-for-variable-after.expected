@@ -1,0 +1,2 @@
+t/782-for-variable-after.pl:7:5: $k is not declared: my $k
+exit: 1
