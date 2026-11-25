@@ -45,6 +45,22 @@ const genExpr = (e: Expr, b: Block): string => {
         b.strings.push(`static const rt_str s${b.strings.length + 1} = { ${bytes}, ${[...e.value].length}, ${cString(e.value)} };`);
         return `rt_string(&s${b.strings.length})`;
     }
+    if (e.kind === 'constant') {
+        const name = NAMES.get(e.name);
+        if (name?.kind !== 'constant') throw new Error(`no value for ${e.name}`);
+        return name.c;
+    }
+    // One branch is worked out, and the other is C that doesn't run: so
+    // a fault in it doesn't happen (D49). The value is a temporary set in
+    // whichever block runs.
+    if (e.kind === 'ternary') {
+        const test = genExpr(e.test, b);
+        const result = temp(b, 'rt_undef()');
+        b.lines.push(`if (rt_is_true(cx, ${test})) {`);
+        b.lines.push(`${result} = ${genExpr(e.then, b)};`, '} else {');
+        b.lines.push(`${result} = ${genExpr(e.else, b)};`, '}');
+        return result;
+    }
     if (e.kind === 'apply') {
         // Arguments left before right, each in a temporary or a literal
         // by the time the call is made.
@@ -61,6 +77,15 @@ const genExpr = (e: Expr, b: Block): string => {
         return rt === undefined ? operand : temp(b, `${rt}(cx, ${operand})`);
     }
     const left = genExpr(e.left, b);
+    // `&&`, `||`, `//`: the value is the left operand, unless the test
+    // says the right one is wanted, and only then is it worked out.
+    const when = infixOp(e.op)?.when;
+    if (when !== undefined) {
+        const result = temp(b, left);
+        b.lines.push(`if (${when}(cx, ${result})) {`);
+        b.lines.push(`${result} = ${genExpr(e.right, b)};`, '}');
+        return result;
+    }
     const right = genExpr(e.right, b);
     const rt = infixOp(e.op)?.rt;
     if (rt === undefined) throw new Error(`no runtime function for ${e.op}`);

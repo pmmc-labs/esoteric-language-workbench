@@ -124,10 +124,17 @@ static int format_number(rt_ctx *cx, rt_value v, char buf[32]) {
     return snprintf(buf, 32, "%.15g", x);
 }
 
-// A value where a string is wanted (D24): a Str is itself, and a number
-// is what `say` prints for it.
+// A boolean as a string (D47): `1`, or nothing.
+static const rt_str STR_TRUE = { 1, 1, "1" };
+static const rt_str STR_FALSE = { 0, 0, "" };
+
+// A value where a string is wanted (D24): a Str is itself, a number is
+// what `say` prints for it, a boolean is `1` or the empty string, and an
+// undef is a fault: perl warns, and goes on with the empty string (D48).
 static const rt_str *to_str(rt_ctx *cx, rt_value v) {
     if (v.tag == RT_TAG_STR) return v.as.s;
+    if (v.tag == RT_TAG_BOOL) return v.as.i ? &STR_TRUE : &STR_FALSE;
+    if (v.tag == RT_TAG_UNDEF) rt_fault(cx, "undef where a string is wanted");
     char buf[32];
     int len = format_number(cx, v, buf);
     char *bytes;
@@ -150,8 +157,8 @@ static void emit(rt_ctx *cx, rt_value v, int newline) {
     char buf[32];
     const char *bytes = buf;
     size_t len;
-    if (v.tag == RT_TAG_STR) {
-        const rt_str *s = v.as.s;
+    if (v.tag == RT_TAG_STR || v.tag == RT_TAG_BOOL || v.tag == RT_TAG_UNDEF) {
+        const rt_str *s = to_str(cx, v);
         if (s->len != s->chars) {
             int size;
             for (uint64_t at = 0; at < s->len; at += (uint64_t)size) {
@@ -315,6 +322,15 @@ static number numeric(rt_ctx *cx, rt_value v) {
         return x;
     case RT_TAG_STR:
         return from_string(cx, v.as.s);
+    case RT_TAG_BOOL:
+        // The Int 1 or 0, and nothing less: perl has one answer for a
+        // boolean beside any operand, whatever its past (D47).
+        x.is_int = 1;
+        x.plain = 1;
+        x.i = v.as.i;
+        return x;
+    case RT_TAG_UNDEF:
+        rt_fault(cx, "undef where a number is wanted");
     default:
         rt_fault(cx, "not a numeric value");
     }
@@ -617,7 +633,9 @@ rt_value rt_repeat(rt_ctx *cx, rt_value a, rt_value count) {
     return rt_string(repeated);
 }
 
+// The length of an undef is undef, in perl and here (D48).
 rt_value rt_length(rt_ctx *cx, rt_value a) {
+    if (a.tag == RT_TAG_UNDEF) return a;
     return rt_int((int64_t)to_str(cx, a)->chars);
 }
 
@@ -734,6 +752,96 @@ rt_value rt_index3(rt_ctx *cx, rt_value a, rt_value b, rt_value position) {
     const rt_str *s = to_str(cx, a);
     const rt_str *t = to_str(cx, b);
     return find(cx, rt_string(s), rt_string(t), whole_number(cx, numeric(cx, position)));
+}
+
+// ---- truth and comparison
+
+// perl's truth (D49). A string is false when it is empty or the one
+// character `0`: `0.0` and `00` are true, which a number that is zero
+// never prints as.
+int rt_is_true(rt_ctx *cx, rt_value v) {
+    switch (v.tag) {
+    case RT_TAG_UNDEF: return 0;
+    case RT_TAG_BOOL: return v.as.i != 0;
+    case RT_TAG_INT: return v.as.i != 0;
+    case RT_TAG_NUM: return v.as.n != 0.0;
+    case RT_TAG_STR: return !(v.as.s->len == 0 || (v.as.s->len == 1 && v.as.s->bytes[0] == '0'));
+    default: rt_fault(cx, "not a value");
+    }
+}
+
+int rt_is_false(rt_ctx *cx, rt_value v) {
+    return !rt_is_true(cx, v);
+}
+
+int rt_is_undef(rt_ctx *cx, rt_value v) {
+    if (v.tag < RT_TAG_INT || v.tag > RT_TAG_BOOL) rt_fault(cx, "not a value");
+    return v.tag == RT_TAG_UNDEF;
+}
+
+rt_value rt_not(rt_ctx *cx, rt_value a) {
+    return rt_bool(!rt_is_true(cx, a));
+}
+
+rt_value rt_xor(rt_ctx *cx, rt_value a, rt_value b) {
+    int left = rt_is_true(cx, a);
+    int right = rt_is_true(cx, b);
+    return rt_bool(left != right);
+}
+
+rt_value rt_defined(rt_ctx *cx, rt_value a) {
+    return rt_bool(!rt_is_undef(cx, a));
+}
+
+// Two operands as numbers: -1, 0 or 1. D35's question again: whole
+// numbers when both are integral, doubles otherwise, an Int going to the
+// nearest double, so that 9007199254740993 == 2 ** 53 (T39). perl has no
+// second answer here for any past of either operand, D40's faults aside:
+// docs/briefs/step4-comparisons.py. No operand is a NaN (D37).
+static int compare_numbers(rt_ctx *cx, rt_value a, rt_value b) {
+    number x = numeric(cx, a);
+    number y = numeric(cx, b);
+    int64_t p, q;
+    if (integral(x, &p) && integral(y, &q)) return (p > q) - (p < q);
+    double f = as_double(x);
+    double g = as_double(y);
+    return (f > g) - (f < g);
+}
+
+// Two operands as strings: -1, 0 or 1. Bytes are compared, which is the
+// order of the characters: UTF-8 keeps it.
+static int compare_strings(rt_ctx *cx, rt_value a, rt_value b) {
+    const rt_str *s = to_str(cx, a);
+    const rt_str *t = to_str(cx, b);
+    int c = memcmp(s->bytes, t->bytes, s->len < t->len ? s->len : t->len);
+    if (c != 0) return (c > 0) - (c < 0);
+    return (s->len > t->len) - (s->len < t->len);
+}
+
+#define COMPARISON(name, compare, test) \
+    rt_value name(rt_ctx *cx, rt_value a, rt_value b) { \
+        int c = compare(cx, a, b); \
+        return rt_bool(c test 0); \
+    }
+COMPARISON(rt_num_eq, compare_numbers, ==)
+COMPARISON(rt_num_ne, compare_numbers, !=)
+COMPARISON(rt_num_lt, compare_numbers, <)
+COMPARISON(rt_num_gt, compare_numbers, >)
+COMPARISON(rt_num_le, compare_numbers, <=)
+COMPARISON(rt_num_ge, compare_numbers, >=)
+COMPARISON(rt_str_eq, compare_strings, ==)
+COMPARISON(rt_str_ne, compare_strings, !=)
+COMPARISON(rt_str_lt, compare_strings, <)
+COMPARISON(rt_str_gt, compare_strings, >)
+COMPARISON(rt_str_le, compare_strings, <=)
+COMPARISON(rt_str_ge, compare_strings, >=)
+
+rt_value rt_num_cmp(rt_ctx *cx, rt_value a, rt_value b) {
+    return rt_int(compare_numbers(cx, a, b));
+}
+
+rt_value rt_str_cmp(rt_ctx *cx, rt_value a, rt_value b) {
+    return rt_int(compare_strings(cx, a, b));
 }
 
 // stdout is flushed first, so that what the program printed before the

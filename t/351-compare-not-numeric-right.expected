@@ -1,0 +1,4 @@
+1
+1
+fault: not a numeric string at t/351-compare-not-numeric-right.pl line 7.
+exit: 1

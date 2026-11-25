@@ -9,7 +9,7 @@
 // integer fits whole; both C compilers pass the pair in registers. The
 // union gains a member per kind of value. No tag is 0: memory that was
 // never made a value then faults at the first operator that checks it.
-enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3 };
+enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_BOOL = 5 };
 
 // A Str (D24): Unicode characters, held as UTF-8, and never changed once
 // made. `len` is its bytes and `chars` its characters, which are the same
@@ -56,6 +56,23 @@ static inline rt_value rt_string(const rt_str *s) {
     rt_value v;
     v.tag = RT_TAG_STR;
     v.as.s = s;
+    return v;
+}
+
+// undef (D48): the one value that is no value. Its payload is nothing.
+static inline rt_value rt_undef(void) {
+    rt_value v;
+    v.tag = RT_TAG_UNDEF;
+    v.as.i = 0;
+    return v;
+}
+
+// A boolean (D47): `true` or `false`, and what a comparison gives. The
+// payload is 1 or 0.
+static inline rt_value rt_bool(int truth) {
+    rt_value v;
+    v.tag = RT_TAG_BOOL;
+    v.as.i = truth != 0;
     return v;
 }
 
@@ -115,6 +132,38 @@ rt_value rt_substr2(rt_ctx *cx, rt_value a, rt_value offset);
 rt_value rt_substr3(rt_ctx *cx, rt_value a, rt_value offset, rt_value count);
 rt_value rt_index2(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_index3(rt_ctx *cx, rt_value a, rt_value b, rt_value position);
+
+// Truth, definedness and comparison (D49). Truth is perl's: false is
+// undef, `false`, a number that is zero, the empty string and the string
+// `0`. The three tests are what the generated C branches on, for `&&`,
+// `||`, `//` and `? :`, whose right operands and branches are C that may
+// not run; each gives 1 or 0.
+int rt_is_true(rt_ctx *cx, rt_value v);
+int rt_is_false(rt_ctx *cx, rt_value v);
+int rt_is_undef(rt_ctx *cx, rt_value v);
+rt_value rt_not(rt_ctx *cx, rt_value a);
+rt_value rt_xor(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_defined(rt_ctx *cx, rt_value a);
+
+// `== != < > <= >=` and `<=>`: both operands as numbers, compared as
+// whole numbers when both are integral and as doubles otherwise.
+rt_value rt_num_eq(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_num_ne(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_num_lt(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_num_gt(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_num_le(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_num_ge(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_num_cmp(rt_ctx *cx, rt_value a, rt_value b);
+
+// `eq ne lt gt le ge` and `cmp`: both operands as strings, compared
+// character by character.
+rt_value rt_str_eq(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_str_ne(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_str_lt(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_str_gt(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_str_le(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_str_ge(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_str_cmp(rt_ctx *cx, rt_value a, rt_value b);
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

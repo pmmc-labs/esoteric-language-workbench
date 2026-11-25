@@ -1,0 +1,4 @@
+1
+1
+fault: a string with an exponent that is a whole number this large has two values in perl at t/352-compare-exponent.pl line 7.
+exit: 1

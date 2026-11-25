@@ -1,0 +1,4 @@
+1
+2
+fault: undef where a number is wanted at t/321-undef-add-right.pl line 7.
+exit: 1

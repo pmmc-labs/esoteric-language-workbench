@@ -3,12 +3,13 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D46 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D51 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
 D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
-3's, and D46 to what the review of step 3 left open.
+3's, D46 to what the review of step 3 left open, and D47 to D51 to
+step 4's.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -877,6 +878,89 @@ before. A number of that size that a double doesn't hold exactly
 (2^53 + 1, 2^63 - 1) is untouched. Rejected: leaving D35 until step 5
 brings variables (the rule would then change under programs already
 written against it).
+
+**D47. A boolean is a kind of its own, and as a number or a string it
+is what perl makes of it, in silence.** *(User: accepted as
+recommended, 2026-11-25; step 4, Q1.)* `true` and `false` are values,
+and so is what a comparison, `!`, `not`, `xor` and `defined` give. As
+a number a boolean is the Int 1 or 0; as a string, `"1"` or the empty
+string; `say 1 == 2;` prints an empty line. It is not the empty
+string: `"" == 0` is a fault (perl warns) and `false == 0` is true.
+D15 has it that what perl does in silence stays, and `$count += $x >
+3` is ordinary Perl. `docs/briefs/step4-comparisons.py` holds "the Int
+1 or 0" to perl in arithmetic beside every other operand under every
+past: 2,400 operations, no value perl doesn't give, so a boolean needs
+none of D45's care. Rejected: a boolean that is only for testing, and
+faults as a number or a string (a typed language's rule; `say $a ==
+$b` stops).
+
+**D48. `undef` is written bare only where perl can't take what follows
+for its argument; an undef where a number or a string is wanted
+faults.** *(User: accepted as recommended, 2026-11-25; step 4, Q2.)*
+To perl `undef` is an operator with an argument, the thing to make
+undefined, and it takes what follows for one whenever it can: `undef *
+2` is undef of a glob called `2`, in silence, and `undef + 1`, `undef
+< 1` and `undef x 3` don't compile (T105). So bare `undef` may be
+followed by `)`, `,`, `;`, `?`, `:` or a logical operator (`//`, `||`,
+`&&`, `and`, `or`, `xor`), and by nothing else; before anything else
+it is refused, with a message that says to write `(undef)`.
+`undef(...)` is the operator on a variable, cut already. An undef
+where a number or a string is wanted is a fault (D15: perl warns),
+`say undef` included: `undef where a number is wanted`, `undef where a
+string is wanted`. What takes an undef: `defined`, the tests of truth
+(`!`, `not`, `&&`, `||`, `and`, `or`, `xor`, `? :`), `//`, and
+`length`, which gives undef for one, as perl does. Rejected: always in
+brackets (one rule, and `$x // undef` needs brackets perl doesn't ask
+for).
+
+**D49. The comparisons, truth, and what the logical operators give are
+perl's.** *(User: accepted, 2026-11-25; step 4, Q3 and what the
+proposal had with nothing to choose.)* `== != < <= > >=` and `<=>`
+make both operands numbers (D40) and ask D35's one question: both
+integral, the whole numbers are compared exactly; otherwise the
+doubles are, so `9007199254740993 == 2 ** 53` is true (T39). `<=>` is
+the Int -1, 0 or 1. `step4-comparisons.py` asked perl for 57,376
+comparisons under 25 pairs of pasts each: where the rule doesn't fault
+for D40's reasons, perl has one answer and it is the rule's. (perl
+marks a number as carrying a float only when the float is exactly the
+number.) `eq ne lt le gt ge` and `cmp` make both operands strings, a
+number being what `say` prints for it, and compare them character by
+character, with no locale: `10 lt 9` is true, and `0.1 + 0.2 eq 0.3`
+is true where `==` is false. False is undef, `false`, a number that is
+zero, the empty string and the string `"0"`; `"0.0"` and `"00"` are
+true. `!`, `not` and `xor` give booleans. **`&&`, `||`, `//`, `and`
+and `or` give one of their operands**, not a boolean (`2 || 3` is 2,
+`0 && 1` is 0), and don't work the right one out unless it is needed;
+`? :` works out one branch. Later (not in the language): `^^`, `~~`,
+the bit operators.
+
+**D50. Two comparisons of one row with no brackets between them are
+refused.** *(User: accepted as recommended, 2026-11-25; step 4, Q4.)*
+Since 5.32 perl chains them: `1 < 5 < 3` is `1 < 5 && 5 < 3`, and `1
+!= 1 == 0` is `(1 != 1) && (1 == 0)`, false, where reading from the
+left gives true (T108); `<=>` and `cmp` don't chain and don't compile
+in one (T51). `1 < 2 == 1` is two rows and is fine. Rejected for now:
+chaining as perl does (it reads well, `0 <= $i < $n`, and needs the
+rule that the middle operand is worked out once); a later step can
+take it without breaking a program this accepts.
+
+**D51. The word operators: none after `say`'s argument, none bare in a
+list of arguments, and nothing that binds tighter after `not (...)`.**
+*(User: accepted as recommended, 2026-11-25; step 4, Q5.)* `and`, `or`
+and `xor` bind more loosely than `say` does: `say 0 or 2;` is `(say 0)
+or 2`, and `say true and false;` prints `1` without a word from perl
+(T106). So one after `say`'s argument is refused, and inside brackets,
+`say(0 or 2)`, it is the argument's; `... or die` comes with `die`
+(step 15). They bind more loosely than the comma too, and `not` takes
+a list: in `substr("abc", not 0, 1)` it takes `0, 1`. So in a list of
+arguments a word operator stands in brackets or not at all. And a
+bracket straight after `not` is all `not` takes, to perl: `not (0) ||
+1` is `(not 0) || 1`, which is 1, where `not 0 || 1` is false (T107).
+There an operator that binds tighter than `not` is refused after the
+closing bracket, as T25 refuses one after `say (...)`; `not ($a ==
+$b)` is fine. Rejected: perl's reading of `not (...)`, which is also
+what D41 does for `length ("ab") . "c"` (consistent, and a known trap
+kept).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

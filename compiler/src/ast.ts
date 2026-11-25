@@ -29,7 +29,13 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // `(x + y)`. The tree's shape already holds the grouping; this is for the
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
-export type Expr = Int | Num | Str | Unary | Binary | Apply;
+export type Expr = Int | Num | Str | Constant | Unary | Binary | Ternary | Apply;
+
+// A word that is a value: `true`, `false`, `undef` (D47, D48).
+export type Constant = { kind: 'constant'; name: string; pos: Pos; bracketed?: true };
+
+// `test ? then : else`; `pos` is the question mark's.
+export type Ternary = { kind: 'ternary'; test: Expr; then: Expr; else: Expr; pos: Pos; bracketed?: true };
 
 // A builtin that has a value, applied to its arguments: `length "abc"`,
 // `substr($s, 1)`. `pos` is the name's.

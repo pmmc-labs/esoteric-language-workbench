@@ -1,0 +1,4 @@
+1
+[a]
+fault: undef where a string is wanted at t/334-undef-concat-left.pl line 7.
+exit: 1

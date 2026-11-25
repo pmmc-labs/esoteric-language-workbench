@@ -1,0 +1,4 @@
+1
+[]
+fault: division by zero at t/358-xor-works-both-out.pl line 7.
+exit: 1

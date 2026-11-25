@@ -1,0 +1,4 @@
+1
+0
+fault: undef where a string is wanted at t/342-undef-index-piece.pl line 7.
+exit: 1

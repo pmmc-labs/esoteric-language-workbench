@@ -1,0 +1,4 @@
+1
+
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/357-compare-strings-fault-order.pl line 7.
+exit: 1

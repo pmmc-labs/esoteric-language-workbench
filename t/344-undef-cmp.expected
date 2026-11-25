@@ -1,0 +1,4 @@
+1
+0
+fault: undef where a string is wanted at t/344-undef-cmp.pl line 7.
+exit: 1

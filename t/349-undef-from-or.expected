@@ -1,0 +1,4 @@
+1
+x
+fault: undef where a string is wanted at t/349-undef-from-or.pl line 7.
+exit: 1

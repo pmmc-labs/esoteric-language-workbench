@@ -1,0 +1,4 @@
+1
+else
+fault: undef where a string is wanted at t/347-undef-from-ternary.pl line 7.
+exit: 1

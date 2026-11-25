@@ -1,0 +1,4 @@
+1
+[]
+fault: undef where a number is wanted at t/332-undef-substr-length.pl line 7.
+exit: 1

@@ -19,7 +19,7 @@ export type Token =
     // string it stands for.
     | { kind: 'str'; text: string; value: string; pos: Pos }
     | { kind: 'version'; text: string; pos: Pos }
-    | { kind: ';' | '(' | ')' | ','; text: string; pos: Pos }
+    | { kind: ';' | '(' | ')' | ',' | '?' | ':'; text: string; pos: Pos }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
@@ -221,9 +221,11 @@ export const lex = (src: string): Token[] => {
     };
 
     // Whether the last token ends a value, so that an operator comes next.
+    // `true`, `false` and `undef` are values too.
     const afterValue = (): boolean => {
-        const last = tokens.at(-1)?.kind;
-        return last === 'int' || last === 'num' || last === 'str' || last === ')';
+        const last = tokens.at(-1);
+        return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === ')'
+            || (last?.kind === 'word' && NAMES.get(last.text)?.kind === 'constant');
     };
 
     while (i < src.length) {
@@ -253,8 +255,11 @@ export const lex = (src: string): Token[] => {
             // it hard against a number too, `"ab" x3`, and stops at `$s
             // x3`, where `x3` is a word to it (T57): here it is a word of
             // its own. `x=` is the assignment.
-            if (operator && text === 'x') {
-                if (at() === '=') refuse("'x=' is not in the language yet", start);
+            // The other operators that are words (`lt`, `and`) are
+            // operators after a value too, and `not` is one before one.
+            // Each is a word of its own: `1 lt2` is no operator to perl.
+            if (operator ? infixOp(text) : prefixOp(text)) {
+                if (text === 'x' && at() === '=') refuse("'x=' is not in the language yet", start);
                 push({ kind: 'op', text, pos: start });
                 continue;
             }
@@ -292,7 +297,7 @@ export const lex = (src: string): Token[] => {
                 asFunction = level > 0 || w >= end || !';&/|})]oaiuwef!='.includes(src[w]!);
             }
             push(isVersion ? { kind: 'version', text, pos: start } : asFunction ? { kind: 'word', text, pos: start, asFunction } : { kind: 'word', text, pos: start });
-        } else if (c === ';' || c === '(' || c === ')' || c === ',') {
+        } else if (c === ';' || c === '(' || c === ')' || c === ',' || c === '?' || c === ':') {
             push({ kind: c, text: take(), pos: start });
             // `use utf8;` is in force from the next line (T73). Whether it
             // may stand where it does is the checker's to say.
@@ -317,7 +322,7 @@ export const lex = (src: string): Token[] => {
             // blank before the sign and none after (T94). On a line
             // below the name perl looks at how that line begins; here
             // the sign is on the name's own line.
-            if (prefixOp(op) && last?.kind === 'word' && NAMES.get(last.text)?.kind === 'unary'
+            if (prefixOp(op)?.sign && last?.kind === 'word' && NAMES.get(last.text)?.kind === 'unary'
                 && (between === '' || [...between].some(ch => ch !== ' ' && ch !== '\t') || isBlank(at()))) {
                 refuse(`${last.text} ${op}: perl warns that this is ambiguous: write ${last.text}(${op}...)`, start);
             }

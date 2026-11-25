@@ -1,0 +1,4 @@
+1
+abc
+fault: undef where a number is wanted at t/331-undef-substr-position.pl line 7.
+exit: 1

@@ -15,6 +15,10 @@ export type Name =
     // or without, and without them it takes everything that binds tighter
     // than the row of perlop's table that is theirs.
     | { kind: 'unary'; rt: string }
+    // A word that is a value (D47, D48). `c` is the C for it. `bare`: perl
+    // takes what follows the word for its argument whenever it can, so
+    // only what can't be one may follow it (`undef`, T105).
+    | { kind: 'constant'; c: string; bare?: true }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -29,6 +33,10 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['lc', { kind: 'unary', rt: 'rt_lc' }],
     ['ord', { kind: 'unary', rt: 'rt_ord' }],
     ['chr', { kind: 'unary', rt: 'rt_chr' }],
+    ['defined', { kind: 'unary', rt: 'rt_defined' }],
+    ['true', { kind: 'constant', c: 'rt_bool(1)' }],
+    ['false', { kind: 'constant', c: 'rt_bool(0)' }],
+    ['undef', { kind: 'constant', c: 'rt_undef()', bare: true }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);
@@ -74,8 +82,12 @@ export const DECIMAL_MAX_LENGTH = 250;
 // its precedence from a row's place in the list.
 export type Assoc = 'left' | 'right' | 'nonassoc' | 'chained' | 'chain/na';
 // `list`: in list context, with its left operand in brackets, the
-// operator works on a list (`x`).
-export type Op = { op: string; in?: true; rt?: string; list?: true };
+// operator works on a list (`x`). `sign`: a prefix operator perl warns
+// about after a named unary operator (T94). `when`: the operator works its
+// right operand out only when this runtime test says so of its left, and
+// its value is one operand or the other (D49). `logic`: it takes an undef,
+// and may follow a bare `undef` (D48).
+export type Op = { op: string; in?: true; rt?: string; list?: true; sign?: true; when?: string; logic?: true };
 export type Level = {
     assoc: Assoc;
     prefix?: readonly Op[];     // before its operand
@@ -85,6 +97,8 @@ export type Level = {
 };
 
 const ops = (...names: string[]): Op[] => names.map(op => ({ op }));
+const live = (op: string, rt: string): Op => ({ op, in: true, rt });
+const lazy = (op: string, when: string): Op => ({ op, in: true, when, logic: true });
 const NAMED_UNARY = 'named unary operators';
 
 export const PRECEDENCE: readonly Level[] = [
@@ -92,19 +106,21 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'left', infix: ops('->') },
     { assoc: 'nonassoc', other: ['++', '--'] },
     { assoc: 'right', infix: [{ op: '**', in: true, rt: 'rt_pow' }] },
-    { assoc: 'right', prefix: [...ops('!', '~', '~.', '\\'), { op: '+', in: true }, { op: '-', in: true, rt: 'rt_neg' }] },
+    { assoc: 'right', prefix: [{ op: '!', in: true, rt: 'rt_not' }, ...ops('~', '~.', '\\'), { op: '+', in: true, sign: true }, { op: '-', in: true, rt: 'rt_neg', sign: true }] },
     { assoc: 'left', infix: ops('=~', '!~') },
     { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x', in: true, rt: 'rt_repeat', list: true }] },
     { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.', in: true, rt: 'rt_concat' }] },
     { assoc: 'left', infix: ops('<<', '>>') },
     { assoc: 'nonassoc', what: NAMED_UNARY },
     { assoc: 'nonassoc', infix: ops('isa') },
-    { assoc: 'chained', infix: ops('<', '>', '<=', '>=', 'lt', 'gt', 'le', 'ge') },
-    { assoc: 'chain/na', infix: ops('==', '!=', 'eq', 'ne', '<=>', 'cmp', '~~') },
+    { assoc: 'chained', infix: [live('<', 'rt_num_lt'), live('>', 'rt_num_gt'), live('<=', 'rt_num_le'), live('>=', 'rt_num_ge'),
+        live('lt', 'rt_str_lt'), live('gt', 'rt_str_gt'), live('le', 'rt_str_le'), live('ge', 'rt_str_ge')] },
+    { assoc: 'chain/na', infix: [live('==', 'rt_num_eq'), live('!=', 'rt_num_ne'), live('eq', 'rt_str_eq'), live('ne', 'rt_str_ne'),
+        live('<=>', 'rt_num_cmp'), live('cmp', 'rt_str_cmp'), ...ops('~~')] },
     { assoc: 'left', infix: ops('&', '&.') },
     { assoc: 'left', infix: ops('|', '|.', '^', '^.') },
-    { assoc: 'left', infix: ops('&&') },
-    { assoc: 'left', infix: ops('||', '^^', '//') },
+    { assoc: 'left', infix: [lazy('&&', 'rt_is_true')] },
+    { assoc: 'left', infix: [lazy('||', 'rt_is_false'), ...ops('^^'), lazy('//', 'rt_is_undef')] },
     { assoc: 'nonassoc', infix: ops('..', '...') },
     { assoc: 'right', other: ['?', ':'] },
     // "= += -= *= etc.": the list is perlop's, under Assignment Operators.
@@ -112,9 +128,9 @@ export const PRECEDENCE: readonly Level[] = [
         '.=', '%=', '^=', '^.=', '//=', 'x=', '^^='), what: 'and goto last next redo dump' },
     { assoc: 'left', infix: ops(',', '=>') },
     { assoc: 'nonassoc', what: 'list operators (rightward)' },
-    { assoc: 'right', prefix: ops('not') },
-    { assoc: 'left', infix: ops('and') },
-    { assoc: 'left', infix: ops('or', 'xor') },
+    { assoc: 'right', prefix: [live('not', 'rt_not')] },
+    { assoc: 'left', infix: [lazy('and', 'rt_is_true')] },
+    { assoc: 'left', infix: [lazy('or', 'rt_is_false'), { op: 'xor', in: true, rt: 'rt_xor', logic: true }] },
 ];
 
 // Every operator's spelling, the words among them too.
@@ -122,10 +138,11 @@ export const OPERATORS: ReadonlySet<string> = new Set(
     PRECEDENCE.flatMap(l => [...(l.prefix ?? []), ...(l.infix ?? [])].map(o => o.op).concat(l.other ?? [])));
 
 // An operator in the language at this place, and its row; or undefined.
-const find = (place: 'prefix' | 'infix') => (op: string): { row: number; assoc: Assoc; rt?: string; list?: true } | undefined => {
+export type Found = { row: number; assoc: Assoc } & Omit<Op, 'op' | 'in'>;
+const find = (place: 'prefix' | 'infix') => (op: string): Found | undefined => {
     for (const [row, level] of PRECEDENCE.entries()) {
         const found = level[place]?.find(o => o.op === op && o.in);
-        if (found) return { row, assoc: level.assoc, rt: found.rt, list: found.list };
+        if (found) return { ...found, row, assoc: level.assoc };
     }
     return undefined;
 };
@@ -135,3 +152,10 @@ export const infixOp = find('infix');
 // The row of the named unary operators: `length`, written without
 // brackets, takes for its argument everything in the rows above this one.
 export const NAMED_UNARY_ROW = PRECEDENCE.findIndex(l => l.what === NAMED_UNARY);
+
+// The row of `? :`, which is neither before nor between; of the comma,
+// which a list of arguments is made of; and of `and`, the tightest of the
+// word operators that stand between two operands.
+export const TERNARY_ROW = PRECEDENCE.findIndex(l => l.other?.includes('?'));
+export const COMMA_ROW = PRECEDENCE.findIndex(l => l.infix?.some(o => o.op === ','));
+export const AND_ROW = PRECEDENCE.findIndex(l => l.infix?.some(o => o.op === 'and'));

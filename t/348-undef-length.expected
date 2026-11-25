@@ -1,0 +1,4 @@
+1
+undef
+fault: undef where a string is wanted at t/348-undef-length.pl line 7.
+exit: 1

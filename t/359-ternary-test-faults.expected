@@ -1,0 +1,4 @@
+1
+a
+fault: not a numeric string at t/359-ternary-test-faults.pl line 7.
+exit: 1

@@ -12,8 +12,9 @@ const checkExpr = (e: Expr): void => {
         return checkExpr(e.right);
     }
     if (e.kind === 'apply') return e.args.forEach(checkExpr);
+    if (e.kind === 'ternary') return [e.test, e.then, e.else].forEach(checkExpr);
     // The lexer has seen to a string: its escapes, and its characters.
-    if (e.kind === 'str') return;
+    if (e.kind === 'str' || e.kind === 'constant') return;
     // perl reads `010` as octal, 8, doesn't compile `08`, and reads
     // `00.5` as two numbers joined (T24, T78). Octal is `0o10` (D38).
     if (/^0[0-9_]/.test(e.text)) {
@@ -47,11 +48,24 @@ const plain = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === u
 // values, not one string. They print the same, and cost perl a value
 // each, so a count the string would bear stops perl for lack of memory
 // (T101). Lists are step 9's: until then the brackets are refused.
+//
+// The list reaches down: to the right operand of an operator that gives
+// one operand or the other (`||`, `&&`, `//`, `or`, `and`), and to both
+// branches of `? :` (T104). Not to a left operand, a condition, or
+// through anything that makes one value of its operands.
 const checkListContext = (call: Call): void => {
-    const e = plain(call.args[0]!);
-    if (e.kind === 'binary' && infixOp(e.op)?.list && plain(e.left).bracketed) {
-        refuse(`(...) ${e.op} as ${call.name}'s argument repeats a list, to perl: take the brackets off the left operand`, e.pos);
-    }
+    const visit = (in_: Expr): void => {
+        const e = plain(in_);
+        if (e.kind === 'ternary') {
+            visit(e.then);
+            visit(e.else);
+        } else if (e.kind === 'binary' && infixOp(e.op)?.when) {
+            visit(e.right);
+        } else if (e.kind === 'binary' && infixOp(e.op)?.list && plain(e.left).bracketed) {
+            refuse(`(...) ${e.op} as ${call.name}'s argument repeats a list, to perl: take the brackets off the left operand`, e.pos);
+        }
+    };
+    visit(call.args[0]!);
 };
 
 // A pragma is written one way (D16): its arguments are the table's, each
