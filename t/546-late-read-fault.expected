@@ -1,0 +1,5 @@
+1
+2
+[5]
+fault: division by zero at t/546-late-read-fault.pl line 13.
+exit: 1

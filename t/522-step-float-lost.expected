@@ -1,0 +1,4 @@
+1
+1
+fault: a float too large to step by one at t/522-step-float-lost.pl line 13.
+exit: 1

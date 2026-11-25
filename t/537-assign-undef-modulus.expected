@@ -1,0 +1,4 @@
+1
+[0]
+fault: undef where a number is wanted at t/537-assign-undef-modulus.pl line 13.
+exit: 1

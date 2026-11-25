@@ -1,0 +1,4 @@
+1
+after
+fault: division by zero at t/544-fault-under-modifier.pl line 13.
+exit: 1

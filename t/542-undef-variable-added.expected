@@ -1,0 +1,4 @@
+1
+1
+fault: undef where a number is wanted at t/542-undef-variable-added.pl line 12.
+exit: 1

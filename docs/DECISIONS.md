@@ -3,13 +3,13 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D51 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D56 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
 D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
-3's, D46 to what the review of step 3 left open, and D47 to D51 to
-step 4's.
+3's, D46 to what the review of step 3 left open, D47 to D51 to step
+4's, and D52 to D56 to step 5's.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -965,6 +965,81 @@ closing bracket, as T25 refuses one after `say (...)`; `not ($a ==
 $b)` is fine. Rejected: perl's reading of `not (...)`, which is also
 what D41 does for `length ("ab") . "c"` (consistent, and a known trap
 kept).
+
+**D52. `++` and `--`, by what the variable holds.** *(User: accepted
+as recommended, 2026-11-25; step 5, Q1.)* An undef becomes 1 or -1
+(and `$x++` is worth 0, `$x--` an undef, as in perl: T43). A boolean
+becomes the Int one more or less. An Int steps by one, or `integer
+overflow`. A Num: `++` is what `$x + 1` is (D35), the Int when the
+Num is integral and otherwise the Num; `--` is the Num one less,
+always, because perl subtracts as a float unless the Num has been
+used as an integer, and it faults when the Num is integral and the
+answer reaches 2^53 in size, where the two part (T93); either faults
+on a Num so large that the step is lost, `1e16`, where perl warns. A
+string that is a number (D40) becomes the Num one more or less,
+whatever kind of number it is: perl steps a fresh string of digits as
+text (`"12"` to the string `"13"`) and one that has been used as a
+number as an integer. It faults if the number is whole and it or the
+answer reaches 2^53, and for `++` if the string is digits that begin
+with a zero, `"009"`, which is `"010"` or 10 by its past (T113). Any
+other string faults: perl's string increment (`"aa"` to `"ab"`) is
+cut, and so is the -1 that `--` makes of `"ab"` in silence (T44).
+`docs/briefs/step5-increments.py` holds the table to perl on 456
+cases under seven pasts each. Rejected: `++` and `--` on an Int, a
+Num or an undef only (two rows fewer, and `"12"` stops being a number
+in one place).
+
+**D53. A `=` whose right side has no variable in it is refused
+wherever its value is tested for truth.** *(User: accepted as
+recommended, 2026-11-25; step 5, Q2.)* `if ($x = 5)` is nearly always
+a slip for `==`, and perl warns `Found = in conditional` when the
+right side is a constant, after folding what it can (T112). Tested
+for truth: the condition of an `if`, `elsif` or `unless`, block or
+modifier; the test of `? :`; the left of `&&`, `||`, `//`, `and`,
+`or`; and what those hand a test down to (the right of one of those
+operators, and the branches of a `? :`, when the whole is tested).
+That is every case perl warns of and some it doesn't, with no
+constant folder. `if ($x = $y)` and `if ($x += 1)` are fine, as they
+are to perl. Rejected: refusing every `=` as a condition (`if (my $m
+= f())` would be lost for good).
+
+**D54. `unless` takes no `else` and no `elsif`.** *(User: accepted as
+recommended, 2026-11-25; step 5, Q3.)* perl allows both. With an
+`else` it is an `if` written backwards. `unless (...) { }` alone, and
+`... unless COND;`, are in.
+
+**D55. A name is ASCII, and `$a` and `$b` are not names.** *(User:
+accepted as recommended, 2026-11-25; step 5, Q4.)* A letter or `_`,
+then letters, digits and `_`. Names past ASCII are Later (they were In
+at this step): perl's rule for them is Unicode's with exceptions of
+its own. `my $a` is allowed by perl, and breaks `sort { $a <=> $b }`
+in its scope: refused here, with `$_` and every other special
+variable until a step brings each. A variable is written `$name` and
+no other way: `${name}` warns in perl, and `$ name` works.
+
+**D56. What a variable, an assignment and a statement are.** *(User:
+seen with the proposal, 2026-11-25; step 5, Q5: nothing to choose.)*
+`my $x;` and `my $x = EXPR;` declare one variable, undef until given
+a value, visible from the next statement to the end of its block; a
+second `my` of a name in one scope is refused (perl warns), and so is
+a use with no `my` in sight (perl doesn't compile it). A `my` may
+also stand in the condition of an `if`, and is then visible in the
+blocks of that `if` and no further. Not under a modifier, and not in
+an operand that may not be worked out (D21, T30). **An assignment's
+left side is a variable**: perl takes `($x = 5) = 7` and `(1 ? $x :
+$y) = 8`, and D17 has values flowing, not places. `$x OP= E` is `$x =
+$x OP E` (held to perl on 7,524 operations); an undef on the left is
+0 for `+=` and `-=` and the empty string for `.=`, as in perl, and a
+fault for `*= /= %= **= x=`, where perl warns. **Which expressions
+are the variable itself**, read when the operator that uses them runs
+(D14): `$x`, `($x)`, `+$x`, `my $x`, an assignment, `++$x`, and
+whichever operand `||`, `&&`, `//`, `and`, `or` and `? :` give
+(T110). `$x++`, `-$x` and everything else are values. **A statement**
+is `say`, `print`, a `my`, an assignment, a `++` or `--`, a block or
+an `if`; an expression that only has a value is refused (perl warns).
+And **after `say` or `print`, a variable followed by a blank and
+something that could begin a value is refused**, by perl's own list:
+perl takes the variable for a file handle, and dies (T26, T111).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

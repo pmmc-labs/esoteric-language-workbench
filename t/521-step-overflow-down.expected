@@ -1,0 +1,4 @@
+1
+[-9223372036854775808]
+fault: integer overflow at t/521-step-overflow-down.pl line 13.
+exit: 1

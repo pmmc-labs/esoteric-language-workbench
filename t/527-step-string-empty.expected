@@ -1,0 +1,4 @@
+1
+[1]
+fault: not a numeric string at t/527-step-string-empty.pl line 13.
+exit: 1

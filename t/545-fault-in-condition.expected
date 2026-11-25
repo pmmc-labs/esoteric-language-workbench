@@ -1,0 +1,4 @@
+1
+zero
+fault: not a numeric string at t/545-fault-in-condition.pl line 14.
+exit: 1

@@ -1,0 +1,4 @@
+1
+1
+fault: -- on a whole float that reaches 2^53 has two answers in perl at t/524-step-float-two.pl line 13.
+exit: 1

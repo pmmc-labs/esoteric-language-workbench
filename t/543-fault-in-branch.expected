@@ -1,0 +1,4 @@
+1
+else
+fault: division by zero at t/543-fault-in-branch.pl line 17.
+exit: 1

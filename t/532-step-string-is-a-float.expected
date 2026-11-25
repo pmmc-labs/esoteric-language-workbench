@@ -1,0 +1,4 @@
+1
+[10000000000000006]
+fault: an integer this large with a whole float or a string has two answers in perl at t/532-step-string-is-a-float.pl line 15.
+exit: 1

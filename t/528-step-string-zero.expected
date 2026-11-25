@@ -1,0 +1,4 @@
+1
+[91]
+fault: ++ on a string of digits that begins with a zero has two answers in perl at t/528-step-string-zero.pl line 13.
+exit: 1

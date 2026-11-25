@@ -1,0 +1,4 @@
+1
+[-2]
+fault: undef where a number is wanted at t/535-assign-undef-divide.pl line 13.
+exit: 1

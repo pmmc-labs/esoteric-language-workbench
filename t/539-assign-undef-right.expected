@@ -1,0 +1,4 @@
+1
+[1]
+fault: undef where a number is wanted at t/539-assign-undef-right.pl line 13.
+exit: 1

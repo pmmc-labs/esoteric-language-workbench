@@ -1,0 +1,4 @@
+1
+[13]
+fault: not a numeric string at t/540-assign-fault.pl line 13.
+exit: 1

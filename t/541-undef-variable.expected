@@ -1,0 +1,4 @@
+1
+undef
+fault: undef where a string is wanted at t/541-undef-variable.pl line 12.
+exit: 1

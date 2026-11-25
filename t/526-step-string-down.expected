@@ -1,0 +1,4 @@
+1
+[11]
+fault: not a numeric string at t/526-step-string-down.pl line 13.
+exit: 1
