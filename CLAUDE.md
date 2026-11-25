@@ -220,7 +220,7 @@ collection at every allocation, poison, and a cap of 256 MB** (D64,
 D65; `t/knobs.sh`, which `t/run.sh` sources and `t/checks.py` reads);
 a test says otherwise in its `# env:`. **The oracle
 check** (`t/checks.py oracle`, D10) holds every test to perl 5.42 by
-its kind, **run plain, with no switches** (D39), and has 43 tests of
+its kind, **run plain, with no switches** (D39), and has 44 tests of
 its own in `t/checks/`; its seeds are eight of 64 hex digits
 (`PERL_HASH_SEED=1` to `8` are nearly one seed to perl). Its reading
 rule for hashes is by pattern and errs toward rejecting; step 12 will
@@ -318,7 +318,7 @@ prototype of the design) could not break its rule, and corrected the
 proposal round it: poison must check wherever a string is read and
 again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
-green after step 6; step 7 has not been run there yet. **Next: step
+green after step 6 and again after step 7. **Next: step
 8**, subs, which is an outline and has to be proposed. What step 7
 hands it: a sub opens a frame and closes it on every way out; its
 arguments are copied into its own slots before anything allocates;
@@ -488,11 +488,11 @@ in `pmmc-labs/esoteric-language-workbench`.
 | Path | |
 |---|---|
 | `bin/curlyc.ts` | The driver: `curlyc -o out file.pl` |
-| `compiler/src/` | One file per pass: `lexer.ts`, `parser.ts`, `checker.ts`, `codegen.ts`; `ast.ts`, the tree; `names.ts`, the one table of names: statements, builtins, pragmas, operators (D29); `errors.ts` |
+| `compiler/src/` | One file per pass: `lexer.ts`, `parser.ts`, `resolver.ts`, `checker.ts`, `codegen.ts`; `ast.ts`, the tree; `names.ts`, the one table of names: statements, builtins, pragmas, operators (D29); `errors.ts` |
 | `compiler/tests/` | Unit tests, per pass |
-| `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` |
-| `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `checks.py`; `checks/`, the oracle check's own tests; `models/` |
-| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py`, `step4-comparisons.py` and `step5-increments.py` (the evidence for those steps' rules), `step3-mutations.py` and `step4-mutations.py` (the runtime broken on purpose), and `step3-review/` and `step4-review/` (each reviewer's model, and the script that ran the compiler against it) |
+| `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` (`collect.c` is the collector's) |
+| `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `knobs.sh`, what every test assumes of the runtime; `checks.py`; `checks/`, the oracle check's own tests; `harness/`, the test runner's own; `models/` (`arith`, `num`, `str`, `bool`, `var`, `loop`) |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py`, `step4-comparisons.py` and `step5-increments.py` (the evidence for those steps' rules), `step3-mutations.py` to `step7-mutations.py` (the runtime, and from step 5 the compiler, broken on purpose; each is a record of its step and stops at a piece of text a later step has changed), `step3-review/`, `step4-review/` and `step5-review/` (each reviewer's model, and the scripts that ran the compiler against it), and `step7-review/` (the reviewer's prototype of the collector) |
 | `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
 | `build/` | Output (ignored) |
 
