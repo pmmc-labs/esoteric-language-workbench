@@ -57,6 +57,10 @@ output() {
     wait "$pid" 2>/dev/null
     status=$?
     kill "$watchdog" 2>/dev/null
+    # A Mac's sh is bash 3.2, which says `Terminated: 15` of a job it finds
+    # killed the next time it waits for a command, `cat` below being one.
+    # Waiting for it here is where that is said, and it goes nowhere.
+    wait "$watchdog" 2>/dev/null
     # 153 is 128 and SIGXFSZ: what it printed is not worth a diff.
     if [ $status -eq 153 ]; then
         echo "stopped: it printed more than $OUTPUT_BLOCKS blocks of 512 bytes"
