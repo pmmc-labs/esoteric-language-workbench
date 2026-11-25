@@ -8,7 +8,7 @@ What the language is meant to become is in [`DESIGN.md`](DESIGN.md),
 and [`SURFACE.md`](SURFACE.md) says, for each construct of Perl,
 whether it will be in. Neither is a description of what works. This
 is, and so far it is short: a program can do arithmetic, build
-strings, and print.
+strings, compare and choose, and print.
 
 ## A program
 
@@ -499,6 +499,136 @@ to be an Int is a fault. So is a string with a point that is a hair
 below a whole number, `"1.99999999999999999"`, here and as a count or
 for `chr`: its nearest double is 2, and perl cuts it to 1 or to 2 by
 what was done with the string before.
+
+## Comparing, and true and false
+
+### Booleans
+
+A comparison gives a **boolean**: true or false. The two are also
+words a program may write, `true` and `false`.
+
+    say 1 < 2;        # 1
+    say 1 > 2;        # (an empty line)
+    say true;         # 1
+
+A boolean prints as perl prints it: true is `1` and false is nothing
+at all. Where a number is wanted, true is 1 and false is 0; where a
+string is wanted, they are `"1"` and the empty string. So `true + 1`
+is 2, and `"[" . (1 > 2) . "]"` is `[]`. False is not the empty
+string, though: `"" == 0` is a fault, since `""` is no number, and
+`false == 0` is true.
+
+### Comparing numbers
+
+`==`, `!=`, `<`, `<=`, `>` and `>=` compare two numbers and give a
+boolean. `<=>` gives -1, 0 or 1: less, equal, greater.
+
+    say 2 <=> 10;     # -1
+    say "2" == 2.0;   # 1
+
+Both sides are made numbers, by the rules above: `"abc" == 0` is a
+fault, where perl warns and says yes. Two whole numbers are compared
+exactly. When either side is a Num that isn't whole, or is 2^53 or
+more, both are compared as floats, as perl compares them, and an Int
+past 2^53 can then equal a float it isn't quite: `9007199254740993 ==
+2 ** 53` is true.
+
+### Comparing strings
+
+`eq`, `ne`, `lt`, `le`, `gt` and `ge` compare two strings, character
+by character, and `cmp` gives -1, 0 or 1.
+
+    say "apple" lt "banana";   # 1
+    say "2" cmp "10";          # 1: "2" comes after "1"
+    say 10 lt 9;               # 1, for the same reason
+
+A number on either side is compared as the string `say` would print
+for it. That is why `0.1 + 0.2 eq 0.3` is true and `0.1 + 0.2 == 0.3`
+is not: the two floats differ past the fifteenth digit, and print the
+same.
+
+These are words, and need to be words of their own: `"a" lt "b"`, or
+even `"a"lt"b"`, and never `1 lt2`.
+
+### One comparison at a time
+
+Two comparisons of the same rank can't stand side by side without
+brackets:
+
+    say 1 < 5 < 3;      # refused
+    say 1 != 1 == 0;    # refused
+
+perl chains them, so the first means `1 < 5 && 5 < 3`, and anyone who
+reads from the left gets the other answer. Write what is meant: `1 < 5
+&& 5 < 3`, or `(1 != 1) == 0`. A `<` beside an `==` is fine, since
+`<` binds tighter: `1 < 2 == 1` is `(1 < 2) == 1`.
+
+### What is true
+
+Every value is true or false when a test asks. **False** is: `false`;
+a number that is zero; the empty string; the string `"0"`; and
+`undef`. Everything else is true, the strings `"0.0"`, `"00"` and `"
+"` among them.
+
+### not, and, or
+
+`!` turns a truth round and gives a boolean; it binds as tightly as a
+minus sign, so `!1 + 1` is `(!1) + 1`, which is 1.
+
+`&&` and `||` are "and" and "or", and they give back **one of their
+operands**, not a boolean:
+
+    say 0 || "default";   # default
+    say 5 && 7;           # 7
+    say 0 && 7;           # 0
+
+`a || b` is `a` if `a` is true, and otherwise `b`. `a && b` is `a` if
+`a` is false, and otherwise `b`. The right side is not worked out at
+all unless it is needed, so `1 || 1 / 0` is 1 and nothing faults.
+
+`?` and `:` choose: `test ? this : that` is `this` if the test is
+true and `that` if not, and only the one chosen is worked out. Chosen
+tests read down the page:
+
+    say 0 ? "a" : 1 ? "b" : "c";   # b
+
+The words `not`, `and`, `or` and `xor` do what `!`, `&&` and `||` do
+(`xor` is true when exactly one side is), and bind more loosely than
+everything else: `not 0 || 1` is `not (0 || 1)`. That looseness has
+three consequences, and each is refused where it would bite:
+
+- They bind more loosely than `say`. To perl, `say 0 or 2;` is "say
+  0, or else 2", and prints 0. Put them inside brackets:
+  `say(0 or 2);`.
+- They bind more loosely than a comma, so in a list of arguments they
+  are in brackets of their own: `substr($s, (not 0), 1)`.
+- A bracket straight after `not` is the whole of what `not` takes, to
+  perl, so `not (0) || 1` is `(not 0) || 1`. That one is refused: say
+  which you mean, `not ((0) || 1)` or `(not 0) || 1`.
+
+### undef
+
+`undef` is the value that is no value. There is not much a program
+can do with one yet, there being no variables to be empty, but it is
+what `length` gives for an undef, and the tests take it:
+
+    say defined undef ? "yes" : "no";   # no
+    say undef // "fallback";            # fallback
+
+`defined` asks whether a value is anything but undef. `//` is `||`
+with that question in place of truth: `a // b` is `a` unless `a` is
+undef. `0 // 5` is 0, where `0 || 5` is 5.
+
+An undef where a number or a string is wanted is a fault, `undef
+where a number is wanted` or `undef where a string is wanted`, and
+printing wants a string. (perl warns, and carries on with 0 or
+nothing.)
+
+`undef` is written bare only at the end of an expression or before
+one of `//`, `||`, `&&`, `and`, `or`, `xor`, `?` and `:`. Anywhere
+else it goes in brackets, `(undef) + 1`, because perl takes whatever
+follows a bare `undef` for something to make undefined: `undef * 2`
+is not a multiplication to perl, and `undef + 1` doesn't compile.
 
 ## When a program stops
 

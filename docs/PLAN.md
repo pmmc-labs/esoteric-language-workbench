@@ -4,12 +4,12 @@ Ghuloum's incremental approach: the compiler works and its tests pass at
 the end of every step, and each step adds one feature. Steps are sized to
 be a session or two each.
 
-**Progress:** steps 0 to 3 are done (2026-11-24): arithmetic on Ints
+**Progress:** steps 0 to 3 were done on 2026-11-24: arithmetic on Ints
 and Nums, and strings, compile, run, and are checked against perl
-5.42. **Step 4, booleans, undef, comparison and logic, is proposed,
-below, and waits on five answers from Stevan** (Q1 to Q5); nothing of
-it is built. Steps 5 to 30 are outlines: each is proposed, with
-options, when it's next.
+5.42. So do booleans, undef, comparison and logic: **steps 0 to 4
+are done** (step 4 on 2026-11-25). **Next: step 5**, variables, to be
+proposed. Steps 5 to 30 are outlines: each is proposed, with options,
+when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -829,12 +829,47 @@ then change under programs already written against it.
   `-CSDA` if Q1 is (b).
 - Leave out: everything listed above as later.
 
-### 4. Booleans, undef, comparison, logic (proposed, not agreed)
+### 4. Booleans, undef, comparison, logic (done)
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-25. Nothing is built, and five questions are
-Stevan's: Q1 to Q5 below.** Everything here about perl was run under
+**Built 2026-11-25**, by Fable 5.2, as agreed below, and with these
+differences and findings:
+
+- **The model and perl agree on every line**: `t/models/bool.py`
+  writes 300 to 307, about 13,000 lines (every comparison over the
+  edges of D35 and D40, truth of every kind of value, what each
+  logical operator gives, a boolean wherever a number or a string is
+  wanted, what is not worked out) and 40 programs that fault once
+  each, an undef in every place that wants a value among them. perl
+  5.42 printed the model's answer for each.
+- **The model was not written first this time.** The compiler was,
+  and the model the same hour, from the definition and not from the
+  compiler; it found nothing in the runtime. The order matters less
+  than that the two are separate derivations, but the plan said
+  model first, and step 5 should do it that way.
+- **One refusal more than the proposal had** (T109, D51): in a list
+  of arguments a word operator takes the list. `substr("abcdef", not
+  0, 1)` is `abcdef` in perl, in silence, `not` having taken `0, 1`.
+  So `not`, `and`, `or` and `xor` are in brackets of their own there.
+- **T101's refusal follows the list down** (T104): through the right
+  of `||`, `&&`, `//`, `or`, `and` and both branches of `? :`.
+- **The generated C has its first branches**: an operand that may not
+  be worked out is an `if` round its statements, with the value in a
+  temporary declared before it. Breaking that on purpose, both ways,
+  fails tests 305, 307 and 362.
+- **The runtime was broken 50 ways on purpose**
+  (`briefs/step4-mutations.py`): 49 caught the first time, and the
+  other changes nothing a program can see (a whole Num is below 2^53,
+  so beside it an Int's double is on the same side as the Int).
+- 364 and 360 to 363 are by hand with perl's answers: how the new
+  rows group, each line chosen so that a wrong grouping prints
+  something else; 380 to 406 are the refusals.
+
+**Proposed 2026-11-25, and agreed the same day: Stevan took the
+recommendation on each question below, which are now D47 (Q1), D48
+(Q2), D49 (Q3, and what had nothing to choose), D50 (Q4) and D51
+(Q5).** The text is kept as it was proposed. Everything here about perl was run under
 5.42.0: [`briefs/step4-comparisons.py`](briefs/step4-comparisons.py)
 (every comparison, test of truth and boolean in arithmetic, under
 every past of each operand) and `briefs/claims.py`. Traps: T33, T39,
@@ -1294,8 +1329,7 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-Waiting: **step 4**, written out above with its five questions. D1
-to D46 are agreed.
+None waiting. D1 to D51 are agreed. **Step 5 is next to propose.**
 
 ## Example-port table
 

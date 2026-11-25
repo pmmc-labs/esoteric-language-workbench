@@ -19,7 +19,8 @@ the worked example: copy its shape.
 
 `arith.py` is step 1's Ints; `num.py` is step 2's Nums and the rule
 for which kind an answer is (D35, D45); `str.py` is step 3's strings,
-and imports `num.py` for its numbers. `str.py` lists its commands in
+and imports `num.py` for its numbers; `bool.py` is step 4's booleans,
+undef, comparisons and logic, and imports both. `str.py` lists its commands in
 its docstring and checks the list against its own table of tests as
 it starts: `python3 t/models/str.py --commands` prints the list when
 a test is added.

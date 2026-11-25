@@ -122,9 +122,10 @@ Precedence and associativity are `perlop`'s. Chalk's
 | A string where a number is wanted | In | 3 | D40: perl's silent shapes, anything else faults. An Int or a Num by how it is written; a fault where perl has two answers by the string's past (`"1e16"`, `"3.0"` in arithmetic past 2^53, `"1.99999999999999999"` as a position) |
 | Unary `-` on a string | In | 3 | D40: the Num, negated; a string that starts with `+`, or isn't a number, faults (T47, T85) |
 | `+ - *` with an Int of 2^53 or more that is exactly a double, beside a whole Num or a string | Fault | 3 | D45: perl has two answers, by the Int's past (T92) |
-| `== != < <= > >= <=>` | In | 4 | A non-number faults (D15); an Int and a Num compare as floats, as in perl |
-| `eq ne lt le gt ge cmp` | In | 4 | undef faults (D15) |
-| `! && \|\| //`, `not and or xor` | In | 4 | Truth is perl's: undef, `""`, `0`, `"0"` are false |
+| `== != < <= > >= <=>` | In | 4 | D49. A non-number faults (D15); two integral operands compare exactly, and otherwise as floats, as in perl (T39) |
+| `eq ne lt le gt ge cmp` | In | 4 | D49. A number is compared as it prints; undef faults (D15) |
+| `! && \|\| //`, `not and or xor` | In | 4 | D49. Truth is perl's: undef, `""`, `0`, `"0"` are false. `&& \|\| // and or` give an operand, and don't work the right one out unless it is needed |
+| `and`, `or`, `xor` after `say`'s argument; a word operator bare in a list of arguments; an operator that binds tighter than `not` after `not (...)` | Cut | | D51: perl reads each another way (T106, T107, T109) |
 | `?:` | In | 4 | Not as an lvalue |
 | `= += -= *= /= %= **= .= x= &&= \|\|= //= &= \|= ^= <<= >>=` | In | 5 | On undef, `+=`, `-=`, `.=`, `\|\|=`, `//=` and `++` are perl's, silently; `*=`, `/=`, `**=`, `%=`, `x=` fault (perl warns) |
 | `++ --` | In | 5 | On a non-numeric string: fault (perl's string increment is cut; its `--` gives -1 in silence) |
@@ -172,7 +173,7 @@ Precedence and associativity are `perlop`'s. Chalk's
 | An unescaped `$` or `@` in double quotes | Later | 16 | T34: refused until interpolation |
 | Interpolation of `$x`, `${x}`, `@a`, elements, `->` chains | In | 16 | The shapes perl has to guess at are refused |
 | `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
-| `true`, `false`, `undef`, `defined` | In | 4 | |
+| `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
 | Arrays: literals, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | |
 | List assignment, `my ($p, $q) = @x`, swaps | In | 9 | The right side is finished first |
 | `my $n = () = ...`, a list assignment's count as a number | Cut | | |

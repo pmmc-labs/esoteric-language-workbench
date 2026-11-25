@@ -282,6 +282,12 @@ These are about how perl reads the words.
 | T107 | `say(not 0 \|\| 1);` and `say(not(0) \|\| 1);` | An empty line, then `1`: `not` takes everything to its right that binds tighter, unless a bracket follows it, and then the bracket is all it takes. `not (0) + 1` is 2 | 4 | Q5: refuse an operator that binds tighter than `not` after `not (...)`, or agree with perl |
 | T108 | `say 1 != 1 == 0;` | An empty line: perl chains it, `(1 != 1) && (1 == 0)`, where reading from the left gives `1`. `1 < 2 == 1` isn't a chain, the two being of different rows, and `1 == 2 <=> 3` doesn't compile (T33, T51) | 4 | Refuse two operators of one row with no brackets between them |
 
+## Found building step 4
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T109 | `say substr("abcdef", not 0, 1);` and `say index("abcabc", "c", 0 or 3);` | `abcdef`, in silence: `not` takes a list, and takes `0, 1`, so this is `substr("abcdef", "")`. The second doesn't compile: `or` binds more loosely than the commas | 4 | In a list of arguments a word operator is in brackets of its own (D51) |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

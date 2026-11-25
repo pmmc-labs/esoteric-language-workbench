@@ -346,6 +346,9 @@ CLAIMS = [
     c('P4-spelling-refused', 'PLAN 4', 'say 1 lt2;', compiles=False, err='syntax error'),
     c('P4-defined-ambiguous', 'PLAN 4; T94', 'say defined - 1;', out='1\n', err='Use of "defined" without parentheses is ambiguous'),
     c('P4-newer', 'PLAN 4; SURFACE', 'say 1 ^^ 0; say true(); say "[", (defined), "]";', out='1\n1\n[]\n'),
+    c('T109', 'TRAPS; D51', 'say substr("abcdef", not 0, 1); say substr("abcdef", (not 0), 1); say substr("abcdef", not(0), 1);', out='abcdef\nb\nb\n'),
+    c('T109-or', 'TRAPS; D51', 'say index("abcabc", "c", 0 or 3);', out='', err='Not enough arguments for index', compiles=False),
+    c('L4-examples', 'LANGUAGE', 'say 1 < 2; say "[", 1 > 2, "]"; say true + 1; say "[" . (1 > 2) . "]"; say 2 <=> 10; say "2" == 2.0; say "apple" lt "banana"; say "2" cmp "10"; say 0 || "default"; say 5 && 7; say 0 && 7; say 0 ? "a" : 1 ? "b" : "c"; say defined undef ? "yes" : "no"; say undef // "fallback"; say 0 // 5; say 0 || 5;', out='1\n[]\n2\n[]\n-1\n1\n1\n1\ndefault\n7\n0\nb\nno\nfallback\n0\n5\n'),
     # ---- found by the review of step 2
     c('T91', 'TRAPS', 'say 1;\nsay 1.' + '0' * 249 + ';', compiles=False, err='Number too long'),
     c('T91-250', 'TRAPS', 'say 1.' + '0' * 248 + '; say 0x' + '0' * 300 + '1F;', out='1\n31\n'),

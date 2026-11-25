@@ -155,6 +155,12 @@ Four ideas do the cleaning, and `SURFACE.md` applies them:
   large or a signed string. The same is true of a number alone, in one
   place: `+ - *` with an Int of 2^53 or more that is exactly a double,
   beside a whole Num or a string (D45).
+- A boolean is a kind of its own, the Int 1 or 0 where a number is
+  wanted and `"1"` or `""` where a string is (D47). undef is the one
+  value that is no value: an operator that wants a number or a string
+  of it faults, and `defined`, `//` and the tests of truth take it
+  (D48). The comparisons ask D35's question again, and `&&`, `||` and
+  `//` give one of their operands (D49).
 - Arrays and hashes are mutable and have identity; assigning one
   copies it, as in Perl.
 - The collector traces: precise, non-moving, roots on a shadow stack
@@ -231,7 +237,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D46 are decided. What is left is what the decisions hand to a
+D1 to D51 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it

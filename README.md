@@ -7,8 +7,8 @@ it can be built with this repository's process (`docs/PROCESS.md` on
 `main`): an agent builds, a person decides, one feature a step, and every
 expected output comes from somewhere other than the compiler.
 
-Steps 0 to 3 are built: arithmetic on integers and floats, and
-strings, compile to a native binary, and a script holds every test to
+Steps 0 to 4 are built: arithmetic on integers and floats, strings,
+comparison and logic compile to a native binary, and a script holds every test to
 what perl 5.42 prints. The rest is the workbench's
 documents, filled in.
 
@@ -57,7 +57,7 @@ again.
 
 ## What is decided and what isn't
 
-D1 to D46 are Stevan's, settled on 2026-11-24 and 25. The ones that give the language its
+D1 to D51 are Stevan's, settled on 2026-11-24 and 25. The ones that give the language its
 character:
 
 - Erase and it's Perl (D2); a TypeScript compiler that emits C (D3);
@@ -102,7 +102,7 @@ more.
     make test
 
 A fresh session, on this branch: "Read `CLAUDE.md`, then propose step
-4 of `docs/PLAN.md`."
+5 of `docs/PLAN.md`."
 
 This is a branch of the workbench that shares no history with `main`:
 it began as these documents alone, the seed of a language to be
