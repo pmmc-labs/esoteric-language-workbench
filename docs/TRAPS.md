@@ -457,6 +457,29 @@ warns too. T14: `for (1, 2)` walks `$_`.
 | T155 | `for my $x () { say "never"; }` | Doesn't compile | 9 | Refuse an empty list after `for my $x` |
 | T156 | `fill(); my @a; say scalar(@a);` with `sub fill() { push @a, 1, 2; }` after | `2`: T134 for an array. `my @a = ();` empties it | 9 | Agree: a file's array has a slot of its own, empty as the program starts, and its `my` stores nothing |
 
+## Found by the review of step 9
+
+`briefs/step9-review/FINDINGS.md` has each with its programs. One line
+covers most of them: **perl's lists hold every container, not only an
+array's elements**: a scalar variable, a whole array, a slice, `$#a`,
+and the targets of an assignment; and three forms don't run left to
+right.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T157 | `my @b = ($x, bump());` with `bump` making `$x` 9; `say $x, bump();`; `my ($p, $q) = ($x, bump());`; `@b = ($i, $i++);`; `@b = (@a, chg());` with `chg` storing to `$a[0]`; `for my $x (@a, chg())` | `9 5` each time; `2 1` for `$i` of 1; the stored 50 first: a variable or an array in a list is read when the list is used, through a list repeat, a list slice and `? :` too. In the `foreach` the store comes before any freeze | 9 | A later item of a list may not change a variable or an array an earlier item names: refused, by the walk |
+| T158 | `$a[$i] = ($i = 2);`; `$a[bump()] = $a[0];` with `bump` storing 99; `($i, $a[$i]) = (1, 5);` | Stored at 2; 99 stored; `$a[0]` is 5: `=` works its right side's calls out, then the target's index, then reads the right side and stores; a list assignment works out every target's index before it stores anything | 9 | Agree on the order; an index of a target is a later part, to the walk |
+| T159 | `$a[$i] += ($i = 2);`; `$a[0] += shift(@a);`; `$a[$#a] += pop(@a);`; `$e[5] //= push(@e, 1);` | Index 0; `2 3`, the sum gone with the element that left; `1 2`; seven elements: an assigning operator finds its element *before* its right side runs, and keeps it though it has left the array | 9 | Agree on the order; refuse a right side that can change the size of the target's array |
+| T160 | `my @a; $a[5] &&= 1; say scalar(@a);`; `$e[-1] &&= 5;`; `$a[-9] += p(5);` | 6: the target is made though nothing is stored; before the start it dies, and before `p` has run | 9 | Agree: an assigning operator or a step makes its target first, and faults first |
+| T161 | `for my $x ($a[5]) { }` on an empty array; `for my $x (@b[5, 6]) { }`; `f(@c[5, 6])`; `for my $x ($a[-5])` | The array is 6 long, 7, 7; and the last dies. A plain read, `//`, an element as an argument, `push`'s list and an assignment's right side make nothing | 9 | Fault: an element or a slice past either end in a `foreach`'s list, a slice past either end in a call |
+| T162 | `for my $x ((@a) x 2)`, `((@a)[0, 1])`, `(@a && @b)`, `($#a)`, `(substr($s, 0, 1))`, each with a change in the block; `for my $x (@a \|\| @b)` | The change shows in every one; the last runs once, over the count 3 | 9 | The freeze is of every array named anywhere in the list; Q2's refusal of every scalar named anywhere in it |
+| T163 | `say((p(10), p(20))[p(1)]);` with `p` printing; `say(($i, 5)[$i++]);` | `<1><10><20>20`; 1: a list slice works its indexes out before its list | 9 | Agree |
+| T164 | `my @b = (@e)[0, 1];` for an empty `@e`; `(1, 2, 3)[5, 6]`; `f((@e)[0])` | None; two undefs; no argument: a slice of an empty list is empty, in a list | 9 | Agree |
+| T165 | `splice(@a, 0, 1e30)`, `splice(@a, 1e30)` on five elements | Four removed; one: a number too large wraps (T153) | 9 | Fault: an offset and a length go by the index's rule |
+| T166 | `for my $i ($lo .. $lo + 1)` with `$lo` the smallest integer; the same range as a list, and beside another item in the `foreach` | Dies, `Range iterator outside integer range`; two values; walked. The top three integers are walked, and the loop ends | 9 | Fault in a `foreach` over one range on an end below -2^63 + 513; the counter must not pass the largest integer |
+| T167 | `@a[0]`, `@a[$j]` | A warning as it compiles, `Scalar value @a[0] better written as $a[0]`; not for `@a[0,]`, `@a[(0)]`, `@a[@b]`, `@a[0 .. 0]` | 9 | Refuse a slice whose index list is one item that is not an array, a slice, a range, a call or in brackets |
+| T168 | `my @a = 1, 2, 3;`; `defined(@a)`; `say(1, 2)[1];`; `sub f3() { ($p, $q) = (4, 5, 6) }` to a scalar and to a list; `(1, 2) x 2 x 2` | One element and two warnings; doesn't compile; doesn't compile; 3 and two values; one value, `2222` | 9 | Refuse each: a comma after an assignment's right side, `defined` and `length` of an array, `[` after a call's own brackets, a list assignment as a sub's last statement with its value used (no value, D18), a comma list on the left of an `x` that is itself where one value is wanted |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

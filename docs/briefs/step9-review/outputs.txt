@@ -1,0 +1,558 @@
+=== A1-scalar-in-list.pl
+--- stdout
+9 5
+95
+9 5
+9 5
+9
+5
+2 1
+3 3
+7 7
+9 9 5
+9 0 5
+9 5
+--- stderr
+--- exit 0
+
+=== A10-splice-wraps.pl
+--- stdout
+4 1
+1 4
+5 0
+0 5
+--- stderr
+--- exit 0
+
+=== A11-foreach-range-low.pl
+--- stdout
+-9223372036854775808 -9223372036854775807
+0
+-9223372036854775808
+-9223372036854775807
+--- stderr
+Range iterator outside integer range at A11-foreach-range-low.pl line 7.
+--- exit 255
+
+=== A11b-foreach-range-edge.pl
+--- stdout
+-9223372036854775295
+-9223372036854775294
+ok
+--- stderr
+Range iterator outside integer range at A11b-foreach-range-edge.pl line 6.
+--- exit 255
+
+=== A11c-foreach-range-high.pl
+--- stdout
+9223372036854775805
+9223372036854775806
+9223372036854775807
+done
+--- stderr
+--- exit 0
+
+=== A11d-foreach-range-empty.pl
+--- stdout
+0
+--- stderr
+Range iterator outside integer range at A11d-foreach-range-empty.pl line 4.
+--- exit 255
+
+=== A2-array-in-list.pl
+--- stdout
+50 2 3 5
+50235
+50 2 5
+50 5
+505
+50
+2
+3
+5
+4 4
+--- stderr
+--- exit 0
+
+=== A3-store-order.pl
+--- stdout
+1 2 2
+1 7 7
+1 8 3
+99 99 3
+1 8 3
+99 99 3
+5 2 3 1
+--- stderr
+--- exit 0
+
+=== A4-compound-order.pl
+--- stdout
+3 2 3
+12 2 3
+2 2 3
+2: 2 3
+2: 1 2
+7: 7 1
+0
+--- stderr
+--- exit 0
+
+=== A4b-compound-warns.pl
+--- stdout
+0
+--- stderr
+Useless assignment to a temporary at A4b-compound-warns.pl line 3.
+--- exit 0
+
+=== A5-andand-makes.pl
+--- stdout
+6
+--- stderr
+--- exit 0
+
+=== A5b-andand-dies.pl
+--- stdout
+--- stderr
+Modification of non-creatable array value attempted, subscript -1 at A5b-andand-dies.pl line 3.
+--- exit 255
+
+=== A5c-fault-order.pl
+--- stdout
+--- stderr
+Modification of non-creatable array value attempted, subscript -9 at A5c-fault-order.pl line 5.
+--- exit 255
+
+=== A6-foreach-makes.pl
+--- stdout
+6
+6
+7
+0
+7
+0 2
+--- stderr
+--- exit 0
+
+=== A6b-foreach-dies.pl
+--- stdout
+--- stderr
+Modification of non-creatable array value attempted, subscript -5 at A6b-foreach-dies.pl line 3.
+--- exit 255
+
+=== A7-freeze-misses.pl
+--- stdout
+9
+2
+3
+9
+2
+3
+9
+2
+9
+9
+9
+9
+9
+3
+3
+--- stderr
+--- exit 0
+
+=== A7b-substr-foreach.pl
+--- stdout
+z
+8
+100
+100
+7
+--- stderr
+--- exit 0
+
+=== A7c-last-index-argument.pl
+--- stdout
+3
+4
+4
+5
+--- stderr
+--- exit 0
+
+=== A8-list-slice-order.pl
+--- stdout
+<1><10><20>20
+1
+2
+--- stderr
+--- exit 0
+
+=== A9-empty-list-slice.pl
+--- stdout
+0
+0
+2
+1
+dd
+dd
+0
+0
+1
+0
+--- stderr
+--- exit 0
+
+=== B1-slice-of-one.pl
+--- stdout
+1
+--- stderr
+Scalar value @a[0] better written as $a[0] at B1-slice-of-one.pl line 4.
+Scalar value @a[-1] better written as $a[-1] at B1-slice-of-one.pl line 5.
+Scalar value @a[...] better written as $a[...] at B1-slice-of-one.pl line 6.
+Scalar value @a[...] better written as $a[...] at B1-slice-of-one.pl line 7.
+Scalar value @a[...] better written as $a[...] at B1-slice-of-one.pl line 8.
+Scalar value @a["0"] better written as $a["0"] at B1-slice-of-one.pl line 9.
+Scalar value @a["1"] better written as $a["1"] at B1-slice-of-one.pl line 10.
+Scalar value @a[0] better written as $a[0] at B1-slice-of-one.pl line 11.
+--- exit 0
+
+=== B1b-slice-of-one-silent.pl
+--- stdout
+1
+--- stderr
+--- exit 0
+
+=== B2-length-of-array.pl
+--- stdout
+1
+1
+--- stderr
+length() used on @a (did you mean "scalar(@a)"?) at B2-length-of-array.pl line 3.
+length() used on @a (did you mean "scalar(@a)"?) at B2-length-of-array.pl line 4.
+--- exit 0
+
+=== B2b-defined-array.pl
+--- stdout
+--- stderr
+Can't use 'defined(@array)' (Maybe you should just omit the defined()?) at B2b-defined-array.pl line 3.
+--- exit 255
+
+=== B3-comma-statement.pl
+--- stdout
+1
+4
+--- stderr
+Useless use of a constant (2) in void context at B3-comma-statement.pl line 2.
+Useless use of a constant (3) in void context at B3-comma-statement.pl line 2.
+Useless use of a constant (5) in void context at B3-comma-statement.pl line 4.
+--- exit 0
+
+=== B4-my-twice.pl
+--- stdout
+2
+--- stderr
+"my" variable $x masks earlier declaration in same statement at B4-my-twice.pl line 2.
+--- exit 0
+
+=== B5-negative-list-repeat.pl
+--- stdout
+0
+--- stderr
+Negative repeat count does nothing at B5-negative-list-repeat.pl line 2.
+--- exit 0
+
+=== B6-bracket-after-call.pl
+--- stdout
+--- stderr
+syntax error at B6-bracket-after-call.pl line 2, near ")["
+Execution of B6-bracket-after-call.pl aborted due to compilation errors.
+--- exit 255
+
+=== B6b-bracket-after-say.pl
+--- stdout
+--- stderr
+say (...) interpreted as function at B6b-bracket-after-say.pl line 3.
+syntax error at B6b-bracket-after-say.pl line 3, near ")["
+Execution of B6b-bracket-after-say.pl aborted due to compilation errors.
+--- exit 255
+
+=== B6c-bracket-after-pop.pl
+--- stdout
+--- stderr
+syntax error at B6c-bracket-after-pop.pl line 3, near ")["
+Execution of B6c-bracket-after-pop.pl aborted due to compilation errors.
+--- exit 255
+
+=== B7-last-index-spellings.pl
+--- stdout
+--- stderr
+Ambiguous use of @{x} resolved to @x at B7-last-index-spellings.pl line 3.
+$# is no longer supported as of Perl 5.30 at B7-last-index-spellings.pl line 4.
+--- exit 255
+
+=== B8-push-nothing.pl
+--- stdout
+0
+--- stderr
+Useless use of push with no values at B8-push-nothing.pl line 3.
+Useless use of unshift with no values at B8-push-nothing.pl line 4.
+--- exit 0
+
+=== C1-splice-past-end.pl
+--- stdout
+0 5
+0 5
+0 5
+6 7
+--- stderr
+splice() offset past end of array at C1-splice-past-end.pl line 8.
+splice() offset past end of array at C1-splice-past-end.pl line 10.
+--- exit 0
+
+=== C2-or-in-foreach.pl
+--- stdout
+3
+9
+--- stderr
+--- exit 0
+
+=== D1-repeat-in-scalar.pl
+--- stdout
+1 2222
+8
+1 -1-1-1
+3
+33
+--- stderr
+--- exit 0
+
+=== D2-last-statement.pl
+--- stdout
+3 3
+2 2
+3 2
+2 1
+--- stderr
+--- exit 0
+
+=== D3-targets.pl
+--- stdout
+5 6
+1 2 1
+3
+1 2
+1
+20
+30
+--- stderr
+--- exit 0
+
+=== D4-file-arrays.pl
+--- stdout
+2
+2
+0
+0
+0
+--- stderr
+--- exit 0
+
+=== D5-lexing.pl
+--- stdout
+1
+0
+3
+3
+3 1
+8
+8
+--- stderr
+--- exit 0
+
+=== E-counts.pl
+--- stdout
+3
+3
+-3
+4
+3
+4
+3
+51
+3
+0
+def
+33
+xxx
+
+3
+1
+9
+3
+3
+1
+3
+4
+2
+1 3
+1 0
+3
+1 -3
+33
+-3
+--- stderr
+--- exit 0
+
+=== E-freeze-costs.pl
+--- stdout
+246
+4
+0
+3
+3
+--- stderr
+--- exit 0
+
+=== E-none.pl
+--- stdout
+0
+0
+0
+2
+0
+1
+0
+ab
+
+0
+0
+7
+4
+--- stderr
+--- exit 0
+
+=== E-range-table.pl
+--- stdout
+1 .. 3                                             (1,2,3)
+3 .. 1                                             ()
+1.9 .. 3.9                                         (1,2,3)
+-1.9 .. 1.9                                        (-1,0,1)
+-0.5 .. 0.5                                        (0)
+true .. 3                                          (1,2,3)
+false .. 2                                         (0,1,2)
+!1 .. 2                                            (0,1,2)
+(1 == 1) .. (2 == 2)                               (1)
+"3" .. "5"                                         (3,4,5)
+" 3 " .. 5                                         (3,4,5)
+"3.7" .. 5                                         (3,4,5)
+"1e1" .. 12                                        (10,11,12)
+"0x3" .. 5                                         (0,1,2,3,4,5) WARN: Argument "0x3" isn't numeric in range (or flop)
+1 .. "3abc"                                        (1,2,3) WARN: Argument "3abc" isn't numeric in range (or flop)
+"" .. 2                                            (0,1,2) WARN: Argument "" isn't numeric in range (or flop)
+"a" .. "c"                                         (a,b,c)
+undef .. 2                                         (0,1,2) WARN: Use of uninitialized value in range (or flop)
+1 .. undef                                         () WARN: Use of uninitialized value in range (or flop)
+-0.0 .. 1                                          (0,1)
+1e15 .. 1e15 + 1                                   (1000000000000000,1000000000000001)
+9007199254740992 .. 9007199254740993               (9007199254740992,9007199254740993)
+2**53 .. 2**53 + 2                                 (9007199254740992,9007199254740993,9007199254740994)
+9223372036854775806 .. 9223372036854775807         (9223372036854775806,9223372036854775807)
+-9223372036854775807 - 1 .. -9223372036854775807   (-9223372036854775808,-9223372036854775807)
+1 .. 1e19                                          () DIES: Range iterator outside integer range
+-1e19 .. 1                                         () DIES: Range iterator outside integer range
+9.3e18 .. 9.3e18                                   () DIES: Range iterator outside integer range
+9223372036854775807 .. 9223372036854775807         (9223372036854775807)
+1e19 .. 1                                          () DIES: panic: memory wrap
+5 .. -1e19                                         ()
+9223372036854775807 .. 9223372036854775806         ()
+(1 .. 3) x 2                                       (1,2,3,1,2,3)
+1 .. 3 x 1                                         (1,2,3)
+1 .. 1 + 2                                         (1,2,3)
+-1 .. 1                                            (-1,0,1)
+1 ... 3                                            (1,2,3)
+1..3                                               (1,2,3)
+1...3                                              (1,2,3)
+1.5..3                                             (1,2,3)
+1 .. .5 + 3                                        (1,2,3)
+"-2" .. 0                                          (-2,-1,0)
+"+2" .. 3                                          (2,3)
+"1_0" .. 11                                        (1,2,3,4,5,6,7,8,9,10,11) WARN: Argument "1_0" isn't numeric in range (or flop)
+"00" .. "03"                                       (00,01,02,03)
+"3" .. 5                                           (3,4,5)
+3 .. "5"                                           (3,4,5)
+"a" .. 3                                           (0,1,2,3) WARN: Argument "a" isn't numeric in range (or flop)
+3 .. "a"                                           () WARN: Argument "a" isn't numeric in range (or flop)
+2.0 .. 4.0                                         (2,3,4)
+"2.0" .. 4                                         (2,3,4)
+"" .. ""                                           ()
+0 .. ""                                            (0) WARN: Argument "" isn't numeric in range (or flop)
+"0" .. "-1"                                        ()
+"1" .. "0"                                         ()
+"x" .. "x"                                         (x)
+"aa" .. "ad"                                       (aa,ab,ac,ad)
+"09" .. "10"                                       (09,10)
+"9" .. "10"                                        (9,10)
+"z" .. "ab"                                        (z,aa,ab)
+--- stderr
+--- exit 0
+
+=== E-splice-table.pl
+--- stdout
+splice(@a)                                 got (1,2,3,4,5) left ()
+splice(@a, 1)                              got (2,3,4,5) left (1)
+splice(@a, -2)                             got (4,5) left (1,2,3)
+splice(@a, 5)                              got () left (1,2,3,4,5)
+splice(@a, 6)                              got () left (1,2,3,4,5)
+splice(@a, -5)                             got (1,2,3,4,5) left ()
+splice(@a, -6)                             got () left (1,2,3,4,5) DIES: Modification of non-creatable array value attempted, subscript -6
+splice(@a, 1, 2)                           got (2,3) left (1,4,5)
+splice(@a, 1, 0)                           got () left (1,2,3,4,5)
+splice(@a, 1, 99)                          got (2,3,4,5) left (1)
+splice(@a, 1, -1)                          got (2,3,4) left (1,5)
+splice(@a, 1, -4)                          got () left (1,2,3,4,5)
+splice(@a, 1, -5)                          got () left (1,2,3,4,5)
+splice(@a, 1, -99)                         got () left (1,2,3,4,5)
+splice(@a, -2, 1)                          got (4) left (1,2,3,5)
+splice(@a, -2, -1)                         got (4) left (1,2,3,5)
+splice(@a, -2, -3)                         got () left (1,2,3,4,5)
+splice(@a, 5, 1)                           got () left (1,2,3,4,5)
+splice(@a, 5, -1)                          got () left (1,2,3,4,5)
+splice(@a, 6, 0)                           got () left (1,2,3,4,5) WARN: splice() offset past end of array
+splice(@a, 0, 0)                           got () left (1,2,3,4,5)
+splice(@a, 1.7, 1.7)                       got (2) left (1,3,4,5)
+splice(@a, -1.7, 1)                        got (5) left (1,2,3,4)
+splice(@a, "1", "2")                       got (2,3) left (1,4,5)
+splice(@a, true, true)                     got (2) left (1,3,4,5)
+splice(@a, false)                          got (1,2,3,4,5) left ()
+splice(@a, undef)                          got (1,2,3,4,5) left () WARN: Use of uninitialized value in splice
+splice(@a, 1, undef)                       got () left (1,2,3,4,5) WARN: Use of uninitialized value in splice
+splice(@a, 0, 1, undef)                    got (1) left (u,2,3,4,5)
+splice(@a, 1, 1, 7, 8)                     got (2) left (1,7,8,3,4,5)
+splice(@a, 1, 0, 7, 8)                     got () left (1,7,8,2,3,4,5)
+splice(@a, 5, 0, 7)                        got () left (1,2,3,4,5,7)
+splice(@a, 6, 0, 7)                        got () left (1,2,3,4,5,7) WARN: splice() offset past end of array
+splice(@a, -1, 0, 7)                       got () left (1,2,3,4,7,5)
+splice(@a, 0, 1, @a)                       got (1) left (1,2,3,4,5,2,3,4,5)
+splice(@a, 1, 1, $a[0])                    got (2) left (1,1,3,4,5)
+splice(@a, $#a, 1, shift(@a))              got () left (2,3,4,5,1)
+splice(@a, 1, 2, ())                       got (2,3) left (1,4,5)
+splice(@a, 1e30)                           got (5) left (1,2,3,4)
+splice(@a, 0, 1e30)                        got (1,2,3,4) left (5)
+splice(@a, -1e30)                          got () left (1,2,3,4,5) DIES: Modification of non-creatable array value attempted, subscript 0
+splice(@a, 0, -1e30)                       got () left (1,2,3,4,5)
+splice(@a, "abc")                          got (1,2,3,4,5) left () WARN: Argument "abc" isn't numeric in splice
+splice(@a, 1, "")                          got () left (1,2,3,4,5) WARN: Argument "" isn't numeric in splice
+splice(@a, 2**31)                          got () left (1,2,3,4,5)
+splice(@a, 0, 9223372036854775807)         got (1,2,3,4,5) left ()
+splice(@a, 1, -9223372036854775807 - 1)    got () left (1,2,3,4,5)
+splice(@a, -9223372036854775807 - 1)       got () left (1,2,3,4,5) DIES: Modification of non-creatable array value attempted, subscript 0
+splice(@a, 2, 0.9)                         got () left (1,2,3,4,5)
+splice(@a, 4.99)                           got (5) left (1,2,3,4)
+splice(@a, 5.5)                            got () left (1,2,3,4,5)
+splice(@a, -0.5)                           got (1,2,3,4,5) left ()
+splice(@a, -5.5)                           got (1,2,3,4,5) left ()
+--- stderr
+--- exit 0
+
+=== E-past.py
+443205 comparisons, 0 differ

@@ -2526,8 +2526,12 @@ Referee: perl. Size: large.
 
 **Proposed 2026-11-25, by Fable 5.2 (the size the line asks for).
 Not agreed: five questions wait for Stevan, Q1 to Q5 below, and
-nothing is built.** Everything here about perl was run under 5.42.0
-and is in `briefs/claims.py` (52 rows, `T5-more` to `PLAN9-later`).
+nothing is built. Its adversarial review found eleven ways to be
+WRONG: "What the review found", at the end, says what each is and
+how the proposal is amended, and Q1 and Q2 are to be read with it.**
+Everything here about perl was run under 5.42.0
+and is in `briefs/claims.py` (52 rows, `T5-more` to `PLAN9-later`,
+and the review's 23, `T157` to `T168-repeat`).
 Traps: T5, T9, T13, T14, T21, T68, and T149 to T156, found writing
 this. The outline this replaces said: `my @a`, literals, elements,
 negative indexes, `$#a`, the count in scalar position, list
@@ -2807,6 +2811,81 @@ being built, the freeze, and Q2. One proposal, one review, this one.
 - Leave out: `map`, `grep`, `sort`, `join`, `reverse`, `$_`, list
   returns and slurpy parameters (10); hashes (12); references and
   arrays of arrays (13); `@a` in a string (16).
+
+#### What the review found
+
+A reader with the proposal and perl, before anything was built
+(`briefs/step9-review/`: `FINDINGS.md`, 45 programs with perl's
+output, and its harness for pasts). Each finding was run again by
+the builder and is in `claims.py`; T157 to T168 are its traps. **The
+proposal's rule was stated for elements and for `foreach`, and
+perl's lists hold every container.** Its two tools were the right
+ones; each had too short a list of shapes, and the proposal had no
+order of evaluation written down, where three forms don't run left
+to right. **The text above is as it was proposed. This is how it is
+amended, as the builder's recommendation, and all of it is Stevan's
+to answer with Q1 and Q2.**
+
+- **Q1, widened: one walk, for everything a list or an expression
+  names.** A scalar variable in a list is read when the list is used
+  (T157), exactly as an operand is (D14) and an argument (D73). So:
+  **a later part of an expression or a list may not change what an
+  earlier part names**, where what is named is a scalar variable
+  standing as an item of a list, an element, a slice, a whole array,
+  or `$#a`; "change" is by itself or through a sub; and "a later
+  part" is anything worked out after it, an index of an assignment's
+  target included. Refused, with one message. What stays agreed with,
+  because the generated C already keeps the place: a scalar variable
+  as an operand and as an argument of a call.
+- **The order, written down** (T158, T159, T163), and agreed with:
+  `$a[I] = V` works out V's calls, then I, then reads V and stores;
+  `$a[I] OP= V` and a step work out I, **make the target** (the
+  array grows to hold it, or it is the fault for before the start:
+  T160), then V, then read, work and store; a list assignment works
+  out its right side, then every target's index, then stores; a list
+  slice works out its indexes before its list. A right side that can
+  change the size of its target's array is refused by the walk.
+- **The freeze, widened** (T162): of **every array named anywhere in
+  the `foreach`'s list**, whatever it stands in; and Q2's refusal of
+  every scalar named anywhere in it. It costs only loops that were
+  going to be WRONG.
+- **Past the end, where perl makes the element** (T161): an element
+  or a slice past either end in a `foreach`'s list, and a slice past
+  either end in a call's arguments, is a fault.
+- **A slice of an empty list is empty** in a list (T164), and undef
+  where one value is wanted: agreed with.
+- **More faults**: `splice`'s offset and length by the index's rule
+  (T165); a `foreach` over one range whose end is below -2^63 + 513,
+  where perl dies (T166).
+- **More refusals** (T167, T168): `@a[one index]`; `defined` and
+  `length` of an array; a comma after an assignment's right side,
+  `my @a = 1, 2, 3;`; `[` after a call's own brackets; `$a[0][0]`;
+  `my ($x, $x)`; an array among a list assignment's targets that is
+  not the last; a list assignment as a sub's last statement has no
+  value (D18); a comma list on the left of an `x` where one value is
+  wanted.
+- **Three sentences of the proposal that were wrong about perl**,
+  put right here: "the right side is finished first" (its calls
+  are; what it names is read at the store); "its index worked out
+  after the right side" as a breakage (for `=` that is perl's
+  order); and "`splice` past the end (perl warns)" (only with a
+  length; the fault stands for both).
+- **Holes in the test plan**, each a test now: a printing sub in
+  every operand of every new form; every one of the 22 ways an array
+  is changed, against the freeze, from the block and from a sub;
+  the freeze given back through two loops; T156 for each shape of
+  `my`; indexes at both edges of the integers; `1..3` with no blanks
+  (today's lexer reads a number); `say` with an undef in its list.
+- **What held**: an array's count in 29 positions; 60 ranges against
+  the rule; 53 calls of `splice`; Q4(a) in 14 positions; T155, T156;
+  about 25 list assignments whose right side names what the left
+  changes; and **a value has no past through an array**: 443,205
+  comparisons of perl with perl, through 23 routes, none different.
+- **What the freeze costs**, for Stevan to know: perl prints what a
+  copy would, and the language faults, for doubling in place by an
+  index kept beside the loop (`$a[$i] = $x * 2; $i++;`), which is
+  the common one; for `push` and then `last`; for `pop` on the last
+  time round.
 
 ### 10. List operators, `$_`, list returns
 

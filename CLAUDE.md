@@ -265,9 +265,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 581 of them now, and all hold under 5.42.0,
+about perl as a program, 604 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T156, by step (T119 to T124 found proposing
+keeps the programs, T1 to T168, by step (T119 to T124 found proposing
 step 6, T132 to T142 proposing step 8, T143 to T148 by its review, T125 to T130 by the review of step 5, T131 building step 6).
 **T131 is the one to remember**: where the language faults perl may
 carry on, so a loop that only the fault would end never ends under
@@ -344,7 +344,15 @@ and is refused when the block can assign `$p`), Q3 (a list
 assignment is a statement), Q4 (a sub that returns nothing is no
 value in a list: D71's fault ends), Q5 (two sub-steps, 9a arrays and
 lists, 9b `foreach` and the freeze). T149 to T156 were found
-proposing it, with 52 statements about perl. Nothing of it is built.
+proposing it, with 52 statements about perl. **Its adversarial review
+found eleven ways to be WRONG** (T157 to T168,
+`briefs/step9-review/`): perl's lists hold every container, a scalar
+variable and a whole array too, and three forms don't run left to
+right. The proposal is amended at its end, "What the review found":
+Q1 is one walk for everything a list or an expression names, the
+freeze is of every array named anywhere in the loop's list, and the
+order of an assignment to an element is written down. Nothing of it
+is built.
 **Step 8, subs** (D67 to D73; `docs/PLAN.md` has the build's own
 account). **A sub** stands at the top level, always with a
 signature, and is called with brackets, before or after it is
