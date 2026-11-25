@@ -1,0 +1,2 @@
+t/791-my-in-while-modifier-test.pl:6:17: my $x here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached
+exit: 1

@@ -1,0 +1,2 @@
+t/790-for-assign-constant.pl:6:11: '=' where a value is tested, with nothing but a constant on its right: perl warns that == was meant
+exit: 1

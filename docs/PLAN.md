@@ -8,8 +8,8 @@ be a session or two each.
 and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic, and variables,
 assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
-on 2026-11-25). **Step 6, loops, is agreed (D58 to D62) and being
-built**, its model first. Steps
+on 2026-11-25); and loops: **steps 0 to 6 are done** (step 6 the same
+day). Steps
 7 to 30 are outlines: each is proposed, with options, when it's
 next.
 
@@ -1364,9 +1364,73 @@ if you would rather meet that at step 10.
   assigning operators are the operators.
 - Leave out: everything listed above as later.
 
-### 6. Loops (agreed; being built)
+### 6. Loops (done)
 
 Referee: perl. Size: medium.
+
+**Built 2026-11-25**, by Fable 5.2 (a size above what the line asks
+for), as agreed below, and with these differences and findings:
+
+- **The model first, red before any code** (`t/models/loop.py`,
+  commit 394c2ab), on step 5's: a `last` or a `next` is a Python
+  exception that the loop it is for catches. It writes 700 to 703,
+  about 3,900 lines on which perl 5.42 agrees with it (each kind of
+  loop run no times, once and many; `last` and `next` from a loop in
+  a loop, of each kind, to the inner or the outer, through an `if`,
+  an `else`, a modifier and a labelled bare block; what is new each
+  time round; and every operator of steps 1 to 5 run again and again
+  in a loop with its operands' kinds changing each time), and 13
+  programs that fault once each, 720 to 732.
+- **The compiler went green on all 17 the first time it ran.** The
+  runtime is untouched. The parser has the loops, a label, `last`
+  and `next` as statements and the two modifiers; the resolver ties
+  each `last` and `next` to its loop and makes the three refusals
+  (none round it, no loop of that name, a bare block in the way:
+  D59); the checker holds a loop's test to D53 and a `for`'s parts
+  to D60. The C is `for (;;)` with the test inside it, the block in
+  a C block of its own, and a `goto` for each `last` and `next`: the
+  first jumps in the generated C, and the only kind.
+- **Where the language faults perl may carry on, and then a loop
+  never ends** (T131). The model's first fault test for an
+  overflowing counter was `while ($i > 0) { $i++; ... }`: the
+  language stops at the overflow, and perl goes on as an unsigned
+  integer and then a float, for ever. Run against perl it wrote 19
+  GB to disk in two minutes before it was stopped by hand, and took
+  the machine's memory with it. So: a fault test's loop is counted by
+  something the fault doesn't touch; and **the harness no longer
+  trusts that**. `t/run.sh` stops a test that prints past 8 MB, and
+  `t/checks.py` stops perl at 16 MB, each by the system's own limit
+  on a file's size; `t/harness/run.test.ts` and
+  `t/checks/same-prints-for-ever.pl` make both bite, with the
+  watchdog on time that was there already.
+- **A fault's line** is the line perl warns or dies at in 9 of the
+  model's 13 fault tests. Two differ, a `while`'s and an `until`'s
+  test after the first time round, where perl names the last
+  statement the block ran (T124, D62) and the language names the
+  loop; and at the two overflows perl says nothing.
+- **`$done and last;` has a message of its own**, since it is the
+  commonest thing D62 cuts: `last is a statement, not a value: write
+  'last if ...;'`.
+- **The compiler was broken 49 ways on purpose**
+  (`briefs/step6-mutations.py`, which compiles and runs the refused
+  tests too, a resolver and a checker being half refusals; each run
+  has ten seconds and a limit on what it may print, since a broken
+  loop may never end). 46 were caught the first time. The three that
+  weren't were holes in the tests, each closed: a fault under a
+  `while` modifier whose statement begins on an earlier line (743),
+  D53 in a `for`'s test (790), and a `my` in a modifier's test (791).
+  Step 5's unseen breakage, a `my` not made undef again each time
+  round, is caught now, by 702 and 730.
+- 740 to 742 are by hand with perl's answers (how loops are written;
+  which variable a name means in and round one; a dozen small
+  programs, FizzBuzz to Newton's square root, which the language can
+  now say); 743 is a fault whose line is the point; 750 to 791 are
+  the 42 refusals, each with what perl does in its comment, run to
+  write it.
+- **No adversarial review**, as the proposal said: the step is
+  medium, and adds no value and no arithmetic. What stands in for one
+  is the model's fourth test, the operators run again in a loop:
+  nothing turned on an operation having run before.
 
 **Proposed 2026-11-25, and agreed the same day: Stevan took the
 recommendation on each question below, which are now D58 (Q1), D59

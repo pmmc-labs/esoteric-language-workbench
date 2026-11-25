@@ -1,0 +1,3 @@
+before
+fault: division by zero at t/743-fault-while-modifier-line.pl line 8.
+exit: 1
