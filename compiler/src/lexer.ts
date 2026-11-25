@@ -6,7 +6,7 @@
 // a dot begins `.5` and `x` is a word (T90). D29 has the parser tell it;
 // the last token says as much, and will until `/` can begin a pattern.
 import { refuse } from './errors.ts';
-import { NAMES, OPERATORS, infixOp, isScalarValue, prefixOp } from './names.ts';
+import { NAMES, OPERATORS, RESERVED, infixOp, isScalarValue, prefixOp, stepOp } from './names.ts';
 import type { Pos } from './ast.ts';
 
 export type Token =
@@ -19,7 +19,9 @@ export type Token =
     // string it stands for.
     | { kind: 'str'; text: string; value: string; pos: Pos }
     | { kind: 'version'; text: string; pos: Pos }
-    | { kind: ';' | '(' | ')' | ',' | '?' | ':'; text: string; pos: Pos }
+    // A variable: `text` is `$name`.
+    | { kind: 'var'; text: string; name: string; pos: Pos }
+    | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}'; text: string; pos: Pos }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
@@ -221,10 +223,12 @@ export const lex = (src: string): Token[] => {
     };
 
     // Whether the last token ends a value, so that an operator comes next.
-    // `true`, `false` and `undef` are values too.
+    // `true`, `false` and `undef` are values too, and so is a `++` or `--`
+    // that came after a variable.
     const afterValue = (): boolean => {
         const last = tokens.at(-1);
-        return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === ')'
+        if (last?.kind === 'op' && stepOp(last.text)) return tokens.at(-2)?.kind === 'var';
+        return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === ')' || last?.kind === 'var'
             || (last?.kind === 'word' && NAMES.get(last.text)?.kind === 'constant');
     };
 
@@ -259,7 +263,8 @@ export const lex = (src: string): Token[] => {
             // operators after a value too, and `not` is one before one.
             // Each is a word of its own: `1 lt2` is no operator to perl.
             if (operator ? infixOp(text) : prefixOp(text)) {
-                if (text === 'x' && at() === '=') refuse("'x=' is not in the language yet", start);
+                // `x=` is one operator to perl, the assignment.
+                if (operator && at() === '=' && infixOp(text + '=')) text += take();
                 push({ kind: 'op', text, pos: start });
                 continue;
             }
@@ -297,7 +302,42 @@ export const lex = (src: string): Token[] => {
                 asFunction = level > 0 || w >= end || !';&/|})]oaiuwef!='.includes(src[w]!);
             }
             push(isVersion ? { kind: 'version', text, pos: start } : asFunction ? { kind: 'word', text, pos: start, asFunction } : { kind: 'word', text, pos: start });
-        } else if (c === ';' || c === '(' || c === ')' || c === ',' || c === '?' || c === ':') {
+        } else if (c === '$') {
+            // A variable is `$name`, and nothing else (D55): perl also
+            // takes `$ name` and `${name}`, and warns of the second.
+            take();
+            if (!isWordStart(at())) refuse("after '$' comes a name: a letter or '_', then letters, digits and '_'", start);
+            const name = run(isWord);
+            if (RESERVED.has(name)) refuse(`$${name} is not a name a variable may have`, start);
+            // perl takes a variable that comes first after `say` or
+            // `print`, brackets between or not, for a file handle when
+            // what follows the blank after it could begin a value, and
+            // dies or doesn't compile (T26, T111). The list is perl's own
+            // (toke.c), less what is no program here either way: a sign
+            // hard against what follows it, a dot and a digit, a star, a
+            // percent, a less-than or an ampersand hard against a name, a
+            // slash hard against anything but an equals or a slash.
+            let before = tokens.length - 1;
+            while (tokens[before]?.kind === '(') before -= 1;
+            const lop = tokens[before];
+            if (lop?.kind === 'word' && NAMES.get(lop.text)?.kind === 'statement' && isBlank(at())) {
+                let w = i;
+                while (w < src.length && (isBlank(src[w]!) || src[w] === '#')) {
+                    w = src[w] === '#' ? Math.max(src.indexOf('\n', w), w + 1) : w + 1;
+                }
+                const a = src[w] ?? '';
+                const b = src[w + 1] ?? '';
+                const hard = b !== '' && !isBlank(b);
+                const handle = ((a === '-' || a === '+') && hard && b !== '=')
+                    || (a === '.' && isDigit(b))
+                    || ((a === '*' || a === '%' || a === '<' || a === '&') && isWordStart(b))
+                    || (a === '/' && hard && b !== '=' && b !== '/');
+                if (handle) {
+                    refuse(`${lop.text} $${name} ${a}${b}: perl takes $${name} for a file handle here; put a blank after the '${a}', or none before it`, start);
+                }
+            }
+            push({ kind: 'var', text: '$' + name, name, pos: start });
+        } else if (c === ';' || c === '(' || c === ')' || c === ',' || c === '?' || c === ':' || c === '{' || c === '}') {
             push({ kind: c, text: take(), pos: start });
             // `use utf8;` is in force from the next line (T73). Whether it
             // may stand where it does is the checker's to say.
@@ -314,7 +354,7 @@ export const lex = (src: string): Token[] => {
             const last = tokens.at(-1);
             const between = src.slice(lastEnd, i);
             for (const _ of op) take();
-            if (!prefixOp(op) && !infixOp(op)) refuse(`'${op}' is not in the language yet`, start);
+            if (!prefixOp(op) && !infixOp(op) && !stepOp(op)) refuse(`'${op}' is not in the language yet`, start);
             // A sign after a named unary operator is the sign of its
             // argument, `length -5`, and perl warns that the rest are
             // ambiguous: `length - 5` and `length-5`, which read as a

@@ -419,6 +419,16 @@ rt_value rt_add(rt_ctx *cx, rt_value a, rt_value b) {
     return num(cx, as_double(x) + as_double(y));
 }
 
+// `+=` and `-=` with an undef on the left: perl takes it for 0, and says
+// nothing (D56).
+rt_value rt_add_to(rt_ctx *cx, rt_value a, rt_value b) {
+    return rt_add(cx, a.tag == RT_TAG_UNDEF ? rt_int(0) : a, b);
+}
+
+rt_value rt_sub_from(rt_ctx *cx, rt_value a, rt_value b) {
+    return rt_sub(cx, a.tag == RT_TAG_UNDEF ? rt_int(0) : a, b);
+}
+
 rt_value rt_sub(rt_ctx *cx, rt_value a, rt_value b) {
     number x = numeric(cx, a);
     number y = numeric(cx, b);
@@ -590,6 +600,68 @@ rt_value rt_neg(rt_ctx *cx, rt_value a) {
     return checked(cx, r, o);
 }
 
+// ---- stepping
+
+// `++` and `--`, by what the variable holds (D52). perl has a route of
+// its own for each kind, and for some of them two, by what the variable
+// has been used as: docs/briefs/step5-increments.py.
+//   undef, a boolean   the Int.
+//   an Int             one more or less, or an overflow.
+//   a Num              `++`: as `$x + 1` is, the Int if the Num is
+//                      integral. `--`: the Num one less, always: perl
+//                      subtracts as a float unless the Num has been used
+//                      as an integer, and the two part when the answer
+//                      reaches 2^53 (T93). Either: a Num so large that
+//                      the step is lost; perl warns.
+//   a string           its number (D40), and then the Num: perl steps a
+//                      fresh string of digits as text, "12" to the string
+//                      "13", and one it has used as a number as an
+//                      integer, which are the same while a double holds
+//                      them and the digits don't begin with a zero ("009"
+//                      to "010", or to 10: T113). A string that isn't a
+//                      number is a fault here: perl makes the next
+//                      string of one, "aa" to "ab" (T44).
+static rt_value step(rt_ctx *cx, rt_value a, int d) {
+    if (a.tag == RT_TAG_UNDEF) return rt_int(d);
+    if (a.tag == RT_TAG_BOOL) return rt_int(a.as.i + d);
+    number x = numeric(cx, a);
+    if (a.tag == RT_TAG_STR) {
+        double f = as_double(x);
+        if (f == trunc(f) && (fabs(f) >= TWO_53 || fabs(f + d) >= TWO_53)) {
+            rt_fault(cx, "++ or -- on a string that is a whole number this large has two answers in perl");
+        }
+        const rt_str *s = a.as.s;
+        int digits = s->len > 1 && s->bytes[0] == '0';
+        for (uint64_t at = 0; digits && at < s->len; at++) digits = digit(s->bytes[at]);
+        if (d > 0 && digits) rt_fault(cx, "++ on a string of digits that begins with a zero has two answers in perl");
+        return rt_num(f + d);
+    }
+    if (x.is_int) {
+        int64_t r;
+        int o = __builtin_add_overflow(x.i, (int64_t)d, &r);
+        return checked(cx, r, o);
+    }
+    int64_t whole;
+    int is_whole = integral(x, &whole);
+    if (d > 0 && is_whole) return rt_int(whole + 1);
+    if (x.n + d == x.n) rt_fault(cx, "a float too large to step by one");
+    if (is_whole && magnitude(whole - 1) >= (uint64_t)1 << 53) rt_fault(cx, "-- on a whole float that reaches 2^53 has two answers in perl");
+    return rt_num(x.n + d);
+}
+
+rt_value rt_inc(rt_ctx *cx, rt_value a) {
+    return step(cx, a, 1);
+}
+
+rt_value rt_dec(rt_ctx *cx, rt_value a) {
+    return step(cx, a, -1);
+}
+
+// `$x++` on an undef is worth 0, where `$x--` is worth the undef (T43).
+rt_value rt_before_inc(rt_ctx *cx, rt_value a) {
+    return rt_is_undef(cx, a) ? rt_int(0) : a;
+}
+
 // ---- strings
 
 // A number where a whole number is wanted, a count or a position: cut
@@ -605,6 +677,10 @@ static int64_t whole_number(rt_ctx *cx, number v) {
 
 static int below_zero(number v) {
     return v.is_int ? v.i < 0 : v.n < 0.0;
+}
+
+rt_value rt_concat_to(rt_ctx *cx, rt_value a, rt_value b) {
+    return rt_concat(cx, a.tag == RT_TAG_UNDEF ? rt_string(&STR_FALSE) : a, b);
 }
 
 rt_value rt_concat(rt_ctx *cx, rt_value a, rt_value b) {

@@ -84,6 +84,19 @@ test('and so do the comparisons and the tests of truth (step 4)', () => {
     }
 });
 
+test('and so do the steps and the assigning operators (step 5)', () => {
+    const numbers = ['inc', 'dec', 'add_to-left', 'add_to-right', 'sub_from-left', 'sub_from-right'];
+    const values = ['before-inc', 'concat_to-left', 'concat_to-right'];
+    for (const [cases, what] of [[numbers, 'not a numeric value'], [values, 'not a value'],
+        [['add_to-undef', 'sub_from-undef'], 'undef where a number is wanted'], [['concat_to-undef'], 'undef where a string is wanted']] as const) {
+        for (const which of cases) {
+            const r = run('tags', which);
+            assert.equal(r.output, `2\nfault: ${what} at tags.pl line 3.\n`, which);
+            assert.equal(r.status, 1, which);
+        }
+    }
+});
+
 test('a repeated string of 2^31 characters is too long', () => {
     assert.deepEqual(run('limit'), { status: 1, output: '2000\nfault: repeated string too long at limit.pl line 5.\n' });
 });

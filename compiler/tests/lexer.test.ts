@@ -75,7 +75,9 @@ test('after a value a dot joins and x repeats; before one a dot begins a number 
     assert.deepEqual(literals('1 xy'), ['int 1', 'word xy']);
     refused('say "a" x3;', 'x3: the repetition operator is a word of its own: write x 3', 1, 9);
     refused('say "a"x3;', 'x3: the repetition operator is a word of its own: write x 3', 1, 8);
-    refused('say "a" x= 3;', "'x=' is not in the language yet", 1, 9);
+    // `x=` is one operator, the assignment, as it is to perl.
+    assert.deepEqual(literals('$s x= 3'), ['var $s', 'op x=', 'int 3']);
+    assert.deepEqual(literals('$s x =3'), ['var $s', 'op x', 'op =', 'int 3']);
 });
 
 const value = (src: string) => {
@@ -257,22 +259,20 @@ test('brackets and operators', () => {
 });
 
 test("the longest of perl's operators is the token, in the language or not (T27)", () => {
-    refused('say --5;', "'--' is not in the language yet", 1, 5);
-    refused('say 1--2;', "'--' is not in the language yet", 1, 6);
-    refused('say ++5;', "'++' is not in the language yet", 1, 5);
-    refused('say 2 **= 3;', "'**=' is not in the language yet", 1, 7);
+    assert.deepEqual(lex('--5 1--2 ++5 2**=3').map(t => t.text), ['--', '5', '1', '--', '2', '++', '5', '2', '**=', '3', '']);
+    assert.deepEqual(lex('$x+++$y').map(t => t.text), ['$x', '++', '+', '$y', '']);
+    assert.deepEqual(lex('$x---$y').map(t => t.text), ['$x', '--', '-', '$y', '']);
+    assert.deepEqual(lex('$x||=1 $x//=1 $x&&=1 $x.=1 $x%=1').map(t => t.text),
+        ['$x', '||=', '1', '$x', '//=', '1', '$x', '&&=', '1', '$x', '.=', '1', '$x', '%=', '1', '']);
     refused('say 1 << 2;', "'<<' is not in the language yet", 1, 7);
     refused('say 1 ^^ 2;', "'^^' is not in the language yet", 1, 7);
     refused('say 1 ~~ 2;', "'~~' is not in the language yet", 1, 7);
     refused('say 1 =~ 2;', "'=~' is not in the language yet", 1, 7);
     refused('say 1 !~ 2;', "'!~' is not in the language yet", 1, 7);
-    refused('say 1 = 2;', "'=' is not in the language yet", 1, 7);
-    refused('say 1 ||= 2;', "'||=' is not in the language yet", 1, 7);
-    refused('say 1 //= 2;', "'//=' is not in the language yet", 1, 7);
     refused('say 1 -> 2;', "'->' is not in the language yet", 1, 7);
-    refused('say 7 %= 2;', "'%=' is not in the language yet", 1, 7);
+    refused('say 7 <<= 2;', "'<<=' is not in the language yet", 1, 7);
+    refused('say 7 |= 2;', "'|=' is not in the language yet", 1, 7);
     refused('say 1 .. 5;', "'..' is not in the language yet", 1, 7);
-    refused('say 1 .= 5;', "'.=' is not in the language yet", 1, 7);
     refused('say 1 & 2;', "'&' is not in the language yet", 1, 7);
     refused('say 1 => 2;', "'=>' is not in the language yet", 1, 7);
     // With a blank between them they are two, as they are to perl.
@@ -281,8 +281,65 @@ test("the longest of perl's operators is the token, in the language or not (T27)
 
 test('a character the language has no use for yet', () => {
     refused('say `x`;', "'`' is not in the language yet", 1, 5);
-    refused('say $x;', "'$' is not in the language yet", 1, 5);
-    refused('say {1};', "'{' is not in the language yet", 1, 5);
+    refused('say @x;', "'@' is not in the language yet", 1, 5);
+    refused('say [1];', "'[' is not in the language yet", 1, 5);
+});
+
+test('a variable is a dollar and a name, hard against it (D55)', () => {
+    const tokens = lex('my $x = $y_2;\n{ $_z }');
+    assert.deepEqual(tokens.map(t => [t.kind, t.text, t.pos.line, t.pos.col]), [
+        ['word', 'my', 1, 1], ['var', '$x', 1, 4], ['op', '=', 1, 7], ['var', '$y_2', 1, 9], [';', ';', 1, 13],
+        ['{', '{', 2, 1], ['var', '$_z', 2, 3], ['}', '}', 2, 7], ['eof', '', 2, 8],
+    ]);
+    assert.deepEqual(tokens[1], { kind: 'var', text: '$x', name: 'x', pos: { line: 1, col: 4 } });
+    const message = "after '$' comes a name: a letter or '_', then letters, digits and '_'";
+    refused('say $ x;', message, 1, 5);
+    refused('say ${x};', message, 1, 5);
+    refused('say $1;', message, 1, 5);
+    refused('say $$;', message, 1, 5);
+    refused('say $', message, 1, 5);
+    // perl's own: the sort's two, and the one everything defaults to.
+    refused('my $a = 1;', '$a is not a name a variable may have', 1, 4);
+    refused('say $b;', '$b is not a name a variable may have', 1, 5);
+    refused('say $_;', '$_ is not a name a variable may have', 1, 5);
+    assert.deepEqual(lex('$ab $_1 $A').map(t => t.text), ['$ab', '$_1', '$A', '']);
+});
+
+test('after a variable an operator comes, as after any value', () => {
+    const kinds = (src: string) => lex(src).map(t => `${t.kind} ${t.text}`).slice(0, -1);
+    assert.deepEqual(kinds('$n x 3'), ['var $n', 'op x', 'int 3']);
+    assert.deepEqual(kinds('$n .5'), ['var $n', 'op .', 'int 5']);
+    assert.deepEqual(kinds('$n.$m'), ['var $n', 'op .', 'var $m']);
+    // And after a `++` or `--` that came after one, but not before one.
+    assert.deepEqual(kinds('$n++ x 3'), ['var $n', 'op ++', 'op x', 'int 3']);
+    assert.deepEqual(kinds('$n-- .5'), ['var $n', 'op --', 'op .', 'int 5']);
+    assert.deepEqual(kinds('$n++ or 1'), ['var $n', 'op ++', 'op or', 'int 1']);
+    assert.deepEqual(kinds('1 + ++ .5'), ['int 1', 'op +', 'op ++', 'num .5']);
+});
+
+// What perl makes of each is in t/561-handle-shapes.pl, which perl checks,
+// and in the refused tests after it.
+test('a variable first after say or print, a blank, and what could begin a value (T111)', () => {
+    const message = (lop: string, tail: string, c: string) =>
+        `${lop} $x ${tail}: perl takes $x for a file handle here; put a blank after the '${c}', or none before it`;
+    refused('say $x -1;', message('say', '-1', '-'), 1, 5);
+    refused('print $x +1;', message('print', '+1', '+'), 1, 7);
+    refused('say($x -$y);', message('say', '-$', '-'), 1, 5);
+    refused('say (($x -1));', message('say', '-1', '-'), 1, 7);
+    refused('say $x\n  # why\n -1;', message('say', '-1', '-'), 1, 5);
+    refused('say $x .5;', message('say', '.5', '.'), 1, 5);
+    refused('say $x *y;', message('say', '*y', '*'), 1, 5);
+    refused('say $x %y;', message('say', '%y', '%'), 1, 5);
+    refused('say $x <y;', message('say', '<y', '<'), 1, 5);
+    refused('say $x /2;', message('say', '/2', '/'), 1, 5);
+    refused('say $x ++;', message('say', '++', '+'), 1, 5);
+    // Not a handle: a blank after the operator, none before it, an
+    // assignment, a slash that is `//`, and anywhere but first after say.
+    for (const src of ['say $x - 1;', 'say $x-1;', 'say $x -= 1;', 'say $x += 1;', 'say $x //2;', 'say $x /= 2;',
+        'say $x *2;', 'say $x %2;', 'say $x <2;', 'say $x ."a";', 'say $x . 5;', 'say 1 + $x -1;', 'say -$x -1;',
+        'my $y = $x -1;', 'say $x ?1 : 2;', 'say $x x 2;', 'say $x;', 'say $x if $x -1;']) {
+        assert.ok(lex(src).length > 3, src);
+    }
 });
 
 test('a character past ASCII, wherever it stands', () => {

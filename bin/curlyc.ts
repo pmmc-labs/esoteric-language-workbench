@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { lex } from '../compiler/src/lexer.ts';
 import { parse } from '../compiler/src/parser.ts';
 import { check } from '../compiler/src/checker.ts';
+import { resolve } from '../compiler/src/resolver.ts';
 import { generate } from '../compiler/src/codegen.ts';
 import { CompileError } from '../compiler/src/errors.ts';
 
@@ -48,7 +49,7 @@ let c: string;
 try {
     const program = parse(lex(text));
     check(program);
-    c = generate(program, src);
+    c = generate(program, resolve(program), src);
 } catch (e) {
     try { rmSync(out, { force: true }); } catch { /* not a file of ours to remove */ }
     if (e instanceof CompileError) { console.error(`${src}:${e.line}:${e.col}: ${e.message}`); process.exit(1); }

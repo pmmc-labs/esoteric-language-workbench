@@ -29,7 +29,19 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // `(x + y)`. The tree's shape already holds the grouping; this is for the
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
-export type Expr = Int | Num | Str | Constant | Unary | Binary | Ternary | Apply;
+export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply;
+
+// A variable, `$name`; and `my $name`, which declares one where it stands
+// and is that variable (D56). Which declaration a `Var` means is the
+// resolver's to say.
+export type Var = { kind: 'var'; name: string; pos: Pos; bracketed?: true };
+export type My = { kind: 'my'; name: string; pos: Pos; bracketed?: true };
+
+// `$x = E`, `$x += E`: `pos` is the operator's. Its value is the variable.
+export type Assign = { kind: 'assign'; op: string; target: Var | My; value: Expr; pos: Pos; bracketed?: true };
+
+// `++$x`, `$x++`, `--$x`, `$x--`: `before` says the operator comes first.
+export type Step = { kind: 'step'; op: string; before: boolean; target: Var; pos: Pos; bracketed?: true };
 
 // A word that is a value: `true`, `false`, `undef` (D47, D48).
 export type Constant = { kind: 'constant'; name: string; pos: Pos; bracketed?: true };
@@ -50,7 +62,19 @@ export type Pragma = { kind: 'pragma'; name: string; args: readonly Expr[]; pos:
 // A builtin that is a statement, `say` and `print`, and its arguments.
 export type Call = { kind: 'call'; name: string; args: readonly Expr[]; pos: Pos };
 
-export type Stmt = Use | Pragma | Call;
+// An expression as a statement: an assignment, a `++` or `--`, a `my`.
+export type Do = { kind: 'do'; expr: Expr; pos: Pos };
+
+// `{ ... }`: a scope.
+export type Block = { kind: 'block'; body: readonly Stmt[]; pos: Pos };
+
+// `if (T) { } elsif (T) { } else { }`, one arm a test. `unless` is one arm
+// with `negate`; `STATEMENT if T;` is one arm with `modifier`, its body
+// the statement.
+export type Arm = { test: Expr; negate?: true; body: readonly Stmt[]; pos: Pos };
+export type If = { kind: 'if'; arms: readonly Arm[]; otherwise?: readonly Stmt[]; modifier?: true; pos: Pos };
+
+export type Stmt = Use | Pragma | Call | Do | Block | If;
 
 // `end` is where the file ends, for a diagnostic about what isn't there.
 export type Program = { kind: 'program'; body: readonly Stmt[]; end: Pos };

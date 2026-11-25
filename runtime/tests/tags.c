@@ -81,6 +81,20 @@ static void body(rt_ctx *cx) {
     if (strcmp(which, "index3-1") == 0) rt_index3(cx, never_set, one, one);
     if (strcmp(which, "index3-2") == 0) rt_index3(cx, one, never_set, one);
     if (strcmp(which, "index3-3") == 0) rt_index3(cx, one, one, never_set);
+    if (strcmp(which, "inc") == 0) rt_inc(cx, never_set);
+    if (strcmp(which, "dec") == 0) rt_dec(cx, never_set);
+    if (strcmp(which, "before-inc") == 0) rt_before_inc(cx, never_set);
+    if (strcmp(which, "add_to-left") == 0) rt_add_to(cx, never_set, one);
+    if (strcmp(which, "add_to-right") == 0) rt_add_to(cx, one, never_set);
+    if (strcmp(which, "sub_from-left") == 0) rt_sub_from(cx, never_set, one);
+    if (strcmp(which, "sub_from-right") == 0) rt_sub_from(cx, one, never_set);
+    if (strcmp(which, "concat_to-left") == 0) rt_concat_to(cx, never_set, one);
+    if (strcmp(which, "concat_to-right") == 0) rt_concat_to(cx, one, never_set);
+    // An undef on the left of these three is 0, or the empty string; on
+    // the right it is a fault, as it is for the operator.
+    if (strcmp(which, "add_to-undef") == 0) rt_add_to(cx, one, rt_undef());
+    if (strcmp(which, "sub_from-undef") == 0) rt_sub_from(cx, one, rt_undef());
+    if (strcmp(which, "concat_to-undef") == 0) rt_concat_to(cx, one, rt_undef());
     rt_say(cx, rt_int(2));
 }
 

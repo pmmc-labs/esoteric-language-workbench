@@ -1,2 +1,2 @@
-t/036-decrement.pl:5:5: '--' is not in the language yet
+t/036-decrement.pl:5:5: '--' is for a variable: --$x
 exit: 1

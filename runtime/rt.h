@@ -5,6 +5,10 @@
 #define RT_H
 #include <stdint.h>
 
+// On a local the generated C declares and a program may never read: a
+// variable that is only ever set, the value of `$x++;`.
+#define RT_UNUSED __attribute__((unused))
+
 // A value is two words, a tag and a payload (D25), so that a 64-bit
 // integer fits whole; both C compilers pass the pair in registers. The
 // union gains a member per kind of value. No tag is 0: memory that was
@@ -115,6 +119,19 @@ rt_value rt_div(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_mod(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_pow(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_neg(rt_ctx *cx, rt_value a);
+
+// `++` and `--` (D52): what the variable holds afterwards, by what it
+// held. And what `$x++` is worth: what `$x` held, or 0 for an undef.
+rt_value rt_inc(rt_ctx *cx, rt_value a);
+rt_value rt_dec(rt_ctx *cx, rt_value a);
+rt_value rt_before_inc(rt_ctx *cx, rt_value a);
+
+// `+=`, `-=` and `.=`: the operator, but an undef on the left is 0, or
+// the empty string, as perl has it (D56). The other assigning operators
+// are the operators themselves, and fault on one.
+rt_value rt_add_to(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_sub_from(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_concat_to(rt_ctx *cx, rt_value a, rt_value b);
 
 // Strings (D24, D40 to D44). An operand that is a number is made a
 // string as `say` prints it, and one that is a string is made a number by

@@ -1,2 +1,2 @@
-t/227-void-context.pl:4:1: length has a value, and nothing is done with it here
+t/227-void-context.pl:4:1: this statement only has a value, and nothing is done with it: perl warns that it is useless
 exit: 1

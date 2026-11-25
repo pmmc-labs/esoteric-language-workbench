@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { lex } from '../src/lexer.ts';
 import { parse } from '../src/parser.ts';
 import { CompileError } from '../src/errors.ts';
-import type { Expr } from '../src/ast.ts';
+import type { Expr, Stmt } from '../src/ast.ts';
 
 const refused = (src: string, message: string, line: number, col: number) =>
     assert.throws(() => parse(lex(src)), (e: unknown) => {
@@ -20,6 +20,10 @@ const shape = (e: Expr): string => {
         : e.kind === 'apply' ? `${e.name}[${e.args.map(shape).join(', ')}]`
         : e.kind === 'constant' ? e.name
         : e.kind === 'ternary' ? `(${shape(e.test)} ? ${shape(e.then)} : ${shape(e.else)})`
+        : e.kind === 'var' ? `$${e.name}`
+        : e.kind === 'my' ? `my $${e.name}`
+        : e.kind === 'assign' ? `(${shape(e.target)} ${e.op} ${shape(e.value)})`
+        : e.kind === 'step' ? (e.before ? `(${e.op}${shape(e.target)})` : `(${shape(e.target)}${e.op})`)
         : `(${shape(e.left)} ${e.op} ${shape(e.right)})`;
     return e.bracketed ? s + '*' : s;
 };
@@ -111,16 +115,147 @@ test('brackets group, and are remembered', () => {
 
 test('what a statement may start with', () => {
     refused('use v5.42;\n;', "expected a statement, found ';'", 2, 1);
-    refused('42;', 'expected a statement, found 42', 1, 1);
-    refused('v5.42;', 'expected a statement, found v5.42', 1, 1);
-    refused('(1);', "expected a statement, found '('", 1, 1);
-    refused('- 1;', "expected a statement, found '-'", 1, 1);
+    refused('v5.42;', 'expected a value, found v5.42', 1, 1);
+    refused('use v5.42;\n}', "expected a statement, found '}'", 2, 1);
+    refused(')', "expected a statement, found ')'", 1, 1);
+    refused('else { say 1; }', 'else without an if before it', 1, 1);
+    refused('elsif (1) { say 1; }', 'elsif without an if before it', 1, 1);
     refused('use v5.42;\nprintf 42;', "'printf' is not in the language", 2, 1);
     refused('say42;', "'say42' is not in the language", 1, 1);
-    // perl warns of a useless use in void context.
-    refused('length "abc";', 'length has a value, and nothing is done with it here', 1, 1);
-    refused('substr("abc", 1);', 'substr has a value, and nothing is done with it here', 1, 1);
-    refused('"abc";', 'expected a statement, found "abc"', 1, 1);
+});
+
+// The statements of a program, in brackets, each block in braces.
+const stmt = (s: Stmt): string =>
+    s.kind === 'call' ? `${s.name} ${shape(s.args[0]!)};`
+    : s.kind === 'do' ? `${shape(s.expr)};`
+    : s.kind === 'block' ? `{ ${s.body.map(stmt).join(' ')} }`
+    : s.kind === 'if' ? (s.modifier
+        ? `[${stmt(s.arms[0]!.body[0]!)} ${s.arms[0]!.negate ? 'unless' : 'if'} ${shape(s.arms[0]!.test)}]`
+        : s.arms.map(a => `${a.negate ? 'unless' : 'if'} ${shape(a.test)} { ${a.body.map(stmt).join(' ')} }`).join(' els')
+            + (s.otherwise ? ` else { ${s.otherwise.map(stmt).join(' ')} }` : ''))
+    : s.kind;
+const program = (src: string) => parse(lex(src)).body.map(stmt).join(' ');
+
+// What perl makes of each is in t/560-shapes.pl, which perl checks.
+test('a variable, my, and the steps, which bind tightest of all', () => {
+    assert.equal(grouped('say $x;'), '$x');
+    assert.equal(grouped('say $x++;'), '($x++)');
+    assert.equal(grouped('say --$x;'), '(--$x)');
+    assert.equal(grouped('say -$x++;'), '(-($x++))');
+    assert.equal(grouped('say $x++ ** 2;'), '(($x++) ** 2)');
+    assert.equal(grouped('say 2 ** ++$x;'), '(2 ** (++$x))');
+    assert.equal(grouped('say $x+++$y;'), '(($x++) + $y)');
+    assert.equal(grouped('say $x---$y;'), '(($x--) - $y)');
+    assert.equal(grouped('say $x + ++$y;'), '($x + (++$y))');
+    assert.equal(grouped('say !$x++;'), '(!($x++))');
+    assert.equal(grouped('say length $x++;'), 'length[($x++)]');
+    assert.equal(grouped('say ($x)++;'.replace('($x)++', '($x++)')), '($x++)*');
+    assert.equal(program('my $x;'), 'my $x;');
+    assert.deepEqual(parse(lex('my $x = $y++;')).body[0], {
+        kind: 'do', pos: { line: 1, col: 1 },
+        expr: { kind: 'assign', op: '=', pos: { line: 1, col: 7 },
+            target: { kind: 'my', name: 'x', pos: { line: 1, col: 1 } },
+            value: { kind: 'step', op: '++', before: false, pos: { line: 1, col: 11 },
+                target: { kind: 'var', name: 'y', pos: { line: 1, col: 9 } } } },
+    });
+    assert.deepEqual(argument('say --$y;'), {
+        kind: 'step', op: '--', before: true, pos: { line: 1, col: 5 },
+        target: { kind: 'var', name: 'y', pos: { line: 1, col: 7 } },
+    });
+});
+
+test('a step is for a variable, and is not stepped again', () => {
+    refused('say --5;', "'--' is for a variable: --$x", 1, 5);
+    refused('say ++5;', "'++' is for a variable: ++$x", 1, 5);
+    refused('say ++($x);', "'++' is for a variable: ++$x", 1, 5);
+    refused('say ++ ++$x;', "'++' is for a variable: ++$x", 1, 5);
+    refused('say - --$x++;', "expected ';', found '++'", 1, 11);
+    refused('say 1--2;', "expected ';', found '--'", 1, 6);
+    refused('say ($x)++;', "'++' after say (...): perl takes the brackets for all of say's arguments; bracket the whole expression", 1, 9);
+    refused('$y = ($x)++;', "expected ';', found '++'", 1, 10);
+    refused('say $x++ ++;', "expected ';', found '++'", 1, 10);
+    refused('my 5;', "after 'my', expected a variable, found 5", 1, 4);
+    refused('my ($x);', "after 'my', expected a variable, found '('", 1, 4);
+});
+
+test('assignment is right to left, below ? : and above the word operators', () => {
+    assert.equal(program('$x = $y = 1;'), '($x = ($y = 1));');
+    assert.equal(program('$x += $y *= 2;'), '($x += ($y *= 2));');
+    assert.equal(program('$x = 1 ? 2 : 3;'), '($x = (1 ? 2 : 3));');
+    assert.equal(program('$x = $y || 2;'), '($x = ($y || 2));');
+    assert.equal(program('$x = 1 + 2 . 3;'), '($x = ((1 + 2) . 3));');
+    assert.equal(program('my $x = my $y = 1;'), '(my $x = (my $y = 1));');
+    assert.equal(program('$x x= 2 x 3;'), '($x x= (2 x 3));');
+    assert.equal(program('$x ||= $y //= 3;'), '($x ||= ($y //= 3));');
+    assert.equal(program('$x = not 1;'), '($x = (not1));');
+    assert.equal(grouped('say $x = 5;'), '($x = 5)');
+    assert.equal(grouped('say 1 + ($x = 5);'), '(1 + ($x = 5)*)');
+    assert.equal(grouped('say not $x = 5;'), '(not($x = 5))');
+});
+
+test('the left side of an assignment is a variable, bare', () => {
+    const message = (op: string) => `the left side of '${op}' is a variable, $x or my $x, with no brackets round it`;
+    refused('say 2 **= 3;', message('**='), 1, 7);
+    refused('say 1 = 2;', message('='), 1, 7);
+    refused('($x) = 5;', message('='), 1, 6);
+    refused('($x = 5) = 7;', message('='), 1, 10);
+    refused('$x + 1 = 7;', message('='), 1, 8);
+    refused('1 ? $x : $y = 7;', message('='), 1, 13);
+    refused('$x++ = 7;', message('='), 1, 6);
+    refused('-$x = 7;', message('='), 1, 5);
+    refused('"a" x= 3;', message('x='), 1, 5);
+    refused('(my $x) = 7;', message('='), 1, 9);
+    // A statement is one assignment, not two joined (D56).
+    const joins = (op: string) => `'${op}' after a statement joins it to what follows, to perl, which binds '${op}' more loosely than '=': write it as an if`;
+    refused('$x = 1 and $y = 2;', joins('and'), 1, 8);
+    refused('$x++ or $y = 2;', joins('or'), 1, 6);
+    refused('my $x = 1 xor 2;', joins('xor'), 1, 11);
+});
+
+test('blocks, if with its elsifs and else, unless, and the modifiers', () => {
+    assert.equal(program('{ say 1; { say 2; } }'), '{ say 1; { say 2; } }');
+    assert.equal(program('if ($x) { say 1; }'), 'if $x { say 1; }');
+    assert.equal(program('if ($x) { say 1; } elsif ($y) { } else { say 3; say 4; }'),
+        'if $x { say 1; } elsif $y {  } else { say 3; say 4; }');
+    assert.equal(program('if ($x) { } else { }'), 'if $x {  } else {  }');
+    assert.equal(program('unless ($x == 1) { say 1; }'), 'unless ($x == 1) { say 1; }');
+    assert.equal(program('say 1 if $x;'), '[say 1; if $x]');
+    assert.equal(program('$x++ unless $y > 2;'), '[($x++); unless ($y > 2)]');
+    assert.equal(program('$x = 1 if $y or $z;'), '[($x = 1); if ($y or $z)]');
+    assert.equal(program('if (my $x = $y) { say $x; } say 2;'), 'if (my $x = $y) { say $x; } say 2;');
+    // An arm is at its `if` or `elsif`, and a modified statement at its start.
+    const chain = parse(lex('if (1) {\n} elsif (2) {\n}\nsay 3\n  unless 4;'));
+    const [first, second] = chain.body;
+    assert.ok(first?.kind === 'if' && second?.kind === 'if');
+    assert.deepEqual(first.arms.map(a => a.pos), [{ line: 1, col: 1 }, { line: 2, col: 3 }]);
+    assert.deepEqual([second.pos, second.arms[0]!.pos, second.modifier], [{ line: 4, col: 1 }, { line: 5, col: 3 }, true]);
+});
+
+test('what a block and an if may not be', () => {
+    refused('{ }', 'an empty block is an anonymous hash, to perl: put a statement in it, or take it out', 1, 1);
+    refused('{ { } }', 'an empty block is an anonymous hash, to perl: put a statement in it, or take it out', 1, 3);
+    refused('{ say 1;', "expected '}', found the end of the file", 1, 9);
+    refused('if 1 { say 1; }', "expected '(' after if, found 1", 1, 4);
+    refused('if (1) say 1;', "expected '{', found 'say'", 1, 8);
+    refused('if (1) { say 1; } else if (2) { }', "expected '{', found 'if'", 1, 24);
+    refused('if (1) { } else { } else { }', 'else without an if before it', 1, 21);
+    refused('unless (1) { } else { }', 'else after unless: write it as an if', 1, 16);
+    refused('unless (1) { } elsif (2) { }', 'elsif after unless: write it as an if', 1, 16);
+    refused('say 1 if 2 if 3;', "expected ';', found 'if'", 1, 12);
+    refused('say 1 if;', "expected a value, found ';'", 1, 9);
+    refused('if (1) { say 1; } if 2;', "expected '(' after if, found 2", 1, 22);
+    refused('{ say 1; } if 2;', "expected '(' after if, found 2", 1, 15);
+    refused('if () { }', "expected a value, found ')'", 1, 5);
+});
+
+test('undef before a variable or a brace is undef of it, to perl (T105)', () => {
+    const before = (what: string) => `undef before ${what}: perl takes what follows undef for its argument; write (undef)`;
+    refused('say undef $x;', before("'$x'"), 1, 5);
+    refused('$x = undef $x;', before("'$x'"), 1, 6);
+    refused('if (undef) { } elsif (undef { }', before("'{'"), 1, 23);
+    // A modifier is not an argument.
+    assert.equal(program('$x = undef if $y;'), '[($x = undef); if $y]');
+    assert.equal(program('$x = undef unless undef;'), '[($x = undef); unless undef]');
 });
 
 // What perl makes of each is in t/173-named-unary.pl and

@@ -136,3 +136,95 @@ test("the list that say's argument is reaches the right of || and both branches 
     refused('use v5.42;\nsay 0 || +("a") x 3;', message, 2, 17);
     accepted('use v5.42;\nsay(("a") x 3 || 0);\nsay((("a") x 3) ? 1 : 2);\nsay(1 xor ("a") x 3);\nsay(!("a") x 3);\nsay(("a") x 3 eq "aaa");\nsay(0 || "" . ("a") x 3);');
 });
+
+// What perl says of each is in docs/briefs/claims.py (T114).
+test('a statement that only has a value, which perl warns is useless (T114)', () => {
+    const message = 'this statement only has a value, and nothing is done with it: perl warns that it is useless';
+    refused('use v5.42;\n42;', message, 2, 1);
+    refused('use v5.42;\nlength "abc";', message, 2, 1);
+    refused('use v5.42;\nsubstr("abc", 1);', message, 2, 1);
+    refused('use v5.42;\n"abc";', message, 2, 1);
+    refused('use v5.42;\n(1);', message, 2, 1);
+    refused('use v5.42;\n- 1;', message, 2, 1);
+    refused('use v5.42;\n  $x + 1;', message, 2, 3);
+    refused('use v5.42;\n$x;', message, 2, 1);
+    refused('use v5.42;\n$x == 1;', message, 2, 1);
+    refused('use v5.42;\n$x || ($y = 1);', message, 2, 1);
+    refused('use v5.42;\n1 ? ($x = 1) : 2;', message, 2, 1);
+    refused('use v5.42;\n{ 42; }', message, 2, 3);
+    refused('use v5.42;\nif (1) { $x; }', message, 2, 10);
+    refused('use v5.42;\n$x if 1;', message, 2, 1);
+    accepted('use v5.42;\nmy $x;\n$x = 1;\n$x++;\n--$x;\n$x += 2;\n$x ||= 3;\nmy $y = $x;\n$y = $x = 4;');
+});
+
+test('where a my may stand: at the head of a statement, or in the test of an if (D56)', () => {
+    const here = (name: string) => `my $${name} here: a my begins a statement, or stands in the test of an if, where it is always reached`;
+    refused('use v5.42;\nsay my $x;', here('x'), 2, 5);
+    refused('use v5.42;\nmy $y;\n$y = my $x = 1;', here('x'), 3, 6);
+    refused('use v5.42;\nmy $x = my $y = 1;', here('y'), 2, 9);
+    refused('use v5.42;\nmy $x += my $y;', here('y'), 2, 10);
+    refused('use v5.42;\nmy $y;\nif (1 && (my $x = $y)) { say 1; }', here('x'), 3, 11);
+    refused('use v5.42;\nif (1 ? my $x : 2) { say 1; }', here('x'), 2, 9);
+    refused('use v5.42;\nmy $y;\nif ($y ||= my $x) { say 1; }', here('x'), 3, 12);
+    refused('use v5.42;\nsay 1 if my $x;', here('x'), 2, 10);
+    // T30: perl leaves in the variable what it last held.
+    const under = 'my under a modifier: when the test fails, perl leaves in the variable what it last held; declare it in a statement of its own';
+    refused('use v5.42;\nmy $x = 1 if 1;', under, 2, 1);
+    refused('use v5.42;\nmy $y;\n  my $x unless $y;', under, 3, 3);
+    accepted('use v5.42;\nmy $x;\nmy $y = 1;\nif (my $z = $y) { my $w; }\nif ((my $z = $y) > 1) { say 1; }\n'
+        + 'if (-(my $z = $y)) { say 1; } elsif (my $v = $y) { say 2; }\nunless (my $u = $y) { say 3; }\n{ my $x = 2; }\nmy $t ||= 5;');
+});
+
+// Where perl warns and where it doesn't was asked of perl for each of
+// these; the rule is perl's and a little more (T112).
+test("'=' where a value is tested, with a constant on its right (D53)", () => {
+    const message = "'=' where a value is tested, with nothing but a constant on its right: perl warns that == was meant";
+    const at = (src: string, col: number) => refused(`use v5.42;\nmy $x; my $y;\n${src}`, message, 3, col);
+    at('if ($x = 5) { say 1; }', 8);
+    at('if (($x = 5)) { say 1; }', 9);
+    at('if (!($x = 5)) { say 1; }', 10);
+    at('if (not $x = 5) { say 1; }', 12);
+    at('if (+($x = 5)) { say 1; }', 10);
+    at('unless ($x = 5) { say 1; }', 12);
+    at('say(($x = 5) ? 1 : 2);', 9);
+    at('say(($x = 5) && 1);', 9);
+    at('say(!($x = 5) && 1);', 10);
+    at('if ($y && ($x = 5)) { say 1; }', 15);
+    at('if ($y ? ($x = 1) : 2) { say 1; }', 14);
+    at('if ($x = 1 + 2) { say 1; }', 8);
+    at('if ($x = length "abc") { say 1; }', 8);
+    at('say 1 if $x = 5;', 13);
+    at('if (my $z = 5) { say 1; }', 11);
+    at('$y = ($x = 5) || 2;', 10);
+    at('if (1) { say 1; } elsif ($x = "a") { say 2; }', 29);
+    for (const src of ['if ($x = $y) { say 1; }', 'if ($x += 5) { say 1; }', 'if ($x ||= 5) { say 1; }', 'if ($x = $y = 5) { say 1; }',
+        'if (($x = 5) == 5) { say 1; }', 'say(!($x = 5));', 'say(1 + ($x = 5));', 'if ($x = $y ? 1 : 2) { say 1; }',
+        'if ((my $z = 5) > 2) { say 1; }', '$y = !($x = 5);']) {
+        accepted(`use v5.42;\nmy $x; my $y;\n${src}`);
+    }
+});
+
+// perl's answers are in docs/briefs/claims.py (T117), and what the
+// language makes of the forms it takes is in t/503-late-reads.pl.
+test('a later piece of a concatenation may not change what an earlier piece reads (D57)', () => {
+    const message = (name: string) =>
+        `a later piece of a concatenation changes $${name}, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own`;
+    const at = (src: string, col: number, name = 'x') => refused(`use v5.42;\nmy $x; my $y;\n${src}`, message(name), 3, col);
+    at('say $x . ($x = 5);', 14);
+    at('say $x . "a" . $x++;', 18);
+    at('say $x . ++$x;', 10);
+    at('$x .= $x++;', 9);
+    at('say(($y ? $x . "a" : "b") . ($x = 5));', 33);
+    at('say(($x || "a") . ($x = 5));', 23);
+    at('say length($x) . ($x = 5);', 22);
+    at('say "a" . $y . "b" . ($y .= "c");', 26, 'y');
+    for (const src of ['say(($x = 5) . $x);', 'say $x . $y++;', 'say $x++ . $y;', 'say $x++ . $x;', 'say $x . ($y = 5) . $y;',
+        '$x .= $y++;', 'say(($x = 1) + $x++);', 'say $x . "a";', '$y = ($x . "a") x ($x = 2);']) {
+        accepted(`use v5.42;\nmy $x; my $y;\n${src}`);
+    }
+});
+
+test('use and the pragmas are at the top, not in a block', () => {
+    refused('use v5.42;\n{ use v5.42; }', "'use v5.42;' here: the version is the first statement, and is said once", 2, 3);
+    refused('use v5.42;\nif (1) { use utf8; }', "'use utf8' goes at the top, after 'use v5.42;' and before anything else", 2, 10);
+});

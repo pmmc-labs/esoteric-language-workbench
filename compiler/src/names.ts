@@ -19,6 +19,12 @@ export type Name =
     // takes what follows the word for its argument whenever it can, so
     // only what can't be one may follow it (`undef`, T105).
     | { kind: 'constant'; c: string; bare?: true }
+    // The words of step 5's statements (D56). `unless` is an `if` whose
+    // test is turned round, and takes no `elsif` or `else` (D54).
+    | { kind: 'my' }
+    | { kind: 'if'; unless?: true }
+    | { kind: 'elsif' }
+    | { kind: 'else' }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -37,6 +43,11 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['true', { kind: 'constant', c: 'rt_bool(1)' }],
     ['false', { kind: 'constant', c: 'rt_bool(0)' }],
     ['undef', { kind: 'constant', c: 'rt_undef()', bare: true }],
+    ['my', { kind: 'my' }],
+    ['if', { kind: 'if' }],
+    ['unless', { kind: 'if', unless: true }],
+    ['elsif', { kind: 'elsif' }],
+    ['else', { kind: 'else' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);
@@ -88,8 +99,13 @@ export type Assoc = 'left' | 'right' | 'nonassoc' | 'chained' | 'chain/na';
 // its value is one operand or the other (D49). `logic`: it takes an undef,
 // and may follow a bare `undef` (D48). `bang`: perl warns of a precedence
 // problem when the operator, unbracketed, is the left operand of a
-// comparison (T115).
-export type Op = { op: string; in?: true; rt?: string; list?: true; sign?: true; when?: string; logic?: true; bang?: true };
+// comparison (T115). `assign`: the operator puts a value in the variable
+// on its left: what `rt` gives of the variable and the right side, or the
+// right side itself if there is no `rt`, and with `when` only when the
+// test says so of the variable (D56). `concat`: perl joins a row of these
+// as one operation (D57). `tests`: a prefix operator that tests its
+// operand for truth, and hands a test on to it (D53).
+export type Op = { op: string; in?: true; rt?: string; list?: true; sign?: true; when?: string; logic?: true; bang?: true; assign?: true; concat?: true; tests?: true };
 export type Level = {
     assoc: Assoc;
     prefix?: readonly Op[];     // before its operand
@@ -101,6 +117,7 @@ export type Level = {
 const ops = (...names: string[]): Op[] => names.map(op => ({ op }));
 const live = (op: string, rt: string): Op => ({ op, in: true, rt });
 const lazy = (op: string, when: string): Op => ({ op, in: true, when, logic: true });
+const put = (op: string, rt: string): Op => ({ op, in: true, rt, assign: true });
 const NAMED_UNARY = 'named unary operators';
 
 export const PRECEDENCE: readonly Level[] = [
@@ -108,10 +125,10 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'left', infix: ops('->') },
     { assoc: 'nonassoc', other: ['++', '--'] },
     { assoc: 'right', infix: [{ op: '**', in: true, rt: 'rt_pow' }] },
-    { assoc: 'right', prefix: [{ op: '!', in: true, rt: 'rt_not', bang: true }, ...ops('~', '~.', '\\'), { op: '+', in: true, sign: true }, { op: '-', in: true, rt: 'rt_neg', sign: true }] },
+    { assoc: 'right', prefix: [{ op: '!', in: true, rt: 'rt_not', bang: true, tests: true }, ...ops('~', '~.', '\\'), { op: '+', in: true, sign: true }, { op: '-', in: true, rt: 'rt_neg', sign: true }] },
     { assoc: 'left', infix: ops('=~', '!~') },
     { assoc: 'left', infix: [{ op: '*', in: true, rt: 'rt_mul' }, { op: '/', in: true, rt: 'rt_div' }, { op: '%', in: true, rt: 'rt_mod' }, { op: 'x', in: true, rt: 'rt_repeat', list: true }] },
-    { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.', in: true, rt: 'rt_concat' }] },
+    { assoc: 'left', infix: [{ op: '+', in: true, rt: 'rt_add' }, { op: '-', in: true, rt: 'rt_sub' }, { op: '.', in: true, rt: 'rt_concat', concat: true }] },
     { assoc: 'left', infix: ops('<<', '>>') },
     { assoc: 'nonassoc', what: NAMED_UNARY },
     { assoc: 'nonassoc', infix: ops('isa') },
@@ -126,11 +143,16 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'nonassoc', infix: ops('..', '...') },
     { assoc: 'right', other: ['?', ':'] },
     // "= += -= *= etc.": the list is perlop's, under Assignment Operators.
-    { assoc: 'right', infix: ops('=', '**=', '+=', '*=', '&=', '&.=', '<<=', '&&=', '-=', '/=', '|=', '|.=', '>>=', '||=',
-        '.=', '%=', '^=', '^.=', '//=', 'x=', '^^='), what: 'and goto last next redo dump' },
+    // An undef on the left of `+=`, `-=` and `.=` is 0 or the empty
+    // string, as perl has it, and those three have functions of their own.
+    { assoc: 'right', infix: [{ op: '=', in: true, assign: true }, put('**=', 'rt_pow'), put('+=', 'rt_add_to'), put('*=', 'rt_mul'),
+        put('-=', 'rt_sub_from'), put('/=', 'rt_div'), { ...put('.=', 'rt_concat_to'), concat: true }, put('%=', 'rt_mod'), put('x=', 'rt_repeat'),
+        { op: '&&=', in: true, assign: true, when: 'rt_is_true' }, { op: '||=', in: true, assign: true, when: 'rt_is_false' },
+        { op: '//=', in: true, assign: true, when: 'rt_is_undef' },
+        ...ops('&=', '&.=', '<<=', '|=', '|.=', '>>=', '^=', '^.=', '^^=')], what: 'and goto last next redo dump' },
     { assoc: 'left', infix: ops(',', '=>') },
     { assoc: 'nonassoc', what: 'list operators (rightward)' },
-    { assoc: 'right', prefix: [live('not', 'rt_not')] },
+    { assoc: 'right', prefix: [{ ...live('not', 'rt_not'), tests: true }] },
     { assoc: 'left', infix: [lazy('and', 'rt_is_true')] },
     { assoc: 'left', infix: [lazy('or', 'rt_is_false'), { op: 'xor', in: true, rt: 'rt_xor', logic: true }] },
 ];
@@ -150,6 +172,17 @@ const find = (place: 'prefix' | 'infix') => (op: string): Found | undefined => {
 };
 export const prefixOp = find('prefix');
 export const infixOp = find('infix');
+
+// `++` and `--`, which stand before a variable or after it (D52). `rt`
+// gives what the variable holds afterwards, and `before` what `$x++` is
+// worth when that isn't simply what `$x` held (an undef is 0, T43).
+export type StepOp = { rt: string; before?: string };
+const STEPS: ReadonlyMap<string, StepOp> = new Map([['++', { rt: 'rt_inc', before: 'rt_before_inc' }], ['--', { rt: 'rt_dec' }]]);
+export const stepOp = (op: string): StepOp | undefined => STEPS.get(op);
+
+// The names a variable may not have (D55): perl's `sort` owns `$a` and
+// `$b`, and `$_` is its own thing.
+export const RESERVED: ReadonlySet<string> = new Set(['a', 'b', '_']);
 
 // The row of the named unary operators: `length`, written without
 // brackets, takes for its argument everything in the rows above this one.
