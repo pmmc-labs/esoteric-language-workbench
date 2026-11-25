@@ -305,7 +305,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D72 and D75 are Stevan's, and D73 and D74 are defaults of the builder's that he has not confirmed** (D57 a default of the builder's at
+**D1 to D75 are all Stevan's** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -383,8 +383,7 @@ piece calls a sub that can change a variable an earlier piece reads,
 worked out over the whole program** (D69, T132; the left of `.=` is
 the first piece). **Its adversarial review found four ways to be
 WRONG and three shapes perl refuses** before anything was built
-(T143 to T148, `briefs/step8-review/`); **D73, what was done about
-each, is a default Stevan has not confirmed.** **What the build
+(T143 to T148, `briefs/step8-review/`); D73 has what was done about each. **What the build
 found**: step 5 had every statement end in a semicolon, the last in
 a block too, so `sub f($x) { $x * 2 }` was refused; **D75, his: the
 last statement of a block may leave it out** (not the file's last;

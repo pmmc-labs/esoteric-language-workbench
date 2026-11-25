@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D72 and D75 are Stevan's, and D73 and D74 are defaults he has not yet seen: D1 to D9 from the first conversation, and
+D1 to D75 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -13,9 +13,9 @@ D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
 step 5 took, which he confirmed the same day. D58 to D62 are his
 answers to step 6's proposal, D63 to D66 to step 7's, and D67 to D72
 to step 8's (D68's number is the builder's default, which he said
-to stay with). D73 and D74 are the builder's defaults, from the
-review of step 8 and from building it, and D75 is his, on seeing
-the build.
+to stay with). D73 and D74 were the builder's defaults, from the
+review of step 8 and from building it, which he confirmed; D75 is
+his, on seeing the build.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1361,9 +1361,10 @@ its bracket after `say` or `print` (T136); two commas together
 loop or a sub (T31). **A fault's line** is the statement's (D34),
 the caller's again after a call returns.
 
-**D73. What the review of step 8 changed.** *(default: the builder's,
-2026-11-25, each on the safe side of a difference from perl that the
-review found, T143 to T148; for Stevan to see.)* **A sub is handed
+**D73. What the review of step 8 changed.** *(User: a default of the
+builder's, 2026-11-25, each on the safe side of a difference from
+perl that the review found, T143 to T148; confirmed when he saw it,
+"D73 and D74 are fine".)* **A sub is handed
 where its arguments are, and copies each as its parameter's turn
 comes**, a default running in between: perl's order, so `f(undef,
 $g)` with a `//=` default that changes `$g` gives the second
@@ -1391,8 +1392,9 @@ default that calls a sub when a parameter follows (agreeing costs a
 calling convention and nothing else); agreeing with T145 (the test's
 own value when it fails: T19, decided the other way in D18).
 
-**D74. What building step 8 settled.** *(default: the builder's,
-2026-11-25; small, and for Stevan to see.)* **A call may be a part of
+**D74. What building step 8 settled.** *(User: defaults of the
+builder's, 2026-11-25, confirmed when he saw them, "D73 and D74 are
+fine".)* **A call may be a part of
 a `for`**, `for (init(); $n < 8; step())`, void as perl has it: D60
 refused a part that only has a value, and a call is something done.
 **`$x .= set();` is refused when `set` can change `$x`**: D69 through

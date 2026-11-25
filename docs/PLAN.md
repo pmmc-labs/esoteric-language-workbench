@@ -2122,7 +2122,7 @@ and findings:
   line (15); a call that is not a C call (29, D68).
 
 **For Stevan, from the build**: (1) D73, the review's ways out, and
-D74, what the build settled, are defaults he has not confirmed. (2) The semicolon before a closing
+D74, what the build settled, were defaults; he confirmed both. (2) The semicolon before a closing
 brace. `sub double($x) { $x * 2 }` is how Perl is written, and it is
 refused for want of a `;`. perl takes both. Letting the last
 statement of a block go without one is a small change to the parser
