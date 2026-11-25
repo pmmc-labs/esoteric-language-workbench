@@ -18,7 +18,8 @@
 #               finding fatal; not part of make test, since it needs
 #               clang's sanitizer runtime (Xcode has it; on Ubuntu,
 #               apt-get install libclang-rt-18-dev). Run it after any
-#               change to the runtime
+#               change to the runtime. It runs them twice: with the
+#               collector's poison knob on, and off
 # make check    type-check the compiler (needs `npm install` first)
 # make decisions  the decision-log browser (tools/decisions/) for this
 #               log and a64-slight's (A64=path, ../a64-slight by default),
@@ -37,8 +38,13 @@ test: unit golden checks
 golden-clang:
 	@CURLY_CC=clang ./t/run.sh
 
+# Twice: as the tests are always run, with a collected string's memory
+# kept and marked dead, which the runtime itself checks; and with the
+# poison knob off, so that the memory is really freed and it is the
+# sanitizer that sees a use of it (step 7).
 sanitize:
 	@CURLY_CC="clang -fsanitize=undefined,address -fno-sanitize-recover=all" ./t/run.sh
+	@CURLY_GC_POISON=0 CURLY_CC="clang -fsanitize=undefined,address -fno-sanitize-recover=all" ./t/run.sh
 
 unit:
 	node --test "compiler/tests/**/*.test.ts" "runtime/tests/**/*.test.ts" "t/harness/*.test.ts"

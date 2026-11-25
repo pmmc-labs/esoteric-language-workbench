@@ -164,7 +164,12 @@ Four ideas do the cleaning, and `SURFACE.md` applies them:
 - Arrays and hashes are mutable and have identity; assigning one
   copies it, as in Perl.
 - The collector traces: precise, non-moving, roots on a shadow stack
-  (D26), with stress and poison knobs. No `DESTROY`.
+  (D26), with stress and poison knobs. No `DESTROY`. Built at step 7
+  (D66): every variable and temporary of a function is a slot of one
+  frame, and a value the program can still use is in a slot whenever
+  a collection can happen, which is only inside an allocation; a
+  runtime function allocates at most once, last, or opens a frame of
+  its own.
 - No global state in the runtime: one context, passed everywhere (D28).
 
 ## The runtime
@@ -182,8 +187,10 @@ the language are (step 23: the prelude), and the runtime keeps the
 primitives.
 
 Knobs, set by `t/run.sh` so no test depends on its machine: the
-collector's stress interval, poison and heap cap (step 7); a virtual
-clock and a fixed seed (step 22).
+collector's stress interval, poison and heap cap (step 7; D63 to D65:
+`CURLY_GC_STRESS`, `CURLY_GC_POISON` and `CURLY_HEAP_CAP`, read from
+the environment by every compiled program, and said for the tests in
+`t/knobs.sh`); a virtual clock and a fixed seed (step 22).
 
 ## The compiler
 

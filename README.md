@@ -7,9 +7,9 @@ it can be built with this repository's process (`docs/PROCESS.md` on
 `main`): an agent builds, a person decides, one feature a step, and every
 expected output comes from somewhere other than the compiler.
 
-Steps 0 to 6 are built: arithmetic on integers and floats, strings,
+Steps 0 to 7 are built: arithmetic on integers and floats, strings,
 comparison and logic, variables, assignment, blocks, `if` and loops
-compile to a native binary, and a script holds every test to what perl 5.42
+compile to a native binary with a collector of its own, and a script holds every test to what perl 5.42
 prints. The rest is the workbench's
 documents, filled in.
 

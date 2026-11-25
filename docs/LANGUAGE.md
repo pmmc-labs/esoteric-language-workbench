@@ -1003,8 +1003,33 @@ names the line of the `while`, `until` or `for`. Under a `while` or
 `until` modifier it names the line the statement starts on.
 
 A loop that never ends is a program that never ends; nothing stops
-it. And until the language has a collector (the next step), every
-string a loop makes stays in memory until the program ends.
+it.
+
+## Memory
+
+A program doesn't manage memory. A string the program can no longer
+reach is freed by the runtime, sooner or later; the program can't
+tell when, and nothing runs when it happens. A loop that makes a
+gigabyte of strings one after another, keeping none, runs in a few
+megabytes.
+
+A program that needs more memory than there is stops with the fault
+`out of memory`, at the statement that asked for it.
+
+Three environment variables change how the runtime goes about this.
+They are for testing the runtime itself, and none of them changes
+what a program prints, short of `out of memory`:
+
+- `CURLY_HEAP_CAP=BYTES`: the program may hold no more than this
+  much, and faults with `out of memory` if it would.
+- `CURLY_GC_STRESS=N`: look for strings to free at every Nth one
+  made, and not when the runtime would have chosen to. Slower.
+- `CURLY_GC_POISON=1`: never use a freed string's memory again, so
+  that a mistake in the runtime shows itself at once.
+
+Each is a whole number written in digits, and 0 or nothing turns it
+off. Anything else stops the program before it starts, with a message
+and exit status 2.
 
 ## When a program stops
 
@@ -1021,3 +1046,7 @@ fault can't be caught, and nothing the program would have printed
 after it is printed. What a faulting program does print is always the
 beginning of what perl prints for the same file: the language stops
 early, and loudly, and never says anything perl wouldn't.
+
+A line that begins `internal:`, with exit status 2, is something else:
+a mistake in the compiler or the runtime that was caught as the
+program ran, and never the program's doing. It is a bug to report.

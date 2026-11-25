@@ -116,8 +116,17 @@ it or how it must fail it. They run with every `make checks`. Its
 A test runs the same way every time or it isn't a test. `run.sh` sets
 what makes that so, as the runtime gains it:
 
-- A collector stress knob, poisoned frees and a heap cap, for the
-  collector's own tests (step 7).
+- The collector's knobs (step 7; D63 to D65), in `t/knobs.sh`: every
+  test runs with a collection at every allocation
+  (`CURLY_GC_STRESS=1`), with a collected string's memory never used
+  again (`CURLY_GC_POISON=1`), and under a cap of 256 MB
+  (`CURLY_HEAP_CAP`), so that a root the collector was not shown is
+  an `internal:` error the first time it could matter and a test that
+  runs away is `out of memory` in a second. A test says otherwise for
+  itself in its `# env:` header: the cap tests (800 on) turn the
+  first two off, since under poison a gigabyte of garbage is a
+  gigabyte held. `t/run.sh` sources the file and `t/checks.py` reads
+  it, so the knobs are the same wherever a test's binary runs.
 - A virtual clock, which moves only when nothing can run, and a fixed
   random seed (step 22).
 - A scheduling seed, and record and replay of everything that comes in
