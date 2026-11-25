@@ -257,8 +257,9 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D62 are all Stevan's** (D57 a default of the builder's at
-step 5, which he confirmed; D58 to D62 his answers to step 6). The ones a builder meets first: the
+**D1 to D66 are all Stevan's** (D57 a default of the builder's at
+step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
+D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
 be caught (D13); perl's warnings are faults (D15); loop variables are
 read-only and containers freeze (D17); a sub can't see its context
@@ -281,12 +282,13 @@ variable's past shows nowhere the language doesn't fault, stood**:
 10,000 pairs of programs and 223,000 singles, nothing but the Num at
 2^53. The builder's own evidence
 (`docs/briefs/step5-increments.py`) had missed that one for want of
-a value, and has it now. **Next: step 7**, the collector, is **proposed in
-full in `docs/PLAN.md` and waits on Stevan's answers to its three
-questions** (Q1: the knobs as environment variables every compiled
+a value, and has it now. **Step 7, the collector, is agreed and being
+built** (D63: the knobs are environment variables every compiled
 program reads, `CURLY_GC_STRESS`, `CURLY_GC_POISON`,
-`CURLY_HEAP_CAP`; Q2: `t/run.sh` setting stress 1 and poison for
-every golden test; Q3: no cap in the language, one for every test).
+`CURLY_HEAP_CAP`; D64: `t/run.sh` sets stress 1 and poison for
+every golden test; D65: no cap in the language, one for every test;
+D66: what the collector is). Stevan's Mac ran `make test` green
+after step 6.
 D26 is decided and not reopened: precise mark and sweep, roots on a
 shadow stack in the generated C. The proposal's one rule: a value the
 program can still use is in a slot whenever a collection can happen,

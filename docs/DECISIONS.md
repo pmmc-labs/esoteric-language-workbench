@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D62 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D66 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -11,7 +11,7 @@ D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
 3's, D46 to what the review of step 3 left open, D47 to D51 to step
 4's, and D52 to D56 to step 5's. D57 was a default the builder of
 step 5 took, which he confirmed the same day. D58 to D62 are his
-answers to step 6's proposal.
+answers to step 6's proposal, and D63 to D66 to step 7's.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1165,6 +1165,64 @@ modifier the line its statement starts on: perl agrees, but for a
 statement the block ran last (T124). `redo`, `goto` and `continue`
 blocks stay cut; `foreach` and a `for` over a list are steps 9 and
 10.
+
+**D63. The collector's knobs are three environment variables that
+every compiled program reads as it starts.** *(User: accepted as
+recommended, 2026-11-25; step 7, Q1.)* `CURLY_GC_STRESS=N`: a
+collection at every Nth allocation. `CURLY_GC_POISON=1`: a collected
+string's memory is never handed out again. `CURLY_HEAP_CAP=BYTES`:
+`out of memory` when more would be held. Each is a whole number in
+digits, and 0 or unset is off; anything else stops the program
+before it starts, with a message and exit status 2. The binary that
+is tested is the binary that ships, and one build runs every way.
+They are part of what a program is: anyone can slow one with the
+first and stop one with the third, from outside; none changes what
+it prints short of `out of memory`. Rejected: flags to `curlyc`,
+baked in (the suite compiles again for each setting, and tests
+another binary than ships); a test build of the runtime only (the
+shipped collector is then code no test has run).
+
+**D64. `t/run.sh` sets stress 1 and poison for every golden test.**
+*(User: accepted as recommended, 2026-11-25; step 7, Q2.)* A test
+finds a missed root only if a collection falls between an allocation
+and a use, and under the ordinary policy a small test never collects.
+A test about the cap or the ordinary policy says so in its `# env:`
+header, and a test that grows slow from step 9, when a collection
+walks every live value, raises its own interval there: the default
+stays 1, because what is caught falls fast with the interval. The
+knobs are said in one file, `t/knobs.sh`, for every place a test's
+binary runs. Rejected: `make test` plain and a `make stress` beside
+`make sanitize` (faster, and it will be skipped).
+
+**D65. The language has no cap on memory of its own; every test has
+one.** *(User: accepted as recommended, 2026-11-25; step 7, Q3.)*
+256 MB, set with the other knobs, so a test that runs away faults in
+a second and takes nothing with it. The cap counts what is held: the
+living and, under poison, the dead that are kept. Rejected: a default
+cap in the runtime (one more way a correct program stops); none
+anywhere unless a test asks.
+
+**D66. What the collector is, under D26.** *(User: seen with the
+proposal, 2026-11-25; step 7, Q4: nothing to choose.)* **One rule: a
+value the program can still use is in a slot whenever a collection
+can happen, and one can happen only inside an allocation.** Every
+variable and temporary of a function is a slot of one frame, linked
+from the context; a variable's slot is its depth among the variables
+in scope. A runtime function allocates at most once, as the last
+thing it does, or holds what it has made in a frame of its own. A
+number as a string never allocates: it is a scratch string on the C
+stack for as long as the operation runs, and never a function's
+result. **Precise is about what a slot holds**, not whether it will
+be used: a string stays until its slot, a temporary's too, is given
+something else or its function returns. **With no knob set**, a
+collection runs when the bytes allocated since the last pass the
+larger of 1 MB and what was live after it. **`out of memory` is a
+fault** like any other. **A string used after it was collected is an
+`internal:` error**, exit status 2: a bug in the compiler or the
+runtime, never the program's. No finalisers. Left for their steps:
+marking through a value that holds values, and a mark stack (9, 13);
+a variable that outlives its frame (14); unwinding frames at a caught
+`die` (15); a heap for each context (29).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

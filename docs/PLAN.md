@@ -9,8 +9,8 @@ and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic, and variables,
 assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
 on 2026-11-25); and loops: **steps 0 to 6 are done** (step 6 the same
-day). **Step 7, the collector, is proposed, below, and waits on three
-answers from Stevan** (Q1 to Q3); nothing of it is built. Steps
+day). **Step 7, the collector, is agreed (D63 to D66) and being built.**
+Stevan's Mac ran `make test` green after step 6. Steps
 7 to 30 are outlines: each is proposed, with options, when it's
 next.
 
@@ -1660,16 +1660,16 @@ with (a) there.
   what perl folds to one, in a loop's test as anywhere.
 - Leave out: everything listed above as later.
 
-### 7. The collector (proposed, not agreed)
+### 7. The collector (agreed; being built)
 
 Referee: none; the knobs are the test. Size: large.
 
-**Proposed 2026-11-25, and amended the same day by its adversarial
+**Proposed 2026-11-25, amended the same day by its adversarial
 review, which could not break its rule and corrected a good deal
 round it ("What the review found", below; the text here is as
-amended). Nothing is built, and three questions are
-Stevan's: Q1 to Q3 below; Q4 is eight things with nothing to choose
-that are worth his eye.** D26 is decided and is not reopened here: a
+amended), and agreed: Stevan took the recommendation on each
+question, which are now D63 (Q1), D64 (Q2), D65 (Q3) and D66 (Q4,
+what had nothing to choose).** D26 is decided and is not reopened here: a
 precise, non-moving mark and sweep, its roots on a shadow stack the
 generated C maintains, with a stress interval, poison and a heap cap
 from the start; no reference counts, so no `DESTROY` and no `weaken`.
