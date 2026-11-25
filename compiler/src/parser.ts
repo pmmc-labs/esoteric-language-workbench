@@ -5,7 +5,7 @@
 import { refuse } from './errors.ts';
 import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, NAME_MAX_LENGTH, OPERATORS, PERL_WORDS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, isVersionString, prefixOp, stepOp } from './names.ts';
 import type { Token } from './lexer.ts';
-import type { Arm, Expr, Label, Param, Program, Stmt, Var } from './ast.ts';
+import type { Arm, Elem, Expr, Label, Param, Program, Stmt, Var } from './ast.ts';
 
 // A token as a diagnostic names it. A string is shown if it is short.
 const show = (t: Token): string =>
@@ -61,6 +61,20 @@ export const parse = (tokens: readonly Token[]): Program => {
     // A word that could be the name of one of the program's subs: not one
     // of the language's, and not one of perl's.
     const callable = (t: Token): boolean => t.kind === 'word' && !NAMES.has(t.text) && !PERL_WORDS.has(t.text);
+
+    // Whether a comma stands between token `from` and the `close` that
+    // ends what it begins, outside any brackets of its own: a list.
+    const commaAhead = (from: number, close: ')' | ';'): boolean => {
+        let nested = 0;
+        for (let k = from; tokens[k]!.kind !== 'eof'; k++) {
+            const kind = tokens[k]!.kind;
+            if (nested === 0 && (kind === close || kind === ';' || kind === '}')) return false;
+            if (nested === 0 && kind === ',') return true;
+            nested += kind === '(' || kind === '[' || kind === '{' ? 1 : kind === ')' || kind === ']' || kind === '}' ? -1 : 0;
+            if (nested < 0) return false;
+        }
+        return false;
+    };
 
     const semicolon = (): void => {
         const t = next();
@@ -162,6 +176,88 @@ export const parse = (tokens: readonly Token[]): Program => {
         return { kind: 'apply', name: head.text, args, pos: head.pos };
     };
 
+    // The items of a list as far as `end`, the opening bracket read: each
+    // may hold what binds tighter than a comma, and one comma may follow
+    // the last.
+    const itemsTo = (end: ')' | ']'): Expr[] => {
+        const outer = inList;
+        inList = true;
+        const items: Expr[] = [];
+        while (peek().kind !== end) {
+            if (peek().kind === ',') refuse("a comma with no value before it: perl leaves it out, in silence, where it doesn't refuse it", peek().pos);
+            items.push(expression(COMMA_ROW));
+            const t = peek();
+            if (t.kind === 'op' && (infixOp(t.text)?.row ?? 0) > COMMA_ROW) {
+                refuse(`'${t.text}' in a list takes the whole list for its left side, to perl: bracket what it joins`, t.pos);
+            }
+            if (t.kind !== ',') break;
+            next();
+        }
+        inList = outer;
+        const close = next();
+        if (close.kind !== end) unexpected(close, `'${end}'`);
+        return items;
+    };
+
+    // An element, `$name[index]`, the variable's token just read and the
+    // square bracket next. perl takes a blank between the two, and reads
+    // `$x [1]` as an element even where there is a `$x`.
+    const element = (v: Token): Elem => {
+        if (!touching(i - 1)) refuse(`a blank between $${v.text.slice(1)} and '[': an element is written $${v.text.slice(1)}[...]`, peek().pos);
+        next();
+        const outer = inList;
+        inList = false;
+        const index = expression(Infinity);
+        inList = outer;
+        const close = next();
+        if (close.kind !== ']') unexpected(close, "']'");
+        // An array holds no array (step 13).
+        if (peek().kind === '[') refuse('an element of an element: an array of arrays is not in the language yet', peek().pos);
+        return { kind: 'elem', name: v.text.slice(1), index, pos: v.pos };
+    };
+
+    // A builtin that names an array, its word just read (D80).
+    const arrayOp = (head: Token): Expr => {
+        const name = NAMES.get(head.text)!;
+        if (name.kind !== 'arrayop') throw new Error('not an array builtin');
+        const open = peek().kind === '(';
+        if (!open && (name.shape === 'splice' || name.shape === 'scalar')) refuse(`${head.text} needs brackets: ${head.text}(@a${name.shape === 'splice' ? ', ...' : ''})`, head.pos);
+        if (open) next();
+        const array = next();
+        // perl's `shift` alone shifts the program's arguments, or a sub's
+        // (T152); its `scalar` takes any expression.
+        if (array.kind !== 'array') return refuse(`${head.text} names an array, found ${show(array)}: ${head.text}(@a${name.shape === 'push' || name.shape === 'splice' ? ', ...' : ''})`, array.pos);
+        const made = (args: readonly Expr[]): Expr => ({ kind: 'arrayop', op: head.text, name: array.name, args, pos: head.pos, at: array.pos });
+        if (name.shape === 'push') {
+            // perl warns of a `push` with nothing to add.
+            if (peek().kind !== ',') refuse(`${head.text} needs a value to add: ${head.text} @${array.name}, ...`, peek().pos);
+            next();
+            if (!open) return made(list());
+            const args = itemsTo(')');
+            if (args.length === 0) refuse(`${head.text} needs a value to add: ${head.text} @${array.name}, ...`, head.pos);
+            return made(args);
+        }
+        if (name.shape === 'splice') {
+            if (peek().kind !== ',') {
+                closing();
+                return made([]);
+            }
+            next();
+            return made(itemsTo(')'));
+        }
+        if (open) {
+            closing();
+            return made([]);
+        }
+        // `pop @a + 1` doesn't compile in perl, and `pop @a || 0` does
+        // (T152): without its brackets, the array ends the expression.
+        const after = peek();
+        if (!(ends(after) || after.kind === ')' || after.kind === ',' || after.kind === ']' || after.kind === 'eof' || isModifier(after))) {
+            refuse(`${head.text} @${array.name} before ${show(after)}: perl reads on for the array, or does not compile it; write ${head.text}(@${array.name})`, head.pos);
+        }
+        return made([]);
+    };
+
     // A call of one of the program's subs, its name just read and a
     // bracket next (D21). One comma may follow the last argument, as in
     // perl; two together are one to perl, which counts the arguments
@@ -221,11 +317,42 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (t.kind === 'int') return { kind: 'int', text: t.text, value: BigInt(digits), pos: t.pos };
         if (t.kind === 'num') return { kind: 'num', text: t.text, value: Number(digits), pos: t.pos };
         if (t.kind === 'str') return { kind: 'str', text: t.text, value: t.value, pos: t.pos };
-        if (t.kind === '(') return { ...bracketed(), bracketed: true };
+        if (t.kind === '(') {
+            // A list, if a comma stands in the brackets or nothing does;
+            // otherwise an expression, grouped. And either may be sliced.
+            const isList = peek().kind === ')' || commaAhead(i, ')');
+            let inner: Expr;
+            let items: readonly Expr[];
+            if (isList) {
+                items = itemsTo(')');
+                inner = { kind: 'list', items, pos: t.pos, bracketed: true };
+            } else {
+                const one = bracketed();
+                items = [one];
+                inner = { ...one, bracketed: true };
+            }
+            if (peek().kind !== '[') return inner;
+            const open = next();
+            const indexes = itemsTo(']');
+            if (indexes.length === 0) refuse('a slice with no index', open.pos);
+            if (peek().kind === '[') refuse('an element of an element: an array of arrays is not in the language yet', peek().pos);
+            return { kind: 'slice', items, indexes, pos: open.pos };
+        }
+        if (t.kind === 'array') {
+            if (peek().kind !== '[') return { kind: 'array', name: t.name, pos: t.pos };
+            if (!touching(i - 1)) refuse(`a blank between @${t.name} and '[': a slice is written @${t.name}[...]`, peek().pos);
+            const open = next();
+            const indexes = itemsTo(']');
+            // perl does not compile `@a[]`.
+            if (indexes.length === 0) refuse('a slice with no index: perl refuses it', open.pos);
+            if (peek().kind === '[') refuse('an element of an element: an array of arrays is not in the language yet', peek().pos);
+            return { kind: 'slice', name: t.name, indexes, pos: t.pos };
+        }
+        if (t.kind === 'lastindex') return { kind: 'lastindex', name: t.name, pos: t.pos };
         // A variable, and `++` or `--` hard after it or not: they bind
         // tighter than anything else there is.
         if (t.kind === 'var') {
-            const target: Var = { kind: 'var', name: t.name, pos: t.pos };
+            const target: Var | Elem = peek().kind === '[' ? element(t) : { kind: 'var', name: t.name, pos: t.pos };
             const after = peek();
             if (after.kind !== 'op' || !stepOp(after.text)) return target;
             next();
@@ -234,17 +361,37 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (t.kind === 'op' && stepOp(t.text)) {
             const v = next();
             if (v.kind !== 'var') return refuse(`'${t.text}' is for a variable: ${t.text}$x`, t.pos);
-            return { kind: 'step', op: t.text, before: true, target: { kind: 'var', name: v.name, pos: v.pos }, pos: t.pos };
+            const target: Var | Elem = peek().kind === '[' ? element(v) : { kind: 'var', name: v.name, pos: v.pos };
+            return { kind: 'step', op: t.text, before: true, target, pos: t.pos };
         }
         const prefix = t.kind === 'op' ? prefixOp(t.text) : undefined;
         if (prefix) return prefixed(t, prefix.row);
         if (t.kind === 'word' && NAMES.get(t.text)?.kind === 'my') {
             const v = next();
+            if (v.kind === 'array') return { kind: 'myarray', name: v.name, pos: t.pos };
+            // `my ($x, undef, @rest)`: each a declaration, or a value to
+            // skip.
+            if (v.kind === '(') {
+                const items: Expr[] = [];
+                while (peek().kind !== ')') {
+                    const d = next();
+                    if (d.kind === 'var' && peek().kind !== '[') items.push({ kind: 'my', name: d.name, pos: d.pos });
+                    else if (d.kind === 'array') items.push({ kind: 'myarray', name: d.name, pos: d.pos });
+                    else if (d.kind === 'word' && d.text === 'undef') items.push({ kind: 'constant', name: 'undef', pos: d.pos });
+                    else return refuse(`in my (...), expected a variable, an array or undef, found ${show(d)}`, d.pos);
+                    if (peek().kind === ',') next();
+                    else if (peek().kind !== ')') unexpected(peek(), "',' or ')'");
+                }
+                next();
+                if (items.length === 0) refuse('my () declares nothing', v.pos);
+                return { kind: 'list', items, my: true, pos: t.pos, bracketed: true };
+            }
             if (v.kind !== 'var') return refuse(`after 'my', expected a variable, found ${show(v)}`, v.pos);
             return { kind: 'my', name: v.name, pos: t.pos };
         }
         const name = t.kind === 'word' ? NAMES.get(t.text) : undefined;
         if (name?.kind === 'constant' || name?.kind === 'unary' || name?.kind === 'function' || name?.kind === 'statement') return apply(t);
+        if (name?.kind === 'arrayop') return arrayOp(t);
         // perl takes `$done and last` and `$x ? last : next` (T120), and
         // `my $x = return 5;` (T139).
         if (name?.kind === 'jump' || name?.kind === 'return') {
@@ -283,8 +430,27 @@ export const parse = (tokens: readonly Token[]): Program => {
             // values flow here, and places don't (D17, D56). `($x) = 5`
             // is a list assignment to perl.
             if (infix.assign) {
-                if ((left.kind !== 'var' && left.kind !== 'my') || left.bracketed) {
-                    return refuse(`the left side of '${t.text}' is a variable, $x or my $x, with no brackets round it`, t.pos);
+                // A list assignment: brackets on the left, round a list of
+                // targets or round one (`($x) = 5` is one to perl).
+                const single = left.kind === 'var' || left.kind === 'my' || left.kind === 'elem' || left.kind === 'array' || left.kind === 'myarray';
+                if (left.kind === 'list' || (single && left.bracketed)) {
+                    if (t.text !== '=') refuse(`'${t.text}' with a list on its left: a list is assigned with =`, t.pos);
+                    // (One target in brackets is that target, its brackets
+                    // the list's.)
+                    const { bracketed: _, ...one } = left;
+                    const targets: readonly Expr[] = left.kind === 'list' ? left.items : [one as Expr];
+                    const value = expression(infix.row + 1);
+                    left = left.kind === 'list' && left.my ? { kind: 'listassign', targets, my: true, value, pos: t.pos } : { kind: 'listassign', targets, value, pos: t.pos };
+                    continue;
+                }
+                if (left.kind === 'array' || left.kind === 'myarray') {
+                    // perl does not compile `@a += 1`.
+                    if (t.text !== '=') refuse(`'${t.text}' on an array: an array is assigned with =`, t.pos);
+                    left = { kind: 'assign', op: t.text, target: left, value: expression(infix.row + 1), pos: t.pos };
+                    continue;
+                }
+                if (left.kind !== 'var' && left.kind !== 'my' && left.kind !== 'elem') {
+                    return refuse(`the left side of '${t.text}' is a variable, an element, an array, or a list of them in brackets`, t.pos);
                 }
                 left = { kind: 'assign', op: t.text, target: left, value: expression(infix.row + 1), pos: t.pos };
                 continue;
@@ -299,6 +465,9 @@ export const parse = (tokens: readonly Token[]): Program => {
             }
             const right = expression(infix.assoc === 'right' ? infix.row + 1 : infix.row);
             left = { kind: 'binary', op: t.text, left, right, pos: t.pos };
+            if (infix.range && peek().kind === 'op' && infixOp(peek().text)?.range) {
+                refuse("'..' after a range: perl does not compile a range of a range", peek().pos);
+            }
             // perl chains two comparisons of one row, `1 < 5 < 3` being
             // `1 < 5 && 5 < 3`, or doesn't compile them (T33, T51, T108).
             // Read from the left they would mean something else (D50).
@@ -310,7 +479,7 @@ export const parse = (tokens: readonly Token[]): Program => {
     };
 
     // The one argument of `say` or `print`, in brackets or not (D21).
-    const argument = (head: Token): Expr => {
+    const argument = (head: Token): Expr[] => {
         // The first word after `say`, behind any opening brackets, is a
         // file handle to perl when a blank follows it, unless perl has
         // already seen a sub of that name: `say f (1);` compiles after
@@ -325,9 +494,13 @@ export const parse = (tokens: readonly Token[]): Program => {
         // The word operators bind more loosely than `say` does: `say 0 or
         // 2;` is `(say 0) or 2` (T106). So without brackets the argument
         // stops before one, and the statement refuses it.
-        if (open.kind !== '(') return expression(AND_ROW);
+        // A list, where a comma stands among the arguments: each an item.
+        if (open.kind !== '(') return commaAhead(i, ';') ? list() : [expression(AND_ROW)];
         next();
-        const inner = bracketed();
+        // perl's `say()` prints `$_`.
+        if (peek().kind === ')') refuse(`${head.text}() with nothing to print: perl prints $_`, open.pos);
+        const isList = commaAhead(i, ')');
+        const inner = isList ? itemsTo(')') : [{ ...bracketed(), bracketed: true as const }];
         const after = peek();
         // To perl the brackets hold all of the arguments, and an operator
         // after them is applied to what the builtin returned: `say (1 + 2)
@@ -345,7 +518,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (head.kind === 'word' && head.asFunction && (ends(after) || isModifier(after))) {
             refuse(`${head.text} (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ${show(after)} after them: write ${head.text}(...)`, open.pos);
         }
-        return { ...inner, bracketed: true };
+        return inner;
     };
 
     // A word operator after a statement's expression: `$x = 1 and $y =
@@ -362,6 +535,11 @@ export const parse = (tokens: readonly Token[]): Program => {
         }
         if (after.kind === 'op' && infixOp(after.text)) {
             refuse(`'${after.text}' after a statement joins it to what follows, to perl, which binds '${after.text}' more loosely than '=': write it as an if`, after.pos);
+        }
+        // `my @a = 1, 2, 3;` is `(my @a = 1), 2, 3` to perl: one element,
+        // and a warning for each of the rest (T168).
+        if (after.kind === ',') {
+            refuse("a comma after an assignment's right side: perl takes the assignment for the first item of a list; put the list in brackets", after.pos);
         }
     };
 
@@ -411,7 +589,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         }
         if (name?.kind === 'statement') {
             next();
-            const args = [argument(head)];
+            const args = argument(head);
             const after = peek();
             if (after.kind === ',') refuse(`',' after ${head.text}'s argument: a list is not in the language yet`, after.pos);
             if (after.kind === 'op' && infixOp(after.text)) {

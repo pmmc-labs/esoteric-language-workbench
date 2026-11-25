@@ -806,7 +806,9 @@ def faults():
         '422': ('fault-target-before-the-right-side', [loud], block(a3, do(setel('a', 0, ucall('loud', 'heard'), '.=')), say_(el('a', 0))),
                 block(a3, do(setel('a', -4, ucall('loud', 'not heard'), '.=')))),
         '423': ('fault-index-undef', [], block(a3, ('my', 'u', 1), say_(el('a', ('$', 'u')))), block(a3, ('my', 'u', None), say_(el('a', ('$', 'u'))))),
-        '424': ('fault-index-not-a-number', [], block(a3, say_(el('a', '2'))), block(a3, say_(el('a', 'x')))),
+        # (By a variable: perl warns as it compiles of an index written as
+        # a string that is no number, and that is a refusal.)
+        '424': ('fault-index-not-a-number', [], block(a3, ('my', 'i', '2'), say_(el('a', ('$', 'i')))), block(a3, ('my', 'i', 'x'), say_(el('a', ('$', 'i'))))),
         '425': ('fault-index-too-large', [], block(a3, shown(el('a', MAX))), block(a3, shown(el('a', 1e30)))),
         '426': ('fault-element-undef', [], block(a3, say_(('+', el('a', 2), 1))), block(a3, say_(('+', el('a', 3), 1)))),
         '427': ('fault-splice-past-the-end', [], block(a3, do(('splice', 'a', [3, 0, 9])), say_(el('a', 3))), block(a3, do(('splice', 'a', [4, 0, 9])))),

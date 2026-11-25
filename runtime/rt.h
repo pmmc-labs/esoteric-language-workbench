@@ -14,7 +14,20 @@
 // integer fits whole; both C compilers pass the pair in registers. The
 // union gains a member per kind of value. No tag is 0: memory that was
 // never made a value then faults at the first operator that checks it.
-enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_BOOL = 5 };
+enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_BOOL = 5, RT_TAG_ARRAY = 6, RT_TAG_ABSENT = 7 };
+
+// An array (D80): a row of values that grows and shrinks in place, the
+// collector's as a heap string is, with storage of its own. It is what an
+// array variable's slot holds, and what a list is while a statement builds
+// and uses it: a list is an array with no name, in a temporary. An array
+// holds no array yet (step 13). `dead` says it was collected, and nothing
+// may read it.
+typedef struct rt_array {
+    uint64_t count;
+    uint64_t room;          // how many values `items` has space for
+    struct rt_value_ *items;
+    uint64_t dead;
+} rt_array;
 
 // A Str (D24): Unicode characters, held as UTF-8, and never changed once
 // made. `len` is its bytes and `chars` its characters, which are the same
@@ -37,10 +50,19 @@ typedef struct rt_str {
     uint64_t where;
 } rt_str;
 
-typedef struct {
+typedef struct rt_value_ {
     uint64_t tag;
-    union { int64_t i; double n; uint64_t bits; const rt_str *s; } as;
+    union { int64_t i; double n; uint64_t bits; const rt_str *s; rt_array *a; } as;
 } rt_value;
+
+// What a sub that returns nothing gives a list: no value at all (D79).
+// It is never an operand: a list leaves it out as it is built.
+static inline rt_value rt_absent(void) {
+    rt_value v;
+    v.tag = RT_TAG_ABSENT;
+    v.as.i = 0;
+    return v;
+}
 
 static inline rt_value rt_int(int64_t n) {
     rt_value v;
@@ -253,6 +275,59 @@ enum { RT_VOID = 0, RT_SCALAR = 1, RT_LIST = 2 };
 #define RT_NOTHING "returned nothing where a list is wanted"
 void rt_fault_arguments(rt_ctx *cx, const char *name, int64_t got, int64_t least, int64_t most) __attribute__((noreturn));
 void rt_fault_sub(rt_ctx *cx, const char *name, const char *what) __attribute__((noreturn));
+
+// Arrays and lists (D76, D80). A list is built in a temporary: made empty,
+// and added to, left to right, a value at a time (an absent one is left
+// out), an array's values, a range's, a slice's, a list's N times. None
+// of the adding can start a collection: only `rt_array_new` allocates
+// from the heap, and what it makes is in a slot before anything else is.
+rt_value rt_array_new(rt_ctx *cx);
+void rt_list_add(rt_ctx *cx, rt_value list, rt_value v);
+void rt_list_add_all(rt_ctx *cx, rt_value list, rt_value array);
+void rt_list_add_range(rt_ctx *cx, rt_value list, rt_value from, rt_value to);
+// The elements of `from` at each of `indexes`, undef for one past either
+// end. `how` 1: `from` is a list, and one with no values gives nothing at
+// all (T164). `how` 2: an index past either end is a fault, where perl
+// would make the element (T161).
+void rt_list_add_slice(rt_ctx *cx, rt_value list, rt_value from, rt_value indexes, int how);
+void rt_list_add_repeat(rt_ctx *cx, rt_value list, rt_value values, rt_value count);
+// A list assignment: the value for target `n`, undef past the last; and
+// for an array, the last target, every value from `n` on.
+rt_value rt_list_item(rt_ctx *cx, rt_value list, int64_t n);
+void rt_array_rest(rt_ctx *cx, rt_value array, rt_value list, int64_t n);
+// `@a = LIST`: the array's values are the list's, copied.
+void rt_array_assign(rt_ctx *cx, rt_value array, rt_value list);
+// How many, and the last index, -1 for none.
+rt_value rt_count(rt_ctx *cx, rt_value array);
+rt_value rt_last_index(rt_ctx *cx, rt_value array);
+// The first value of a list, or undef: `(LIST)[N]` where one is wanted.
+rt_value rt_first(rt_ctx *cx, rt_value list);
+// An element, read: undef past either end, and nothing is made.
+rt_value rt_elem(rt_ctx *cx, rt_value array, rt_value index);
+// An element, stored: the array grows to hold it, and before the start it
+// is a fault. Gives what was stored.
+rt_value rt_elem_store(rt_ctx *cx, rt_value array, rt_value index, rt_value v);
+// An element, made, for an operator that reads it and stores it: where it
+// is, from the start. Then read and stored there.
+int64_t rt_elem_make(rt_ctx *cx, rt_value array, rt_value index);
+rt_value rt_elem_get(rt_ctx *cx, rt_value array, int64_t at);
+rt_value rt_elem_put(rt_ctx *cx, rt_value array, int64_t at, rt_value v);
+// `push` and `unshift` give the new count; `pop` and `shift` undef from
+// an empty array.
+rt_value rt_push(rt_ctx *cx, rt_value array, rt_value list);
+rt_value rt_unshift(rt_ctx *cx, rt_value array, rt_value list);
+rt_value rt_pop(rt_ctx *cx, rt_value array);
+rt_value rt_shift(rt_ctx *cx, rt_value array);
+// `splice`: `given` is how many of offset and length were written. What
+// was removed is added to `removed`, and `put` goes where it was.
+void rt_splice(rt_ctx *cx, rt_value removed, rt_value array, int given, rt_value offset, rt_value length, rt_value put);
+// `say LIST` and `print LIST`: every value is looked at before any is
+// written, so a fault leaves nothing of the list on stdout.
+void rt_say_list(rt_ctx *cx, rt_value list);
+void rt_print_list(rt_ctx *cx, rt_value list);
+// The arguments of a call that were built as a list: where each of the
+// first `most` is, into `where`, and how many there are in all.
+int64_t rt_arguments(rt_ctx *cx, rt_value list, rt_value **where, int64_t most);
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

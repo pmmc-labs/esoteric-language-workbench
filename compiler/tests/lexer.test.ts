@@ -217,7 +217,8 @@ test('a number that runs into a letter, a digit or a dot is not one (T62, T78)',
     refused('say 42x3;', not('42x3'), 1, 5);
     refused('say 1.5.5;', not('1.5.5'), 1, 5);
     refused('say .5.5;', not('.5.5'), 1, 5);
-    refused('say 1..3;', not('1..3'), 1, 5);
+    // (`1..3` is a range, from step 9: two dots are an operator.)
+    assert.deepEqual(lex('1..3').map(t => t.text), ['1', '..', '3', '']);
     refused('say 0x1.8;', not('0x1.8'), 1, 5);
     refused('say 0x1p3;', not('0x1p3'), 1, 5);
     refused('say 0xG;', not('0xG'), 1, 5);
@@ -272,7 +273,7 @@ test("the longest of perl's operators is the token, in the language or not (T27)
     refused('say 1 -> 2;', "'->' is not in the language yet", 1, 7);
     refused('say 7 <<= 2;', "'<<=' is not in the language yet", 1, 7);
     refused('say 7 |= 2;', "'|=' is not in the language yet", 1, 7);
-    refused('say 1 .. 5;', "'..' is not in the language yet", 1, 7);
+    refused('say 1 ... 5;', "'...' is not in the language yet", 1, 7);
     refused('say 1 & 2;', "'&' is not in the language yet", 1, 7);
     refused('say 1 => 2;', "'=>' is not in the language yet", 1, 7);
     // With a blank between them they are two, as they are to perl.
@@ -281,8 +282,11 @@ test("the longest of perl's operators is the token, in the language or not (T27)
 
 test('a character the language has no use for yet', () => {
     refused('say `x`;', "'`' is not in the language yet", 1, 5);
-    refused('say @x;', "'@' is not in the language yet", 1, 5);
-    refused('say [1];', "'[' is not in the language yet", 1, 5);
+    // An array, its last index, and an element, from step 9.
+    assert.deepEqual(lex('@x $#x $x[1] @x[0, 1]').map(t => t.kind), ['array', 'lastindex', 'var', '[', 'int', ']', 'array', '[', 'int', ',', 'int', ']', 'eof']);
+    refused('say @ x;', "after '@' comes a name: a letter or '_', then letters, digits and '_'", 1, 5);
+    refused('say $# x;', "after '$#' comes an array's name: $#a is the last index of @a", 1, 5);
+    refused('say @_;', '@_ is not in the language: a sub has a signature (D17)', 1, 5);
 });
 
 test('a variable is a dollar and a name, hard against it (D55)', () => {

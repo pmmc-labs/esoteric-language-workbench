@@ -9,7 +9,13 @@ import type { Resolution } from './resolver.ts';
 // What the checks need of the whole program (D20): the names, and for
 // each sub the file variables a call of it can change, its own
 // assignments and steps and those of every sub it calls (D69).
-type World = { names: Resolution; changed: readonly ReadonlySet<number>[] };
+// `defaults` is the same for a sub's defaults alone, which run while its
+// arguments are still being taken (T144, T149).
+type World = { names: Resolution; changed: readonly ReadonlySet<number>[]; defaults: readonly ReadonlySet<number>[] };
+
+// Where an expression stands: where one value is wanted, or where a list
+// is (D80).
+type Ctx = 'scalar' | 'list';
 
 // The expressions an expression is made of, in the order they are worked
 // out.
@@ -17,9 +23,13 @@ const parts = (e: Expr): readonly Expr[] =>
     e.kind === 'unary' ? [e.operand]
     : e.kind === 'binary' ? [e.left, e.right]
     : e.kind === 'ternary' ? [e.test, e.then, e.else]
-    : e.kind === 'apply' || e.kind === 'invoke' ? e.args
+    : e.kind === 'apply' || e.kind === 'invoke' || e.kind === 'arrayop' ? e.args
     : e.kind === 'assign' ? [e.value, e.target]
     : e.kind === 'step' ? [e.target]
+    : e.kind === 'elem' ? [e.index]
+    : e.kind === 'list' ? e.items
+    : e.kind === 'slice' ? [...e.indexes, ...(e.items ?? [])]
+    : e.kind === 'listassign' ? [e.value, ...e.targets]
     : [];
 
 const checkLiteral = (e: Expr): void => {
@@ -59,6 +69,9 @@ const plain = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === u
 // does, with no folder of its own.
 const folds = (e: Expr): boolean =>
     e.kind === 'var' || e.kind === 'my' || e.kind === 'assign' || e.kind === 'step' || e.kind === 'invoke' ? false
+    // (An array, an element, and what works on one are no constants.)
+    : e.kind === 'array' || e.kind === 'myarray' || e.kind === 'elem' || e.kind === 'lastindex' || e.kind === 'arrayop' || e.kind === 'listassign' ? false
+    : e.kind === 'slice' && e.name !== undefined ? false
     : e.kind === 'ternary' ? folds(e.test)
     : e.kind === 'binary' && infixOp(e.op)?.when ? folds(e.left)
     : parts(e).every(folds);
@@ -71,9 +84,122 @@ const reads = (e: Expr, into = new Set<string>()): Set<string> => {
     return into;
 };
 const changes = (e: Expr, into = new Set<string>()): Set<string> => {
-    if (e.kind === 'assign' || e.kind === 'step') into.add(e.target.name);
+    if ((e.kind === 'assign' || e.kind === 'step') && (e.target.kind === 'var' || e.target.kind === 'my')) into.add(e.target.name);
     parts(e).forEach(p => changes(p, into));
     return into;
+};
+
+// ---- lists (D76, D80)
+
+// A string that is a number, as D40 has it and perl takes in silence.
+const NUMERIC_STRING = /^[ \t\n\r\f\v]*[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?[ \t\n\r\f\v]*$/;
+
+// A range, and a list repeat: `(LIST) x N`, which is one only where a list
+// is wanted, its left side in brackets (T101).
+const isRange = (e: Expr): boolean => e.kind === 'binary' && infixOp(e.op)?.range === true;
+const isRepeat = (e: Expr): boolean => e.kind === 'binary' && infixOp(e.op)?.list === true && (e.left.kind === 'list' || e.left.bracketed === true);
+
+// What is a list where a list is wanted: more values than one, or fewer.
+// (A slice of a list with no values is none, whatever its indexes: T164.)
+const listy = (in_: Expr): boolean => {
+    const e = plain(in_);
+    return e.kind === 'array' || e.kind === 'myarray' || e.kind === 'list' || isRange(e) || isRepeat(e)
+        || e.kind === 'slice'
+        || (e.kind === 'arrayop' && e.op === 'splice')
+        || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
+        || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
+};
+
+// What a node changes by itself: the variable it assigns or steps, the
+// array whose element it stores or whose size it changes.
+const changesItself = (w: World, e: Expr): number[] => {
+    const id = (x: Expr): number => w.names.of.get(x)!;
+    if (e.kind === 'assign' || e.kind === 'step') return [id(e.target)];
+    if (e.kind === 'arrayop' && e.op !== 'scalar') return [id(e)];
+    if (e.kind === 'listassign') return e.targets.filter(t => t.kind !== 'constant').map(id);
+    return [];
+};
+
+// Everything working an expression out can change: itself, what it holds,
+// and the subs it calls (D69).
+const changeSet = (w: World, e: Expr, into = new Set<number>()): Set<number> => {
+    changesItself(w, e).forEach(id => into.add(id));
+    if (e.kind === 'invoke') w.changed[w.names.calls.get(e)!]!.forEach(id => into.add(id));
+    parts(e).forEach(p => changeSet(w, p, into));
+    return into;
+};
+
+// What a part of a list or an expression *names*: the containers perl
+// would have carried, and read late (T149, T157). An element, a slice, an
+// array, `$#a`; and, where the part is copied into a list (`scalars`), a
+// scalar variable that is itself the part. Through brackets, a unary
+// plus, both branches of `? :`, either side of `||` and its kin, a list
+// in a list, a list repeated, and a slice of a list.
+const named = (w: World, in_: Expr, scalars: boolean, into = new Set<number>()): Set<number> => {
+    const e = plain(in_);
+    const id = (x: Expr): void => { into.add(w.names.of.get(x)!); };
+    if (e.kind === 'elem' || e.kind === 'array' || e.kind === 'lastindex') id(e);
+    else if (e.kind === 'slice' && e.name !== undefined) id(e);
+    else if (e.kind === 'slice') e.items!.forEach(x => named(w, x, true, into));
+    else if (e.kind === 'list') e.items.forEach(x => named(w, x, true, into));
+    else if (e.kind === 'var' && scalars) id(e);
+    else if ((e.kind === 'assign' || (e.kind === 'step' && e.before)) && e.target.kind === 'var' && scalars) id(e.target);
+    else if (e.kind === 'ternary') { named(w, e.then, scalars, into); named(w, e.else, scalars, into); }
+    else if (e.kind === 'binary' && infixOp(e.op)?.when) { named(w, e.left, scalars, into); named(w, e.right, scalars, into); }
+    else if (isRepeat(e) && e.kind === 'binary') named(w, e.left, true, into);
+    return into;
+};
+
+const sigil = (w: World, id: number): string => (w.names.isArray[id] ? '@' : '$') + w.names.names[id];
+
+// D76: of parts worked out in this order, a later one may not change what
+// an earlier one names. `also` is what else runs after them all (a sub's
+// defaults, for its arguments).
+const checkOrder = (w: World, what: string, sequence: readonly Expr[], scalars: boolean, also?: { changes: ReadonlySet<number>; at: Expr }): void => {
+    const seen = new Set<number>();
+    const refused = (id: number, at: Expr): never =>
+        refuse(`a later part of ${what} can change ${sigil(w, id)}, which an earlier part names: perl reads it after the change; take the value into a my first`, at.pos);
+    for (const part of sequence) {
+        if (seen.size > 0) {
+            for (const id of changeSet(w, part)) if (seen.has(id)) refused(id, part);
+        }
+        named(w, part, scalars, seen);
+    }
+    if (also) for (const id of also.changes) if (seen.has(id)) refused(id, also.at);
+};
+
+// Where one value is wanted: what may not stand there (T151, T68, T168).
+const checkOneValue = (e: Expr): void => {
+    if (e.kind === 'list') refuse(e.my ? 'my (...) where one value is wanted' : 'a list where one value is wanted: perl gives its last value, and warns of the others', e.pos);
+    if (e.kind === 'myarray') refuse(`my @${e.name} where one value is wanted`, e.pos);
+    // `(LIST)[N]`, one index that is one value, is an element there.
+    if (e.kind === 'slice' && (e.name !== undefined || e.indexes.length !== 1 || listy(e.indexes[0]!))) refuse('a slice where one value is wanted: perl gives its last element; write the element, $a[...]', e.pos);
+    if (isRange(e)) refuse("a range where one value is wanted: '..' is another operator to perl there", e.pos);
+    if (e.kind === 'binary' && isRepeat(e) && e.left.kind === 'list') refuse(`a list on the left of '${e.op}' where one value is wanted: perl repeats its last value`, e.left.pos);
+    if (e.kind === 'arrayop' && e.op === 'splice') refuse('splice where one value is wanted: perl gives the last element it removed; assign it to an array', e.pos);
+};
+
+// What an expression's parts are, each with where it stands.
+const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
+    const all = (es: readonly Expr[], c: Ctx): [Expr, Ctx][] => es.map(x => [x, c]);
+    switch (e.kind) {
+    case 'unary': return [[e.operand, prefixOp(e.op)?.rt === undefined ? ctx : 'scalar']];
+    case 'binary':
+        if (infixOp(e.op)?.when) return [[e.left, 'scalar'], [e.right, ctx]];
+        if (ctx === 'list' && isRepeat(e)) return [[e.left, 'list'], [e.right, 'scalar']];
+        return [[e.left, 'scalar'], [e.right, 'scalar']];
+    case 'ternary': return [[e.test, 'scalar'], [e.then, ctx], [e.else, ctx]];
+    case 'apply': return all(e.args, 'scalar');
+    case 'invoke': return all(e.args, 'list');
+    case 'assign': return [[e.value, e.target.kind === 'array' || e.target.kind === 'myarray' ? 'list' : 'scalar'], [e.target, 'list']];
+    case 'step': return [[e.target, 'scalar']];
+    case 'elem': return [[e.index, 'scalar']];
+    case 'list': return all(e.items, 'list');
+    case 'slice': return [...all(e.indexes, 'list'), ...all(e.items ?? [], 'list')];
+    case 'arrayop': return e.op === 'splice' ? [...all(e.args.slice(0, 2), 'scalar'), ...all(e.args.slice(2), 'list')] : all(e.args, 'list');
+    case 'listassign': return [[e.value, 'list'], ...all(e.targets, 'list')];
+    default: return [];
+    }
 };
 
 // The calls of the program's subs in an expression, and its variables.
@@ -82,8 +208,9 @@ const invokes = (e: Expr, into: Invoke[] = []): Invoke[] => {
     parts(e).forEach(p => invokes(p, into));
     return into;
 };
-const variables = (e: Expr, into: (Var | My)[] = []): (Var | My)[] => {
-    if (e.kind === 'var' || e.kind === 'my') into.push(e);
+const variables = (e: Expr, into: Expr[] = []): Expr[] => {
+    // (An array's count, `$#a` and what `pop` gives are values at once.)
+    if (e.kind === 'var' || e.kind === 'my' || e.kind === 'elem') into.push(e);
     parts(e).forEach(p => variables(p, into));
     return into;
 };
@@ -120,8 +247,8 @@ const checkLostAssignment = (e: Expr): void => {
     if (e.kind !== 'assign' || !infixOp(e.op)?.concat) return;
     for (const w of wholes(e.value)) {
         // (To a `my` it is made; and a `my` may not stand there.)
-        const plainAssign = w.kind === 'assign' && w.target.kind === 'var' && infixOp(w.op)?.rt === undefined && infixOp(w.op)?.when === undefined;
-        if (plainAssign && wholes(w.value).some(v => v.kind === 'binary' && infixOp(v.op)?.concat)) {
+        const plainAssign = w.kind === 'assign' && (w.target.kind === 'var' || w.target.kind === 'elem') && infixOp(w.op)?.rt === undefined && infixOp(w.op)?.when === undefined;
+        if (w.kind === 'assign' && plainAssign && wholes(w.value).some(v => v.kind === 'binary' && infixOp(v.op)?.concat)) {
             refuse(`'${e.op}' of an assignment of a concatenation: perl makes one operation of the three and never assigns $${w.target.name}; make the assignment a statement of its own`, w.pos);
         }
     }
@@ -129,8 +256,11 @@ const checkLostAssignment = (e: Expr): void => {
 
 const checkConcat = (w: World, e: Expr): void => {
     checkLostAssignment(e);
+    // The left of `.=` is the first piece: a variable, read late. An
+    // element there has its index worked out before the row is.
     const row = e.kind === 'binary' && infixOp(e.op)?.concat ? pieces(e)
-        : e.kind === 'assign' && infixOp(e.op)?.concat ? [e.target, ...pieces(e.value)]
+        : e.kind === 'assign' && infixOp(e.op)?.concat && e.target.kind !== 'elem' ? [e.target, ...pieces(e.value)]
+        : e.kind === 'assign' && infixOp(e.op)?.concat ? pieces(e.value)
         : [];
     const read = new Set<string>();
     // The same through a call (D69, T132): the declarations the earlier
@@ -146,8 +276,14 @@ const checkConcat = (w: World, e: Expr): void => {
         for (const call of invokes(piece)) {
             for (const id of w.changed[w.names.calls.get(call)!]!) {
                 if (readIds.has(id)) {
-                    refuse(`a later piece of a concatenation calls ${call.name}, which can change $${w.names.names[id]}, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the call a statement of its own`, call.pos);
+                    refuse(`a later piece of a concatenation calls ${call.name}, which can change ${sigil(w, id)}, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the call a statement of its own`, call.pos);
                 }
+            }
+        }
+        // And an array an earlier piece reads, changed by this one itself.
+        for (const id of changeSet(w, piece)) {
+            if (readIds.has(id) && w.names.isArray[id]) {
+                refuse(`a later piece of a concatenation changes ${sigil(w, id)}, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own`, piece.pos);
             }
         }
         reads(piece, read);
@@ -183,29 +319,108 @@ const tested = (in_: Expr): void => {
 // `my`: whether a `my` may stand here (D56, D21): at the head of a
 // statement, or in the test of an `if`, and in neither under an operand
 // that may not be worked out.
-const checkExpr = (w: World, e: Expr, my: boolean): void => {
+// `ctx`: where it stands. `root`: it is a statement's own expression, where
+// an assignment of a list or to an array may stand (D78).
+const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = false): void => {
     checkLiteral(e);
     checkConcat(w, e);
-    if (e.kind === 'invoke') e.args.forEach(a => checkListContext(a, `as an argument of ${e.name}`));
-    if (e.kind === 'my' && !my) {
-        refuse(`my $${e.name} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`, e.pos);
+    if (ctx === 'scalar') checkOneValue(e);
+    if ((e.kind === 'my' || e.kind === 'myarray' || (e.kind === 'list' && e.my)) && !my) {
+        refuse(`${e.kind === 'my' ? `my $${e.name}` : e.kind === 'myarray' ? `my @${e.name}` : 'my (...)'} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`, e.pos);
     }
+    if ((e.kind === 'listassign' || (e.kind === 'assign' && (e.target.kind === 'array' || e.target.kind === 'myarray'))) && !root) {
+        refuse('an assignment of a list is a statement: perl gives the count of its right side as its value (D78)', e.pos);
+    }
+    // A list that is only declarations is a statement's; anywhere else a
+    // `my` in a list is a list assignment's left side, which the parser
+    // has made of it.
+    if (e.kind === 'list' && e.my) return;
+    if (e.kind === 'slice' && e.name !== undefined && e.indexes.length === 1) {
+        // perl warns, by how the index is spelled: `Scalar value @a[0]
+        // better written as $a[0]` (T167). Refused a little more widely.
+        const one = e.indexes[0]!;
+        if (!listy(one) && one.kind !== 'invoke' && !one.bracketed) refuse(`@${e.name}[...] with one index: perl warns that it is better written $${e.name}[...]`, e.pos);
+    }
+    // perl warns as it compiles of an index written as a string that is
+    // no number, `$a["x"]`: `Argument "x" isn't numeric`. The shapes are
+    // D40's, which the runtime has for a string met as the program runs.
+    if (e.kind === 'elem') {
+        const index = plain(e.index);
+        if (index.kind === 'str' && !NUMERIC_STRING.test(index.value)) {
+            refuse(`${index.text} as an index is not a number: perl warns of it as it compiles`, index.pos);
+        }
+    }
+    if (e.kind === 'apply' && (e.name === 'length' || e.name === 'defined') && plain(e.args[0]!).kind === 'array') {
+        refuse(`${e.name} of an array: perl ${e.name === 'length' ? 'warns, and means the length of its count' : 'refuses it'}; scalar(@a) is how many it holds`, e.pos);
+    }
+    // D76, for what this node works out in order.
+    if (e.kind === 'binary' && !infixOp(e.op)?.when) checkOrder(w, `'${e.op}'`, [e.left, e.right], ctx === 'list' && isRepeat(e));
+    if (e.kind === 'apply') checkOrder(w, e.name, e.args, false);
+    if (e.kind === 'list') checkOrder(w, 'this list', e.items, true);
+    if (e.kind === 'slice') checkOrder(w, 'this slice', [...e.indexes, ...(e.items ?? [])], true);
+    if (e.kind === 'arrayop') checkOrder(w, e.op, e.args, true);
+    if (e.kind === 'invoke') {
+        const callee = w.names.calls.get(e)!;
+        // The arguments are copied into a list when one of them is a
+        // list; otherwise a scalar variable is handed over as a place, and
+        // read late, as perl reads it (D73).
+        checkOrder(w, `the arguments of ${e.name}`, e.args, e.args.some(listy), { changes: w.defaults[callee]!, at: e });
+    }
+    if (e.kind === 'assign' && e.target.kind === 'elem') {
+        // `=`: the right side, then the index. The others: the index,
+        // the target made, then the right side, which may not change the
+        // array the target is in (T158, T159).
+        if (infixOp(e.op)?.rt === undefined && infixOp(e.op)?.when === undefined) checkOrder(w, `'${e.op}'`, [e.value, e.target.index], false);
+        else checkOrder(w, `'${e.op}'`, [e.target, e.value], false);
+    }
+    if (e.kind === 'listassign') {
+        // The right side, then every target's index, then the stores.
+        const indexes = e.targets.flatMap(t => (t.kind === 'elem' ? [t.index] : []));
+        checkOrder(w, 'this assignment', [e.value, ...indexes], true);
+        e.targets.forEach((t, n) => {
+            const array = t.kind === 'array' || t.kind === 'myarray';
+            if (t.bracketed || !(t.kind === 'var' || t.kind === 'my' || t.kind === 'elem' || array || (t.kind === 'constant' && t.name === 'undef'))) {
+                refuse('a target of a list assignment is a variable, an element, undef, or, last, an array', t.pos);
+            }
+            if (array && n !== e.targets.length - 1) refuse('an array among the targets takes every value that is left: it is the last target', t.pos);
+        });
+    }
+    if (e.kind === 'ternary') tested(e.test);
+    if (e.kind === 'binary' && infixOp(e.op)?.when) tested(e.left);
+    for (const [part, where] of children(e, ctx)) {
+        // A `my` may stand in an operand that is always worked out.
+        const reached = e.kind === 'ternary' ? part === e.test
+            : e.kind === 'binary' && infixOp(e.op)?.when ? part === e.left
+            : e.kind === 'assign' && infixOp(e.op)?.when ? part === e.target
+            : true;
+        // A target of a list assignment is no value, and its `undef` no
+        // operand.
+        if (e.kind === 'listassign' && part !== e.value) {
+            if (part.kind === 'elem') checkExpr(w, part.index, false);
+            continue;
+        }
+        if (e.kind === 'assign' && part === e.target) {
+            // (Where a `my` may stand is asked of a target too.)
+            if (part.kind === 'elem') checkExpr(w, part.index, false);
+            else if (part.kind === 'my' || part.kind === 'myarray') checkExpr(w, part, my && reached, 'list');
+            continue;
+        }
+        checkExpr(w, part, my && reached, where);
+    }
+};
+
+// What may not follow `return`, nor be a sub's last statement: a list, or
+// an array, which perl returns whole to a list (step 10 brings them).
+const checkNoList = (in_: Expr, where: string): void => {
+    const e = plain(in_);
     if (e.kind === 'ternary') {
-        tested(e.test);
-        checkExpr(w, e.test, my);
-        checkExpr(w, e.then, false);
-        return checkExpr(w, e.else, false);
+        checkNoList(e.then, where);
+        checkNoList(e.else, where);
+    } else if (e.kind === 'binary' && infixOp(e.op)?.when) {
+        checkNoList(e.right, where);
+    } else if (listy(e) || e.kind === 'slice' || e.kind === 'listassign' || (e.kind === 'assign' && (e.target.kind === 'array' || e.target.kind === 'myarray'))) {
+        refuse(`a list ${where}: a sub returns one value until lists are returned (step 10); scalar(@a) is an array's count`, e.pos);
     }
-    if (e.kind === 'binary' && infixOp(e.op)?.when) {
-        tested(e.left);
-        checkExpr(w, e.left, my);
-        return checkExpr(w, e.right, false);
-    }
-    if (e.kind === 'assign' && infixOp(e.op)?.when) {
-        checkExpr(w, e.target, my);
-        return checkExpr(w, e.value, false);
-    }
-    parts(e).forEach(p => checkExpr(w, p, my));
 };
 
 // `say`'s argument is in list context, and there perl's `x` repeats a
@@ -255,10 +470,11 @@ const checkPragma = (p: Pragma): void => {
 // what could be a statement, and a `my` in the first part only (D60).
 const checkPart = (w: World, e: Expr, first: boolean): void => {
     // A call is something done, as it is where it is a statement (D72).
-    if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my' && e.kind !== 'invoke') {
+    if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my' && e.kind !== 'invoke' && !(e.kind === 'arrayop' && e.op !== 'scalar' && e.op !== 'splice')) {
         refuse('this part of the for only has a value, and nothing is done with it: perl warns that it is useless', e.pos);
     }
     const my = e.kind === 'my' ? e : e.kind === 'assign' && e.target.kind === 'my' ? e.target : undefined;
+    if (e.kind === 'assign' && (e.target.kind === 'array' || e.target.kind === 'myarray')) refuse('an array is assigned in a statement of its own, not in a part of a for', e.pos);
     if (my === undefined) return checkExpr(w, e, false);
     if (!first) refuse(`my $${my.name} in the third part of a for: a my is in the first part, and is one variable for the whole loop`, my.pos);
     if (e.kind !== 'assign') return;
@@ -274,29 +490,45 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     case 'use': return refuse(`'use ${s.version};' here: the version is the first statement, and is said once`, s.pos);
     case 'pragma': return refuse(`'${said(s.name)}' goes at the top, after 'use ${VERSION};' and before anything else`, s.pos);
     case 'call':
-        s.args.forEach(a => checkExpr(w, a, false));
-        return checkListContext(s.args[0]!, `as ${s.name}'s argument`);
+        checkOrder(w, `${s.name}'s list`, s.args, true);
+        return s.args.forEach(a => checkExpr(w, a, false, 'list'));
     case 'do':
         // perl warns of a statement that only has a value: `Useless use
         // of ... in void context` (T114).
         // A call is a statement. And a value alone is one where it is
         // the last of a sub, with no modifier: it is the sub's value
         // (D72, T140), a list to perl (T143).
-        if (s.expr.kind !== 'assign' && s.expr.kind !== 'step' && s.expr.kind !== 'my' && s.expr.kind !== 'invoke' && !last) {
+        const does = s.expr.kind === 'assign' || s.expr.kind === 'step' || s.expr.kind === 'my' || s.expr.kind === 'invoke'
+            || s.expr.kind === 'myarray' || s.expr.kind === 'listassign' || (s.expr.kind === 'list' && s.expr.my === true)
+            || (s.expr.kind === 'arrayop' && s.expr.op !== 'scalar');
+        if (!does && !last) {
             refuse('this statement only has a value, and nothing is done with it: perl warns that it is useless', s.pos);
         }
         if (last) checkListContext(s.expr, "as a sub's last statement");
-        // The `my` a statement begins with is the one that may stand in it.
-        const my = s.expr.kind === 'my' ? s.expr : s.expr.kind === 'assign' && s.expr.target.kind === 'my' ? s.expr.target : undefined;
-        if (my !== undefined) {
-            if (modified) {
-                refuse('my under a modifier: when the test fails, perl leaves in the variable what it last held; declare it in a statement of its own', my.pos);
-            }
-            if (s.expr.kind !== 'assign') return;
-            checkConcat(w, s.expr);
-            return checkExpr(w, s.expr.value, false);
+        // A list assignment that ends a sub has no value (D78, T168), and
+        // neither has `splice`; a list or an array may not be one.
+        if (last && s.expr.kind !== 'listassign' && !(s.expr.kind === 'assign' && s.expr.target.kind !== 'var' && s.expr.target.kind !== 'my' && s.expr.target.kind !== 'elem')
+            && !(s.expr.kind === 'arrayop' && s.expr.op === 'splice')) {
+            checkNoList(s.expr, "as a sub's last statement");
         }
-        return checkExpr(w, s.expr, false);
+        // The `my` a statement begins with is the one that may stand in it.
+        const head = s.expr.kind === 'assign' ? s.expr.target : s.expr;
+        const declares = head.kind === 'my' || head.kind === 'myarray' || (head.kind === 'list' && head.my === true) || (s.expr.kind === 'listassign' && s.expr.my === true);
+        if (declares && modified) {
+            refuse('my under a modifier: when the test fails, perl leaves in the variable what it last held; declare it in a statement of its own', head.pos);
+        }
+        // The `my` a statement begins with is the one that may stand in
+        // it: its own, and no other.
+        if (s.expr.kind === 'my' || s.expr.kind === 'myarray' || (s.expr.kind === 'list' && s.expr.my)) return;
+        if (s.expr.kind === 'assign' && (head.kind === 'my' || head.kind === 'myarray')) {
+            checkConcat(w, s.expr);
+            return checkExpr(w, s.expr.value, false, head.kind === 'myarray' ? 'list' : 'scalar');
+        }
+        if (s.expr.kind === 'listassign') {
+            // (Its targets are declarations, or checked as targets.)
+            return checkExpr(w, s.expr, false, 'list', true);
+        }
+        return checkExpr(w, s.expr, false, 'list', true);
     case 'block': return s.body.forEach(b => checkStmt(w, b));
     case 'if':
         for (const arm of s.arms) {
@@ -324,7 +556,8 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     case 'return':
         if (s.value === undefined) return;
         checkExpr(w, s.value, false);
-        return checkListContext(s.value, 'after return');
+        checkListContext(s.value, 'after return');
+        return checkNoList(s.value, 'after return');
     // The parser lets a sub stand at the top level only.
     case 'sub': throw new Error('a sub below the top level');
     }
@@ -349,8 +582,7 @@ const changedBy = (names: Resolution): ReadonlySet<number>[] => {
     const own: Set<number>[] = [new Set()];
     const callees: Set<number>[] = [new Set()];
     const expr = (e: Expr, fn: number): void => {
-        if (e.kind === 'assign' || e.kind === 'step') {
-            const id = names.of.get(e.target)!;
+        for (const id of changesItself({ names, changed: [], defaults: [] }, e)) {
             if (names.owner[id] === 0) own[fn]!.add(id);
         }
         if (e.kind === 'invoke') callees[fn]!.add(names.calls.get(e)!);
@@ -400,7 +632,18 @@ const changedBy = (names: Resolution): ReadonlySet<number>[] => {
 };
 
 export const check = (program: Program, names: Resolution): void => {
-    const w: World = { names, changed: changedBy(names) };
+    const changed = changedBy(names);
+    // What a sub's defaults can change, by themselves and through the
+    // subs they call: file variables and arrays.
+    const partial: World = { names, changed, defaults: [] };
+    const defaults = [new Set<number>(), ...names.subs.map(sub => {
+        const set = new Set<number>();
+        for (const p of sub.params) {
+            if (p.default) for (const id of changeSet(partial, p.default)) if (names.owner[id] === 0) set.add(id);
+        }
+        return set;
+    })];
+    const w: World = { names, changed, defaults };
     // The line that makes the file mean the same thing to perl (D16).
     const first = program.body[0];
     if (first === undefined || first.kind !== 'use' || first.version !== VERSION) {

@@ -1,0 +1,2 @@
+t/475-my-twice-in-a-list.pl:4:9: my $x again in one scope: perl warns that it masks the first
+exit: 1

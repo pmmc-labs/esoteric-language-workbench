@@ -1,0 +1,2 @@
+t/471-defined-of-an-array.pl:5:5: defined of an array: perl refuses it; scalar(@a) is how many it holds
+exit: 1

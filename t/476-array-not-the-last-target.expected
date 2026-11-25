@@ -1,0 +1,2 @@
+t/476-array-not-the-last-target.pl:4:9: an array among the targets takes every value that is left: it is the last target
+exit: 1

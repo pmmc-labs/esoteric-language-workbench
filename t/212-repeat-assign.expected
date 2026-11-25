@@ -1,2 +1,2 @@
-t/212-repeat-assign.pl:4:10: the left side of 'x=' is a variable, $x or my $x, with no brackets round it
+t/212-repeat-assign.pl:4:10: the left side of 'x=' is a variable, an element, an array, or a list of them in brackets
 exit: 1

@@ -36,6 +36,11 @@ export type Name =
     | { kind: 'sub' }
     | { kind: 'return' }
     | { kind: 'no' }
+    // The builtins that name an array (D80): `push` and `unshift` take the
+    // array and a list, with brackets or without; `pop` and `shift` the
+    // array, in brackets unless it ends the expression (T152); `splice`
+    // and `scalar` always have brackets.
+    | { kind: 'arrayop'; shape: 'push' | 'pop' | 'splice' | 'scalar'; rt: string }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -43,8 +48,8 @@ export type Name =
 
 export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['use', { kind: 'use' }],
-    ['say', { kind: 'statement', rt: 'rt_say' }],
-    ['print', { kind: 'statement', rt: 'rt_print' }],
+    ['say', { kind: 'statement', rt: 'rt_say_list' }],
+    ['print', { kind: 'statement', rt: 'rt_print_list' }],
     ['length', { kind: 'unary', rt: 'rt_length' }],
     ['uc', { kind: 'unary', rt: 'rt_uc' }],
     ['lc', { kind: 'unary', rt: 'rt_lc' }],
@@ -67,6 +72,12 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['sub', { kind: 'sub' }],
     ['return', { kind: 'return' }],
     ['no', { kind: 'no' }],
+    ['push', { kind: 'arrayop', shape: 'push', rt: 'rt_push' }],
+    ['unshift', { kind: 'arrayop', shape: 'push', rt: 'rt_unshift' }],
+    ['pop', { kind: 'arrayop', shape: 'pop', rt: 'rt_pop' }],
+    ['shift', { kind: 'arrayop', shape: 'pop', rt: 'rt_shift' }],
+    ['splice', { kind: 'arrayop', shape: 'splice', rt: 'rt_splice' }],
+    ['scalar', { kind: 'arrayop', shape: 'scalar', rt: 'rt_count' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);
@@ -191,7 +202,7 @@ export type Assoc = 'left' | 'right' | 'nonassoc' | 'chained' | 'chain/na';
 // test says so of the variable (D56). `concat`: perl joins a row of these
 // as one operation (D57). `tests`: a prefix operator that tests its
 // operand for truth, and hands a test on to it (D53).
-export type Op = { op: string; in?: true; rt?: string; list?: true; sign?: true; when?: string; logic?: true; bang?: true; assign?: true; concat?: true; tests?: true };
+export type Op = { op: string; in?: true; rt?: string; range?: true; list?: true; sign?: true; when?: string; logic?: true; bang?: true; assign?: true; concat?: true; tests?: true };
 export type Level = {
     assoc: Assoc;
     prefix?: readonly Op[];     // before its operand
@@ -226,7 +237,8 @@ export const PRECEDENCE: readonly Level[] = [
     { assoc: 'left', infix: ops('|', '|.', '^', '^.') },
     { assoc: 'left', infix: [lazy('&&', 'rt_is_true')] },
     { assoc: 'left', infix: [lazy('||', 'rt_is_false'), ...ops('^^'), lazy('//', 'rt_is_undef')] },
-    { assoc: 'nonassoc', infix: ops('..', '...') },
+    // A range, in a list (D80): whole numbers from one end to the other.
+    { assoc: 'nonassoc', infix: [{ op: '..', in: true, range: true }, ...ops('...')] },
     { assoc: 'right', other: ['?', ':'] },
     // "= += -= *= etc.": the list is perlop's, under Assignment Operators.
     // An undef on the left of `+=`, `-=` and `.=` is 0 or the empty

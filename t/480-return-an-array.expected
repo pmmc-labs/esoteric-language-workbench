@@ -1,0 +1,2 @@
+t/480-return-an-array.pl:5:18: a list after return: a sub returns one value until lists are returned (step 10); scalar(@a) is an array's count
+exit: 1

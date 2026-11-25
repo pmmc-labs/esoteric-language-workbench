@@ -21,7 +21,9 @@ export type Token =
     | { kind: 'version'; text: string; pos: Pos }
     // A variable: `text` is `$name`.
     | { kind: 'var'; text: string; name: string; pos: Pos }
-    | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}'; text: string; pos: Pos }
+    // An array, `@name`, and its last index, `$#name`.
+    | { kind: 'array' | 'lastindex'; text: string; name: string; pos: Pos }
+    | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}' | '[' | ']'; text: string; pos: Pos }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
@@ -131,7 +133,9 @@ export const lex = (src: string): Token[] => {
                 parts.push(digitsOf(isDigit));
             }
         }
-        if (isWord(at()) || at() === '.') {
+        // (`1..3` is a range: two dots are an operator, and no part of
+        // either number.)
+        if (isWord(at()) || (at() === '.' && src[i + 1] !== '.')) {
             refuse(`${src.slice(from, i) + run(ch => isWord(ch) || ch === '.')} is not a number in the language`, start);
         }
         const text = src.slice(from, i);
@@ -232,6 +236,7 @@ export const lex = (src: string): Token[] => {
         const last = tokens.at(-1);
         if (last?.kind === 'op' && stepOp(last.text)) return tokens.at(-2)?.kind === 'var';
         return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === ')' || last?.kind === 'var'
+            || last?.kind === ']' || last?.kind === 'array' || last?.kind === 'lastindex'
             || (last?.kind === 'word' && NAMES.get(last.text)?.kind === 'constant');
     };
 
@@ -313,9 +318,21 @@ export const lex = (src: string): Token[] => {
                 push({ kind: 'var', text: '$', name: '', pos: start });
                 continue;
             }
+            // `$#name`, the last index of `@name`. perl takes `$#{name}`
+            // and warns, and `$# name` not at all.
+            if (at() === '#') {
+                take();
+                if (!isWordStart(at())) refuse("after '$#' comes an array's name: $#a is the last index of @a", start);
+                const array = run(isWord);
+                if (array.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
+                push({ kind: 'lastindex', text: '$#' + array, name: array, pos: start });
+                continue;
+            }
             if (!isWordStart(at())) refuse("after '$' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
-            if (RESERVED.has(name)) refuse(`$${name} is not a name a variable may have`, start);
+            // `$a[0]` is an element of `@a`, which is a name an array may
+            // have; `$a` alone is `sort`'s (D55).
+            if (RESERVED.has(name) && !(at() === '[' && name !== '_')) refuse(`$${name} is not a name a variable may have`, start);
             // perl stops the compile at a longer one: `Identifier too long`.
             if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
             // perl takes a variable that comes first after `say` or
@@ -349,7 +366,15 @@ export const lex = (src: string): Token[] => {
                 }
             }
             push({ kind: 'var', text: '$' + name, name, pos: start });
-        } else if (c === ';' || c === '(' || c === ')' || c === ',' || c === '?' || c === ':' || c === '{' || c === '}') {
+        } else if (c === '@') {
+            // An array, `@name`: perl takes `@ name` and `@{name}` too.
+            take();
+            if (!isWordStart(at())) refuse("after '@' comes a name: a letter or '_', then letters, digits and '_'", start);
+            const name = run(isWord);
+            if (name === '_') refuse('@_ is not in the language: a sub has a signature (D17)', start);
+            if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
+            push({ kind: 'array', text: '@' + name, name, pos: start });
+        } else if (c === ';' || c === '(' || c === ')' || c === ',' || c === '?' || c === ':' || c === '{' || c === '}' || c === '[' || c === ']') {
             // `sub NAME (` opens a signature, and its own `)` closes it.
             const [word, name] = [tokens.at(-2), tokens.at(-1)];
             if (c === '(' && (signature > 0 || (word?.kind === 'word' && NAMES.get(word.text)?.kind === 'sub' && name?.kind === 'word'))) signature += 1;

@@ -1,0 +1,2 @@
+t/460-list-where-one-value.pl:4:9: a list where one value is wanted: perl gives its last value, and warns of the others
+exit: 1

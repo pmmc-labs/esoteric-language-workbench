@@ -1,0 +1,2 @@
+t/477-slice-with-no-index.pl:5:11: a slice with no index: perl refuses it
+exit: 1

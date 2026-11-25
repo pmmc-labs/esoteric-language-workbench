@@ -29,7 +29,35 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // `(x + y)`. The tree's shape already holds the grouping; this is for the
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
-export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke;
+export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
+    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign;
+
+// An array, `@name`, and `my @name`, which declares one (D80).
+export type ArrayVar = { kind: 'array'; name: string; pos: Pos; bracketed?: true };
+export type MyArray = { kind: 'myarray'; name: string; pos: Pos; bracketed?: true };
+
+// An element, `$name[index]`, of the array `@name`; and `$#name`.
+export type Elem = { kind: 'elem'; name: string; index: Expr; pos: Pos; bracketed?: true };
+export type LastIndex = { kind: 'lastindex'; name: string; pos: Pos; bracketed?: true };
+
+// A list in brackets: no items, or two and more, or one with a comma
+// after it. (One item in brackets is that item, `bracketed`.) `my`: it
+// followed the word, `my ($x, @rest)`, and declares what it names.
+export type List = { kind: 'list'; items: readonly Expr[]; my?: true; pos: Pos; bracketed?: true };
+
+// A slice: `@name[indexes]`, of an array, or `(items)[indexes]`, of a
+// list. `pos` is the opening square bracket's.
+export type Slice = { kind: 'slice'; name?: string; items?: readonly Expr[]; indexes: readonly Expr[]; pos: Pos; bracketed?: true };
+
+// A builtin that names an array: `push @name, args`, `pop(@name)`,
+// `splice(@name, args)`, `scalar(@name)`. `pos` is the word's, `at` the
+// array's.
+export type ArrayOp = { kind: 'arrayop'; op: string; name: string; args: readonly Expr[]; pos: Pos; at: Pos; bracketed?: true };
+
+// A list assignment, `(targets) = value` and `my (targets) = value`: a
+// statement (D78). A target is a variable, an element, `undef`, or, last,
+// an array.
+export type ListAssign = { kind: 'listassign'; targets: readonly Expr[]; my?: true; value: Expr; pos: Pos; bracketed?: true };
 
 // A variable, `$name`; and `my $name`, which declares one where it stands
 // and is that variable (D56). Which declaration a `Var` means is the
@@ -38,10 +66,10 @@ export type Var = { kind: 'var'; name: string; pos: Pos; bracketed?: true };
 export type My = { kind: 'my'; name: string; pos: Pos; bracketed?: true };
 
 // `$x = E`, `$x += E`: `pos` is the operator's. Its value is the variable.
-export type Assign = { kind: 'assign'; op: string; target: Var | My; value: Expr; pos: Pos; bracketed?: true };
+export type Assign = { kind: 'assign'; op: string; target: Var | My | Elem | ArrayVar | MyArray; value: Expr; pos: Pos; bracketed?: true };
 
 // `++$x`, `$x++`, `--$x`, `$x--`: `before` says the operator comes first.
-export type Step = { kind: 'step'; op: string; before: boolean; target: Var; pos: Pos; bracketed?: true };
+export type Step = { kind: 'step'; op: string; before: boolean; target: Var | Elem; pos: Pos; bracketed?: true };
 
 // A word that is a value: `true`, `false`, `undef` (D47, D48).
 export type Constant = { kind: 'constant'; name: string; pos: Pos; bracketed?: true };

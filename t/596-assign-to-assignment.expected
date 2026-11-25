@@ -1,2 +1,2 @@
-t/596-assign-to-assignment.pl:5:10: the left side of '=' is a variable, $x or my $x, with no brackets round it
+t/596-assign-to-assignment.pl:5:10: the left side of '=' is a variable, an element, an array, or a list of them in brackets
 exit: 1

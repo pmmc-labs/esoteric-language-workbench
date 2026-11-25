@@ -1,0 +1,2 @@
+t/465-array-assignment-in-a-test.pl:5:12: an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
+exit: 1

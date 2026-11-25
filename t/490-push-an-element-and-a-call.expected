@@ -1,0 +1,2 @@
+t/490-push-an-element-and-a-call.pl:6:17: a later part of push can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

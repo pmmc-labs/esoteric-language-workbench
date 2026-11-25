@@ -1,0 +1,2 @@
+t/469-slice-of-one.pl:5:9: @a[...] with one index: perl warns that it is better written $a[...]
+exit: 1

@@ -1,0 +1,2 @@
+t/486-array-in-a-list-and-a-call.pl:6:14: a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

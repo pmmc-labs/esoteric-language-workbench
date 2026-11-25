@@ -33,7 +33,7 @@
 // (D28: nothing is global). After every call the caller's line is stored
 // again (D34).
 import { NAMES, PRAGMAS, infixOp, prefixOp, stepOp } from './names.ts';
-import type { Expr, If, Program, Stmt, Sub } from './ast.ts';
+import type { ArrayOp, Expr, If, Program, Stmt, Sub } from './ast.ts';
 import type { Resolution } from './resolver.ts';
 
 // The context an expression is worked out in (D18): one of perl's three,
@@ -85,11 +85,12 @@ const temp = (b: Code, call: string): C => {
 // if it has no address.
 const pointTo = (b: Code, v: C): string => `&${v.place ? v.c : temp(b, v.c).c}`;
 
+// The slot of the variable or the array a node names (D80: an element, a
+// slice and a builtin name their array).
 const variable = (b: Code, e: Expr): string => {
-    if (e.kind !== 'var' && e.kind !== 'my') throw new Error('not a variable');
     const id = b.names.of.get(e);
     const slot = id === undefined ? undefined : b.names.slots[id];
-    if (id === undefined || slot === undefined) throw new Error(`$${e.name} was not resolved`);
+    if (id === undefined || slot === undefined) throw new Error(`a ${e.kind} was not resolved`);
     // Its own function's, or the file's, which a sub reaches through `g`.
     return b.names.owner[id] === b.fn ? `f[${slot}]` : `g[${slot}]`;
 };
@@ -97,8 +98,97 @@ const variable = (b: Code, e: Expr): string => {
 // Whether a declaration is a file variable: undef as the program starts,
 // and nothing is stored by its `my` (T134).
 const isFile = (b: Code, e: Expr): boolean => {
-    const id = e.kind === 'var' || e.kind === 'my' ? b.names.of.get(e) : undefined;
+    const id = b.names.of.get(e);
     return id !== undefined && b.names.owner[id] === 0 && b.names.slots[id]! < b.names.file;
+};
+
+// ---- lists (D76, D80)
+
+// An expression behind any unary plus, which hands on where it stands.
+const through = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === undefined ? through(e.operand) : e);
+const isRange = (e: Expr): boolean => e.kind === 'binary' && infixOp(e.op)?.range === true;
+const isRepeat = (e: Expr): boolean => e.kind === 'binary' && infixOp(e.op)?.list === true && (e.left.kind === 'list' || e.left.bracketed === true);
+// What is more values than one, or fewer, where a list is wanted.
+const listy = (in_: Expr): boolean => {
+    const e = through(in_);
+    return e.kind === 'array' || e.kind === 'list' || isRange(e) || isRepeat(e)
+        || e.kind === 'slice'
+        || (e.kind === 'arrayop' && e.op === 'splice')
+        || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
+        || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
+};
+
+// A list, built in a temporary: made empty, and each item added to it in
+// turn, a value or the values of what is itself a list. `strict`: a slice
+// among the items faults for an index past either end, where perl would
+// make the elements (T161: a call's arguments).
+const genList = (items: readonly Expr[], b: Code, strict = false): C => {
+    const list = temp(b, 'rt_array_new(cx)');
+    items.forEach(item => addItem(item, list.c, b, strict));
+    return list;
+};
+
+const addItem = (in_: Expr, list: string, b: Code, strict: boolean): void => {
+    const e = through(in_);
+    if (e.kind === 'array') {
+        b.lines.push(`rt_list_add_all(cx, ${list}, ${variable(b, e)});`);
+    } else if (e.kind === 'list') {
+        e.items.forEach(item => addItem(item, list, b, strict));
+    } else if (e.kind === 'binary' && isRange(e)) {
+        const from = genExpr(e.left, b);
+        const to = genExpr(e.right, b);
+        b.lines.push(`rt_list_add_range(cx, ${list}, ${from.c}, ${to.c});`);
+    } else if (e.kind === 'slice') {
+        // The indexes first, and then what they are indexes into (T163).
+        const indexes = genList(e.indexes, b);
+        if (e.name !== undefined) {
+            b.lines.push(`rt_list_add_slice(cx, ${list}, ${variable(b, e)}, ${indexes.c}, ${strict ? 2 : 0});`);
+        } else {
+            const from = genList(e.items!, b);
+            b.lines.push(`rt_list_add_slice(cx, ${list}, ${from.c}, ${indexes.c}, 1);`);
+        }
+    } else if (e.kind === 'binary' && isRepeat(e)) {
+        const values = genList([e.left], b);
+        const count = genExpr(e.right, b);
+        b.lines.push(`rt_list_add_repeat(cx, ${list}, ${values.c}, ${count.c});`);
+    } else if (e.kind === 'arrayop' && e.op === 'splice') {
+        genSplice(e, b, list);
+    } else if (e.kind === 'ternary' && listy(e)) {
+        const test = genExpr(e.test, b);
+        b.lines.push(`if (rt_is_true(cx, ${test.c})) {`);
+        addItem(e.then, list, b, strict);
+        b.lines.push('} else {');
+        addItem(e.else, list, b, strict);
+        b.lines.push('}');
+    } else if (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e)) {
+        // The left side is one value, an array's count too (T150); the
+        // right, if it is wanted, is the list.
+        const left = genExpr(e.left, b);
+        const kept = left.place ? left : temp(b, left.c);
+        b.lines.push(`if (${infixOp(e.op)!.when}(cx, ${kept.c})) {`);
+        addItem(e.right, list, b, strict);
+        b.lines.push('} else {', `rt_list_add(cx, ${list}, ${kept.c});`, '}');
+    } else {
+        // One value, or none: a sub that returned nothing (D79).
+        b.lines.push(`rt_list_add(cx, ${list}, ${genExpr(in_, b, 'list').c});`);
+    }
+};
+
+// `splice(@a, OFFSET, LENGTH, LIST)`: the numbers, then the list, then
+// the splice, what it removed added to `removed`.
+const genSplice = (e: ArrayOp, b: Code, removed: string): void => {
+    const [offset, length] = [e.args[0], e.args[1]].map(a => (a === undefined ? undefined : genExpr(a, b)));
+    const put = genList(e.args.slice(2), b);
+    b.lines.push(`rt_splice(cx, ${removed}, ${variable(b, e)}, ${Math.min(e.args.length, 2)}, ${offset?.c ?? 'rt_undef()'}, ${length?.c ?? 'rt_undef()'}, ${put.c});`);
+};
+
+// A C local for where an element is, once it has been made.
+const index = (b: Code, e: Expr): string => {
+    if (e.kind !== 'elem') throw new Error('not an element');
+    const at = `i${++b.temps}`;
+    b.decls.push(`int64_t ${at} RT_UNUSED;`);
+    b.lines.push(`${at} = rt_elem_make(cx, ${variable(b, e)}, ${genExpr(e.index, b).c});`);
+    return at;
 };
 
 // The C for an expression's value, once the statements appended to `b`
@@ -130,10 +220,94 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     case 'my':
         if (!isFile(b, e)) b.vars.push(`${variable(b, e)} = rt_undef(); // my $${e.name}`);
         return { c: variable(b, e), place: true };
+    // `my @a`: a new array each time the `my` is reached; the file's are
+    // made as the program starts (T156).
+    case 'myarray':
+        if (!isFile(b, e)) b.vars.push(`${variable(b, e)} = rt_array_new(cx); // my @${e.name}`);
+        return { c: variable(b, e), place: true };
+    // Where one value is wanted, an array is its count, at once (T21).
+    case 'array': return temp(b, `rt_count(cx, ${variable(b, e)})`);
+    case 'lastindex': return temp(b, `rt_last_index(cx, ${variable(b, e)})`);
+    // An element is read where it stands (D76).
+    case 'elem': {
+        const at = genExpr(e.index, b);
+        return temp(b, `rt_elem(cx, ${variable(b, e)}, ${at.c})`);
+    }
+    // `(LIST)[N]`, where one value is wanted: that one, or undef.
+    case 'slice': return temp(b, `rt_first(cx, ${genList([e], b).c})`);
+    // Declarations alone, `my ($x, @a);`.
+    case 'list':
+        e.items.forEach(item => genExpr(item, b));
+        return { c: 'rt_undef()', place: false };
+    case 'arrayop': {
+        const name = NAMES.get(e.op);
+        if (name?.kind !== 'arrayop') throw new Error(`no runtime function for ${e.op}`);
+        if (name.shape === 'push') {
+            const values = genList(e.args, b);
+            return temp(b, `${name.rt}(cx, ${variable(b, e)}, ${values.c})`);
+        }
+        if (name.shape === 'splice') {
+            // As a statement: what it removed is not wanted.
+            const removed = temp(b, 'rt_array_new(cx)');
+            genSplice(e, b, removed.c);
+            return { c: 'rt_undef()', place: false };
+        }
+        return temp(b, `${name.rt}(cx, ${variable(b, e)})`);
+    }
+    // The right side, then each target's index, then the stores, a value
+    // for each target in turn, undef when they run out; an array takes
+    // what is left (D80, T158).
+    case 'listassign': {
+        const values = genList([e.value], b);
+        e.targets.forEach(t => { if (t.kind === 'my' || t.kind === 'myarray') genExpr(t, b); });
+        // An index is a value before anything is stored: one that is a
+        // variable is copied now, since a target before it may be that
+        // variable (`($i, $a[$i]) = (1, 5)` stores at the old `$i`).
+        const kept = (v: C): C => (v.place ? temp(b, v.c) : v);
+        const indexes = e.targets.map(t => (t.kind === 'elem' ? kept(genExpr(t.index, b)) : undefined));
+        e.targets.forEach((t, n) => {
+            if (t.kind === 'constant') return;
+            if (t.kind === 'array' || t.kind === 'myarray') b.lines.push(`rt_array_rest(cx, ${variable(b, t)}, ${values.c}, ${n});`);
+            else if (t.kind === 'elem') b.lines.push(`rt_elem_store(cx, ${variable(b, t)}, ${indexes[n]!.c}, rt_list_item(cx, ${values.c}, ${n}));`);
+            else b.lines.push(`${variable(b, t)} = rt_list_item(cx, ${values.c}, ${n});`);
+        });
+        return { c: 'rt_undef()', place: false };
+    }
     // The right side first, and then the variable is read, if the
     // operator reads it, and set. The value is the variable.
     case 'assign': {
         const op = infixOp(e.op);
+        // `@a = LIST`: the list, and then the array's values are its.
+        if (e.target.kind === 'array' || e.target.kind === 'myarray') {
+            const values = genList([e.value], b);
+            if (e.target.kind === 'myarray') genExpr(e.target, b);
+            b.lines.push(`rt_array_assign(cx, ${variable(b, e.target)}, ${values.c});`);
+            return { c: 'rt_undef()', place: false };
+        }
+        if (e.target.kind === 'elem') {
+            const array = variable(b, e.target);
+            // `=`: the right side, then the index, then the store, the
+            // right side read then if it is a variable (T158).
+            if (op?.rt === undefined && op?.when === undefined) {
+                const value = genExpr(e.value, b);
+                const at = genExpr(e.target.index, b);
+                return temp(b, `rt_elem_store(cx, ${array}, ${at.c}, ${value.c})`);
+            }
+            // The others: the index, the target made, then the right
+            // side, then the element read, worked on and stored (T159).
+            const at = index(b, e.target);
+            if (op.when !== undefined) {
+                const was = temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+                b.lines.push(`if (${op.when}(cx, ${was.c})) {`);
+                b.lines.push(`rt_elem_put(cx, ${array}, ${at}, ${genExpr(e.value, b).c});`, '}');
+                return temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+            }
+            const value = genExpr(e.value, b);
+            const was = temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+            const now = temp(b, `${op.rt}(cx, ${was.c}, ${value.c})`);
+            b.lines.push(`rt_elem_put(cx, ${array}, ${at}, ${now.c});`);
+            return now;
+        }
         if (e.target.kind === 'my') genExpr(e.target, b);
         const v = variable(b, e.target);
         if (op?.when !== undefined) {
@@ -149,6 +323,15 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     case 'step': {
         const op = stepOp(e.op);
         if (op === undefined) throw new Error(`no runtime function for ${e.op}`);
+        if (e.target.kind === 'elem') {
+            const array = variable(b, e.target);
+            const at = index(b, e.target);
+            const held = temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+            const was = e.before || op.before === undefined ? held : temp(b, `${op.before}(cx, ${held.c})`);
+            const now = temp(b, `${op.rt}(cx, ${held.c})`);
+            b.lines.push(`rt_elem_put(cx, ${array}, ${at}, ${now.c});`);
+            return e.before ? now : was;
+        }
         const v = variable(b, e.target);
         const was = e.before ? undefined : temp(b, op.before === undefined ? v : `${op.before}(cx, ${v})`);
         b.lines.push(`${v} = ${op.rt}(cx, ${v});`);
@@ -189,15 +372,22 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     // temporary, void or not, and the line is the caller's again.
     case 'invoke': {
         const called = b.names.subs[b.names.calls.get(e)! - 1]!;
-        const args = e.args.map(a => genExpr(a, b, 'list'));
-        const least = called.params.filter(p => p.op === undefined).length;
         const most = called.params.length;
-        if (args.length < least || args.length > most) {
-            b.lines.push(`rt_fault_arguments(cx, ${cString(e.name)}, ${args.length}, ${least}, ${most});`);
-            return { c: 'rt_undef()', place: false };
+        const n = ++b.temps;
+        b.decls.push(`rt_value *av${n}[${Math.max(1, most, e.args.length)}] RT_UNUSED;`, `int64_t ac${n} RT_UNUSED;`);
+        if (e.args.some(listy)) {
+            // A list among them: all of them are built as one, copied, and
+            // the sub is handed where each of its values is.
+            const values = genList(e.args, b, true);
+            b.lines.push(`ac${n} = rt_arguments(cx, ${values.c}, av${n}, ${most});`);
+        } else {
+            // Each a place, or a temporary: a variable is read when the
+            // sub takes it (D73). A call that gave nothing is no argument.
+            const where = e.args.map(a => pointTo(b, genExpr(a, b, 'list')));
+            b.lines.push(`ac${n} = 0;`);
+            where.forEach(p => b.lines.push(`if ((${p})->tag != RT_TAG_ABSENT) av${n}[ac${n}++] = ${p};`));
         }
-        const where = called.params.map((_, n) => (args[n] === undefined ? 'NULL' : pointTo(b, args[n])));
-        const result = temp(b, `sub_${e.name}(${['cx', WANT[want], ...where].join(', ')})`);
+        const result = temp(b, `sub_${e.name}(cx, ${WANT[want]}, ac${n}, av${n})`);
         b.lines.push(`cx->line = ${b.line};`);
         return result;
     }
@@ -233,6 +423,13 @@ const genWhole = (e: Expr, line: number, out: Out, use: (c: string) => string[],
     const b: Code = { vars: [], decls: [], lines: [], temps: 0, values: 0, strings: out.strings, names: out.names, frame: out.frame, fn: out.fn, line };
     const c = genExpr(e, b, want).c;
     return { vars: b.vars, code: [`cx->line = ${line};`, ...b.decls, ...b.lines, ...use(c)] };
+};
+
+// The same for a list: `say`'s.
+const genListWhole = (items: readonly Expr[], line: number, out: Out, use: (c: string) => string[]): { code: string[] } => {
+    const b: Code = { vars: [], decls: [], lines: [], temps: 0, values: 0, strings: out.strings, names: out.names, frame: out.frame, fn: out.fn, line };
+    const c = genList(items, b).c;
+    return { code: [`cx->line = ${line};`, ...b.decls, ...b.lines, ...use(c)] };
 };
 
 const indent = (lines: string[]): string[] => lines.map(l => `    ${l}`);
@@ -280,7 +477,7 @@ const genStmt = (s: Stmt, out: Out): string[] => {
         // A block of its own keeps each statement's temporaries out of the
         // next one's way: a C compiler is slow over ten thousand locals in
         // one scope.
-        return ['{', ...indent(genWhole(s.args[0]!, s.pos.line, out, c => [`${name.rt}(cx, ${c});`], 'list').code), '}'];
+        return ['{', ...indent(genListWhole(s.args, s.pos.line, out, c => [`${name.rt}(cx, ${c});`]).code), '}'];
     }
     // The variables an expression statement declares are the enclosing
     // block's, and come before the C block its temporaries are in.
@@ -338,9 +535,8 @@ const genStmt = (s: Stmt, out: Out): string[] => {
     // way there is. `return;` is undef to a scalar, and to a list it is
     // nothing at all, which the language can't yet say (D71).
     case 'return': {
-        const name = cString(out.sub!.name);
         if (s.value === undefined) {
-            return ['{', ...indent([`cx->line = ${s.pos.line};`, `if (want == RT_LIST) rt_fault_sub(cx, ${name}, RT_NOTHING);`, 'r = rt_undef();', 'goto done;']), '}'];
+            return ['{', ...indent([`cx->line = ${s.pos.line};`, 'r = want == RT_LIST ? rt_absent() : rt_undef();', 'goto done;']), '}'];
         }
         return ['{', ...indent(genWhole(s.value, s.pos.line, out, c => [`r = ${c};`, 'goto done;'], 'pass').code), '}'];
     }
@@ -376,7 +572,7 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
     const before = last?.kind === 'do' ? s.body.slice(0, -1) : s.body;
     lines.push(...before.flatMap(t => genStmt(t, out)));
     if (last === undefined) {
-        lines.push(`if (want == RT_LIST) {`, `    cx->line = ${s.pos.line};`, `    rt_fault_sub(cx, ${name}, RT_NOTHING);`, '}');
+        lines.push('if (want == RT_LIST) r = rt_absent();');
     } else if (last.kind === 'do') {
         const whole = genWhole(last.expr, last.pos.line, out, c => [`r = ${c};`], 'pass');
         lines.push(...whole.vars, '{', ...indent(whole.code), '}');
@@ -392,6 +588,9 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
         '    rt_frame frame;',
         '    rt_value r = rt_undef();',
         '    rt_value *g RT_UNUSED = cx->shared;',
+        // The count first, while the line is still the caller's.
+        `    if (argc < ${s.params.filter(p => p.op === undefined).length} || argc > ${s.params.length}) rt_fault_arguments(cx, ${name}, argc, ${s.params.filter(p => p.op === undefined).length}, ${s.params.length});`,
+        ...s.params.map((_, n) => `    rt_value *a${n} RT_UNUSED = argc > ${n} ? argv[${n}] : NULL;`),
         `    rt_enter(cx, &frame, f, ${slots});`,
         ...indent(lines),
         'done: RT_UNUSED;',
@@ -402,8 +601,12 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
     ];
 };
 
+// Whether a declaration is one of the file's: a block's and a sub's have
+// slots that are numbered after them.
+const isFileSlot = (names: Resolution, id: number): boolean => names.fileIds.has(id);
+
 const prototype = (s: Sub): string =>
-    `static rt_value sub_${s.name}(${['rt_ctx *cx', 'int want RT_UNUSED', ...s.params.map((_, n) => `rt_value *a${n} RT_UNUSED`)].join(', ')})`;
+    `static rt_value sub_${s.name}(rt_ctx *cx, int want RT_UNUSED, int64_t argc, rt_value **argv RT_UNUSED)`;
 
 // `file` is the program's path as the driver was given it, which is the
 // path perl is given too (D10): a fault names it.
@@ -427,7 +630,8 @@ export const generate = (program: Program, names: Resolution, file: string): str
         `    rt_enter(cx, &frame, f, ${slots});`,
         // The file's variables: undef before anything runs, a sub
         // included, and reached by the subs through the context (T134).
-        ...(names.file ? [`    for (int k = 0; k < ${names.file}; k++) f[k] = rt_undef();`] : []),
+        ...names.names.flatMap((_, id) => (names.owner[id] === 0 && names.slots[id]! < names.file && isFileSlot(names, id)
+            ? [`    f[${names.slots[id]}] = ${names.isArray[id] ? 'rt_array_new(cx)' : 'rt_undef()'};`] : [])),
         '    cx->shared = f;',
         ...indent(body),
         '    rt_leave(cx, &frame);',

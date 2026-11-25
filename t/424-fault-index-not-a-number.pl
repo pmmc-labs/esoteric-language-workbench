@@ -5,10 +5,12 @@ use open ':std', ':encoding(UTF-8)';
 say(1);
 {
     my @a = (1, 2, 3);
-    say($a['2']);
+    my $i = '2';
+    say($a[$i]);
 }
 {
     my @a = (1, 2, 3);
-    say($a['x']);
+    my $i = 'x';
+    say($a[$i]);
 }
 say(2);

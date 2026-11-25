@@ -1,5 +1,6 @@
-# kind: refused
-# perl prints aaa, by repeating a list of one value three times: in say's list of
-# arguments, brackets round the left of x make it a list (T101). Lists are step 9's.
+# In say's list, brackets round the left of x make it a list, repeated
+# (T101): three values, which print as one string would. A list from step
+# 9 (D80); until then this test was of its refusal.
 use v5.42;
 say(("a") x 3);
+say(("a", "b") x 2);

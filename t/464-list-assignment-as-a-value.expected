@@ -1,0 +1,2 @@
+t/464-list-assignment-as-a-value.pl:5:22: an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
+exit: 1

@@ -1,0 +1,2 @@
+t/479-array-compound-assignment.pl:5:4: '+=' on an array: an array is assigned with =
+exit: 1

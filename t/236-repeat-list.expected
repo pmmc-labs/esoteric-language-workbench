@@ -1,2 +1,2 @@
-t/236-repeat-list.pl:5:11: (...) x as say's argument repeats a list, to perl: take the brackets off the left operand
-exit: 1
+aaa
+abab

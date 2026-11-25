@@ -1,0 +1,2 @@
+t/463-splice-where-one-value.pl:5:9: splice where one value is wanted: perl gives the last element it removed; assign it to an array
+exit: 1

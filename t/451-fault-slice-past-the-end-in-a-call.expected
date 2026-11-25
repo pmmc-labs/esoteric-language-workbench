@@ -1,0 +1,4 @@
+2 2
+defined
+fault: a slice past the end of the array, where perl would make the elements at t/451-fault-slice-past-the-end-in-a-call.pl line 12.
+exit: 1

@@ -22,7 +22,7 @@
 // declared before it, and no `last` or `next` in it reaches a loop
 // outside it (T60).
 import { refuse } from './errors.ts';
-import type { Expr, Invoke, Jump, Loop, My, Pos, Program, Stmt, Sub, Var } from './ast.ts';
+import type { Expr, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
 
 // A declaration is a number, in the order the `my`s are met; `of` says
 // which one each variable in the tree means, and `names` what each is
@@ -41,13 +41,20 @@ import type { Expr, Invoke, Jump, Loop, My, Pos, Program, Stmt, Sub, Var } from 
 // top level, has a slot that nothing else is ever given, the first `file`
 // slots of the file's frame: a sub may be called before the `my` runs, and
 // what it put there is still there after (T134).
+//
+// An array is a declaration like any other, with a name of its own: `@x`
+// and `$x` are two (D80). `isArray` says which a declaration is, and `of`
+// has every node that names one: an array, an element, a slice, `$#x`, a
+// builtin that takes one.
 export type Resolution = {
-    of: ReadonlyMap<Var | My, number>;
+    of: ReadonlyMap<Expr, number>;
     names: readonly string[];
+    isArray: readonly boolean[];
     slots: readonly number[];
     owner: readonly number[];
     frames: readonly number[];
     file: number;
+    fileIds: ReadonlySet<number>;
     subs: readonly Sub[];
     calls: ReadonlyMap<Invoke, number>;
     loops: ReadonlyMap<Loop, number>;
@@ -59,8 +66,17 @@ export type Resolution = {
 type Round = { loop: Loop } | { bare: Pos };
 
 export const resolve = (program: Program): Resolution => {
-    const of = new Map<Var | My, number>();
+    const of = new Map<Expr, number>();
     const names: string[] = [];
+    const isArray: boolean[] = [];
+    // An array's name in a scope: with its sigil, so that it is its own.
+    const key = (d: My | MyArray): string => (d.kind === 'myarray' ? '@' : '') + d.name;
+    // The array a node names, looked up as it is met.
+    const array = (e: Expr, name: string): void => {
+        const found = [...scopes].reverse().find(scope => scope.has('@' + name));
+        if (found === undefined) return refuse(`@${name} is not declared: my @${name}`, e.pos);
+        of.set(e, found.get('@' + name)!);
+    };
     const slots: number[] = [];
     const owner: number[] = [];
     const frames: number[] = [0];
@@ -91,9 +107,9 @@ export const resolve = (program: Program): Resolution => {
 
     // A declaration comes into scope: a file variable in a slot of its
     // own, any other at its depth among those in scope.
-    const declare = (d: My): void => {
+    const declare = (d: My | MyArray): void => {
         const id = of.get(d)!;
-        scopes.at(-1)!.set(d.name, id);
+        scopes.at(-1)!.set(key(d), id);
         owner[id] = fn;
         if (scopes.at(-1) === fileScope) {
             fileSlots.add(id);
@@ -108,7 +124,7 @@ export const resolve = (program: Program): Resolution => {
 
     // The variables an expression uses, each looked up as it is met; and
     // the ones it declares, which are returned and not yet seen.
-    const walk = (e: Expr, declared: My[]): void => {
+    const walk = (e: Expr, declared: (My | MyArray)[]): void => {
         switch (e.kind) {
         case 'var': {
             const found = [...scopes].reverse().find(s => s.has(e.name));
@@ -117,10 +133,30 @@ export const resolve = (program: Program): Resolution => {
             return;
         }
         case 'my':
+        case 'myarray':
             of.set(e, names.length);
+            isArray.push(e.kind === 'myarray');
             names.push(e.name);
             declared.push(e);
             return;
+        case 'array':
+        case 'lastindex':
+            return array(e, e.name);
+        case 'elem':
+            walk(e.index, declared);
+            return array(e, e.name);
+        case 'slice':
+            // Its indexes are worked out first (T163).
+            e.indexes.forEach(x => walk(x, declared));
+            e.items?.forEach(x => walk(x, declared));
+            return e.name === undefined ? undefined : array(e, e.name);
+        case 'list': return e.items.forEach(x => walk(x, declared));
+        case 'arrayop':
+            e.args.forEach(x => walk(x, declared));
+            return array(e, e.name);
+        case 'listassign':
+            walk(e.value, declared);
+            return e.targets.forEach(x => walk(x, declared));
         case 'assign':
             // The right side first: it is worked out first, and in `my $x
             // = $x` its `$x` is the outer one.
@@ -151,14 +187,14 @@ export const resolve = (program: Program): Resolution => {
     // part of a `for`: what it declares is seen once the whole of it has
     // been read.
     const whole = (...es: Expr[]): void => {
-        const declared: My[] = [];
+        const declared: (My | MyArray)[] = [];
         es.forEach(e => walk(e, declared));
         // In the order they are written: the second of two is the one at
         // fault.
         declared.sort((a, b) => a.pos.line - b.pos.line || a.pos.col - b.pos.col);
         for (const d of declared) {
             const scope = scopes.at(-1)!;
-            if (scope.has(d.name)) refuse(`my $${d.name} again in one scope: perl warns that it masks the first`, d.pos);
+            if (scope.has(key(d))) refuse(`my ${d.kind === 'myarray' ? '@' : '$'}${d.name} again in one scope: perl warns that it masks the first`, d.pos);
             declare(d);
         }
     };
@@ -186,6 +222,7 @@ export const resolve = (program: Program): Resolution => {
             if (p.my === undefined) continue;
             if (scopes.at(-1)!.has(p.my.name)) refuse(`two parameters called $${p.my.name}: perl warns that the second masks the first`, p.my.pos);
             of.set(p.my, names.length);
+            isArray.push(false);
             names.push(p.my.name);
             declare(p.my);
         }
@@ -275,5 +312,5 @@ export const resolve = (program: Program): Resolution => {
         if (owner[id] === 0 && !fileSlots.has(id)) slots[id]! += file;
     }
     frames[0] = file + variables;
-    return { of, names, slots, owner, frames, file, subs, calls, loops, jumps };
+    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, loops, jumps };
 };

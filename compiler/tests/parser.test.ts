@@ -25,7 +25,8 @@ const shape = (e: Expr): string => {
         : e.kind === 'assign' ? `(${shape(e.target)} ${e.op} ${shape(e.value)})`
         : e.kind === 'step' ? (e.before ? `(${e.op}${shape(e.target)})` : `(${shape(e.target)}${e.op})`)
         : e.kind === 'invoke' ? `${e.name}(${e.args.map(shape).join(', ')})`
-        : `(${shape(e.left)} ${e.op} ${shape(e.right)})`;
+        : e.kind === 'binary' ? `(${shape(e.left)} ${e.op} ${shape(e.right)})`
+        : `<${e.kind}>`;
     return e.bracketed ? s + '*' : s;
 };
 const argument = (src: string): Expr => {
@@ -183,7 +184,9 @@ test('a step is for a variable, and is not stepped again', () => {
     refused('$y = ($x)++;', "expected ';', found '++'", 1, 10);
     refused('say $x++ ++;', "expected ';', found '++'", 1, 10);
     refused('my 5;', "after 'my', expected a variable, found 5", 1, 4);
-    refused('my ($x);', "after 'my', expected a variable, found '('", 1, 4);
+    refused('my ();', 'my () declares nothing', 1, 4);
+    refused('my ($x + 1);', "expected ',' or ')', found '+'", 1, 8);
+    refused('my (5);', 'in my (...), expected a variable, an array or undef, found 5', 1, 5);
 });
 
 test('assignment is right to left, below ? : and above the word operators', () => {
@@ -202,17 +205,17 @@ test('assignment is right to left, below ? : and above the word operators', () =
 });
 
 test('the left side of an assignment is a variable, bare', () => {
-    const message = (op: string) => `the left side of '${op}' is a variable, $x or my $x, with no brackets round it`;
+    const message = (op: string) => `the left side of '${op}' is a variable, an element, an array, or a list of them in brackets`;
     refused('say 2 **= 3;', message('**='), 1, 7);
     refused('say 1 = 2;', message('='), 1, 7);
-    refused('($x) = 5;', message('='), 1, 6);
+    // (`($x) = 5;` and `(my $x) = 7;` are list assignments, from step 9.)
     refused('($x = 5) = 7;', message('='), 1, 10);
     refused('$x + 1 = 7;', message('='), 1, 8);
     refused('1 ? $x : $y = 7;', message('='), 1, 13);
     refused('$x++ = 7;', message('='), 1, 6);
     refused('-$x = 7;', message('='), 1, 5);
     refused('"a" x= 3;', message('x='), 1, 5);
-    refused('(my $x) = 7;', message('='), 1, 9);
+    refused('($x + 1) = 7;', message('='), 1, 10);
     // A statement is one assignment, not two joined (D56).
     const joins = (op: string) => `'${op}' after a statement joins it to what follows, to perl, which binds '${op}' more loosely than '=': write it as an if`;
     refused('$x = 1 and $y = 2;', joins('and'), 1, 8);
@@ -411,8 +414,6 @@ test('substr and index take their arguments in brackets (D41)', () => {
 test('say and print take one argument, and are statements', () => {
     assert.equal(grouped('print "a" . "b";'), '("a" . "b")');
     assert.equal(grouped('print("a");'), '"a"*');
-    refused('say "a", "b";', "',' after say's argument: a list is not in the language yet", 1, 8);
-    refused('print("a", "b");', "expected ')', found ','", 1, 10);
     refused('say 1 + say 2;', 'say is a statement, and has no value', 1, 9);
     refused('say print "a";', 'print is a statement, and has no value', 1, 5);
     refused('print ("a") . "b";', "'.' after print (...): perl takes the brackets for all of print's arguments; bracket the whole expression", 1, 13);
@@ -445,7 +446,7 @@ test('where an operand is wanted', () => {
     refused('say 1 + ;', wanted("';'"), 1, 9);
     refused('say 1 +', wanted('the end of the file'), 1, 8);
     refused('say -;', wanted("';'"), 1, 6);
-    refused('say ();', wanted("')'"), 1, 6);
+    refused('say ();', 'say() with nothing to print: perl prints $_', 1, 5);
     refused('say (+);', wanted("')'"), 1, 7);
     refused('say use 1;', wanted("'use'"), 1, 5);
     refused('say x 3;', wanted("'x'"), 1, 5);

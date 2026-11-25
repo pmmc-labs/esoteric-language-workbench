@@ -1,0 +1,2 @@
+t/492-range-of-a-range.pl:4:17: '..' after a range: perl does not compile a range of a range
+exit: 1

@@ -38,8 +38,18 @@
 typedef struct rt_block {
     struct rt_block *next;
     uint64_t size;          // of the whole block, this header and the string
-    uint64_t marked;        // reached, in the collection that is running
+    uint64_t marked;        // bit 0: reached, in the collection that is running;
+                            // bit 1: an rt_array follows, and not an rt_str
 } rt_block;
+
+#define REACHED ((uint64_t)1)
+#define IS_ARRAY ((uint64_t)2)
+
+// An array's values are storage of its own, which grows; it is counted
+// with the block against the cap.
+static uint64_t storage(const rt_array *a) {
+    return a->room * sizeof(rt_value);
+}
 
 // With no knob set, the first collection comes after this many bytes, and
 // each one after when as many have been allocated as were live after the
@@ -49,6 +59,7 @@ typedef struct rt_block {
 static void free_list(rt_block *list) {
     while (list) {
         rt_block *next = list->next;
+        if (list->marked & IS_ARRAY) free(((rt_array *)(list + 1))->items);
         free(list);
         list = next;
     }
@@ -91,16 +102,29 @@ void rt_leave(rt_ctx *cx, rt_frame *frame) {
     cx->deep -= weight(frame->count);
 }
 
+static void mark_string(rt_ctx *cx, rt_value v) {
+    if (v.tag == RT_TAG_ARRAY) rt_internal(cx, "an array holds an array");
+    if (v.tag != RT_TAG_STR) return;
+    if (v.as.s->where == RT_STR_DEAD) rt_internal(cx, "a slot holds a string that was collected");
+    if (v.as.s->where == RT_STR_HEAP) ((rt_block *)v.as.s - 1)->marked |= REACHED;
+}
+
 void rt_collect(rt_ctx *cx) {
     cx->collections += 1;
-    // Mark: every slot of every frame. A string holds no other value, so
-    // this goes no deeper (arrays will: step 9).
+    // Mark: every slot of every frame, and through an array to the values
+    // it holds. An array holds no array (step 13 will bring that, and a
+    // stack of what is still to be walked, so that C's is not used).
     for (rt_frame *frame = cx->frames; frame; frame = frame->prev) {
         for (uint64_t k = 0; k < frame->count; k++) {
             rt_value v = frame->slots[k];
-            if (v.tag != RT_TAG_STR) continue;
-            if (v.as.s->where == RT_STR_DEAD) rt_internal(cx, "a slot holds a string that was collected");
-            if (v.as.s->where == RT_STR_HEAP) ((rt_block *)v.as.s - 1)->marked = 1;
+            if (v.tag == RT_TAG_ARRAY) {
+                rt_array *a = v.as.a;
+                if (a->dead) rt_internal(cx, "a slot holds an array that was collected");
+                ((rt_block *)a - 1)->marked |= REACHED;
+                for (uint64_t n = 0; n < a->count; n++) mark_string(cx, a->items[n]);
+                continue;
+            }
+            mark_string(cx, v);
         }
     }
     // Sweep: what was not reached is poisoned, and freed; or, under the
@@ -109,17 +133,29 @@ void rt_collect(rt_ctx *cx) {
     rt_block **link = &cx->heap;
     while (*link) {
         rt_block *block = *link;
-        if (block->marked) {
-            block->marked = 0;
+        if (block->marked & REACHED) {
+            block->marked &= ~REACHED;
             live += block->size;
             link = &block->next;
             continue;
         }
         *link = block->next;
         cx->objects -= 1;
-        rt_str *s = (rt_str *)(block + 1);
-        memset((char *)(s + 1), '~', s->len);
-        s->where = RT_STR_DEAD;
+        if (block->marked & IS_ARRAY) {
+            // Its values go at once, poison or not: what is kept is the
+            // array itself, marked dead, for whoever still points at it.
+            rt_array *a = (rt_array *)(block + 1);
+            cx->held -= storage(a);
+            block->size -= storage(a);
+            free(a->items);
+            a->items = NULL;
+            a->count = a->room = 0;
+            a->dead = 1;
+        } else {
+            rt_str *s = (rt_str *)(block + 1);
+            memset((char *)(s + 1), '~', s->len);
+            s->where = RT_STR_DEAD;
+        }
         if (cx->poison) {
             block->next = cx->dead;
             cx->dead = block;
@@ -175,8 +211,7 @@ int rt_run(void (*body)(rt_ctx *cx), const char *file) {
 // changed after the function that made it returns. And the one place a
 // collection can happen: before the string is made, so that what is made
 // is never looked at before it is in a slot.
-static const rt_str *str_new(rt_ctx *cx, uint64_t len, uint64_t chars, char **bytes) {
-    uint64_t size = sizeof(rt_block) + sizeof(rt_str) + len + 1;
+static rt_block *block_new(rt_ctx *cx, uint64_t size) {
     cx->allocations += 1;
     int collected = 0;
     // The stress knob: every nth allocation (D63). Otherwise, when enough
@@ -206,6 +241,11 @@ static const rt_str *str_new(rt_ctx *cx, uint64_t len, uint64_t chars, char **by
     cx->objects += 1;
     block->next = cx->heap;
     cx->heap = block;
+    return block;
+}
+
+static const rt_str *str_new(rt_ctx *cx, uint64_t len, uint64_t chars, char **bytes) {
+    rt_block *block = block_new(cx, sizeof(rt_block) + sizeof(rt_str) + len + 1);
     rt_str *s = (rt_str *)(block + 1);
     char *p = (char *)(s + 1);
     p[len] = '\0';
@@ -316,7 +356,15 @@ static int noncharacter(uint32_t c) {
 // The file alone says how perl's streams are encoded (D39): without `use
 // open`, perl prints a character from U+0080 to U+00FF as one byte and
 // warns on a wider one, and neither is what the language prints.
+static void emit_checked(rt_ctx *cx, rt_value v, int newline, int write);
+
 static void emit(rt_ctx *cx, rt_value v, int newline) {
+    emit_checked(cx, v, newline, 1);
+}
+
+// `write` 0 is the look alone: every fault a value can raise as it is
+// printed, and nothing printed.
+static void emit_checked(rt_ctx *cx, rt_value v, int newline, int write) {
     char buf[32];
     const char *bytes = buf;
     size_t len;
@@ -335,6 +383,7 @@ static void emit(rt_ctx *cx, rt_value v, int newline) {
     } else {
         len = (size_t)format_number(cx, v, buf);
     }
+    if (!write) return;
     fwrite(bytes, 1, len, stdout);
     if (newline) putc('\n', stdout);
 }
@@ -1106,6 +1155,299 @@ rt_value rt_num_cmp(rt_ctx *cx, rt_value a, rt_value b) {
 
 rt_value rt_str_cmp(rt_ctx *cx, rt_value a, rt_value b) {
     return rt_int(compare_strings(cx, a, b));
+}
+
+// ---- arrays and lists (D76, D80)
+
+// The most values an array may hold: as a string's characters are.
+#define ARRAY_MAX ((uint64_t)INT32_MAX)
+
+// An array that is being used. One that was collected is a root the
+// collector was not shown.
+static rt_array *array_of(rt_ctx *cx, rt_value v) {
+    if (v.tag != RT_TAG_ARRAY) rt_fault(cx, "not an array");
+    if (v.as.a->dead) rt_internal(cx, "an array was used after it was collected");
+    return v.as.a;
+}
+
+// A value an array may hold: one of the five kinds, and no array.
+static rt_value scalar(rt_ctx *cx, rt_value v) {
+    if (v.tag < RT_TAG_INT || v.tag > RT_TAG_BOOL) rt_fault(cx, "not a value");
+    return v;
+}
+
+rt_value rt_array_new(rt_ctx *cx) {
+    rt_block *block = block_new(cx, sizeof(rt_block) + sizeof(rt_array));
+    block->marked = IS_ARRAY;
+    rt_array *a = (rt_array *)(block + 1);
+    a->count = a->room = 0;
+    a->items = NULL;
+    a->dead = 0;
+    rt_value v;
+    v.tag = RT_TAG_ARRAY;
+    v.as.a = a;
+    return v;
+}
+
+// Room for `count` values in all. The storage is counted against the cap,
+// and no collection is started for it: whoever is adding holds values the
+// collector may not have been shown.
+static void reserve(rt_ctx *cx, rt_array *a, uint64_t count) {
+    if (count <= a->room) return;
+    if (count > ARRAY_MAX) rt_fault(cx, "array too long");
+    uint64_t room = a->room < 8 ? 8 : a->room * 2;
+    if (room < count) room = count;
+    uint64_t more = (room - a->room) * sizeof(rt_value);
+    if (cx->cap != 0 && (more > cx->cap || cx->held > cx->cap - more)) rt_fault(cx, "out of memory");
+    rt_value *items = realloc(a->items, room * sizeof(rt_value));
+    if (items == NULL) rt_fault(cx, "out of memory");
+    a->items = items;
+    a->room = room;
+    cx->held += more;
+    cx->since += more;
+    ((rt_block *)a - 1)->size += more;
+}
+
+static void append(rt_ctx *cx, rt_array *a, rt_value v) {
+    reserve(cx, a, a->count + 1);
+    a->items[a->count++] = v;
+}
+
+void rt_list_add(rt_ctx *cx, rt_value list, rt_value v) {
+    if (v.tag == RT_TAG_ABSENT) return;
+    append(cx, array_of(cx, list), scalar(cx, v));
+}
+
+void rt_list_add_all(rt_ctx *cx, rt_value list, rt_value array) {
+    rt_array *to = array_of(cx, list);
+    rt_array *from = array_of(cx, array);
+    // `push @a, @a`: the count before, since the values move as it grows.
+    uint64_t count = from->count;
+    reserve(cx, to, to->count + count);
+    for (uint64_t n = 0; n < count; n++) to->items[to->count++] = from->items[n];
+}
+
+// A whole number, by the rule `substr` has for a position: for an index,
+// an offset, a length, an end of a range.
+static int64_t whole_of(rt_ctx *cx, rt_value v) {
+    number x = numeric(cx, v);
+    int64_t t = whole_number(cx, x);
+    if (x.split) rt_fault(cx, SPLIT);
+    return t;
+}
+
+void rt_list_add_range(rt_ctx *cx, rt_value list, rt_value from, rt_value to) {
+    rt_array *a = array_of(cx, list);
+    // perl's range of strings is another thing (T154).
+    if (from.tag == RT_TAG_STR) rt_fault(cx, "a string as the end of a range");
+    int64_t lo = whole_of(cx, from);
+    if (to.tag == RT_TAG_STR) rt_fault(cx, "a string as the end of a range");
+    int64_t hi = whole_of(cx, to);
+    if (lo > hi) return;
+    uint64_t count = (uint64_t)hi - (uint64_t)lo + 1;
+    if (count == 0 || count > ARRAY_MAX || a->count + count > ARRAY_MAX) rt_fault(cx, "array too long");
+    reserve(cx, a, a->count + count);
+    for (uint64_t n = 0; n < count; n++) a->items[a->count++] = rt_int((int64_t)((uint64_t)lo + n));
+}
+
+// Where index `i` is in an array of `count`, from the start; or -1 for
+// past either end.
+static int64_t place(uint64_t count, int64_t i) {
+    if (i >= 0) return (uint64_t)i < count ? i : -1;
+    // -count <= i, without negating the smallest integer
+    return (uint64_t)(-(i + 1)) < count ? (int64_t)(count - (uint64_t)(-(i + 1)) - 1) : -1;
+}
+
+void rt_list_add_slice(rt_ctx *cx, rt_value list, rt_value from, rt_value indexes, int how) {
+    rt_array *to = array_of(cx, list);
+    rt_array *a = array_of(cx, from);
+    rt_array *ix = array_of(cx, indexes);
+    // Every index is looked at, for its fault, though a list with no
+    // values gives none back.
+    for (uint64_t n = 0; n < ix->count; n++) {
+        int64_t at = place(a->count, whole_of(cx, ix->items[n]));
+        if (how == 1 && a->count == 0) continue;
+        if (how == 2 && at < 0) rt_fault(cx, "a slice past the end of the array, where perl would make the elements");
+        append(cx, to, at < 0 ? rt_undef() : a->items[at]);
+    }
+}
+
+void rt_list_add_repeat(rt_ctx *cx, rt_value list, rt_value values, rt_value count) {
+    rt_array *to = array_of(cx, list);
+    rt_array *from = array_of(cx, values);
+    number c = numeric(cx, count);
+    if (below_zero(c)) rt_fault(cx, "negative repeat count");
+    uint64_t times = (uint64_t)whole_number(cx, c);
+    if (c.split) rt_fault(cx, SPLIT);
+    if (from->count == 0) return;
+    if (times > ARRAY_MAX / from->count || to->count + times * from->count > ARRAY_MAX) rt_fault(cx, "array too long");
+    reserve(cx, to, to->count + times * from->count);
+    for (uint64_t t = 0; t < times; t++) {
+        for (uint64_t n = 0; n < from->count; n++) to->items[to->count++] = from->items[n];
+    }
+}
+
+void rt_array_assign(rt_ctx *cx, rt_value array, rt_value list) {
+    rt_array *a = array_of(cx, array);
+    rt_array *from = array_of(cx, list);
+    if (a == from) return;
+    reserve(cx, a, from->count);
+    for (uint64_t n = 0; n < from->count; n++) a->items[n] = from->items[n];
+    a->count = from->count;
+}
+
+rt_value rt_list_item(rt_ctx *cx, rt_value list, int64_t n) {
+    rt_array *a = array_of(cx, list);
+    return (uint64_t)n < a->count ? a->items[n] : rt_undef();
+}
+
+void rt_array_rest(rt_ctx *cx, rt_value array, rt_value list, int64_t n) {
+    rt_array *a = array_of(cx, array);
+    rt_array *from = array_of(cx, list);
+    uint64_t count = (uint64_t)n < from->count ? from->count - (uint64_t)n : 0;
+    reserve(cx, a, count);
+    for (uint64_t k = 0; k < count; k++) a->items[k] = from->items[(uint64_t)n + k];
+    a->count = count;
+}
+
+rt_value rt_count(rt_ctx *cx, rt_value array) {
+    return rt_int((int64_t)array_of(cx, array)->count);
+}
+
+rt_value rt_last_index(rt_ctx *cx, rt_value array) {
+    return rt_int((int64_t)array_of(cx, array)->count - 1);
+}
+
+rt_value rt_first(rt_ctx *cx, rt_value list) {
+    rt_array *a = array_of(cx, list);
+    return a->count == 0 ? rt_undef() : a->items[0];
+}
+
+rt_value rt_elem(rt_ctx *cx, rt_value array, rt_value index) {
+    int64_t i = whole_of(cx, index);
+    rt_array *a = array_of(cx, array);
+    int64_t at = place(a->count, i);
+    return at < 0 ? rt_undef() : a->items[at];
+}
+
+int64_t rt_elem_make(rt_ctx *cx, rt_value array, rt_value index) {
+    int64_t i = whole_of(cx, index);
+    rt_array *a = array_of(cx, array);
+    if (i < 0) {
+        int64_t at = place(a->count, i);
+        if (at < 0) rt_fault(cx, "an element before the start of the array");
+        return at;
+    }
+    if ((uint64_t)i >= ARRAY_MAX) rt_fault(cx, "array too long");
+    if ((uint64_t)i >= a->count) {
+        reserve(cx, a, (uint64_t)i + 1);
+        while (a->count <= (uint64_t)i) a->items[a->count++] = rt_undef();
+    }
+    return i;
+}
+
+rt_value rt_elem_get(rt_ctx *cx, rt_value array, int64_t at) {
+    rt_array *a = array_of(cx, array);
+    if (at < 0 || (uint64_t)at >= a->count) rt_internal(cx, "an element that was made is not there");
+    return a->items[at];
+}
+
+rt_value rt_elem_put(rt_ctx *cx, rt_value array, int64_t at, rt_value v) {
+    rt_array *a = array_of(cx, array);
+    if (at < 0 || (uint64_t)at >= a->count) rt_internal(cx, "an element that was made is not there");
+    a->items[at] = scalar(cx, v);
+    return v;
+}
+
+rt_value rt_elem_store(rt_ctx *cx, rt_value array, rt_value index, rt_value v) {
+    return rt_elem_put(cx, array, rt_elem_make(cx, array, index), v);
+}
+
+rt_value rt_push(rt_ctx *cx, rt_value array, rt_value list) {
+    rt_list_add_all(cx, array, list);
+    return rt_count(cx, array);
+}
+
+rt_value rt_unshift(rt_ctx *cx, rt_value array, rt_value list) {
+    rt_array *a = array_of(cx, array);
+    rt_array *from = array_of(cx, list);
+    uint64_t more = from->count;
+    reserve(cx, a, a->count + more);
+    memmove(a->items + more, a->items, a->count * sizeof(rt_value));
+    for (uint64_t n = 0; n < more; n++) a->items[n] = from->items[n];
+    a->count += more;
+    return rt_count(cx, array);
+}
+
+rt_value rt_pop(rt_ctx *cx, rt_value array) {
+    rt_array *a = array_of(cx, array);
+    return a->count == 0 ? rt_undef() : a->items[--a->count];
+}
+
+rt_value rt_shift(rt_ctx *cx, rt_value array) {
+    rt_array *a = array_of(cx, array);
+    if (a->count == 0) return rt_undef();
+    rt_value first = a->items[0];
+    a->count -= 1;
+    memmove(a->items, a->items + 1, a->count * sizeof(rt_value));
+    return first;
+}
+
+void rt_splice(rt_ctx *cx, rt_value removed, rt_value array, int given, rt_value offset, rt_value length, rt_value put) {
+    // Both numbers before anything moves: each has its fault.
+    int64_t o = given > 0 ? whole_of(cx, offset) : 0;
+    int64_t l = given > 1 ? whole_of(cx, length) : 0;
+    rt_array *a = array_of(cx, array);
+    rt_array *out = array_of(cx, removed);
+    rt_array *in = array_of(cx, put);
+    uint64_t count = a->count;
+    uint64_t start;
+    if (o < 0) {
+        if ((uint64_t)(-(o + 1)) >= count) rt_fault(cx, "splice before the start of the array");
+        start = count - (uint64_t)(-(o + 1)) - 1;
+    } else {
+        if ((uint64_t)o > count) rt_fault(cx, "splice past the end of the array");
+        start = (uint64_t)o;
+    }
+    uint64_t end = count;
+    if (given > 1 && l >= 0) {
+        end = (uint64_t)l < count - start ? start + (uint64_t)l : count;
+    } else if (given > 1) {
+        // That many are left at the end; none are removed if that is
+        // before where it starts.
+        uint64_t left = (uint64_t)(-(l + 1)) + 1;
+        end = left < count - start ? count - left : start;
+    }
+    uint64_t gone = end - start;
+    uint64_t came = in->count;
+    for (uint64_t n = start; n < end; n++) append(cx, out, a->items[n]);
+    // `in` may be the array's own values in a list of their own, never
+    // the array: a list is a copy (D76).
+    reserve(cx, a, count - gone + came);
+    memmove(a->items + start + came, a->items + end, (count - end) * sizeof(rt_value));
+    for (uint64_t n = 0; n < came; n++) a->items[start + n] = in->items[n];
+    a->count = count - gone + came;
+}
+
+static void emit_list(rt_ctx *cx, rt_value list, int newline) {
+    rt_array *a = array_of(cx, list);
+    for (uint64_t n = 0; n < a->count; n++) emit_checked(cx, a->items[n], 0, 0);
+    for (uint64_t n = 0; n < a->count; n++) emit_checked(cx, a->items[n], 0, 1);
+    if (newline) putc('\n', stdout);
+}
+
+void rt_say_list(rt_ctx *cx, rt_value list) {
+    emit_list(cx, list, 1);
+}
+
+void rt_print_list(rt_ctx *cx, rt_value list) {
+    emit_list(cx, list, 0);
+}
+
+int64_t rt_arguments(rt_ctx *cx, rt_value list, rt_value **where, int64_t most) {
+    rt_array *a = array_of(cx, list);
+    for (int64_t n = 0; n < most && (uint64_t)n < a->count; n++) where[n] = &a->items[n];
+    return (int64_t)a->count;
 }
 
 // stdout is flushed first, so that what the program printed before the

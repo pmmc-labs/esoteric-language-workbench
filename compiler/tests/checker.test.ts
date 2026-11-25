@@ -61,11 +61,10 @@ test('the pragmas: a closed list, each written one way, at the top, once (D16, D
 
 test("x with its left operand in brackets, as say's argument, repeats a list to perl (T101)", () => {
     const message = (name: string) => `(...) x as ${name}'s argument repeats a list, to perl: take the brackets off the left operand`;
-    refused('use v5.42;\nsay(("a") x 3);', message('say'), 2, 11);
+    // From step 9 that is a list, and in the language (D80).
+    accepted('use v5.42;\nsay(("a") x 3);\nprint +("a") x 3;\nsay((("a" . "b")) x 2);\nsay +(+("a") x 2);');
+    assert.equal(message('say').length > 0, true);
     refused('use v5.42;\nsay ("a") x 3;', "'x' after say (...): perl takes the brackets for all of say's arguments; bracket the whole expression", 2, 11);
-    refused('use v5.42;\nprint +("a") x 3;', message('print'), 2, 14);
-    refused('use v5.42;\nsay((("a" . "b")) x 2);', message('say'), 2, 19);
-    refused('use v5.42;\nsay +(+("a") x 2);', message('say'), 2, 14);
     // In a string's place it is a string that is repeated.
     accepted('use v5.42;\nsay "a" x 3;\nsay(("a") x 3 . "b");\nsay length(("a") x 3);\nsay -("2") x 3;\nsay "" . ("a") x 3;\nsay(("a" x 2) . "");');
     accepted('use v5.42;\nsay(("a" x 3));\nsay "a" x (3);');
@@ -132,13 +131,10 @@ test('an integer is at most 2^63 - 1 (D23)', () => {
 
 test("the list that say's argument is reaches the right of || and both branches of ? : (T104)", () => {
     const message = "(...) x as say's argument repeats a list, to perl: take the brackets off the left operand";
-    refused('use v5.42;\nsay(0 || ("a") x 3);', message, 2, 16);
-    refused('use v5.42;\nsay(1 && ("a") x 3);', message, 2, 16);
-    refused('use v5.42;\nsay(undef // ("a") x 3);', message, 2, 20);
-    refused('use v5.42;\nsay(0 or 1 and ("a") x 3);', message, 2, 22);
-    refused('use v5.42;\nsay 1 ? ("a") x 3 : "b";', message, 2, 15);
-    refused('use v5.42;\nsay 0 ? "b" : 1 ? 2 : (("a")) x 3;', message, 2, 31);
-    refused('use v5.42;\nsay 0 || +("a") x 3;', message, 2, 17);
+    // From step 9 each is a list repeated, and in the language (D80);
+    // after `return` it is still refused, until lists are returned.
+    accepted('use v5.42;\nsay(0 || ("a") x 3);\nsay(1 && ("a") x 3);\nsay(undef // ("a") x 3);\nsay(0 or 1 and ("a") x 3);\nsay 1 ? ("a") x 3 : "b";\nsay 0 ? "b" : 1 ? 2 : (("a")) x 3;\nsay 0 || +("a") x 3;');
+    refused('use v5.42;\nsub f($c) { return $c ? ("a") x 3 : "b"; }', message.replace("as say's argument", 'after return'), 2, 31);
     accepted('use v5.42;\nsay(("a") x 3 || 0);\nsay((("a") x 3) ? 1 : 2);\nsay(1 xor ("a") x 3);\nsay(!("a") x 3);\nsay(("a") x 3 eq "aaa");\nsay(0 || "" . ("a") x 3);');
 });
 

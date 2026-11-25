@@ -1,0 +1,2 @@
+t/472-comma-after-an-assignment.pl:4:10: a comma after an assignment's right side: perl takes the assignment for the first item of a list; put the list in brackets
+exit: 1

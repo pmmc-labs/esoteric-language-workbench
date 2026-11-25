@@ -1,2 +1,2 @@
-t/608-my-list.pl:4:4: after 'my', expected a variable, found '('
-exit: 1
+undef
+2

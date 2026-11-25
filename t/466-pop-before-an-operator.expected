@@ -1,0 +1,2 @@
+t/466-pop-before-an-operator.pl:5:9: pop @a before '+': perl reads on for the array, or does not compile it; write pop(@a)
+exit: 1
