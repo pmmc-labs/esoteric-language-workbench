@@ -8,9 +8,10 @@ my $p = "p";
 my $q = "q";
 my $r = "r";
 my $s = "s";
-# The statement of this file with the most temporaries, and its last one
-# is read by an operation that allocates.
-$s .= (($p . "a") . ($q . "b")) . ("c" . $r);
+# The statement of this file with the most temporaries, thirteen, and the
+# last of them is read by an operation that allocates: so the last slot of
+# the frame holds a made string across a collection.
+$s .= ((($p . "a") . ($q . "b")) . (($r . "c") . ($p . "d"))) . ((($q . "e") . ($r . "f")) . ("g" . $p));
 say $s;
 $s = length(($p . "a") . ($q . "b")) . (($r . "c") . ($s . "d"));
 say $s;

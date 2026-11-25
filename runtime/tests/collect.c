@@ -11,6 +11,8 @@
 
 static const char *which;
 static const rt_str AB = { 2, 2, "ab", RT_STR_CONSTANT };
+// What a slot must never be seen to hold: the collector says so if it is.
+static const rt_str GONE = { 2, 2, "~~", RT_STR_DEAD };
 
 static int is(const char *name) {
     return strcmp(which, name) == 0;
@@ -23,8 +25,9 @@ static void report(rt_ctx *cx, const char *when) {
 static void body(rt_ctx *cx) {
     rt_value slots[4];
     rt_frame frame;
-    // What the C stack held before is not a value: a frame opens empty.
-    memset(slots, 3, sizeof slots);
+    // What the C stack held before is not a value: a frame opens empty,
+    // though every slot looked like a string that was collected.
+    for (int k = 0; k < 4; k++) slots[k] = rt_string(&GONE);
     rt_enter(cx, &frame, slots, 4);
     if (is("opens-empty")) {
         rt_collect(cx);
