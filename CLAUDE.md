@@ -294,8 +294,14 @@ and one can happen only inside an allocation; so variables and
 temporaries become slots of a frame, and every runtime function
 allocates at most once, last (today a number used as a string
 allocates, which has to go). It is the first step with no perl to
-referee it and no model: the knobs are the test. Nothing of it is
-built; write the cap tests first, which are red today. Until it is
+referee it and no model: the knobs are the test. **Its adversarial
+review is in** (`docs/briefs/step7-review/`, with a prototype of the
+design): it could not break the rule, and the proposal is amended by
+what it found (poison must check where a string is read, in three
+places and again after an allocation; the cap must count the
+poisoned dead; ten holes in the test plan). Nothing of it is
+built; build the cap first, then the cap tests, which are red until
+there is a collector. Until it is
 built every string a loop makes stays until the program ends. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
 operand: 57,376 comparisons, no new fault needed. **What every step

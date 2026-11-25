@@ -1,0 +1,62 @@
+==== scoped roots: a C local is a root while its C block is open
+275 tests; 105 allocate at all; 105 have freed a string by the time they end
+none                        0 red, 0 of them with no `internal:`
+everything                 78 red, 70 of them with no `internal:`
+vars                       13 red, 6 of them with no `internal:`
+temps                      76 red, 74 of them with no `internal:`
+lasttemp                    0 red, 0 of them with no `internal:`
+lastvar                     1 red, 1 of them with no `internal:`
+var:0                       8 red, 5 of them with no `internal:`
+temp:1                     27 red, 25 of them with no `internal:`
+everything, one check      78 red, 70 of them with no `internal:`
+everything, recheck        78 red, 0 of them with no `internal:`
+temps, recheck             76 red, 0 of them with no `internal:`
+everything, stress 2       64 red, 56 of them with no `internal:`
+everything, stress 3       52 red, 45 of them with no `internal:`
+everything, stress 10      31 red, 24 of them with no `internal:`
+vars, stress 2             13 red, 6 of them with no `internal:`
+temps, stress 2            61 red, 59 of them with no `internal:`
+stale my                    0 red, 0 of them with no `internal:`
+overlap                     0 red, 0 of them with no `internal:`
+red with nothing skipped (the rule itself broken): []
+vars: 502 503 538 564 565 566 700 701 702 703 740 741 742
+temps: 108 109 110 111 112 114 144 145 146 147 152 154 162 163 166 167 168 173 174 187 188 191 301 303 304 305 306 307 326 329 332 334 335 336 337 338 340 350 358 360 361 362 363 364 500 501 502 503 504 520 521 525 526 527 528 531 532 533 534 535 536 537 538 539 540 546 560 562 565 566 700 701 702 703 741 742
+lasttemp: 
+lastvar: 538
+var:0: 502 503 538 564 565 566 700 702
+temp:1: 108 109 110 111 112 114 152 163 173 174 187 191 306 334 335 337 364 503 560 562 565 566 700 701 702 741 742
+stale my: 
+overlap: 
+red with every root missed, and green when to_str alone checks: []
+allocate, and print the same with every root missed: 27
+==== the proposal's frame: every slot a root, stale or not
+275 tests; 105 allocate at all; 53 have freed a string by the time they end
+none                        0 red, 0 of them with no `internal:`
+everything                 78 red, 70 of them with no `internal:`
+vars                       13 red, 6 of them with no `internal:`
+temps                      76 red, 74 of them with no `internal:`
+lasttemp                    0 red, 0 of them with no `internal:`
+lastvar                     1 red, 1 of them with no `internal:`
+var:0                       8 red, 5 of them with no `internal:`
+temp:1                     27 red, 25 of them with no `internal:`
+everything, one check      78 red, 70 of them with no `internal:`
+everything, recheck        78 red, 0 of them with no `internal:`
+temps, recheck             76 red, 0 of them with no `internal:`
+everything, stress 2       64 red, 56 of them with no `internal:`
+everything, stress 3       52 red, 45 of them with no `internal:`
+everything, stress 10      31 red, 24 of them with no `internal:`
+vars, stress 2             13 red, 6 of them with no `internal:`
+temps, stress 2            61 red, 59 of them with no `internal:`
+stale my                    6 red, 6 of them with no `internal:`
+overlap                    43 red, 43 of them with no `internal:`
+red with nothing skipped (the rule itself broken): []
+vars: 502 503 538 564 565 566 700 701 702 703 740 741 742
+temps: 108 109 110 111 112 114 144 145 146 147 152 154 162 163 166 167 168 173 174 187 188 191 301 303 304 305 306 307 326 329 332 334 335 336 337 338 340 350 358 360 361 362 363 364 500 501 502 503 504 520 521 525 526 527 528 531 532 533 534 535 536 537 538 539 540 546 560 562 565 566 700 701 702 703 741 742
+lasttemp: 
+lastvar: 538
+var:0: 502 503 538 564 565 566 700 702
+temp:1: 108 109 110 111 112 114 152 163 173 174 187 191 306 334 335 337 364 503 560 562 565 566 700 701 702 741 742
+stale my: 504 562 700 702 730 741
+overlap: 500 501 502 503 504 520 521 525 526 528 531 532 533 534 535 536 537 538 540 543 546 560 563 564 700 701 703 720 722 723 724 725 726 727 728 729 730 731 732 740 741 742 743
+red with every root missed, and green when to_str alone checks: []
+allocate, and print the same with every root missed: 27

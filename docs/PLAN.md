@@ -1664,8 +1664,11 @@ with (a) there.
 
 Referee: none; the knobs are the test. Size: large.
 
-**Proposed 2026-11-25. Nothing is built, and three questions are
-Stevan's: Q1 to Q3 below; Q4 is seven things with nothing to choose
+**Proposed 2026-11-25, and amended the same day by its adversarial
+review, which could not break its rule and corrected a good deal
+round it ("What the review found", below; the text here is as
+amended). Nothing is built, and three questions are
+Stevan's: Q1 to Q3 below; Q4 is eight things with nothing to choose
 that are worth his eye.** D26 is decided and is not reopened here: a
 precise, non-moving mark and sweep, its roots on a shadow stack the
 generated C maintains, with a stress interval, poison and a heap cap
@@ -1723,15 +1726,19 @@ made true:
    array per function, linked from the context. D31's shape already
    has every result stored before the next operation begins, so the
    change is where a value lives, not what the code does.
-2. **Inside the runtime.** `"n = " . $n` allocates three times
-   today: a string for the number, then nothing for the literal, then
-   the answer. The first is held only in a C local of the runtime
-   when the last is allocated, and a collection there would free it.
-   The cure is to stop allocating for a conversion: a number as a
-   string is at most 24 bytes, and can sit on the C stack for as long
-   as the operation runs. Then **every runtime function allocates at
-   most once, and it is the last thing it does**, which is a rule
-   that can be checked by reading and is enforced by the knobs.
+2. **Inside the runtime.** `"n = " . $n` allocates twice today: a
+   string for the number, and then the answer. The first is held only
+   in a C local of the runtime when the second is allocated, and a
+   collection there would free it. The cure is to stop allocating for
+   a conversion: a number as a string is at most 22 bytes, and can
+   sit on the C stack for as long as the operation runs (a *scratch*
+   string: neither on the heap nor a constant, flagged as neither,
+   and never the value a function returns). Then **every runtime
+   function allocates at most once, and it is the last thing it does,
+   or it holds what it has made in a frame of its own**. Today all
+   five that allocate are of the first kind; the second is for steps
+   9 and 10 (`split`, `sort` with a block, building a list), so the
+   frame is something runtime C can open too, from the start.
 3. **Between the two.** A fresh string is in a C return value for
    the instant between `rt_concat` returning and the assignment to
    its slot. No allocation can fall in that instant, because the
@@ -1745,11 +1752,18 @@ Nothing proves the rule but the knobs, which is why D26 has them:
   not on the day the heap happens to fill at the wrong line.
 - **Poison**: a freed string is overwritten and marked dead, and
   under the knob its memory is never handed out again. Anything that
-  still points at it and uses it stops with `internal: a string was
-  used after it was collected`, at once and every time, where a
-  plain `free` would let it read whatever was put there next.
+  still points at it and reads it stops with `internal: a string was
+  used after it was collected`, where a plain `free` would let it
+  read whatever was put there next. Two things make that true, and
+  the review found both missing: the runtime reads a string's bytes
+  in three places today, not one, so they go through one accessor
+  that checks; and an operation that allocates and *then* reads its
+  operands checks them again after the allocation, since under
+  stress that allocation is the collection that killed them.
 - **A heap cap**: a program that would hold more than the cap after
-  a collection faults with `out of memory`. A loop that makes a
+  a collection faults with `out of memory`. What is held counts the
+  poisoned dead too, or a runaway loop under poison never reaches
+  it. A loop that makes a
   gigabyte of garbage under a 16 MB cap passes only if the garbage
   is really freed, so this is the one way a golden test can see the
   collector work.
@@ -1801,8 +1815,13 @@ under the ordinary policy a small test never collects at all.
 golden test**, as the place where what every test assumes of the
 runtime is set; a test that is about the cap or the ordinary policy
 says so in its `# env:` header. One run, the strongest one. The cost
-is time, which I will measure before taking it: if the suite more
-than doubles, the interval goes up before the idea goes away.
+is time, and the review measured it on a prototype: nothing yet
+(every test in under a second, collecting always or never; the
+largest frame is 30 slots). It will cost from step 9, when a
+collection walks every live value. A test that is too slow then
+raises its own interval in its `# env:` header; the default stays
+1, because coverage falls fast with the interval (with every root
+missed, intervals 1, 2, 3 and 10 turn 78, 64, 52 and 31 tests red).
 (b) `make test` plain, and `make stress` beside `make sanitize` as
 something to run before calling a runtime change done. Faster, and
 it will be skipped.
@@ -1822,9 +1841,20 @@ program stops.
 **Q4. Nothing to choose, worth your eye.**
 - **"Precise" is about what a slot holds, not about whether it will
   be used.** A variable keeps its last string alive until its slot
-  is given something else or its function returns, used again or
-  not. No analysis of what is still wanted: a slot is reused by the
-  next block, and that bounds it.
+  is given something else or its function returns, and so does a
+  temporary: after `$s = $x . $y;` the string is in `$s` and in the
+  temporary it came through, and `$s = "";` frees nothing until a
+  later statement uses that temporary. No analysis of what is still
+  wanted. What is kept that nothing can reach is bounded by the
+  slots of the frames that are open, times the largest value: small
+  now, and from step 9 a stale slot can hold a whole array, which
+  that step has to say.
+- **The ordinary policy**, when no knob is set: a collection when
+  the bytes allocated since the last one pass the larger of 1 MB and
+  what was live after it, so the heap at most about doubles between
+  collections. It is the policy every shipped program runs and the
+  one the suite under stress never does, so it has a test of its own
+  in C, with no knobs.
 - **A number as a string no longer allocates**, anywhere: comparing,
   joining, measuring. It is the cure for (2) above and it also takes
   most of the garbage out of arithmetic-heavy string code.
@@ -1850,26 +1880,54 @@ program stops.
 
 #### The build, once the questions are answered
 
-- **Tests first, red before any code**: the cap tests. Loops that
-  make a gigabyte of strings in pieces, each under a 16 MB cap, one
-  for each way garbage is made: a temporary in an expression, a
-  variable given a new value, a `my` in a loop's block, a string
-  grown and cut back, a number joined to a string; and beside each,
-  what must *not* be freed: a string held in an outer variable
-  across a million collections, read at the end. They are `same`
-  tests (perl runs them too) and today each ends in `out of memory`.
+- **The cap first, and then tests that are red before the
+  collector**: the cap is a count and a fault and needs no
+  collector, and without it a gigabyte loop today just takes a
+  gigabyte. Then the cap tests. Loops that make a gigabyte of
+  strings in pieces, each under a 16 MB cap, one for each way
+  garbage is made: a temporary in an expression, a variable given a
+  new value, a `my` in a loop's block, a string grown and cut back
+  (kept under half the cap: old and new both exist inside `.=`), a
+  number joined to a string; and beside each, what must *not* be
+  freed: a string held in an outer variable across a million
+  collections, read at the end. They are `same` tests (perl runs
+  them too), and with the cap and no collector each ends in `out of
+  memory`. And one `fault` test that holds more than the cap live
+  and must fault: without it nothing shows the cap is counted.
 - **The runtime's own tests in C** (`runtime/tests/`): frames built
   by hand; make, drop, collect, count; a string in a slot survives,
-  one in no slot doesn't, a constant is never touched; each knob.
+  one in no slot doesn't, a constant and a scratch string are never
+  touched; two frames, with a string only in the outer; a frame
+  opened by the runtime itself; the ordinary policy with no knobs,
+  100 MB of garbage and the counters; each knob, and what `0`, `-1`,
+  `abc` and nothing do as its value. `rt_run` stops with `internal:`
+  if a frame is still linked when the program's body returns.
+- **Tests written for what the suite cannot see by luck**: the last
+  temporary of the statement that has the most, and the deepest
+  variable, each holding a made string read after two more
+  allocations (no golden test today turns red when the last
+  temporary slot is left out of the mark).
 - **Every golden test of steps 0 to 6 under stress 1 with poison**,
   byte for byte what it prints today; under gcc, clang, and the
   sanitizers, whose own check for a use after a free needs the
   poison's quarantine off, so both ways.
-- **Break it on purpose**: a slot left out of the mark, each kind
-  (a variable, a temporary, the last slot); a frame not linked, or
-  not unlinked; the sweep freeing what is marked; the marks not
-  cleared; a constant treated as heap; a conversion allocating
-  again; the cap not counted. Each must turn a test red.
+- **Break it on purpose**, the collector: a slot left out of the
+  mark, each kind (a variable, a temporary, the first slot, the
+  last); a frame not linked, or not unlinked; only the newest frame
+  marked; the sweep freeing what is marked; the marks not cleared; a
+  constant treated as heap; a conversion allocating again; the cap
+  not counted; the ordinary policy never collecting, or its
+  threshold not growing. **And the code generator**, where most of
+  the change is: a `my` that doesn't make its slot undef;
+  temporaries that begin one slot early; a frame one slot short; a
+  block's variable given a slot still in use. Each must turn a test
+  red.
+- **The knobs wherever a test's binary runs**, not only in
+  `t/run.sh`: `t/checks.py` runs fault tests itself, and the
+  mutation scripts run binaries. One place says what the knobs are.
+- **An `internal:` error flushes what the program printed first**,
+  and the quarantine is freed on every way out, or the sanitizers
+  report a leak on each fault test.
 - **An adversarial review of this proposal**, started with it, as
   the rule for a large step asks: a sequence of operations that
   frees a string still in use, or keeps garbage without bound, under
@@ -1878,6 +1936,47 @@ program stops.
   gigabyte loop's time and peak memory, into this section.
 - Leave out: everything listed above as later; any change to what a
   program means.
+
+#### What the review found
+
+A reader with this proposal and the code, who also built the design
+as a prototype (`briefs/step7-review/`: `proto.py` patches a copy of
+the runtime to collect before every allocation and poison what is
+unreached, and rewrites each test's generated C to frames by macros).
+All 275 golden tests that compile print what they print today under
+it.
+
+- **The rule was not broken.** No program and no path through the
+  runtime frees a string in use. Of 653,853 lines of generated C,
+  every runtime call's result is the whole right side of an
+  assignment to a temporary or a variable, every argument is a slot,
+  a pointer to one, or a constant, and no temporary is live across a
+  nested statement. With conversions on the C stack there are five
+  allocation sites, each once and last.
+- **Four things the proposal had wrong about today's code**, put
+  right above: the number of allocations in its own example; the
+  "one place" a string is read (three); "at once and every time"
+  for poison (70 of the 78 tests that turn red with every root
+  missed printed poisoned bytes and no `internal:` line, and one
+  probe stayed green); and "today each ends in `out of memory`"
+  (there is no cap today).
+- **Poison with a cap that counts only the living never stops a
+  runaway**: the suite's own default settings, as Q2 and Q3
+  recommend them, together. The cap counts the dead.
+- **Holes in the test plan**, ten, each taken above: the last slot;
+  variables hidden by the stale temporary beside them; a cap that is
+  never seen to trip; an ordinary policy nothing runs; one function
+  and so one frame until step 8; mutations for the code generator;
+  the knobs' own parsing; and the places a binary runs that are not
+  `t/run.sh`.
+- **For the later steps**: the second half of the rule for runtime
+  functions (above); a per-test interval, not a global one; and step
+  8's recursion limit must count a frame's bytes, not calls, since
+  frames differ in size.
+- **Not checked by it**: the cap and the ordinary policy (its
+  prototype has neither); a chain of frames, frames on the C stack,
+  or state in the context (its frame is one static array); clang and
+  the sanitizers; a gigabyte loop.
 
 ### 8. Subs
 
