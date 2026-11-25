@@ -265,9 +265,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 529 of them now, and all hold under 5.42.0,
+about perl as a program, 581 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T148, by step (T119 to T124 found proposing
+keeps the programs, T1 to T156, by step (T119 to T124 found proposing
 step 6, T132 to T142 proposing step 8, T143 to T148 by its review, T125 to T130 by the review of step 5, T131 building step 6).
 **T131 is the one to remember**: where the language faults perl may
 carry on, so a loop that only the fault would end never ends under
@@ -336,7 +336,15 @@ proposal round it: poison must check wherever a string is read and
 again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
 green after step 6 and again after step 7. **Next: step
-9**, arrays and lists, which is an outline and has to be proposed.
+9**, arrays and lists. **It is proposed and not agreed**
+(2026-11-25, `docs/PLAN.md`): five questions wait for Stevan, Q1 (an
+element is read where it stands, and an expression whose later part
+can change its array is refused), Q2 (`for my $x ($p, $q)` copies,
+and is refused when the block can assign `$p`), Q3 (a list
+assignment is a statement), Q4 (a sub that returns nothing is no
+value in a list: D71's fault ends), Q5 (two sub-steps, 9a arrays and
+lists, 9b `foreach` and the freeze). T149 to T156 were found
+proposing it, with 52 statements about perl. Nothing of it is built.
 **Step 8, subs** (D67 to D73; `docs/PLAN.md` has the build's own
 account). **A sub** stands at the top level, always with a
 signature, and is called with brackets, before or after it is

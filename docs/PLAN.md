@@ -2524,16 +2524,289 @@ see.
 
 Referee: perl. Size: large.
 
-`my @a`, literals, elements, negative indexes, `$#a`, the count in
-scalar position, list assignment and swaps, `push`, `pop`, `shift`,
-`unshift`, `splice`, ranges, `foreach my $x`, an array as an argument
-(it flattens). `return @a` and slurpy parameters wait for step 10 and
-are refused until then. Decides: D17's freezing, with its tests of
-kind `fault`, each written so that perl finishes; `for my $x ($p,
-$q)`; an index past the end (perl: undef reading, extends writing);
-slices; a list assignment as a condition; an element read in an
-expression that also removes it (D14). Traps: T5, T9, T13, T14, T21,
-T68.
+**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for).
+Not agreed: five questions wait for Stevan, Q1 to Q5 below, and
+nothing is built.** Everything here about perl was run under 5.42.0
+and is in `briefs/claims.py` (52 rows, `T5-more` to `PLAN9-later`).
+Traps: T5, T9, T13, T14, T21, T68, and T149 to T156, found writing
+this. The outline this replaces said: `my @a`, literals, elements,
+negative indexes, `$#a`, the count in scalar position, list
+assignment and swaps, `push`, `pop`, `shift`, `unshift`, `splice`,
+ranges, `foreach my $x`, an array as an argument (it flattens);
+`return @a` and slurpy parameters wait for step 10; and that the step
+decides D17's freezing, `for my $x ($p, $q)`, an index past the end,
+slices, a list assignment as a condition, and an element read in an
+expression that also removes it.
+
+#### The picture
+
+Until now a variable held one value. This step gives the program
+**a row of them, with a name**, and with it the thing Perl is built
+round: the **list**, a row of values with no name, which exists only
+while a statement is making or using it.
+
+```
+ an array: a variable, @a                a list: no variable
+
+   @a  --->  +----+----+----+            (1, 2, @a, f(), 5..7)
+             | 10 | 20 | 30 |              |
+             +----+----+----+              v   flattened as it is built
+              [0]  [1]  [2]              +---+---+----+----+----+---+---+---+---+
+              [-3] [-2] [-1]             | 1 | 2 | 10 | 20 | 30 | f | 5 | 6 | 7 |
+                                         +---+---+----+----+----+---+---+---+---+
+   $a[1]      one element: a value         |
+   scalar(@a) how many: 3                  +--> assigned:   my @b = (...);
+   $#a        the last index: 2            +--> counted over:  for my $x (...) { }
+                                           +--> handed to a sub:  f(...)
+                                           +--> printed:   say ...;
+```
+
+An array is the first value that **holds values** and the first that
+**changes in place**. Both are new to the runtime. The collector has
+to follow an array to what it holds, which step 7 was built before
+arrays to make room for. And a program can now hold a thing in one
+place and change it from another, which is where every question of
+this step comes from: perl's lists are rows of *the containers
+themselves*, so a `foreach`, an argument, an operand all see a
+change made after they were handed their value. D17 decided that
+here values flow and containers don't. This step is where that has
+to be made true.
+
+The rule for all of it, in one line:
+
+> **A list is a row of values, copied as it is built. Wherever perl
+> would have shown a later change through one, the program is
+> refused or faults.**
+
+Two ways it is kept: a **freeze**, as the program runs, for
+`foreach` (D17: an array that a `foreach` is over can't be changed
+until the loop is done); and a **refusal**, as it compiles, for an
+element used in an expression whose later part can change its array
+(Q1).
+
+#### The language at step 9
+
+- **`my @a;`**, **`my @a = LIST;`**, **`@a = LIST;`**. An array's
+  name is its own: `@x` and `$x` are two variables. `@a` and `@b`
+  are names an array may have (D55 was about `$a`).
+- **A list**: values, arrays, slices, ranges and calls with commas
+  between, in brackets; it flattens, so `(1, (2, 3), @a)` is one
+  row. One comma may follow the last.
+- **An element**, `$a[EXPR]`: the index a whole number, by the rule
+  `substr` has for a position. A negative one counts from the end.
+  **Reading past either end is undef, in silence, and the array is
+  not made longer.** **Storing past the end makes it longer**, the
+  gap undef. Storing before the start is a fault (perl dies). An
+  element is assigned, stepped and worked on as a variable is:
+  `$a[0]++`, `$a[$i] .= "x"`, `$a[5] //= 7`.
+- **How many**: `scalar(@a)`, and an array wherever one value is
+  wanted: `my $n = @a;`, `"n: " . @a`, `@a + 1`, `if (@a)`,
+  `while (@a > 2)`. **`$#a`** is the last index, -1 for none.
+- **List assignment**: `my ($p, $q) = LIST;`, `($p, $q) = ($q,
+  $p);`, with `undef` for a value to skip, an element as a target,
+  and one array last, which takes the rest. The right side is
+  finished first. Too few values leave undef; too many are dropped.
+- **`push @a, LIST`** and **`unshift`** (each gives the new count),
+  **`pop(@a)`** and **`shift(@a)`** (undef from an empty array),
+  **`splice(@a, OFFSET, LENGTH, LIST)`** with its shorter forms.
+- **A range**, `FROM .. TO`, in a list: whole numbers, each end cut
+  toward zero, nothing if FROM is past TO.
+- **A slice**, `@a[LIST]`, and of a list, `(LIST)[LIST]`: the
+  elements at those indexes, as values.
+- **`(LIST) x N`** in a list: the list N times (T101's refusal ends
+  for `say`, and T143's for an argument).
+- **`for my $x (LIST) { ... }`**, and spelled `foreach`: the block
+  once for each value. `$x` is read-only (D17). `last` and `next`
+  as in any loop.
+- **`say LIST;`** and **`print LIST;`**: each value, one after
+  another, nothing between.
+- **An array in a call's arguments flattens**, so the count of
+  arguments is known only as the program runs; the fault for a
+  wrong count is step 8's.
+- **In a sub**: its own arrays, new at each call, and the file's.
+  `return @a`, a list-shaped last statement, and `@rest` in a
+  signature are step 10's, and refused.
+
+#### What perl does that the obvious build gets wrong
+
+- **A `foreach` walks the array itself** (T5): a store to an element
+  shows in the loop, a `push` makes it longer, a `shift` skips, a
+  new list assigned to the array is walked. Through `(@a, @b)`, a
+  slice, `? :`, a named element, and from inside a sub the loop
+  calls. A range is fixed when the loop starts.
+- **An element as an operand is the container** (T149): `$a[0] +
+  chg()` has what `chg` stored; `$a[0] + shift(@a)` is 2 for an
+  array that starts 1, 2; `$a[1] * splice(@a, 0, 1)` is 2, where
+  reading late gives 3 and reading early gives 2 by luck; and one
+  shape warns of a value that was freed. An array's count is a value
+  at once: `@a + grow()` is the count before.
+- **Flattened arguments are the elements** (T149): `f(@a)` whose
+  `//=` default stores to `$a[1]` hands the second parameter the new
+  one.
+- **`@a || LIST` is the count** (T150): `my @f = @a || (9);` is
+  one element, 3.
+- **Where one value is wanted, a list-shaped thing is its last, its
+  count, or nothing sensible** (T151, T68): `my $x = @a[0,1];` is
+  the last; `my $s = splice(...)` the last removed; `my $n = (my
+  ($p, $q) = @a);` the count of the right side; `my $x = (1..3);`
+  is perl's flip-flop.
+- **`pop @a + 1` doesn't compile** (T152), `pop @a || 0` does;
+  `shift` alone, at the top level, shifts the program's arguments.
+- **An index too large for a number wraps** (T153): `$a[1e30]` is
+  defined, for an array of one.
+- **A range of strings is another thing** (T154): `"a".."e"`,
+  `"08".."11"`; an undef end warns.
+- **`for my $x () { }` doesn't compile** (T155).
+- **A `my @a` at the top level doesn't empty the array** (T156), as
+  T134 has it for a scalar.
+
+#### The questions
+
+**Q1. An element as an operand.** A scalar variable is read when its
+operator runs (D14), and the generated C does that by never copying
+one. An element could be treated so, but perl's own answer stops
+being a rule once the array can change size under it (T149): what it
+gives turns on which of its internal values was freed.
+(a) **Recommended: an element is read where it stands, a value, and
+an expression is refused when a later part of it can change that
+array**: store to an element of it, resize it or assign it, by
+itself or through a sub it calls, worked out over the whole program
+as D69 is. "A later part" is the other operand, a later argument, a
+default of the sub being called, a later piece of a row of dots. So
+`$a[0] + $a[1]`, `$a[$i++] + $a[$i++]`, `$t[$i] = $t[$i - 1] +
+$t[$i]` are as perl has them, and `$a[0] + chg()`, `f($a[0],
+shift(@a))`, `f(@a)` with a default that stores to `@a` are refused,
+with a message that says to take the element into a `my` first. An
+assignment needs nothing new: its right side runs first, as now.
+(b) An element is a place, read late like a variable, and the
+runtime pins its array against a change of size until the operator
+has run: a store is agreed with (`$a[0] + chg()` is 51), a resize
+faults. More of perl kept, for a pin in the runtime and its release
+on every way out.
+(c) Read early and refuse nothing. `$a[0] + ($a[0] = 10)` is then
+11 where perl has 20: WRONG.
+
+**Q2. `for my $x ($p, $q)`**, a `foreach` over scalar variables
+named in the list (T13): perl walks the variables, so `$p = 7` in
+the block shows in `$x`. An array can be frozen; a scalar can't.
+(a) **Recommended: the values are copied, and the loop is refused
+when its block, or a sub the block calls, can assign a variable
+named in its list.** The same walk again. The common loops, `for my
+$x ($lo, $hi)` over things the block only reads, are in.
+(b) Refuse a scalar variable named in the list always; `($p + 0,
+$q + 0)` says a copy is meant.
+(c) Leave it refused, as it is.
+
+**Q3. A list assignment as a value.** `if ((my @r = f()))`, `my $n
+= (my ($p, $q) = @a);`, `my $c = () = LIST;`: in perl it is the
+count of the right side.
+(a) **Recommended: a list assignment is a statement, and refused
+anywhere else.** `my @r = f(); if (@r)` says it. The countof idiom
+`() =` is rare outside golf.
+(b) In, as the count. One more thing an assignment can be, and a
+test of `if ((my @r = ...))` against D53.
+
+**Q4. A sub that returns nothing, in a list** (D71). Step 8 made it
+a fault "until step 10", having no lists. There are lists now, and
+the answer is none of them: `my @c = none();` is empty, `(1, none(),
+2)` is two values, `g(none())` calls `g` with nothing.
+(a) **Recommended: agree now, and D71's fault ends.** A call in a
+list gives its one value or none; the argument count is already
+counted as the program runs. Step 10 widens "one or none" to any
+number.
+(b) Keep the fault until step 10.
+
+**Q5. Two sub-steps.** This is the largest step so far: a new kind
+of value in the collector, lists through every expression, a loop,
+and two static rules.
+(a) **Recommended: build it as 9a and 9b, each green and committed**:
+9a is arrays, lists, elements, the builtins, list assignment, `say
+LIST`, flattening and Q1; 9b is `foreach`, ranges walked without
+being built, the freeze, and Q2. One proposal, one review, this one.
+(b) One build.
+
+**Nothing to choose, worth your eye.**
+
+- **The freeze** (D17), as it will be: an array is frozen while a
+  `foreach` is over a list that names it: the array, a slice or an
+  element of it, through brackets, `? :` and `||`. A range, a call
+  and any other value freeze nothing, so **`for my $i (0 .. $#a) {
+  $a[$i] *= 2 }` is how an array is changed in a loop**. Frozen,
+  it may be read by anyone, and any store to an element or change of
+  its size, from the loop or from a sub, is a fault, `an array was
+  changed while a foreach is over it`. It is a count (two loops over
+  one array), and it is given back on every way out: the end,
+  `last`, a `next` or `last` to an outer loop, a `return`.
+- **What is refused where one value is wanted** (T151, T68): a
+  slice, a range, a comma list, `splice`, a list assignment. An
+  array there is its count, and `(LIST)[N]` with one index is that
+  element.
+- **`pop` and `shift` take their brackets**, `pop(@a)`, unless
+  nothing follows the array but the end of the expression (T152);
+  each names an array, always. `push` and `unshift` are written
+  either way, and need a value to add. `splice` has brackets.
+- **`scalar(@a)`**, of an array and nothing else.
+- **Faults**: an index that is not a whole number by `substr`'s
+  rule, undef, or too large to be one (T153); a store before the
+  start; `splice` past the end (perl warns) or before the start; a
+  range with a string or an undef for an end (T154), or an end
+  outside the integers; an array of more than 2^31 elements.
+  `out of memory` is as it was.
+- **A range as a list is built**, so `my @a = (1 .. 1e9);` is a
+  fault for memory; a `foreach` over one range counts and builds
+  nothing.
+- **A file's array** keeps its slot and is empty as the program
+  starts; `my @a;` at the top level stores nothing (T156).
+- **Later, and refused with a message**: a slice on the left of
+  `=`; `$#a = N`; `exists` and `delete` on an element; `for my ($i,
+  $x) (...)`; `for` with no `my`, and over `$_`; `each`, `keys` and
+  `values` of an array; `wantarray`; `@a` in a string.
+- **The collector** follows an array to its values. A collection
+  now costs the live values and not only the slots, so under D64's
+  stress a test that builds a large array says its own interval.
+- **No reference to an array, and none to an element** (step 13):
+  an array is its variable's, and assigning one copies it.
+- **A value has no past, asked again**: through an element, a list,
+  a slice, `push` and `pop`.
+
+#### The build, once the questions are answered
+
+- **The model first, red** (`t/models/list.py`, on step 8's): an
+  array is a Python list in a place, a list a Python list of
+  values, the freeze a count. `same` tests: every form above with
+  each kind of value; indexes at and past each end; list assignment
+  of every shape; each builtin at its edges (`splice` with every
+  sign of offset and length); ranges; slices; flattening into calls
+  with defaults; `foreach` over every kind of list, nested, left by
+  `last`, `next` and `return`; counts in every scalar position; the
+  file's arrays from subs; and the operators of steps 1 to 6 on
+  values that came through an element. Fault tests, each at its
+  edge and each ending under perl: every fault listed; every way a
+  frozen array is changed, and that it is not frozen after each way
+  out of the loop.
+- **By hand**: the programs the language can now say (a sieve, a
+  bubble sort, a stack and a queue, Pascal's triangle, a moving
+  average); every refusal, with what perl does in its comment.
+- **The runtime**: an array as a heap value with its own storage,
+  counted against the cap; the mark through it, with no recursion to
+  overflow C's stack (arrays hold no arrays yet, and the mark is
+  written for when they do); a runtime function that builds a list
+  opens a frame; the freeze count. Its own tests in C.
+- **The compiler**: arrays and lists in the tree; the resolver's
+  second namespace; context in the checker (where a list may stand
+  and where one value must); the two walks, with D69's; a call
+  handed a count and where each argument is, flattened or not.
+- **Break it on purpose**: the mark not following an array; a list
+  built in no slot; the freeze not counted, not given back on each
+  way out, not looked at by each of the six things that change an
+  array; an element copied late, or its index worked out after the
+  right side; each walk skipping defaults, or subs; a range built
+  for a `foreach`; an off-by-one at each end of every index.
+- **gcc, clang, `make sanitize`**; every golden test under stress.
+- **An adversarial review of this proposal**, started with it.
+- Leave out: `map`, `grep`, `sort`, `join`, `reverse`, `$_`, list
+  returns and slurpy parameters (10); hashes (12); references and
+  arrays of arrays (13); `@a` in a string (16).
 
 ### 10. List operators, `$_`, list returns
 

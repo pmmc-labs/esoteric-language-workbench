@@ -434,6 +434,29 @@ is `<a-c` where `($x . "-") . ch()` is `b-c`.
 | T147 | `bump(); my $x += 10; say $x;` with `sub bump() { $x++ }` after; `my $s .= "a";`, `my $d //= 10;` | `11`, `qa`, `1`: T134 for a `my` with an assigning operator | 8 | Agree, as T134 |
 | T148 | `my $n; sub v($x) { $x * 2 } v($n);` | A warning, `Use of uninitialized value $x in multiplication`: a void call still works its value out | 8 | Agree: nothing is skipped under void, so the fault comes |
 
+## Found proposing step 9
+
+T5, T9, T13, T14, T21 and T68 are this step's from before. T5 has
+more to it: a `push` in the loop makes the walk longer (`1 2 3 11
+12`), a `shift` skips an element, and a new list assigned to the
+array is walked from where the loop was; the same through `(@a, @b)`,
+a slice, `? :`, a named element `($a[0], $a[1])`, `(@a, ())`, and
+from a sub the block calls. A range is fixed when the loop starts
+(`for my $i (0 .. $#a)` with a `push` inside walks the old indexes),
+and its variable may be assigned in perl. T68: `my $g = (@a, 9);`
+warns too. T14: `for (1, 2)` walks `$_`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T149 | `my @a = (1,2,3); say $a[0] + ($a[0] = 10) + $a[0];`; `say $a[0] + shift(@a);`; `say $a[2] + pop(@a);`; `say $a[0] + chg();` with `chg` storing 50; `say $a[1] * splice(@a, 0, 1);`; `say $a[0] + (@a = (7,8))[0];`; `f(undef, $a[1])` and `f(@a)` with a `//=` default that stores to `$a[1]`; `two($a[0], chg())` | `30`, `2`, `6`, `51`, `2`, and `7` with a warning for a value that was freed; the default's `9` both times; `50\|1`: an element as an operand or an argument is the container, read late, and one that has left the array is still read. `@a + grow()` is the count before `grow`: a count is a value at once | 9 | Q1 of step 9: an element is read where it stands, and an expression whose later part can change that array is refused |
+| T150 | `my @f = @a \|\| (9);` for an array of three; `my @d = @e \|\| (1,2);` for an empty one | One element, `3`; two: the left of `\|\|` is one value, the count | 9 | Agree: an array where one value is wanted is its count |
+| T151 | `my $x = @a[0,1];`; `my $s = splice(@a, 0, 2);`; `my $n = (my ($p, $q) = @a);`; `my $c = () = (4,5,6);`; `my $x = (1..3);` | The slice's last, `5`; the last removed, `5`; the count of the right side, `3` and `3`; and the last is perl's flip-flop, with a warning about `$.` | 9 | Refuse a slice, a range, `splice` and a list assignment where one value is wanted (Q3 for the assignment) |
+| T152 | `my $x = pop @a + 1;`; `my $x = pop @a \|\| 0;`; `my $x = shift;` at the top level | Doesn't compile (`pop on scalar is now forbidden`); `6`; undef: `shift` alone shifts the program's arguments, and in a sub `@_` | 9 | `pop` and `shift` take brackets unless the array ends the expression, and always name an array |
+| T153 | `my @a = (1); my $v = $a[1e30]; say defined($v) ? "d" : "u";` | `d`: an index too large for a whole number wraps to one that is there | 9 | Fault |
+| T154 | `("a".."e")`, `("08".."11")`, `("a".."5")`, `("1".."3")`; `(1..$u)` | 5 letters; `08` to `11`, four strings; 26; and 1 to 3: a range of strings is string increment, unless both look like numbers. An undef end warns | 9 | Fault on a string or an undef for either end of a range |
+| T155 | `for my $x () { say "never"; }` | Doesn't compile | 9 | Refuse an empty list after `for my $x` |
+| T156 | `fill(); my @a; say scalar(@a);` with `sub fill() { push @a, 1, 2; }` after | `2`: T134 for an array. `my @a = ();` empties it | 9 | Agree: a file's array has a slot of its own, empty as the program starts, and its `my` stores nothing |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only
