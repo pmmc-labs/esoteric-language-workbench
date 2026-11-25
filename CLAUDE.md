@@ -266,9 +266,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 609 of them now, and all hold under 5.42.0,
+about perl as a program, 655 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T172, by step (T119 to T124 found proposing
+keeps the programs, T1 to T184, by step (T119 to T124 found proposing
 step 6, T132 to T142 proposing step 8, T143 to T148 by its review, T125 to T130 by the review of step 5, T131 building step 6).
 **T131 is the one to remember**: where the language faults perl may
 carry on, so a loop that only the fault would end never ends under
@@ -392,7 +392,7 @@ on the left of `=`, `$#a = N`, `@a` in a string. **Step 9's
 proposal** was reviewed adversarially before it was built: eleven
 ways to be WRONG (T157 to T168, `briefs/step9-review/`), which is
 where "named anywhere" and the written orders come from. **Next:
-step 10**, list operators, `$_` and list returns, to be proposed.
+step 10**, list operators, `$_` and list returns: **proposed** (2026-11-25, `docs/PLAN.md`; five questions, Q1 to Q5, not yet answered; T173 to T184 found writing it, with 46 statements about perl), and not yet reviewed or built.
 `map`, `grep` and `sort` with a block are the first things that want
 the runtime to call generated code, and D68 says the proposal has to
 say how.

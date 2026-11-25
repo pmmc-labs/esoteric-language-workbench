@@ -2979,16 +2979,251 @@ to answer with Q1 and Q2.**
 
 Referee: perl. Size: large.
 
+**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for).
+Not agreed: five questions, Q1 to Q5, each with a recommendation.**
+Everything here about perl was run under 5.42.0 and is in
+`briefs/claims.py` (46 rows, `T173` to `T184-global`). Traps: T3,
+T4, T6, T8, T10, T15 to T18, T20, T23, T29, T41, T54, T59, T61, and
+T173 to T184, found writing this. The outline this replaces said:
 `map`, `grep`, `sort` with and without a block, `join`, `reverse`,
 `foreach` and postfix `for` over `$_`; slurpy parameters; `return` of
-a list, and D18's fault, with void as the third context. Decides:
-block or hash after `map` (D21); `sort`'s comparator (D14: frozen so
-that an effect faults, or perl's merge ported; `$a` and `$b` are the
-block's, read-only, and refused elsewhere); a string as a range's end
-(T41); `map EXPR, LIST`; `my $a` and `my $b` refused (T61); `last`
-out of a `map` block refused, and the freeze released on every exit
-that is allowed (T59). Traps: T3, T4, T6, T8, T10, T15 to T18, T20,
-T23, T29, T41, T54, T59, T61.
+a list, and D18's fault, with void as the third context; and that
+the step decides block or hash after `map` (D21), `sort`'s
+comparator (D14), a string as a range's end (T41), `map EXPR, LIST`,
+`my $a` and `my $b` (T61), and `last` out of a `map` block (T59).
+
+#### The picture
+
+Three things, each standing on the one before.
+
+**1. A sub gives back a list.** Step 8 gave every call a flag with
+perl's three contexts, and step 9 a list to put values in. So this
+is small: where a list is wanted, a call adds every value its sub
+returned, where step 9 had "one or none". `return LIST`, a list as a
+sub's last statement, `@rest` in a signature, and D18's fault for a
+list-shaped `return` that reaches a call wanting one value. `join`
+and `reverse` come here, being the two list builtins that are only
+functions.
+
+**2. `$_`, and the constructs that bind it.** `for (LIST) { }`,
+`STATEMENT for LIST;`, `map { } LIST` and `grep { } LIST` are each
+step 9b's `foreach` under another spelling: the list copied once,
+every array named in it frozen, D77's refusal, and a block that runs
+once for each value with `$_` that value. The block is compiled where
+it stands, as a loop's block is: **`map` is a loop that adds its
+block's value to a list**, and `grep` one that adds `$_` when the
+block is true. Nothing calls anything, and D68's question does not
+come up for them.
+
+**3. `sort`, which is not a loop.** Which two values are compared
+next depends on how the last comparison came out, so the block can't
+be laid out as a loop's body by the compiler alone: the sorting and
+the block have to take turns. Q1 is what order perl's comparisons
+come in and whether it shows; Q2 is who is in charge of the taking
+of turns.
+
+#### The language at step 10
+
+- **`return LIST;`** and a list as a sub's last statement: to a call
+  where a list is wanted, every value. **D18's fault**: a `return`
+  (or a last statement) that is *list-shaped*, reached by a call
+  that wants one value, faults: `f returned a list where one value
+  is wanted`. List-shaped is by the tree, as D18 has it: an array, a
+  comma list, a slice, a range, `(LIST) x N`, `splice`, `map`,
+  `grep`, `sort`, `reverse`, and `? :` or `|| && //` with such an
+  arm, whichever arm is taken. `return (7);` is one value, and
+  `return ();` is `return;`. `return f();` hands its own context on.
+  A void call faults for nothing.
+- **`sub f($x, @rest)`**: a last parameter that takes every argument
+  left, as a new array of copies; `@` alone takes and names nothing.
+  No default, and nothing after it: perl compiles neither (T182).
+- **`join(SEP, LIST)`**, with brackets or without: SEP is one value
+  (an array there is its count, T182), each value of the list is
+  made a string as `.` makes one, so undef faults.
+- **`reverse LIST`**, where a list is wanted.
+- **`for (LIST) { ... }`** and **`STATEMENT for LIST;`**: `foreach`
+  with `$_` for its variable. The statement is what may stand before
+  `if` today.
+- **`map { ... } LIST`** and **`grep { ... } LIST`**. The block is
+  statements, the last an expression with no modifier, which is its
+  value: for `map` a list (any number of values, none too), for
+  `grep` one value, tested for truth. A `my` in the block is new
+  each time round. They take every value to the end of the list they
+  stand in, as perl's list operators do: `(9, map { $_ * 2 } 1, 2)`.
+- **`$_`** is read-only (D17), and is seen in the block or the
+  statement of the construct that binds it and nowhere else: not in
+  a sub that block calls (to perl it is one global variable, T180).
+  A binder inside another hides the outer `$_`.
+- **`sort LIST`**: by string, as `cmp` orders, and stable. **`sort
+  { ... } LIST`**: `$a` and `$b` are the two values being compared,
+  read-only, seen in the block alone; the block's value says which
+  comes first.
+- **Frozen while they run**: every array named anywhere in the list
+  of a `for`, a `map`, a `grep` or a `sort`; and D77's refusal for a
+  scalar named there that the block can change.
+
+#### What perl does that the obvious build gets wrong
+
+- **`sort`'s comparisons come in an order, and it shows** (T3, T173):
+  for `(5,3,8,1,9,2,7)` perl compares `53 81 92 31 38 58 27 79 12 23
+  37 75 78 89`, the same pairs every run, and another sequence when
+  the block is `$b <=> $a`. A block that prints, counts or stores
+  shows the order. So does one that is not a consistent order: `sort
+  { 1 }` of 1 to 5 is `5 4 3 2 1`, `sort { -1 }` is `1 5 3 2 4`.
+  **And the commonest block of all is not consistent at the edge**:
+  D49 compares an Int with a Num as doubles, so 2^53 + 1 equals the
+  Num 2^53, which equals the Int 2^53, which is less than 2^53 + 1;
+  perl sorts those three one way, and another merge would sort them
+  another.
+- **The block's value is cut to a whole number and then to 32 bits**
+  (T173): 0.5 is "equal", 4294967296 is "equal", 2147483648 is
+  "less".
+- **`return` in a `sort` block ends the comparison, and in a `map`
+  block ends the sub** (T174).
+- **A block or a hash?** (T175, T54) perl looks at the first thing
+  after `{`: a string or a number or a capitalised word, and then a
+  comma, and it is a hash and a syntax error; so is `{ }`. `map {
+  "a", $_ }` and `map { 1, $_ }` do not compile; `map { $_, 1 }`,
+  `map { 1.5, $_ }` and `map { -1, $_ }` do.
+- **A block that ends in an `if`** gives the empty string where the
+  test fails (T176); `grep { ($_, 0) }` takes the last and warns.
+- **`map` and `grep` make an element that is not there, as `foreach`
+  does; `sort`, `join` and `reverse` do not** (T177).
+- **Where one value is wanted** (T178): `grep` and `map` are a
+  count; `reverse` joins its arguments and reverses the characters;
+  `sort` is undef, with a warning.
+- **`sort` works on the array's own elements** (T179, T10): a store
+  to the array in the block shows in the result, `$a++` rewrites the
+  array, and a `push` in the block of `@a = sort { } @a` is lost.
+- **`$_` is one global variable** (T180, T15): a sub called from the
+  block sees it, and a sub called from a `sort` block sees `$a`.
+  `$_ *= 2` in a `for`, a `map` or a `grep` rewrites the array.
+  `map { length }`, `grep { defined }` and `say for` mean `$_`.
+- **`push @a, 9 for @a;` never ends** (T181; T131's kind).
+- **A list where one value is wanted, through a call** (T183, T16 to
+  T18): `(4, 5, 6)` is 6, `reverse` the joined string, `map` a
+  count, `splice` its last, `sort` undef, a range the flip-flop.
+- **Context is syntax** (T183): the last statement of a `map` block
+  is called for a list, of a `grep` or `sort` block for one value,
+  `join`'s first argument for one value, and a `map` in a `return`
+  is a list whatever the sub was called for.
+
+#### The questions
+
+**Q1. The order of `sort`'s comparisons.** perl's is fixed, and a
+program can see it three ways: an effect in the block, a block that
+is no consistent order, and a fault in the block (which pairs are
+compared decides whether a division by zero is ever reached).
+(a) **Recommended: perl's merge, ported.** It is `pp_sort.c`'s
+`S_sortsv_flags_impl`: runs found first (`dynprep`), then merged,
+about 450 lines of C. Every comparison is then the one perl makes,
+in perl's order, so every block agrees, an inconsistent one too, and
+the oracle is exact: a block that logs each pair it is given, run
+under perl and here over some thousands of arrays (sorted, reversed,
+runs of sixteen and more for the long-run path, many equal keys for
+the galloping one). D14 named this choice, and Chalk made it.
+**One thing for Stevan to say yes to**: that file is perl's, "under
+the same terms as Perl itself", and a port of it into the runtime is
+a derived work that is linked into every compiled program; the
+repository has no licence file yet.
+(b) A merge of the language's own, and the block held to what can't
+show: refused if it or a sub it calls changes anything or prints,
+and a fault... for what? The edge of `<=>` above is the ordinary
+block on ordinary values. Every comparison of an Int of 2^53 or more
+with a Num would have to fault inside a `sort`, and a block that is
+not `KEY($a) OP KEY($b)` refused. More rules, and they buy only not
+porting.
+
+**Q2. Who is in charge: the sort, or the generated code?**
+(a) **Recommended: the generated code.** The runtime's sort is made
+so that it can stop and be taken up again: `rt_sort_next` runs the
+merge as far as the next comparison and hands back the two values;
+the generated C runs the block, inline, as it would a loop's, and
+hands the answer to the next `rt_sort_next`. In C that is the ported
+merge with its variables in a struct and each comparison a place it
+can return from and come back to (a `switch` on where it was). The
+runtime still never calls generated code, a `sort` block is laid out
+like a `map` block, and nothing new sits on the C stack between the
+program and its block: what D68 asked to be kept open for step 29
+stays open. The cost: the port is less of a copy of perl's text, so
+it leans on the logged comparisons to show it is the same.
+(b) The runtime calls the block, as a C function handed its
+caller's frame. The port stays close to perl's text. It is the first
+call from the runtime into generated code, and it puts the runtime's
+C frames between a program and what its block calls, which is the
+shape that is hard to undo when a call stops being a C call.
+
+**Q3. `grep` and `map` where one value is wanted.** `my $n = grep {
+... } @a;` and `if (grep { $_ eq $x } @a)` are the count, in perl,
+and everyday (T178).
+(a) **Recommended: the count, for both, as perl has it.** It is
+what an array is where one value is wanted, and costs a line.
+`sort` and `reverse` there are refused: perl's `sort` is undef with
+a warning, and its `reverse` is another function (of strings, for
+the step that has strings to propose). A `return grep { ... } @a`
+reached by a call for one value is still D18's fault.
+(b) Refused, with step 9's lists: `my @m = grep ...; my $n = @m;`.
+
+**Q4. `map EXPR, LIST`, and the builtins that mean `$_` when given
+nothing.** perl has `map lc, @a`, `grep $_ > 1, @a`, `grep {
+defined } @a`, `say for @a` (T180).
+(a) **Recommended: neither. A block always, and `$_` always
+written.** `map EXPR, LIST` is the form where perl's parser guesses
+(`map ($_ * 2), (1, 2)` is a `map` of nothing, with a warning), and
+a builtin with no argument is already refused for what perl reads
+after it (T94). `grep { defined($_) } @a` says it.
+(b) `map EXPR, LIST` too. (c) Both.
+
+**Q5. One step or three?**
+(a) **Recommended: three, each green and committed.** 10a: list
+returns, D18's fault, slurpy parameters, `join`, `reverse`. 10b:
+`$_`, the two `for`s, `map`, `grep`. 10c: `sort`.
+(b) One.
+
+#### What has nothing to choose
+
+- **Refused in a `map`, `grep` or `sort` block**: `return` (T174:
+  perl gives it two meanings), `last` and `next` to any loop (T59).
+- **A block's first token** (T175, D21): refused when it is a string
+  or a number or a word and a comma follows, and when the block is
+  empty; perl compiles none of them as a block. No comma after the
+  block.
+- **A block that does not end in an expression** is refused (T176),
+  as a sub that ends so has no value.
+- **The block's value in a `sort`** is a whole number by the index's
+  rule, a fraction cut toward zero as perl cuts it, and a fault
+  outside 32 bits, where perl wraps (T173).
+- **Past the end** (T177): D80's fault for an element or a slice in
+  the list of a `for`, a `map` or a `grep`; not of a `sort`, a
+  `join` or a `reverse`, where perl makes nothing.
+- **`$a` and `$b`** are names in a `sort` block alone (T61, T10);
+  `$_` in its binder alone. A sub can't see either.
+- **`sort` with no list, `sort NAME LIST`, `sort $f LIST`** (T29),
+  `wantarray`, a string as a range's end (T41: still the fault).
+- **D76 goes through a block**: what a block changes is what its
+  `map`, `grep` or `sort` changes, for the walk.
+
+#### The build, once the questions are answered
+
+- **10a.** The model first, on `list.py`: a call's values, the
+  fault by shape and by context, slurpy parameters, `join`,
+  `reverse`. The call convention grows by one case: to a list a sub
+  hands back a list. Fault tests: every list shape, through every
+  arm, to every kind of place that wants one value.
+- **10b.** The model on `each.py`: the binders are `foreach` with a
+  name. Fault tests: 9b's, again for each binder (every way of
+  changing a frozen array, every shape that names one, every way
+  out), and T131's rule for every one of them.
+- **10c.** The merge twice: in the model, in Python, and in the
+  runtime, in C, each held to perl by logged comparisons, and to
+  each other. Unit tests in C for the machine itself: stopped and
+  taken up at every comparison, a collection at each.
+- Tests are numbered from 1000: 000 to 999 has two small gaps left.
+- **Adversarial review before any of it is built**, as the rule has
+  it. What I would ask it first: whether perl's numeric `sort`
+  leaves the values it sorted with a past that shows (it turns
+  strings to numbers in place); `$_` and `$a` reached in ways the
+  lexical rule does not see; contexts D18's shapes miss.
 
 ### 11. The census
 
