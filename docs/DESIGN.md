@@ -28,7 +28,10 @@ settle is listed at the end.
   process from the workbench. **New:** the core rule as the definition
   of the language, and perl as the test oracle.
 - **Later, by proposal** (D5): gradual types, roles and a metaobject
-  protocol, concurrency.
+  protocol, concurrency. Roles are to be part of the object system,
+  taken up with `class` at step 17 rather than with the metaobject
+  protocol: Stevan's wish, not yet a proposal (`PLAN.md`, step 17,
+  says what to read first).
 
 ## Non-goals
 
@@ -299,9 +302,11 @@ step, roughly in the order it will matter:
 11. **Regex captures** (step 19): `$1`, or only named and returned.
 12. **Bytes**, for binary files, as a type apart from strings (with
     step 21).
-13. **The syntax of a type** (step 25); whether roles erase by
-    flattening into classes, which would keep perl as their oracle
-    (step 27); the shape of concurrency, and D13 revisited with it
+13. **The syntax of a type** (step 25); **roles**, as part of the
+    object system and whether they erase by flattening into classes,
+    which would keep perl as their oracle (step 17, which reads
+    `stevan/p5-roles-algebra` and `stevan/p5-core-role-tests` first;
+    step 27 before); the shape of concurrency, and D13 revisited with it
     (step 29).
 14. **The extension of a file that carries type annotations** (step
     25). A program is a `.pl` file until then.

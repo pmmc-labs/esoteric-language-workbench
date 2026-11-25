@@ -306,7 +306,7 @@ that names it.
 | `class Name VERSION`, `:param(name)`, `:reader(name)`, `sub` inside a class, `my method` | Later | 17 |
 | `__CLASS__`, `isa`, `ref($obj)` | In | 17 |
 | `DESTROY`, `AUTOLOAD`, `can` to fetch code, `bless`, `@ISA`, overloading | Cut | |
-| `role`, `:does` | New | 27 |
+| `role`, `:does` (perl 5.42 has neither; Stevan wants them in the object system from the start, so step 17's proposal takes them up: `PLAN.md`) | New | 17 or 27 |
 | A metaobject protocol | New | 28 |
 
 ## What the erasure removes

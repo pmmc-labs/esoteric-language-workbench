@@ -3390,6 +3390,34 @@ of the object, never a copy. From `perlclass`, each to be run under
 its parent, so a parent the program doesn't define is refused (D20).
 Traps: T52, T56.
 
+**Roles, from the start** (Stevan, 2026-11-25). He wants roles to be
+a key part of the object system, and not left for the metaobject
+protocol, so this step's proposal takes them up beside `class`
+instead of leaving them to step 27. Nothing about them is decided;
+this is a note of where the question is to be raised, not an answer
+to it. Read two of his repositories first, both public (a session
+clones them with `add_repo`):
+
+- `stevan/p5-roles-algebra`: `ROLE_ALGEBRA.md`, an algebra of role
+  composition for `feature 'class'` (every class and role built from
+  a proto-role; composition that never fails, and a resolution step
+  apart from it; two methods or fields the same only when they come
+  from the same package); `SLOTS.md`, the same algebra over slots;
+  and tests of it against Moose, Moo, Role::Tiny, Object::Pad and the
+  mop (`t/`, `bin/conformance-report`).
+- `stevan/p5-core-role-tests`: programs written for roles in core,
+  `role Name { }` and `class Name :does(...)`, with the roles they use
+  in `lib/`.
+
+**perl 5.42 has neither** (run 2026-11-25: `role Eq {` is a syntax
+error, and `:does(...)` is `Unrecognized class attribute does`), so
+roles are still an exception to D2 (D5) wherever they are built, and
+the proposal says what referees them: whether they erase by being
+flattened into the classes that use them, which would keep perl as
+the oracle (step 27's option), and whether the algebra's tests can be
+the model. It also says whether roles are a step of their own,
+straight after this one, and what is then left for step 27.
+
 ### 18. Modules
 
 Referee: perl. Size: large.
@@ -3468,7 +3496,9 @@ Referee: to be decided. Size: large, twice.
 To be proposed; exceptions to D2. One option to weigh: roles that
 erase by being flattened into the classes that use them, which is
 what composing a role means, and which would keep perl as their
-oracle.
+oracle. **Roles are to be taken up at step 17 instead** (Stevan,
+2026-11-25: see there), so what is left here, if anything, is what
+step 17 doesn't take.
 
 ### 29. Concurrency
 

@@ -267,6 +267,17 @@ exceptions that its own `try` would have caught. Its plan held every
 line of code in advance and was abandoned in its first afternoon,
 which is one more reason there is no `docs/plans/` here.
 
+## To read when classes are proposed
+
+Two of Stevan's repositories, for roles, which he wants in the object
+system from the start (`PLAN.md`, step 17, has the note and what each
+holds): `stevan/p5-roles-algebra`, an algebra of role composition for
+`feature 'class'` with tests of it against Moose, Moo, Role::Tiny,
+Object::Pad and the mop; and `stevan/p5-core-role-tests`, programs
+written for roles in core. perl 5.42 compiles neither `role` nor
+`:does`. Not read closely yet: nothing here is borrowed from them so
+far.
+
 ## Parked, with the reason, so each stops coming up
 
 - **Sea of Nodes, or any optimizing middle.** D6. Types (step 26) are
