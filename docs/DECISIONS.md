@@ -1563,6 +1563,59 @@ is 40 bytes and its header**, the freeze's count among them, and an
 array given back more often than it was frozen is `internal:`, exit
 2: the compiler's mistake, never a program's.
 
+**D82. `sort` makes perl's comparisons, in perl's order: perl's
+merge, ported.** *(User: accepted as recommended, 2026-11-25; step
+10, Q1: "go with your recommendation, and lets make a note that when
+we add a license, we need to account for this.")* The order shows
+three ways (T3, T173): an effect in the block, a block that is no
+consistent order, and a fault that only some pairs reach; and `$a
+<=> $b` itself is not a consistent order where an Int of 2^53 or
+more meets a Num (D49). So the runtime has `pp_sort.c`'s merge, runs
+found first and then merged, and the tests hold it to perl by a
+block that logs every pair it is given. **The licence, to account
+for when the repository gets one**: `pp_sort.c` is perl's, "under
+the same terms as Perl itself" (the Artistic License or the GPL), a
+port of it is a derived work, and the runtime is linked into every
+compiled program. The port is kept in a file of its own that says
+where it came from, so that it can be found and dealt with whole.
+Rejected: a merge of the language's own with the block held to what
+can't show (every comparison of a large Int with a Num would have to
+fault inside a `sort`, and most blocks be refused).
+
+**D83. The generated code drives a `sort`; the runtime never calls
+the block.** *(User: accepted as recommended, 2026-11-25; step 10,
+Q2.)* The runtime's merge can stop and be taken up again: it runs to
+its next comparison and hands back the two values, the generated C
+runs the block where it stands, as it does a loop's, and hands the
+answer back. The runtime still calls no generated code (D68), and no
+C frame of the runtime's sits between a program and what its block
+calls. The cost is a port that is less of a copy of perl's text, and
+leans on D82's logged comparisons. Rejected: the block as a C
+function the runtime calls, handed its caller's frame.
+
+**D84. Where one value is wanted, `grep` and `map` are their count;
+`sort` and `reverse` are refused there.** *(User: accepted as
+recommended, 2026-11-25; step 10, Q3.)* `my $n = grep { ... } @a;`
+and `if (grep { ... } @a)` are as in perl (T178). perl's `sort`
+there is undef with a warning, and its `reverse` joins its arguments
+and reverses the characters, which is for the step that has strings
+to propose. A `return grep { ... } @a;` reached by a call for one
+value is still D18's fault. Rejected: refusing all four.
+
+**D85. `map` and `grep` take a block, and `$_` is always written.**
+*(User: accepted as recommended, 2026-11-25; step 10, Q4.)* `map
+EXPR, LIST` and `grep EXPR, LIST` are refused: it is the form where
+perl's parser guesses (`map ($_ * 2), (1, 2)` is a `map` of nothing,
+T180). A builtin with no argument does not mean `$_`: `grep {
+defined($_) } @a`, `say $_ for @a;`. Rejected: the form without a
+block; the defaults.
+
+**D86. Step 10 is built as three sub-steps**, each green and
+committed. *(User: accepted as recommended, 2026-11-25; step 10,
+Q5.)* 10a: list returns, D18's fault, slurpy parameters, `join`,
+`reverse`. 10b: `$_`, `for (LIST)`, the `for` modifier, `map`,
+`grep`. 10c: `sort`.
+
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as

@@ -259,7 +259,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D81 are decided (D81 the builder's defaults at step 9, to be
+D1 to D86 are decided (D81 the builder's defaults at step 9, to be
 confirmed). What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 

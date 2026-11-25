@@ -2979,8 +2979,11 @@ to answer with Q1 and Q2.**
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for).
-Not agreed: five questions, Q1 to Q5, each with a recommendation.**
+**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
+and agreed the same day: Stevan took the recommendation on each
+question, which are now D82 (Q1, with a note on the licence), D83
+(Q2), D84 (Q3), D85 (Q4) and D86 (Q5). Its adversarial review is
+still to be folded in. The text is kept as it was proposed.**
 Everything here about perl was run under 5.42.0 and is in
 `briefs/claims.py` (46 rows, `T173` to `T184-global`). Traps: T3,
 T4, T6, T8, T10, T15 to T18, T20, T23, T29, T41, T54, T59, T61, and

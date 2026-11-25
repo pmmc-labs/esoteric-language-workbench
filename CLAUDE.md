@@ -306,7 +306,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D80 are all Stevan's, and D81 is the builder's defaults at step 9, for him to confirm** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
+**D1 to D80 and D82 to D86 are all Stevan's, and D81 is the builder's defaults at step 9, for him to confirm** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -392,7 +392,7 @@ on the left of `=`, `$#a = N`, `@a` in a string. **Step 9's
 proposal** was reviewed adversarially before it was built: eleven
 ways to be WRONG (T157 to T168, `briefs/step9-review/`), which is
 where "named anywhere" and the written orders come from. **Next:
-step 10**, list operators, `$_` and list returns: **proposed** (2026-11-25, `docs/PLAN.md`; five questions, Q1 to Q5, not yet answered; T173 to T184 found writing it, with 46 statements about perl), and not yet reviewed or built.
+step 10**, list operators, `$_` and list returns: **proposed and agreed** (2026-11-25, `docs/PLAN.md`; D82 to D86, each the recommendation: perl's merge ported for `sort`, with the licence of `pp_sort.c` to account for when the repository gets one (D82); the generated code drives the sort and the runtime never calls a block (D83); `grep` and `map` are a count where one value is wanted (D84); a block always, and `$_` always written (D85); three sub-steps, 10a list returns, 10b `$_`, 10c `sort` (D86). T173 to T184 were found writing it, with 46 statements about perl). Its adversarial review was running when this was written; nothing is built.
 `map`, `grep` and `sort` with a block are the first things that want
 the runtime to call generated code, and D68 says the proposal has to
 say how.
