@@ -380,6 +380,35 @@ the inner.
 |---|---|---|---|---|
 | T131 | `my $i = 9223372036854775806; while ($i > 0) { $i++; say $i; }` | Without end: where the language stops with `integer overflow`, perl goes on in silence, `9223372036854775808` and up as an unsigned integer and past 2^64 as a float, and the loop the fault would have ended runs for ever. The same for any fault perl only warns of (`"zero" == 0` warns once and is true). Run by a test it filled 19 GB of disk in two minutes, and a checker that kept perl's output in memory would have filled that | 6 | A fault test's loop is counted by something the fault doesn't touch. And the harness doesn't trust that: a test that prints past a limit is stopped by the system, in `t/run.sh` and in `t/checks.py` |
 
+## Found proposing step 8
+
+T1, T19, T28, T31, T55 and T60 are this step's from before. T1 has
+more to it: an argument is read late as an operand is (`show($x,
+set())`, with `set` making `$x` 9, hands `show` 9; `show($x, $x++)`
+hands it 2 and 1; `show($x + 0, set())` hands it 1), and what a sub
+returns is a copy (`get() + step()` is 6 where `$total + step()` is
+106). T28 has more: perl warns as it compiles of a sub named for one
+of the words `use v5.42` brings in (`trim`, `true`, `ceil`,
+`indexed`), calls `BEGIN`, `END` and `AUTOLOAD` by itself, and takes
+`x`, `any`, `main` and `STDOUT` as names without a word. T31: a sub in
+a bare block or an `if` is as one at the top; one inside another sub
+warns `will not stay shared`. T60: `last OUT;` in a sub leaves the
+caller's loop, with a warning.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T132 | `my $x = "a"; sub ch() { $x = "b"; return "c" } say $x . "-" . ch();`; `say(($x . "-") . ch());`; `$t .= $x . ch();` | `b-c`, `b-c`, and `tbc`: T117 through a call. The row of dots is one operation, and reads `$x` after `ch` has run. `$x . ch()` is `bc` both ways (D14) | 8 | Q3 of step 8: refuse a concatenation in which a later piece calls a sub that can change a variable an earlier piece reads |
+| T133 | `sub f() { return; } sub g($x = "default") { ... } say g(f());`; `say f();`; `my $v = f();` | `g`'s default: a sub that returns nothing is no argument at all. `say f();` is an empty line, in silence. `$v` is undef. A sub with an empty body is the same | 8 | Q5 of step 8: undef to a scalar call, as perl; a fault where perl wants a list, until step 10 |
+| T134 | `bump(); my $x; say defined($x) ? "d[$x]" : "u"; sub bump() { $x++ }` | `d[1]`: a `my` at the top level doesn't empty its variable, and a sub written after it may be called before it runs. (A sub written *before* the `my` can't name the variable at all) | 8 | Agree: a file variable has a slot of its own, undef as the program starts, and its `my` stores nothing |
+| T135 | `sub e($p) { return $p + 10 } my $n = -e(2);`; `say 5-f(2);` | undef, in silence: `-e` is the file test, of a file named `2`. So for 26 letters, `b c d e f g k l o p r t u w x z A B C M O R S T W X`. `- e(2)`, `-(e(2))` and `-ee(2)` are -12. `5-f(2)` doesn't compile | 8 | Refuse a minus hard against a name of one letter |
+| T136 | `say f (1); sub f($x) { ... }`; `say v65(); sub v65() { ... }` | Neither compiles, and both do with the `sub` first: `f` is taken for a file handle, and `v65` for a version string. `say f(1);`, `say F(1);`, `my $r = f (1);` and `f` on one line with `(1)` on the next compile either way round | 8 | Refuse a blank between a call's name and its bracket after `say` or `print`; refuse `v` and digits as a sub's name |
+| T137 | `sub f($x, $y) { return $x + $y } say f(1,,2);` | `3`: two arguments. `f(1, 2,)` is too, and a signature may end in a comma. `f(,1,2)` doesn't compile | 8 | Refuse two commas together; one after the last argument or parameter is as perl has it |
+| T138 | `my $y = 10; sub f($x = $y, $y = 2) { return "$x $y" } say f();`; `my $x = 3; sub g($x = $x) { return $x }` | `10 2` and `3`: a default is resolved before its own parameter and those after it exist, and finds the file's variable of that name. With no such variable it doesn't compile | 8 | Agree: the resolver brings each parameter into scope after its default |
+| T139 | `sub a1() { return (5) + 1 }`; `my $x = return 5;`; `return 1 + return 2`; `$c and return "t";`; `sub h($x = return 7)`; `return $v or 9;`; `return;` at the top level | 6 (`return` is not a function: `say (5) + 1` is another matter); 5; 2; `t`; 7: `return` is an expression, anywhere. `return $v or 9` warns of precedence, and at the top level perl dies as it runs, `Can't return outside a subroutine` | 8 | `return` is a statement: alone or with an expression, with an `if` or `unless` modifier, inside a sub. Anything else is refused |
+| T140 | `sub f() { say "hi" } my $x = f();`; a sub that ends in a `while`; `sub a4($x) { $x * 2 }`; `sub f($x) { $x * 2; return 1 }` | 1; an empty string; 8, in silence; and the last warns `Useless use of multiplication`. A value alone is a statement only where it is the sub's last, and `if ($x) { $x * 2 }` as the last is silent too | 8 | D18, and Q4 of step 8: a last statement that is an expression is the sub's value, a value alone is allowed there and nowhere else, and a sub that ends any other way has none |
+| T141 | `sub f($x, $x) { ... }`; `sub f($x) { my $x = 5; ... }` | Each warns as it compiles, `"my" variable $x masks earlier declaration in same scope`, and the second `$x` wins. A parameter of a file variable's name hides it in silence | 8 | Refuse the first two (D15); agree with the third |
+| T142 | `sub d($n) { return $n == 0 ? 0 : 1 + d($n - 1) } say d(98);`, `say d(99);`; `ev` and `od` calling each other, 150 deep and 250; `{ no warnings "recursion"; say d(200); }` | Nothing; `Deep recursion on subroutine "main::d"`, once, when the 100th call of `d` is open; nothing at 150, where each has 75 or 76 open, and a warning for each at 250. The pragma silences the calls written in its scope: round the first call only, the warning still comes from the call inside `d`. At the top of the file it silences all | 8 | Q1 of step 8 |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

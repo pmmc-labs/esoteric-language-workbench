@@ -2040,19 +2040,341 @@ it.
 
 Referee: perl. Size: large.
 
-Named subs with signatures, positional parameters and defaults; calls
-with brackets (D21), before or after the definition; `return`;
-recursion. A wrong number of arguments is a fault (perl dies). A sub
-stands at the top of the file and may not be named for anything perl
-knows (D21; T28, T31). A sub that ends in a compound statement has no
-value (D18, T19). Signature placeholders and `//=` defaults; `:$x`
-is not Perl (T55). Traps: T1, T19, T28, T31, T55, T60.
-Decides: **how deep a program may recurse**, and what happens past it
-(perl has no limit and only warns at 100; the C stack does have one,
-so the limit is a number, a fault, and a test, not an accident; the
-workbench's interpreter experiment found exactly this), and how a
-test that goes 100 deep is checked, since perl warns there (D10); the
-hidden context flag (D18), though nothing list-shaped exists yet.
+**Proposed 2026-11-25, by Fable 5.2 (the size the line asks for).
+Not agreed: five questions wait for Stevan, Q1 to Q5 below, and
+nothing is built.** Everything here about perl was run under 5.42.0
+and is in `briefs/claims.py` (59 rows, `T1-args` to `T60-label`).
+Traps: T1, T19, T28, T31, T55, T60, and T132 to T142, found writing
+this. The outline this replaces said: named subs with signatures,
+positional parameters and defaults; calls with brackets (D21), before
+or after the definition; `return`; recursion; a wrong number of
+arguments is a fault; a sub stands at the top of the file and may not
+be named for anything perl knows; a sub that ends in a compound
+statement has no value; signature placeholders and `//=` defaults;
+and that the step decides how deep a program may recurse, how a test
+that goes 100 deep is checked, and the hidden context flag.
+
+#### The picture
+
+Until now a program was one run of statements. This step lets it
+**name a piece of itself and call it**, and a piece may call itself.
+
+```
+ the file                                 as it runs
+
+ use v5.42;                               frames, the newest first
+ my $total = 0;       file variables:
+                      every sub after      +---------------------------+
+ sub add($n) {        them may read        | fact(1)   $n = 1          |
+     $total += $n;    and write them       +---------------------------+
+     return $total;                        | fact(2)   $n = 2          |
+ }                                         +---------------------------+
+                                           | fact(3)   $n = 3          |
+ sub fact($n) {       parameters:          +---------------------------+
+     return 1 if $n < 2;   copies, new     | the file  $total  ...     |
+     return $n * fact($n - 1);  at every   +---------------------------+
+ }                    call
+                                          a call opens a frame; every way
+ say fact(3);                             out of the sub closes it
+ add(5);
+```
+
+A sub is three things the compiler has not had before:
+
+1. **A second function in the generated C.** Step 7 made every
+   variable and temporary a slot of its function's frame, so that
+   this would be a matter of opening one more: a call opens a frame,
+   copies its arguments into the frame's first slots before anything
+   can allocate, and closes it on every way out.
+2. **A way out from the middle.** `return` leaves from inside any
+   number of loops and blocks. It is one `goto` to the one place
+   where the frame is closed, the third kind of jump the C has.
+3. **Variables that are not the function's own.** A sub reads and
+   writes the file's variables, which are slots of another frame.
+
+And one thing perl has that the language has to choose about:
+**a program can now run out of something other than memory.** perl
+keeps its calls on the heap and has no limit; C has a stack, and it
+ends (Q1, Q2).
+
+#### The language at step 8
+
+- **`sub NAME(PARAMETERS) { ... }`**, at the top level of the file,
+  among the statements, before or after the calls of it. A signature
+  is required, `()` for none. Not in a block, a loop or another sub
+  (T31: perl ties a named sub to the first time round, and warns
+  `will not stay shared` in a sub).
+- **A parameter** is `$name` (required); `$name = EXPR`, `$name //=
+  EXPR` or `$name ||= EXPR` (optional: the default is used when the
+  argument is missing; with `//=`, also when it is undef; with `||=`,
+  also when it is false); or a placeholder, `$`, `$=`, `$ = EXPR`,
+  which takes an argument and names nothing. Required ones first
+  (perl refuses otherwise). A default is worked out at each call that
+  needs it, left to right, after the parameters before it are set, so
+  it may read them: `sub f($x, $y = $x * 2)`. `@rest` and `%opts` are
+  steps 10 and 12.
+- **A parameter is a copy** (D17), and a variable like any other in
+  the sub: it may be assigned.
+- **The body** is the statements of steps 0 to 6, and `return`. Its
+  `my` variables are new at every call. It may name the file's
+  variables: those declared by a `my` at the top level, before the
+  sub in the file. A `last` or `next` is tied to a loop of the same
+  sub or refused (T60, already so).
+- **`return;`** and **`return EXPR;`**, with an `if` or `unless`
+  modifier or without. A statement, as `last` is (T139).
+- **A sub's value**, when it ends without a `return`, is its last
+  statement's, if that is an expression (D18): an assignment, a
+  step, a call, a `my`, or **a value alone, `$x * 2`, which is now a
+  statement in that one place** (perl warns `Useless use` of one
+  anywhere else, and not there). A sub that ends in anything else
+  has no value (D18, Q4).
+- **A call** is `NAME(ARGUMENTS)`: the arguments are expressions
+  with commas between, and one comma may follow the last. It is an
+  expression, and it is a statement: `add(5);`, with any modifier.
+- **Too few or too many arguments is a fault** (D13 has it so; perl
+  dies), raised after every argument has been worked out, as perl
+  does it, and naming the caller's line, as perl does.
+
+**Context** (D18) starts here, though nothing list-shaped exists. A
+call carries perl's three: *void* (`f();`), *scalar* (an operand,
+the right of `=`, a test, a builtin's argument), and *list* (an
+argument of `say`, `print` or another call). `return f();` and a
+last statement `f()` pass on what their own sub was called with; so
+do the arms of `? :` and the right side of `||`, `&&` and `//`. A sub
+returns one value under all three, with two exceptions that the flag
+is for: a sub with no value (Q4) faults unless it was called void,
+and a sub that returns nothing (Q5).
+
+#### What perl does that the obvious build gets wrong
+
+Each is a row of `TRAPS.md`, with the program.
+
+- **Arguments are read late too** (T1). `show($x, set())` hands
+  `show` what `set` left in `$x`: perl passes the variable and
+  copies it as the sub begins. So an argument that is a variable is
+  read at the call, after the other arguments have run, which is
+  D14's rule and its machinery. A sub's own value is a copy as it
+  returns: `get() + step()` is 6 where `$total + step()` is 106.
+- **A row of dots and a call** (T132, Q3). `$x . "-" . ch()` is
+  `b-c` when `ch` sets `$x` to `b`: D57's trap, through a sub.
+- **A sub that returns nothing is no argument at all** (T133, Q5).
+  With `sub f() { return; }`, `g(f())` calls `g` with nothing, and
+  `g`'s default is used.
+- **A call before a variable's `my`** (T134). `bump(); my $x; say
+  $x;` with `sub bump() { $x++ }` after it prints 1: at the top
+  level a `my` doesn't empty a variable. The generated C sets a
+  variable to undef at its `my` today.
+- **`-e(2)` is a file test** (T135), not minus `e(2)`: undef, in
+  silence, for 26 one-letter names; and `5-f(2)` doesn't compile.
+- **How perl reads a call depends on whether it has seen the sub**
+  (T136): `say f (1);` compiles after `sub f` and not before, and
+  `v65()` is a version string before `sub v65` and a call after.
+- **`f(1,,2)` is two arguments** (T137), in silence.
+- **A default sees the file's variable of a later parameter's
+  name** (T138): with `my $y = 10;`, `sub f($x = $y, $y = 2)` gives
+  `10 2`.
+- **`return` is an expression to perl** (T139): `my $x = return 5;`,
+  `1 + return 2`, `$c and return "t";`, a default that returns.
+- **What a sub is worth when it just ends** (T19, T140): its last
+  `if`'s test, 1 after `say`, an empty string after a `while`.
+- **Two parameters of one name, and a `my` of a parameter's name**
+  (T141): perl warns as it compiles, and takes the second.
+- **The warning at 100 is counted for each sub** (T142, Q1).
+
+#### The questions
+
+**Q1. Recursion, where perl warns.** perl warns `Deep recursion on
+subroutine "main::d"` when one sub has 100 calls of itself open at
+once, and carries on. It counts each sub by itself: two subs calling
+each other warn at 199 deep, not 100. D15 makes perl's warnings
+faults and left this one out for this step to settle. A `same` test
+must leave perl's stderr empty (D10), so today no test may go that
+deep.
+(a) **Recommended: a fault at the 100th open call of one sub, unless
+the program says `no warnings 'recursion';`**, which joins D16's
+list: one line, with the other pragmas, before the first statement.
+Under perl the line silences exactly this warning, so the file means
+the same to both, the oracle check keeps its rule that stderr is
+empty, and D15 has no exception. It is what Perl programmers who
+recurse already write. The fault names the sub and the line to add.
+The cost: one more pragma, a count for each sub, and a recursive
+program over anything long carries the line. (perl decides by where
+the *call* is written, so a pragma inside one block covers the calls
+in that block only; a line at the top is the whole file and the only
+place it is allowed.)
+(b) No fault at 100, and the pragma is accepted only so that a test
+can be silent under perl. Kinder, and it is D15's one exception made
+permanent: a program perl warns about that runs here without a word.
+(c) A fault at 100, always. No pragma, and no recursion over a list
+of a hundred things.
+
+**Q2. How deep, at the most.** The C stack ends, so there is a
+number whatever Q1 says. Measured (`briefs/step8-stack.c`): a call
+of a small sub takes 223 bytes of stack under gcc, 335 under clang,
+and about 790 under the sanitizers; each slot of its frame is 16
+more. On the 8 MB stack that Linux and macOS both give a program, a
+four-slot sub reaches 37,000 calls deep under gcc, 25,000 under clang
+and 10,500 under the sanitizers, and then the program dies of a
+segmentation fault. The limit has to be the same number on every
+build, or a test of it passes on one and not another.
+(a) **Recommended: the open frames may hold 4 MB**, counted as 16
+bytes a slot and 1 KB a call, which is more than any build measured
+takes, so the count runs out while half of the real stack is left.
+Past it: `fault: recursion too deep`, at the caller's line. That is
+about 3,800 calls deep for a small sub and 2,500 for one with forty
+slots. The runtime checks as it starts that the stack it was given
+is 8 MB or more, and stops with a message if not, so that the fault
+is never beaten to it by a crash. Twenty lines, and no new moving
+part. It is far less than perl allows (a million deep took it 0.7
+seconds), and it can be raised later without changing what any
+program that ran means.
+(b) The program's body runs on a stack the runtime makes, 256 MB,
+with 64 MB counted: about 60,000 deep. It no longer matters what
+stack the program was started with. It is a thread, or a hand-made
+stack, on two systems and under the sanitizers; step 29 will want
+stacks of its own and could bring this then.
+(c) No limit, as perl: frames on the heap and no C recursion. The
+generated C would no longer be D31's.
+
+**Q3. D57, now that a call can change a variable.** `$x . "-" .
+ch()` reads `$x` after `ch` has run (T132), and the straight-line C
+would have joined `$x` and `-` before it. Only a file variable can
+be changed by a call: parameters are copies.
+(a) **Recommended: refuse a concatenation in which a later piece
+calls a sub that can assign a variable an earlier piece reads**,
+"can" worked out from the whole program: the sub's own assignments
+and steps, and those of every sub it calls. It is D57's rule with
+one more way to change a variable, and the same message: make the
+change a statement of its own. A closed world (D20) makes it exact
+today; step 14's code references will have to say "any sub" where
+they can't tell.
+(b) Refuse wherever an earlier piece reads a file variable that any
+sub assigns and a later piece calls anything. No walk over the
+calls; it refuses `$count . ": " . name($k)` in any program with a
+sub that counts.
+(c) Join a row as perl does. D57 turned this down.
+
+**Q4. A sub that ends in `say` or `print`.** D18 has decided that a
+sub ending in an `if`, a loop or a block has no value, and that
+using it faults. `say` is left: perl's `say` returns 1, so `my $x =
+f();` is 1 when `f` ends in one.
+(a) **Recommended: no value, like the rest.** `say` and `print` are
+statements here and have never had a value. A sub's value is then a
+`return`'s, or a last statement that is an expression, and nothing
+else: a `return` under a modifier (`return 1 if $c;` as the last
+line gives perl's caller the test's value when `$c` is false), an
+`if`, a loop, a block, `say`, `print` all fault if the value is
+used, and none if the call was void.
+(b) 1, as perl. Then `say` has a value in one place and is a
+statement in every other.
+
+**Q5. A sub that returns nothing, where perl wants a list.** `return;`
+and a sub with an empty body give undef to a scalar call, in
+silence, and that is agreed with. To a list they give no values: so
+`g(f())` calls `g` with no arguments, and `say f();` prints an empty
+line (T133). There are no lists until step 9.
+(a) **Recommended: a fault**, `f returned nothing where a list is
+wanted`, until step 10 brings list returns and can agree. It is a
+fault where perl is silent, on D15's list of those, and a rare
+program: one that passes on or prints the value of a sub that has
+none.
+(b) Agree now: an argument list whose length is known only as it
+runs. That is step 10's work, done early for one case.
+
+**Nothing to choose, worth your eye.**
+
+- **A file variable keeps one slot for the whole run, and its `my`
+  no longer makes it undef** (T134): every slot is undef as the
+  program starts, and at the top level a `my` runs once. So perl's
+  answer is agreed with and nothing is refused. A `my` in a block, a
+  loop or a sub is undef at each entry, as now.
+- **A sub's name** is ASCII, at most 251 characters, and not: any
+  name in perl's own table (every keyword, function and quote
+  operator, and the words `use v5.42` brings in: `true`, `trim`,
+  `ceil`, `indexed` and the rest); `BEGIN`, `END`, `INIT`, `CHECK`,
+  `UNITCHECK`, `AUTOLOAD`, `DESTROY`, `import`, `unimport`, which
+  perl calls by itself; `v` and digits (T136). `briefs/step8-names.py`
+  asked perl about 3,448 names, each defined and called eight ways,
+  before and after the definition: for all but 59 the sub is simply
+  called, and each of the 59 is one of those. `x` works in perl, and
+  is refused with the rest of its table. Two subs of one name are
+  refused (perl warns, and takes the second), and so is a call of a
+  sub the program doesn't have (perl dies when it gets there).
+- **A minus hard against a one-letter name is refused** (T135): `-
+  e(2)` and `-(e(2))` are how to say it.
+- **After `say` or `print`, a call's bracket touches its name**
+  (T136). Elsewhere a blank or a new line may come between, as perl
+  has it either way round.
+- **`return` is a statement** (T139): not an operand, not after
+  `and`, not in a default, not at the top level. `$c and return 1;`
+  gets a message of its own, as `$done and last;` has. `return (5) +
+  1;` is 6 in perl, where `say (5) + 1;` is not, so that is agreed
+  with.
+- **A parameter may not be `$a`, `$b` or `$_`** (D55, and perl
+  refuses the last); nor a name used twice in a signature; nor may a
+  `my` at the top of the body take a parameter's name (T141). A
+  parameter may hide a file variable, in silence, as in perl; and a
+  default is resolved before its own parameter exists (T138).
+- **A fault's line** is still the statement's (D34), the sub's own
+  statement while the sub runs and the caller's again once it
+  returns: the generated C stores the line again after each call.
+  perl agrees in the cases tried.
+- **A value has no past, asked again.** An argument and a returned
+  value are copies, as an assignment's is, so nothing new is
+  expected; the model will put every edge table of steps 2 to 6
+  through a sub, as an argument and as a return, and ask.
+- **No model of the limit.** Q2's number is tested from both sides
+  in a golden test, under all three builds: the deepest call that
+  returns, and one more.
+
+#### The build, once the questions are answered
+
+- **The model first, red before any code** (`t/models/sub.py`, on
+  step 6's): a call is a Python call with the flag as an argument,
+  and `return` an exception. Its `same` tests: every form of
+  parameter and default, with each kind of value; arguments and
+  returns read late and copied (T1); recursion, two subs calling
+  each other, a call before its definition; `return` out of loops in
+  loops; the file's variables read and written from three calls
+  deep; each context, passed on through `return f()`, `? :` and
+  `||`; and every edge table of steps 2 to 6 through an argument and
+  through a return. Its fault tests, each at its edge: one argument
+  too few, one too many, with and without defaults; a sub with no
+  value used, for each way of ending; whatever Q5 makes a fault; the
+  99th call and the 100th (Q1); the deepest call and one more (Q2).
+  **A fault test's recursion is bounded** (T131): under perl the
+  program must end.
+- **By hand, with perl's answers**: the small programs the language
+  can now say (factorial, Fibonacci, Ackermann, greatest common
+  divisor, a string reversed by recursion, Hanoi counted); and every
+  refusal above as a test, with what perl does in its comment.
+- **The compiler**: the parser has `sub`, a signature, `return`, a
+  call; the resolver gives each sub its scope, ties each call to its
+  sub and each `return` to its own, and finds the file variables a
+  sub names; the checker has the refusals and Q3's walk; the code
+  generator writes a C function for each sub, declared before any is
+  defined. `names.ts` gains perl's table.
+- **The runtime**: a frame knows its size in bytes and the context
+  counts them (Q2); a count for each sub (Q1); the file's slots
+  reached through the context (D28: nothing global). No new
+  operator.
+- **Every golden test under stress 1 with poison**, as D64 has it:
+  an argument in flight is the new place a root could be missed.
+- **Break it on purpose**: an argument copied after the default
+  that allocates; a frame not closed on `return`, or on a `return`
+  from inside a loop; arguments worked out right to left; a variable
+  argument copied early; the line not stored again after a call; the
+  count for a sub not taken down on the way out; the bytes not
+  counted; a file variable given a slot a block uses; a default run
+  when the argument was given; `//=` treated as `=`; the flag not
+  passed through `return f()`. Each must turn a test red.
+- **gcc, clang and `make sanitize`**, and Stevan's Mac for the
+  limit's test above all: the 1 KB a call is measured on Linux.
+- **An adversarial review of this proposal**, started with it: a
+  program with a sub in it that would run, not fault, and differ.
+- Leave out: lists in or out of a sub, `@rest`, `%opts` (9, 10, 12);
+  anonymous subs, `my sub`, closures, a sub in a block (14); `die`
+  (15); `Name::f()` (18); any change to what steps 0 to 7 mean.
 
 ### 9. Arrays and lists
 
