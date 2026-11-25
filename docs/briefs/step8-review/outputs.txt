@@ -1,0 +1,237 @@
+### A1-list-repeat.pl
+stdout:
+[d]
+z,-,-
+a,a,-
+a,a,-
+a,a,-
+a,a,a
+k,k,-
+aaa
+stderr:
+exit: 0
+### A2-default-order.pl
+stdout:
+5,9
+5,9
+5,1
+stderr:
+exit: 0
+### A3-modifier-last.pl
+stdout:
+[8]
+[0]
+[]
+[0]
+[3]
+[0]
+stderr:
+exit: 0
+### A4-context-brackets.pl
+stdout:
+[-][-]
+[-][-]
+[-][-]
+[-][-]
+[-][-]
+[-][-]
+[-][-]
+[-][-]
+[z][-]
+U
+stderr:
+exit: 0
+### B1-say-bracket-blank-after.pl
+stdout:
+2
+3
+2
+stderr:
+exit: 0
+### B1-say-bracket-blank.pl
+stdout:
+stderr:
+Unquoted string "f" may clash with future reserved word at B1-say-bracket-blank.pl line 2.
+syntax error at B1-say-bracket-blank.pl line 2, near "f ("
+Execution of B1-say-bracket-blank.pl aborted due to compilation errors.
+exit: 255
+### B2-vstring-underscore-after.pl
+stdout:
+1
+2
+stderr:
+exit: 0
+### B2-vstring-underscore.pl
+stdout:
+stderr:
+syntax error at B2-vstring-underscore.pl line 2, near "v1_0("
+Execution of B2-vstring-underscore.pl aborted due to compilation errors.
+exit: 255
+### B3-keyword-for.pl
+stdout:
+stderr:
+syntax error at B3-keyword-for.pl line 3, near "+ for"
+Execution of B3-keyword-for.pl aborted due to compilation errors.
+exit: 255
+### C2-filetest-t.pl
+stdout:
+d[]
+u
+stderr:
+exit: 0
+### C4-lines.pl
+stdout:
+stderr:
+Use of uninitialized value $u in concatenation (.) or string at C4-lines.pl line 7.
+Use of uninitialized value $u in concatenation (.) or string at C4-lines.pl line 10.
+Use of uninitialized value $u in addition (+) at C4-lines.pl line 15.
+Use of uninitialized value $u in addition (+) at C4-lines.pl line 18.
+Use of uninitialized value $u in addition (+) at C4-lines.pl line 25.
+Use of uninitialized value $u in addition (+) at C4-lines.pl line 27.
+Use of uninitialized value $u in addition (+) at C4-lines.pl line 31.
+Use of uninitialized value $u in addition (+) at C4-lines.pl line 33.
+Too few arguments for subroutine 'main::two' (got 1; expected 2) at C4-lines.pl line 36.
+exit: 255
+### D2-void-evaluates.pl
+stdout:
+end
+stderr:
+Use of uninitialized value $x in multiplication (*) at D2-void-evaluates.pl line 2.
+Use of uninitialized value $x in concatenation (.) or string at D2-void-evaluates.pl line 3.
+Argument "abc" isn't numeric in addition (+) at D2-void-evaluates.pl line 4.
+exit: 0
+### D3-my-compound.pl
+stdout:
+11
+qa
+1
+stderr:
+exit: 0
+### D4-rows.pl
+stdout:
+b-c
+b-2
+b-c
+b-c
+b-c
+b-c
+b-c
+b-c
+<a-c
+a-c
+stderr:
+exit: 0
+### D5-minus-binary.pl
+stdout:
+stderr:
+syntax error at D5-minus-binary.pl line 4, near ") -e"
+Execution of D5-minus-binary.pl aborted due to compilation errors.
+exit: 255
+### D5-minus.pl
+stdout:
+0
+1
+u
+u
+u
+-13
+-13
+stderr:
+Use of uninitialized value in negation (-) at D5-minus.pl line 5.
+exit: 0
+### E-late-reads.pl
+stdout:
+11
+92
+99
+2
+2
+2
+81
+7
+11
+11
+3
+11
+11
+11
+3
+11
+11
+11
+11
+11
+1
+11
+11
+ge
+lt
+9,2
+2,9
+1,2
+1,2
+9,2
+9,2
+9,2
+9,2
+9,2
+1,2
+9,2
+9,2
+9,2
+9,2
+1,2
+7,7
+2,2,2
+-1,2
+,2|
+11,2
+1,2
+1,2
+1,2
+6,6
+9,2
+9,2
+9,2
+1,2
+stderr:
+exit: 0
+### E-pragma.pl
+stdout:
+300
+é1
+1
+1
+stderr:
+Useless use of multiplication (*) in void context at E-pragma.pl line 11.
+Use of uninitialized value $u in addition (+) at E-pragma.pl line 9.
+Argument "abc" isn't numeric in addition (+) at E-pragma.pl line 10.
+exit: 0
+### E-recursion-1.pl
+stdout:
+98
+98
+quiet so far
+0
+0
+then
+0
+stderr:
+Deep recursion on subroutine "main::e" at E-recursion-1.pl line 9.
+Deep recursion on subroutine "main::e2" at E-recursion-1.pl line 8.
+exit: 0
+### E-recursion-2.pl
+stdout:
+99
+a
+100
+b
+1
+c
+1
+stderr:
+Deep recursion on subroutine "main::self" at E-recursion-2.pl line 4.
+Deep recursion on subroutine "main::updown" at E-recursion-2.pl line 9.
+Deep recursion on subroutine "main::updown" at E-recursion-2.pl line 9.
+Deep recursion on subroutine "main::updown" at E-recursion-2.pl line 9.
+exit: 0

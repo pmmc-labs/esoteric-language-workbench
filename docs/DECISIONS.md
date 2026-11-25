@@ -12,8 +12,8 @@ D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
 4's, and D52 to D56 to step 5's. D57 was a default the builder of
 step 5 took, which he confirmed the same day. D58 to D62 are his
 answers to step 6's proposal, D63 to D66 to step 7's, and D67 to D72
-to step 8's (D67 as the builder read him, and D68's number the
-builder's default).
+to step 8's (D68's number is the builder's default, which he said
+to stay with).
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -304,8 +304,9 @@ undef); those are the rows marked Fault in `SURFACE.md`, and they are
 a list. What perl does silently stays: `"12" + 1` is 13, `"3 " + 1` is
 4, `$count{$word}++` on a missing key is 1, `$total{$k} += 5` and
 `$s .= "x"` on undef don't warn and work. Exceptions, each for its
-reason: warnings about experimental features. (The recursion warning
-at 100 calls deep was one until step 8: D67 makes it a fault.) Rejected: perl's guesses, with a warning (the
+reason: the recursion warning at 100 calls deep (D67: nothing
+happens there, and `no warnings 'recursion';` keeps perl quiet), and
+warnings about experimental features. Rejected: perl's guesses, with a warning (the
 cruft D1 is about, and every guess would then have to be implemented
 exactly); undef as an empty string in silence, with only the numeric
 guesses faulting (friendlier to code that prints, but two rules, and
@@ -1226,34 +1227,44 @@ marking through a value that holds values, and a mark stack (9, 13);
 a variable that outlives its frame (14); unwinding frames at a caught
 `die` (15); a heap for each context (29).
 
-**D67. A sub may have 100 calls of itself open only in a program that
-says `no warnings 'recursion';`.** *(User, 2026-11-25; step 8, Q1:
-"lets add `no warnings 'recursion'` to the perl 5.42 prelude, that
-recursion limit is too small." Read as the recommendation, and if he
-meant the line to be required of every program, or to change nothing
-here, this entry is where to say so.)* perl warns `Deep recursion on
-subroutine` when one sub has 100 calls of itself open at once, each
-sub counted by itself, and carries on (T142). The line joins D16's
-list: after `use v5.42;`, with the other pragmas, before the first
-statement, and nowhere else. With it nothing happens at 100, here or
-in perl; without it the 100th open call of one sub is a fault that
-names the sub and the line to add. So D15 loses the exception it had
-kept for this, the file means the same to perl either way, and the
+**D67. Nothing happens at 100 calls deep. `no warnings 'recursion';`
+is accepted, and is what keeps perl as quiet.** *(User, 2026-11-25;
+step 8, Q1: "I do not want it to fault at 100 levels of recursion, I
+want to support much deeper levels than that without warning. That
+warning in Perl is old and from the days when subroutine recursion
+was really slow." And before it: "lets add `no warnings 'recursion'`
+to the perl 5.42 prelude". The builder first read the earlier answer
+as the recommendation, a fault at 100 without the line, and was put
+right.)* perl warns `Deep recursion on subroutine` when one sub has
+100 calls of itself open at once, and carries on (T142). The language
+does not fault there and says nothing: this is D15's one standing
+exception, a run-time warning of perl's that is not a fault, because
+the warning is about a cost perl no longer has and not about a
+program that is wrong. The line `no warnings 'recursion';` joins
+D16's list: after `use v5.42;`, with the other pragmas, before the
+first statement, and nowhere else. It changes nothing here. Under
+perl it silences that warning for the whole file, so a program that
+carries it prints the same and is as quiet under both, and the
 oracle check keeps its rule that perl's stderr is empty (D10): a test
-that goes deep carries the line. Rejected: no fault at 100 and the
-pragma accepted only to keep tests silent (a program perl warns of
-would run here without a word); a fault at 100 always (no recursion
-over a list of a hundred things); perl's rule in full, that the
-pragma covers the calls written in its scope (a line at the top is
-the whole file, and one rule).
+that goes 100 deep carries the line, and one that doesn't is rejected
+by the check as any test perl warns of is. A program without the
+line that goes deep runs here as it does under perl, with perl's
+warning the only difference, on stderr, which D12 doesn't count. The
+only limit on depth is D68's. Rejected: a fault at the 100th open
+call unless the program has the line (the recommendation: D15 with
+no exception, at the cost of a fault for a warning nobody heeds); a
+fault at 100 always; the oracle check forgiving that one warning
+without the line (a hole in the one check that holds the suite to
+perl); perl's rule in full, that the pragma covers the calls written
+in its scope (a line at the top is the whole file).
 
 **D68. Past a limit the implementation sets, recursion is a fault,
 and the limit is not part of the language.** *(User, 2026-11-25; step
-8, Q2: "I would like to avoid being too tied to the C-stack, but this
+8, Q2: "ok, lets stick with what we are doing now. We can revisit
+later as needed." And before it: "I would like to avoid being too tied to the C-stack, but this
 is perhaps something to discuss later when we talk about concurrency
 ... I want to avoid boxing ourselves in such that we can't fix it
-later." The number is the builder's default, and is fair to
-revisit.)* perl keeps its calls on the heap and has no limit; a
+later." The number is the builder's default.)* perl keeps its calls on the heap and has no limit; a
 compiled sub here is a C function, and the C stack ends. Today the
 frames that are open may hold 4 MB, counted as 16 bytes a slot and
 1 KB a call, which is more than a call takes under any build measured

@@ -320,10 +320,11 @@ again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
 green after step 6 and again after step 7. **Next: step
 8**, subs. **It is proposed and answered** (2026-11-25,
-`docs/PLAN.md`; D67 to D72): a fault at the 100th open call of one
-sub unless the program says `no warnings 'recursion';` (D67, as the
-builder read Stevan's answer: the entry says how); the open frames
-may hold 4 MB, about 3,800 calls deep, a default that D68 keeps out
+`docs/PLAN.md`; D67 to D72): nothing happens at 100 calls deep, and `no
+warnings 'recursion';` is accepted so that perl is as quiet (D67,
+his, against the recommendation: D15's one exception; a test that
+goes deep carries the line); the open frames
+may hold 4 MB, about 3,800 calls deep, a default he said to stay with, which D68 keeps out
 of the language so that step 29 can take calls off the C stack; D57
 through a call (D69); a sub that ends in `say` is worth `true` (D70,
 his, against the recommendation); a sub that returns nothing faults

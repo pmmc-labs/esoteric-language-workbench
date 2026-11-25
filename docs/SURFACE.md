@@ -70,7 +70,7 @@ comparison: *in*, *out*, or *n/a*.
 | `__SUB__` | In | 14 | | |
 | `__FILE__`, `__LINE__` | In | 16 | | |
 | `sub f;`, a forward declaration | Cut | | | Nothing needs one (D21) |
-| `no warnings 'recursion';`, with the pragmas | In | 8 | | D67: without it the 100th open call of one sub is a fault |
+| `no warnings 'recursion';`, with the pragmas | In | 8 | | D67: it changes nothing here, and keeps perl quiet past 100 calls deep |
 | Recursion past the implementation's limit | Fault | 8 | | D68: `recursion too deep`; perl has no limit |
 | A sub that ends in `say` or `print`, and its value used | In | 8 | | D70: `true`, as perl |
 | A sub that returns nothing, as an argument or `say`'s | Fault | 8 | | D71, until step 10: perl passes no argument |

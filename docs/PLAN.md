@@ -2041,8 +2041,9 @@ it.
 Referee: perl. Size: large.
 
 **Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
-and answered the same day: D67 (Q1, as recommended, by the builder's
-reading of his words), D68 (Q2: the recommendation as a default, on
+and answered the same day: D67 (Q1: not the recommendation; nothing happens at 100 calls
+deep, and `no warnings 'recursion';` is accepted to keep perl as
+quiet, so there is no count for each sub to build), D68 (Q2: the recommendation as a default, on
 his condition that it box nothing in, which the entry spells out),
 D69 (Q3, as recommended), D70 (Q4: not the recommendation; a sub that
 ends in `say` is worth `true`, as in perl), D71 (Q5, as recommended)
