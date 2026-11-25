@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The compiler held to perl, and to the reviewer's model of step 5.
 
-    python3 docs/briefs/step5-review/compiler.py KIND SEED COUNT [batch=N] [all-faults] [plant]
+    python3 docs/briefs/step5-review/compiler.py KIND SEED COUNT [batch=N] [faults=N | all-faults] [plant]
 
 KIND is the generator a program is drawn from:
 
@@ -28,8 +28,8 @@ over the built runtime's operators). Then:
                      program the compiler refuses or faults on is taken out
                      and counted, by its message: the compiler may be stricter.
   the model faults   One rides last in each file, where its fault costs
-                     nothing; of the rest one in four goes alone (all of them
-                     with all-faults). The compiler must refuse it, or fault
+                     nothing; of the rest one in four goes alone (one in N
+                     with faults=N, all of them with all-faults). The compiler must refuse it, or fault
                      having printed the beginning of what perl prints, or
                      print what perl prints with perl silent.
 
@@ -244,7 +244,9 @@ def main():
     size = 40
     for a in sys.argv[4:]:
         if a.startswith('batch='): size = int(a[6:])
-    every_fault = 'all-faults' in sys.argv
+    one_in = 1 if 'all-faults' in sys.argv else 4
+    for a in sys.argv[4:]:
+        if a.startswith('faults='): one_in = int(a[7:])
     r = random.Random(seed)
     state = {}
     prints, faults = [], []
@@ -273,7 +275,7 @@ def main():
         if done % 2000 < size: print('  ... %d of the printing programs; %d WRONG so far' % (done, len(wrong)), flush=True)
     sampled = 0
     for n, it in enumerate(faults):
-        if every_fault or n % 4 == 0:
+        if n % one_in == 0:
             alone(it); sampled += 1
     counts['the model faults, and the program was not run'] = len(faults) - sampled
     report('%s-%d' % (kind, seed))
