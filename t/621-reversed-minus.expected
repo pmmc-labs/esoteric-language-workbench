@@ -1,0 +1,2 @@
+t/621-reversed-minus.pl:5:7: '=-' with a blank after it: perl warns that it reads as '-=' reversed; put a blank after the '='
+exit: 1

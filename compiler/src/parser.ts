@@ -255,10 +255,13 @@ export const parse = (tokens: readonly Token[]): Program => {
         // After exactly one blank, perl looks along the line, as text,
         // for the closing bracket and what follows it, and warns `say
         // (...) interpreted as function` unless they are there (T76,
-        // T100). The lexer has looked as perl does. (Anything but a
-        // semicolon here is refused for what it is, below.)
-        if (head.kind === 'word' && head.asFunction && after.kind === ';') {
-            refuse(`${head.text} (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ';' after them: write ${head.text}(...)`, open.pos);
+        // T100). The lexer has looked as perl does. What may follow is
+        // the semicolon or a modifier, and perl wants either on the line
+        // the brackets are on (T128); anything else is refused for what
+        // it is, below.
+        const modifier = after.kind === 'word' && NAMES.get(after.text)?.kind === 'if';
+        if (head.kind === 'word' && head.asFunction && (after.kind === ';' || modifier)) {
+            refuse(`${head.text} (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ${show(after)} after them: write ${head.text}(...)`, open.pos);
         }
         return { ...inner, bracketed: true };
     };

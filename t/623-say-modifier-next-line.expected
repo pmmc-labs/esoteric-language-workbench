@@ -1,0 +1,2 @@
+t/623-say-modifier-next-line.pl:7:5: say (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with 'if' after them: write say(...)
+exit: 1

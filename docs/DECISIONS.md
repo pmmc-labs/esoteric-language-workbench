@@ -976,7 +976,11 @@ Num is integral and otherwise the Num; `--` is the Num one less,
 always, because perl subtracts as a float unless the Num has been
 used as an integer, and it faults when the Num is integral and the
 answer reaches 2^53 in size, where the two part (T93); either faults
-on a Num so large that the step is lost, `1e16`, where perl warns. A
+where perl warns `Lost precision`, which is by where the Num is and
+not by whether the step is lost: `++` from 2^53 up and below -2^53,
+`--` above 2^53 and from -2^53 down (T130; as first built it faulted
+only when one more was the same float, and the review found 2^53 +
+2). A
 string that is a number (D40) becomes the Num one more or less,
 whatever kind of number it is: perl steps a fresh string of digits as
 text (`"12"` to the string `"13"`) and one that has been used as a
@@ -1001,7 +1005,12 @@ modifier; the test of `? :`; the left of `&&`, `||`, `//`, `and`,
 operators, and the branches of a `? :`, when the whole is tested).
 That is every case perl warns of and some it doesn't, with no
 constant folder. `if ($x = $y)` and `if ($x += 1)` are fine, as they
-are to perl. Rejected: refusing every `=` as a condition (`if (my $m
+are to perl. *Two things were added after the build, both where perl
+warns and the rule as built didn't refuse:* a test is handed down
+through `!`, `not` and a unary plus (perl takes the `!` of a
+condition away and tests the other way); and "no variable" means
+none that perl can't fold away, so `$x = 0 && $y` and `$x = "p" . (1
+|| $y)` are constants (the review of step 5; T112). Rejected: refusing every `=` as a condition (`if (my $m
 = f())` would be lost for good).
 
 **D54. `unless` takes no `else` and no `elsif`.** *(User: accepted as
@@ -1016,7 +1025,8 @@ at this step): perl's rule for them is Unicode's with exceptions of
 its own. `my $a` is allowed by perl, and breaks `sort { $a <=> $b }`
 in its scope: refused here, with `$_` and every other special
 variable until a step brings each. A variable is written `$name` and
-no other way: `${name}` warns in perl, and `$ name` works.
+no other way: `${name}` warns in perl, and `$ name` works. A name is
+251 characters at most, which is where perl stops (T126).
 
 **D56. What a variable, an assignment and a statement are.** *(User:
 seen with the proposal, 2026-11-25; step 5, Q5: nothing to choose.)*
@@ -1041,6 +1051,12 @@ an `if`; an expression that only has a value is refused (perl warns).
 And **after `say` or `print`, a variable followed by a blank and
 something that could begin a value is refused**, by perl's own list:
 perl takes the variable for a file handle, and dies (T26, T111).
+*The review of step 5* added three refusals of the same kind, each
+where perl warns or doesn't compile: the file-handle guess is made
+after `substr(` and `index(` too, which are list operators to perl
+(T125); `$x =- $y`, a sign hard after `=` with a blank after it,
+warns `Reversed -= operator` (T127); and `say ("a")` with its `if` on
+the next line warns as T76's does (T128).
 *Building it* added nothing to choose and four things to say. A
 statement is **one** assignment: `$x = 1 and $y = 2;` is two joined,
 to perl, which also warns of the first (`Found = in conditional`), and
@@ -1069,7 +1085,15 @@ refused, with a message that says to make the change a statement of
 its own. It refuses more than it must (`$x . ++$x` is `44` both ways,
 and `length($x) . ($x = 5)` reads a value), because the exact rule is
 perl's optimiser. A change in an *earlier* piece is fine and is what
-it looks like: `($x = 5) . $x`, `$x++ . $x`. Rejected: joining a row
+it looks like: `($x = 5) . $x`, `$x++ . $x`. *The review of step 5
+added one refusal to this, for the same optimisation:* `$t .= ($u =
+$x . $z);` never assigns `$u` in perl 5.42, which makes one operation
+of the `.=` and the dot and loses the `=` between them (T129). A
+`.=` whose right side, behind brackets, a unary plus and whatever
+gives one operand or the other, is a plain assignment of a
+concatenation is refused. This one is a fault in perl and not a rule
+of it, and a perl that mends it will make the refusal needless.
+Rejected: joining a row
 as perl does, in the generated C (it would need perl's folding rules
 to know what a row is, and step 16's interpolation will meet the same
 thing and can decide it once); leaving it, which is WRONG.

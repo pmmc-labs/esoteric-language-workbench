@@ -182,6 +182,9 @@ export const stepOp = (op: string): StepOp | undefined => STEPS.get(op);
 
 // The names a variable may not have (D55): perl's `sort` owns `$a` and
 // `$b`, and `$_` is its own thing.
+// The longest name perl takes: one more is `Identifier too long` (T126).
+export const NAME_MAX_LENGTH = 251;
+
 export const RESERVED: ReadonlySet<string> = new Set(['a', 'b', '_']);
 
 // The row of the named unary operators: `length`, written without

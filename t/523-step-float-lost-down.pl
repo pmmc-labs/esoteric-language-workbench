@@ -9,7 +9,7 @@ say(1);
     say(defined($v));
 }
 {
-    my $v = 1e+16;
+    my $v = 9007199254740994.0;
     $v--;
     say(defined($v));
 }

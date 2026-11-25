@@ -6,7 +6,7 @@
 // a dot begins `.5` and `x` is a word (T90). D29 has the parser tell it;
 // the last token says as much, and will until `/` can begin a pattern.
 import { refuse } from './errors.ts';
-import { NAMES, OPERATORS, RESERVED, infixOp, isScalarValue, prefixOp, stepOp } from './names.ts';
+import { NAMES, NAME_MAX_LENGTH, OPERATORS, RESERVED, infixOp, isScalarValue, prefixOp, stepOp } from './names.ts';
 import type { Pos } from './ast.ts';
 
 export type Token =
@@ -309,10 +309,14 @@ export const lex = (src: string): Token[] => {
             if (!isWordStart(at())) refuse("after '$' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
             if (RESERVED.has(name)) refuse(`$${name} is not a name a variable may have`, start);
+            // perl stops the compile at a longer one: `Identifier too long`.
+            if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
             // perl takes a variable that comes first after `say` or
             // `print`, brackets between or not, for a file handle when
             // what follows the blank after it could begin a value, and
-            // dies or doesn't compile (T26, T111). The list is perl's own
+            // dies or doesn't compile (T26, T111). The same after
+            // `substr(` and `index(`, which are list operators to perl
+            // too: `substr($x -1, 0)` doesn't compile (T125). The list is perl's own
             // (toke.c), less what is no program here either way: a sign
             // hard against what follows it, a dot and a digit, a star, a
             // percent, a less-than or an ampersand hard against a name, a
@@ -320,7 +324,8 @@ export const lex = (src: string): Token[] => {
             let before = tokens.length - 1;
             while (tokens[before]?.kind === '(') before -= 1;
             const lop = tokens[before];
-            if (lop?.kind === 'word' && NAMES.get(lop.text)?.kind === 'statement' && isBlank(at())) {
+            const lopKind = lop?.kind === 'word' ? NAMES.get(lop.text)?.kind : undefined;
+            if (lop !== undefined && (lopKind === 'statement' || lopKind === 'function') && isBlank(at())) {
                 let w = i;
                 while (w < src.length && (isBlank(src[w]!) || src[w] === '#')) {
                     w = src[w] === '#' ? Math.max(src.indexOf('\n', w), w + 1) : w + 1;
@@ -355,6 +360,11 @@ export const lex = (src: string): Token[] => {
             const between = src.slice(lastEnd, i);
             for (const _ of op) take();
             if (!prefixOp(op) && !infixOp(op) && !stepOp(op)) refuse(`'${op}' is not in the language yet`, start);
+            // `$x =- $y`: perl warns `Reversed -= operator` when a sign is
+            // hard after a `=` and a blank follows the sign (T127).
+            if (infixOp(op)?.assign && op.length === 1 && prefixOp(at())?.sign && isBlank(src[i + 1] ?? '')) {
+                refuse(`'${op}${at()}' with a blank after it: perl warns that it reads as '${at()}${op}' reversed; put a blank after the '${op}'`, start);
+            }
             // A sign after a named unary operator is the sign of its
             // argument, `length -5`, and perl warns that the rest are
             // ambiguous: `length - 5` and `length-5`, which read as a

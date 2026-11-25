@@ -88,9 +88,10 @@ def step(op, v):
     whole = step2.integral(v)
     if op == '++' and whole is not None:
         return ('i', whole + 1)
-    # perl warns when the step is lost: a float so large that one more or
-    # less is the same float.
-    if x + d == x:
+    # perl warns `Lost precision` by where the float is, not by whether
+    # the step was lost: 2^53 + 2 and one more is a tie that rounds away,
+    # and it warns (T130). Its own lines, from sv.c.
+    if (x >= 2**53 or x < -(2**53)) if d > 0 else (x > 2**53 or x <= -(2**53)):
         raise Fault('precision lost')
     if whole is not None and abs(whole - 1) >= 2**53:
         raise Fault('two answers')
@@ -111,7 +112,10 @@ def agrees(rule, perl):
     return text[:-1] == (str(x) if kind == 'i' else '0' if x == 0 else '%.15g' % x)
 
 PASTS = ['', 'my $t = $x > 0.5;', 'my $t = $x + 0;', 'my $t = "$x";', 'my $t = $x > 0.5; $t = $x % 7;', 'my $t = $x * 1.5;', 'my $t = -$x;']
-VALUES = [('s', s) for s in step3.STRINGS] + step3.OTHERS + [('n', v) for v in (-(2.0**53), -(2.0**53) + 1, 2.0**53 - 1, 1e15 - 1, -1e15, 2.5, -0.5,
+VALUES = [('s', s) for s in step3.STRINGS] + step3.OTHERS + [('n', v) for v in (-(2.0**53), -(2.0**53) + 1, 2.0**53 - 1,
+                                                                                           # One more or less is a tie that rounds away, so the step
+                                                                                           # is not lost, and perl warns all the same (T130).
+                                                                                           2.0**53 + 2, -(2.0**53) - 2, 2.0**54 - 2, 2.0**54 + 4, -(2.0**54), 1e15 - 1, -1e15, 2.5, -0.5,
                                                                           4503599627370496.0, -9007199254740991.0)] + \
          [('i', v) for v in (INT_MAX - 1, INT_MIN + 1, -(2**53), -(2**53) + 1)] + [('b', True), ('b', False), ('u', None)]
 

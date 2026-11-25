@@ -1,0 +1,2 @@
+t/619-handle-index.pl:6:11: index $x .5: perl takes $x for a file handle here; put a blank after the '.', or none before it
+exit: 1

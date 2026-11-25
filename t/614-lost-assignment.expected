@@ -1,0 +1,2 @@
+t/614-lost-assignment.pl:9:11: '.=' of an assignment of a concatenation: perl makes one operation of the three and never assigns $u; make the assignment a statement of its own
+exit: 1

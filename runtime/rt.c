@@ -611,8 +611,8 @@ rt_value rt_neg(rt_ctx *cx, rt_value a) {
 //                      integral. `--`: the Num one less, always: perl
 //                      subtracts as a float unless the Num has been used
 //                      as an integer, and the two part when the answer
-//                      reaches 2^53 (T93). Either: a Num so large that
-//                      the step is lost; perl warns.
+//                      reaches 2^53 (T93). Either: a Num of 2^53 or
+//                      more, either side of zero; perl warns.
 //   a string           its number (D40), and then the Num: perl steps a
 //                      fresh string of digits as text, "12" to the string
 //                      "13", and one it has used as a number as an
@@ -645,7 +645,10 @@ static rt_value step(rt_ctx *cx, rt_value a, int d) {
     int64_t whole;
     int is_whole = integral(x, &whole);
     if (d > 0 && is_whole) return rt_int(whole + 1);
-    if (x.n + d == x.n) rt_fault(cx, "a float too large to step by one");
+    // Where perl warns `Lost precision`, which is by where the float is
+    // and not by whether the step was lost: 2^53 + 2 and one more is a
+    // tie that rounds away, and it warns (T130).
+    if (d > 0 ? x.n >= TWO_53 || x.n < -TWO_53 : x.n > TWO_53 || x.n <= -TWO_53) rt_fault(cx, "a float too large to step by one");
     if (is_whole && magnitude(whole - 1) >= (uint64_t)1 << 53) rt_fault(cx, "-- on a whole float that reaches 2^53 has two answers in perl");
     return rt_num(x.n + d);
 }

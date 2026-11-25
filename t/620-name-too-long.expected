@@ -1,0 +1,2 @@
+t/620-name-too-long.pl:5:4: a name of more than 251 characters: perl refuses it as too long
+exit: 1

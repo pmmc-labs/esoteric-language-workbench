@@ -1,0 +1,2 @@
+t/618-handle-substr.pl:7:12: substr $x -1: perl takes $x for a file handle here; put a blank after the '-', or none before it
+exit: 1

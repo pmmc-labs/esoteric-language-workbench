@@ -1,0 +1,42 @@
+my $x = 1; say ("a") if $x;
+---
+my $x = 1; say ("a")
+if $x;
+---
+my $x = 1; say ("a") # c
+if $x;
+---
+my $x = 1; say ("a")	if $x;
+---
+my $x = 1; say ("a")  unless $x;
+---
+my $x = 1; print ("a")
+  unless $x;
+---
+my $x = 1; say ("a") x 2 if $x;
+---
+my $x = 1; say ("a");
+---
+my $x = 1; say ("a")
+;
+---
+my $x = 1; say ("a") ;
+---
+my $x = 1; say ("a") # c
+;
+---
+my $x = 1; say("a")
+if $x;
+---
+my $x = 1; say	("a")
+if $x;
+---
+my $x = 1; say  ("a")
+if $x;
+---
+my $x = 1; if ($x) { say ("a") }
+---
+my $x = 1; if ($x) { say ("a")
+}
+---
+my $x = 1; say ($x) if $x; say ($x) unless $x; say ($x = 5) if $x; say ($x)if $x;

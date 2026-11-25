@@ -303,6 +303,20 @@ test('a variable is a dollar and a name, hard against it (D55)', () => {
     refused('say $b;', '$b is not a name a variable may have', 1, 5);
     refused('say $_;', '$_ is not a name a variable may have', 1, 5);
     assert.deepEqual(lex('$ab $_1 $A').map(t => t.text), ['$ab', '$_1', '$A', '']);
+    // perl's longest name is 251 characters (T126).
+    assert.equal(lex('$' + 'n'.repeat(251)).length, 2);
+    refused('my $' + 'n'.repeat(252) + ';', 'a name of more than 251 characters: perl refuses it as too long', 1, 4);
+});
+
+test("a sign hard after '=' with a blank after it, which perl warns is an operator reversed (T127)", () => {
+    const message = (sign: string) => `'=${sign}' with a blank after it: perl warns that it reads as '${sign}=' reversed; put a blank after the '='`;
+    refused('$x =- $y;', message('-'), 1, 4);
+    refused('$x =+ $y;', message('+'), 1, 4);
+    refused('my $x =-\n$y;', message('-'), 1, 7);
+    refused('$x =-\t1;', message('-'), 1, 4);
+    for (const src of ['$x =-$y;', '$x = -$y;', '$x = - $y;', '$x=-$y;', '$x ==- 1;', '$x +=- 1;', '$x .=- 1;', '$x -=+ 1;', '$x =--$y;', '$x <=- 1;']) {
+        assert.ok(lex(src).length > 3, src);
+    }
 });
 
 test('after a variable an operator comes, as after any value', () => {
@@ -333,6 +347,15 @@ test('a variable first after say or print, a blank, and what could begin a value
     refused('say $x <y;', message('say', '<y', '<'), 1, 5);
     refused('say $x /2;', message('say', '/2', '/'), 1, 5);
     refused('say $x ++;', message('say', '++', '+'), 1, 5);
+    // substr and index are list operators to perl too (T125), in their
+    // first argument; length and its kin are not.
+    refused('say substr($x -1, 0);', message('substr', '-1', '-'), 1, 12);
+    refused('say index($x .5, "c");', message('index', '.5', '.'), 1, 11);
+    refused('say substr(($x -1), 0);', message('substr', '-1', '-'), 1, 13);
+    for (const src of ['say substr($s, $x -1);', 'say substr($s, 0, $x -1);', 'say index($s, $x -1);', 'say length($x -1);',
+        'say length $x -1;', 'say uc($x -1);', 'say substr($x - 1, 0);', 'say substr($x-1, 0);', 'say defined($x -1);']) {
+        assert.ok(lex(src).length > 3, src);
+    }
     // Not a handle: a blank after the operator, none before it, an
     // assignment, a slash that is `//`, and anywhere but first after say.
     for (const src of ['say $x - 1;', 'say $x-1;', 'say $x -= 1;', 'say $x += 1;', 'say $x //2;', 'say $x /= 2;',

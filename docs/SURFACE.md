@@ -55,7 +55,9 @@ comparison: *in*, *out*, or *n/a*.
 | A second `my` of a name in one scope | Cut | | | D15: perl warns |
 | A variable with no `my` in sight | Cut | | | perl doesn't compile it, under `use v5.42` |
 | `${name}`, `$ name` | Cut | | | D55: perl warns of the first where it could be a block (T114) |
-| A variable first after `say` or `print`, a blank, and what could begin a value: `say $x -1;` | Cut | | | D56, T111: a file handle, to perl, which dies |
+| A variable first after `say`, `print`, `substr(` or `index(`, a blank, and what could begin a value: `say $x -1;` | Cut | | | D56, T111, T125: a file handle, to perl, which dies or doesn't compile |
+| `$x =- $y`: a sign hard after `=`, and a blank after the sign | Cut | | | D56, T127: perl warns `Reversed -= operator` |
+| A name of more than 251 characters | Cut | | | D55, T126: `Identifier too long` |
 | A statement that only has a value, `$x + 1;`; two joined by a word operator, `$x = 1 and $y = 2;` | Cut | | | D56: perl warns of each (T114) |
 | `state` | In | 14 | in | |
 | `our`, package variables, `$Pkg::x` | Cut | | in | D19 |
@@ -83,7 +85,7 @@ comparison: *in*, *out*, or *n/a*.
 | `if`, `elsif`, `else`, `unless` | In | 5 | in | Braces always; a fault in a test names the line of its `if` or `elsif` |
 | `unless` with `else` or `elsif` | Cut | | | D54 |
 | `EXPR if COND`, `unless` | In | 5 | in | The statement is `say`, `print`, an assignment or a step; a fault in the test names the statement's line (T118) |
-| `=` with no variable on its right, where a value is tested for truth: `if ($x = 5)` | Cut | | | D53, T112: perl warns that `==` was meant; through `!`, `not` and `+` too |
+| `=` with a constant on its right, where a value is tested for truth: `if ($x = 5)`, `if ($x = 0 && $y)` | Cut | | | D53, T112: perl warns that `==` was meant; through `!`, `not` and `+` too, and for what it folds to a constant |
 | `while`, `until`, postfix forms | In | 6 | in | |
 | `for (init; cond; step)` | In | 6 | in | |
 | `foreach my $x (LIST)` | In | 9 | in | `$x` is read-only; every container that can reach the list is frozen (D17) |
@@ -136,9 +138,10 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `?:` | In | 4 | Not as an lvalue |
 | `= += -= *= /= %= **= .= x= &&= \|\|= //=` | In | 5 | D56. The left side is a variable, bare. On undef, `+=`, `-=`, `.=`, `\|\|=`, `//=` and `++` are perl's, silently; `*=`, `/=`, `**=`, `%=`, `x=` fault (perl warns). `&= \|= ^= <<= >>=` come with their operators |
 | An assignment to anything but a variable: `($x) = 5`, `($x = 5) = 7`, `(1 ? $x : $y) = 8` | Cut | | D17, D56: values flow, places don't; the first is a list assignment (step 9) |
-| `++ --` | In | 5 | D52: by what the variable holds. A string is stepped as its number and is then a Num; one that isn't a number faults (perl's string increment is cut; its `--` gives -1 in silence); a fault where perl has two answers (T113) |
+| `++ --` | In | 5 | D52: by what the variable holds. A string is stepped as its number and is then a Num; one that isn't a number faults (perl's string increment is cut; its `--` gives -1 in silence); a fault where perl has two answers (T113), and on a Num of 2^53 or more, where perl warns `Lost precision` (T130) |
 | A variable changed in the statement that reads it: `$x + ($x = 5)` | In | 5 | D14: read when its operator runs, as in perl (T110) |
 | A concatenation whose later piece changes a variable an earlier piece reads: `$x . "a" . ($x = 5)` | Cut | | D57, T117: perl joins a row of dots as one operation and reads each piece late |
+| `.=` whose right side is an assignment of a concatenation: `$t .= ($u = $x . $z)` | Cut | | D57, T129: perl 5.42 never makes the assignment |
 | Chained comparisons, `1 < $x < 10`, `$a == $b == $c`, `"a" lt $s lt "c"` | Later | 4 | In perl since 5.32; refused, never read left to right (T33) |
 | Mixing the non-associative operators, `1 <=> 2 == -1`, `1 .. 2 .. 3`, `0 < $o isa P` | Cut | | perl refuses each; the parser must too (T51, T52) |
 | Unary `+` | In | 1 | `say +(1 + 2) * 3` is 9: perl's own way round T25. `+{` is always a hash |

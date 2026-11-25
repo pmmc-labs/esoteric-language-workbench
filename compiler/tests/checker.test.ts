@@ -197,9 +197,22 @@ test("'=' where a value is tested, with a constant on its right (D53)", () => {
     at('if (my $z = 5) { say 1; }', 11);
     at('$y = ($x = 5) || 2;', 10);
     at('if (1) { say 1; } elsif ($x = "a") { say 2; }', 29);
+    // What perl folds to a constant though a variable is written in it:
+    // found by the review of step 5.
+    at('if ($x = 0 && $y) { say 1; }', 8);
+    at('if ($x = (1 || $y)) { say 1; }', 8);
+    at('if ($x = (1 ? 2 : $y)) { say 1; }', 8);
+    at('if ($x = ("" // $y)) { say 1; }', 8);
+    at('if ($x = -(1 || $y)) { say 1; }', 8);
+    at('say "a" if $x = "p" . (1 || $y);', 15);
+    at('if ($x = length(1 || $y)) { say 1; }', 8);
+    at('if ($x = (1 || $y++)) { say 1; }', 8);
+    at('if (my $w = (1 || $y)) { say 1; }', 11);
     for (const src of ['if ($x = $y) { say 1; }', 'if ($x += 5) { say 1; }', 'if ($x ||= 5) { say 1; }', 'if ($x = $y = 5) { say 1; }',
         'if (($x = 5) == 5) { say 1; }', 'say(!($x = 5));', 'say(1 + ($x = 5));', 'if ($x = $y ? 1 : 2) { say 1; }',
-        'if ((my $z = 5) > 2) { say 1; }', '$y = !($x = 5);']) {
+        'if ((my $z = 5) > 2) { say 1; }', '$y = !($x = 5);',
+        'if ($x = $y && 0) { say 1; }', 'if ($x = $y || 5) { say 1; }', 'if ($x = $y ? 1 : 0) { say 1; }', 'if ($x = 1 + $y) { say 1; }',
+        'if ($x = ($y = 5) + 1) { say 1; }']) {
         accepted(`use v5.42;\nmy $x; my $y;\n${src}`);
     }
 });
@@ -221,6 +234,24 @@ test('a later piece of a concatenation may not change what an earlier piece read
     for (const src of ['say(($x = 5) . $x);', 'say $x . $y++;', 'say $x++ . $y;', 'say $x++ . $x;', 'say $x . ($y = 5) . $y;',
         '$x .= $y++;', 'say(($x = 1) + $x++);', 'say $x . "a";', '$y = ($x . "a") x ($x = 2);']) {
         accepted(`use v5.42;\nmy $x; my $y;\n${src}`);
+    }
+});
+
+// perl's answers are in docs/briefs/claims.py (T129) and t/566.
+test("'.=' of an assignment of a concatenation, which perl never makes (T129)", () => {
+    const message = (name: string) =>
+        `'.=' of an assignment of a concatenation: perl makes one operation of the three and never assigns $${name}; make the assignment a statement of its own`;
+    const at = (src: string, col: number, name = 'y') => refused(`use v5.42;\nmy $x; my $y; my $z;\n${src}`, message(name), 3, col);
+    at('$x .= ($y = $z . "a");', 11);
+    at('$x .= $y = $z . "a";', 10);
+    at('$x .= +(($y = ($z . "a")));', 13);
+    at('$x .= (1 ? ($y = $z . "-") : 0);', 16);
+    at('$x .= ($y = (0 || ($z . "a")));', 11);
+    at('say($x .= ($y = "k" . $z));', 15);
+    at('$x .= ($y = $z . "a") if $z;', 11);
+    for (const src of ['$x .= ($y .= $z);', '$x = $x . ($y = $z . "a");', '$x .= ($y = $z . "a") . "b";', '$x .= "b" . ($y = $z . "a");',
+        '$x .= ($y = $z x 2);', '$x .= ($y = $z);', '$x .= ($y = $z . "a") x 1;', '$x .= ($y = lc($z . "a"));', '$x += ($y = $z . 1);']) {
+        accepted(`use v5.42;\nmy $x; my $y; my $z;\n${src}`);
     }
 });
 

@@ -231,6 +231,21 @@ test('blocks, if with its elsifs and else, unless, and the modifiers', () => {
     assert.deepEqual([second.pos, second.arms[0]!.pos, second.modifier], [{ line: 4, col: 1 }, { line: 5, col: 3 }, true]);
 });
 
+// perl looks along the bracket's own line for what may follow a call, a
+// modifier as well as a semicolon (T128).
+test('say, one blank, brackets, and a modifier that is not on their line', () => {
+    const message = (name: string, word: string) =>
+        `${name} (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with '${word}' after them: write ${name}(...)`;
+    refused('say ("a")\nif $x;', message('say', 'if'), 1, 5);
+    refused('say ("a") # why\n  unless $x;', message('say', 'unless'), 1, 5);
+    refused('print ("a" .\n"b") if $x;', message('print', 'if'), 1, 7);
+    refused('say (")") if $x;', message('say', 'if'), 1, 5);
+    assert.equal(program('say ("a") if $x;'), '[say "a"*; if $x]');
+    assert.equal(program('say ("a")   unless $x;'), '[say "a"*; unless $x]');
+    assert.equal(program('say("a")\nif $x;'), '[say "a"*; if $x]');
+    assert.equal(program('say  ("a")\nif $x;'), '[say "a"*; if $x]');
+});
+
 test('what a block and an if may not be', () => {
     refused('{ }', 'an empty block is an anonymous hash, to perl: put a statement in it, or take it out', 1, 1);
     refused('{ { } }', 'an empty block is an anonymous hash, to perl: put a statement in it, or take it out', 1, 3);

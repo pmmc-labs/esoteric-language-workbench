@@ -46,8 +46,16 @@ const checkLiteral = (e: Expr): void => {
 // An expression behind any unary plus, which does nothing in perl either.
 const plain = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === undefined ? plain(e.operand) : e);
 
-// Whether a variable is anywhere in an expression.
-const hasVariable = (e: Expr): boolean => e.kind === 'var' || e.kind === 'my' || parts(e).some(hasVariable);
+// Whether perl may fold an expression to a constant as it compiles: one
+// with no variable in it, and one whose variables are all behind a test
+// that folds, `0 && $y`, `1 ? 2 : $y` (T112). perl folds `1 && $y` to
+// `$y`, which is no constant: this says yes to a little more than perl
+// does, with no folder of its own.
+const folds = (e: Expr): boolean =>
+    e.kind === 'var' || e.kind === 'my' || e.kind === 'assign' || e.kind === 'step' ? false
+    : e.kind === 'ternary' ? folds(e.test)
+    : e.kind === 'binary' && infixOp(e.op)?.when ? folds(e.left)
+    : parts(e).every(folds);
 
 // The names an expression reads, and the ones it changes: by name, which
 // is a little more than by declaration, and errs toward refusing.
@@ -76,7 +84,33 @@ const pieces = (e: Expr): Expr[] => {
     if (p.kind === 'ternary') return [p.test, ...pieces(p.then), ...pieces(p.else)];
     return [p];
 };
+// What an expression may be worth, behind brackets, a unary plus, and
+// whatever gives one operand or the other (which perl may have folded
+// away).
+const wholes = (e: Expr): Expr[] => {
+    const p = plain(e);
+    if (p.kind === 'binary' && infixOp(p.op)?.when) return [...wholes(p.left), ...wholes(p.right)];
+    if (p.kind === 'ternary') return [...wholes(p.then), ...wholes(p.else)];
+    return [p];
+};
+
+// `$t .= ($u = $x . $z);` never assigns `$u`, in perl 5.42 and 5.38: it
+// makes one operation of the `.=` and the dot, and the `=` between them
+// is lost (T129). So the right side of `.=` may not be an assignment of
+// a concatenation.
+const checkLostAssignment = (e: Expr): void => {
+    if (e.kind !== 'assign' || !infixOp(e.op)?.concat) return;
+    for (const w of wholes(e.value)) {
+        // (To a `my` it is made; and a `my` may not stand there.)
+        const plainAssign = w.kind === 'assign' && w.target.kind === 'var' && infixOp(w.op)?.rt === undefined && infixOp(w.op)?.when === undefined;
+        if (plainAssign && wholes(w.value).some(v => v.kind === 'binary' && infixOp(v.op)?.concat)) {
+            refuse(`'${e.op}' of an assignment of a concatenation: perl makes one operation of the three and never assigns $${w.target.name}; make the assignment a statement of its own`, w.pos);
+        }
+    }
+};
+
 const checkConcat = (e: Expr): void => {
+    checkLostAssignment(e);
     const row = e.kind === 'binary' && infixOp(e.op)?.concat ? pieces(e)
         : e.kind === 'assign' && infixOp(e.op)?.concat ? [e.target, ...pieces(e.value)]
         : [];
@@ -91,17 +125,17 @@ const checkConcat = (e: Expr): void => {
     }
 };
 
-// A `=` whose right side has no variable in it, where its value is tested
-// for truth: `if ($x = 5)` (D53). perl warns `Found = in conditional`
-// when the right side is a constant, after folding what it can (T112);
-// this is that and a little more, with no folder. `tested` goes down
+// A `=` whose right side is a constant, where its value is tested for
+// truth: `if ($x = 5)` (D53). perl warns `Found = in conditional` when
+// the right side is a constant after folding what it can, `$x = 0 && $y`
+// too (T112); this is that and a little more. `tested` goes down
 // through what hands a test on: a unary plus, `!` and `not` (perl takes
 // the `!` of a condition away and tests the other way), the right of an
 // operator that gives one operand or the other, and the branches of `? :`.
 const tested = (in_: Expr): void => {
     const e = plain(in_);
     if (e.kind === 'unary' && prefixOp(e.op)?.tests) return tested(e.operand);
-    if (e.kind === 'assign' && infixOp(e.op)?.rt === undefined && infixOp(e.op)?.when === undefined && !hasVariable(e.value)) {
+    if (e.kind === 'assign' && infixOp(e.op)?.rt === undefined && infixOp(e.op)?.when === undefined && folds(e.value)) {
         refuse(`'${e.op}' where a value is tested, with nothing but a constant on its right: perl warns that == was meant`, e.pos);
     }
     // Both operands: under a `!`, perl has the left one tested too.

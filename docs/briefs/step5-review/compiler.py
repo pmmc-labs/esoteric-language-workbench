@@ -183,7 +183,7 @@ def which(starts, line):
 
 def segments(out, n):
     """The output of each of n programs, by the marker lines."""
-    parts = re.split(rb'^#\d+\n', out, flags=re.M)[1:]
+    parts = re.split(rb'\n#\d+\n', out)[1:]
     return parts + [None] * (n - len(parts))
 
 
@@ -193,7 +193,7 @@ def batch(items):
         starts = []
         for k, it in enumerate(items):
             starts.append(text.count('\n') + 1)
-            text += 'say("#%d");\n{\n%s}\n' % (k, it.body)
+            text += 'print("\\n#%d\\n");\n{\n%s}\n' % (k, it.body)       # a line of its own, whatever was printed last
         r = both(text)
         if r[0] == 'refused':
             k = which(starts, r[1])
@@ -233,7 +233,7 @@ def batch(items):
             it = items.pop(bad)
             if not alone(it):
                 counts['differs in a file of many and not alone'] += 1
-                note('differs in a file of many and not alone', it)
+                note('differs in a file of many and not alone', it, 'there: the compiler %s, %r; perl %r, and says %r' % (what, mine[bad], perls[bad], perr[:300]))
             continue
         for k in range(last): agreed(items[k], mine[k])
         if what == 'ran': return

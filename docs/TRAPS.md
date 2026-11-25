@@ -330,6 +330,31 @@ about a statement that spans lines.
 | T117 | `my $x = 3; say $x . "a" . ($x = 5);`, `say((1 ? $x . "" : 0) . ($x = 5));`, `say(($x . "a") . ($x = 5));` | `5a5`, `55`, `5a5`: perl joins a row of dots as one operation (`multiconcat`) and reads every piece when it runs, brackets or not, and after folding what it can. `my $y = $x . "a"; say $y . ($x = 5);` is `3a5`, and so are `($x . "a") x 1 . ($x = 5)` and `($x + 0) . "a" . ($x = 5)` | 5 | D57: refuse a concatenation in which a later piece changes a variable an earlier piece reads |
 | T118 | `say 1` / `if` / `$u + 1;` on three lines, `$u` undef; the same in an `elsif (` whose test is on the next line | The warning names the line of `say`, the first of the statement, and the line of the `elsif`: not the line the test or the `if` is on | 5 | A modifier's test is at its statement's line; an `elsif`'s at the `elsif` (tests 547 to 549) |
 
+## Found by the review of step 5
+
+A reader with the proposal and perl, and then with the compiler
+(`briefs/step5-review/`): 698,000 programs against its model before
+the build, 57,000 through the compiler after it, and texts rejoined
+with blanks and comments at random, which is how T128 was found. One
+of these prints what perl doesn't (T129); of the rest perl warns, or
+doesn't compile.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T125 | `my $x = 5; say substr($x -1, 0);`, `say index($x .5, "c");` | Neither compiles: `Missing comma after first argument to substr function`. `substr` and `index` are list operators to perl, as `say` is, and it takes a variable that comes first after one for a file handle by the same guess (T111). Their second and third arguments are fine, and so are `length(`, `uc(` and the other named unary operators | 5 | Refuse, as after `say` |
+| T126 | A variable whose name is 252 characters | `Identifier too long`, and no program. 251 is fine | 5 | Refuse a name of more than 251 characters |
+| T127 | `my $x =- $y;`, `$x =+ $y;` | `-2` and `2`, and `Reversed -= operator`, `Reversed += operator`, as it compiles: a sign hard after `=` with a blank after the sign. `$x =-$y`, `$x = - $y`, `$x +=- 1` and `$x ==- 1` are silent | 5 | Refuse `=`, a sign, and a blank |
+| T128 | `say ("a")` and `if $x;` on the next line; `print ("a" .` with `"b") unless $x;` on the next | Each prints, and warns `say (...) interpreted as function`: T76's look along the line is for a modifier as much as a semicolon. `say ("a") if $x;` on one line is silent | 5 | T76's rule, with a modifier after the brackets as with `;` |
+| T129 | `my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x . $z); say $t; say $u;` | `ta1` and then `u`: **perl never assigns `$u`**. It makes one operation of the `.=` and the dot, and loses the `=` between them; 5.38 does the same. Also without the brackets, behind a unary plus, behind a test it folds (`1 ? (...) : 0`). Not with `my $w` for `$u`, which is assigned; not when the right side of `.=` is more than the assignment (`($u = $x . $z) . "b"`), not for `$t = $t . (...)`, `($u .= $x)`, `($u = $x x 2)`, or three pieces (`$u = $x . $z . $x`) | 5 | D57: refuse a `.=` whose right side is an assignment of a concatenation |
+| T130 | `my $x = 9007199254740994.0; $x++; say $x;` | `9.007199254741e+15`, and `Lost precision when incrementing 9007199254740994.000000 by 1`: perl warns by where the float is, 2^53 or past it, and not by whether the step was lost. One more than 2^53 + 2 is a tie that rounds to 2^53 + 4. Its lines: `++` warns from 2^53 up and below -2^53; `--` above 2^53 and from -2^53 down | 5 | D52: fault on exactly those |
+
+T112 has more to it, found the same way: perl warns of a tested `=`
+whose right side it *folds* to a constant, a variable written in it
+or not: `if ($x = 0 && $y)`, `$x = "p" . (1 || $y)`, `my $w = (1 ||
+$y)`. The refusal now takes a right side for a constant when every
+variable in it is behind a test with none (`0 && $y`, `1 ? 2 : $y`),
+which is a little more than perl folds.
+
 ## Found proposing step 6
 
 | | Program | perl prints | Step | Way out |

@@ -36,8 +36,49 @@ left is, `++` and `--` by what the variable holds, late reads, blocks,
 | `gen_cat.py` | Strings: rows of dots, `.=`, assignments inside expressions, constant tests: where perl makes one operation of several (kind `cat` of `compiler.py`) |
 | `spacing.py` | The compiler's reading of a text held to perl's, where the blanks are: a generated program cut into tokens and joined again with nothing, a blank, a newline or a comment between each two; through `compiler.py` |
 | `handles.py` | The compiler's file-handle refusal: a variable first after `say`, `print`, `substr(`, `index(`, each blank, each operator spelled both ways, each operand; through `compiler.py` |
-| `shapes.py`, `shapes/` | Programs written by hand, a paragraph each, given to the compiler and perl: `python3 docs/briefs/step5-review/shapes.py docs/briefs/step5-review/shapes/*.txt`. **`shapes/findings.txt` is what the review found WRONG in the compiler as it was built (d7883c5), one program of each kind**: all twelve should come to be refused, faults, or the same as perl |
+| `shapes.py`, `shapes/` | Programs written by hand, a paragraph each, given to the compiler and perl: `python3 docs/briefs/step5-review/shapes.py docs/briefs/step5-review/shapes/*.txt`. **`shapes/findings.txt` is what the review found WRONG in the compiler as it was built (d7883c5), a program or two of each kind**: all fourteen should come to be refused, faults, or the same as perl |
 | `probe.py` | The same paragraphs given to `perl -c` and perl alone, with `-d` for what perl parsed |
+
+## What it found
+
+Against the definition as proposed, before anything was built: a row of
+dots read late by perl (now D57); an empty block; `!`, `not` and unary
+plus over a tested `=`; a comment between `say $x` and a sign; `my` of
+one name twice in a chain's tests. The builder found the first three
+too, and the built compiler refuses all five.
+
+Against the compiler as built (d7883c5 and the tree on 2026-11-25),
+each with its program in `shapes/findings.txt`:
+
+1. **`$t .= ($u = $x . $z);` prints what perl doesn't.** perl 5.42 (and
+   5.38) never assigns `$u`: it makes one operation of the `.=` and the
+   concatenation and drops the assignment between them. Through
+   brackets, a unary plus, and a test perl folds (`1 ? ... : 0`, `0 ||
+   ...`), on either side; whenever what is assigned comes to two pieces
+   once perl has folded its constants; not with `my $u`, which the
+   language doesn't allow there anyway.
+2. **`if ($x = 0 && $y)`**, and any tested `=` whose right side perl
+   folds to a constant though a variable is written in it (`1 || $y`,
+   `1 ? 2 : $y`, `"p" . (1 || $y)`, `length(1 || $y)`): perl warns
+   `Found = in conditional`. Not in the test of an `elsif`, where perl
+   never warns.
+3. **`substr($x -1, 0)`, `index($x .5, "c")`**: perl looks for a file
+   handle after `substr(` and `index(` as it does after `say(`, and
+   doesn't compile them. Every shape the compiler refuses after `say`.
+4. **A name of more than 251 characters**: perl says `Identifier too
+   long`.
+5. **`++` and `--` on a Num from 2^53 to 2^54 whose last bit is set**
+   (`9007199254740994.0`): one more is a tie that rounds away, so the
+   step is not lost and no fault is raised; perl warns `Lost precision`
+   for every float it steps at 2^53 and beyond.
+6. **`$x =- $y` and `$x =+ $y`**, a blank after the sign: perl warns
+   `Reversed -= operator`.
+7. **`say ("a")` and a modifier on a later line**, or after a comment,
+   or with the brackets closing on a later line: perl warns `say (...)
+   interpreted as function`. With `;` the compiler refuses these; a
+   modifier lets them by.
+
+Only the first prints something else; perl complains of the other six.
 
 Each `gen_*.py` and `compiler.py` says in its first lines how to break
 the model or plant a program so that the check goes red, and each was

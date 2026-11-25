@@ -653,7 +653,7 @@ undef is.
 
 A name is a letter or an underscore, then letters, digits and
 underscores, all ASCII, hard against its dollar: `$total`, `$x2`,
-`$_tmp`. Three names are refused, `$a`, `$b` and `$_`, because perl
+`$_tmp`. It is 251 characters at most, as in perl. Three names are refused, `$a`, `$b` and `$_`, because perl
 keeps them for itself and lets them by without a `my`. `${name}` and
 `$ name`, which perl takes, are refused too.
 
@@ -678,6 +678,10 @@ one other place is the test of an `if`, described below.
     my $x = 1;
     $x = $x + 1;
     my $y = $x = 10;      # right to left: both are 10
+
+A sign straight after the `=` needs no blank after it or one before
+it: `$x = -$y` and `$x =-$y` are fine, and `$x =- $y` is refused,
+because perl warns that it reads as `-=` written backwards.
 
 An assignment has a value, which is the variable, so it can stand
 inside an expression in brackets: `say 1 + ($x = 5);` prints 6 and
@@ -732,8 +736,9 @@ before, and each of those is a fault, as everywhere: `++` on a string
 of digits that begins with a zero (`"009"` becomes the string `010`,
 or the number 10); `++` or `--` on a string that is a whole number
 whose size is 2^53 or more, before the step or after it; `--` on a
-whole Num that would reach 2^53 below zero; and a Num too large for
-one more or less to change it.
+whole Num that would reach 2^53 below zero; and a Num that is 2^53 or
+more in size, where perl warns that precision is lost (`++` from 2^53
+up and below -2^53, `--` above 2^53 and from -2^53 down).
 
 ### When a variable is read
 
@@ -759,6 +764,11 @@ that an earlier piece reads**: make the change a statement of its
 own. A change in an earlier piece is fine, `($x = 5) . $x`, and so is
 a change to another variable.
 
+And one more, for a fault in perl itself: `$t .= ($u = $x . $z);`
+never assigns `$u` in perl 5.42. So **the right side of `.=` may not
+be an assignment of a concatenation**. Make the assignment first, in
+a statement of its own.
+
 ### A statement that is an expression
 
 An assignment, a `++` or `--`, and a `my` are statements. Nothing
@@ -777,7 +787,9 @@ shape, with a message that says so: a blank after the variable and
 then a `-` or `+` hard against what follows, a dot and a digit, a
 slash hard against what follows, or a `*`, `%`, `<` or `&` hard
 against a name. `say $x - 1;` and `say $x-1;` are what they look
-like, to perl and here.
+like, to perl and here. perl makes the same guess about the first
+argument of `substr` and `index`, so `substr($x -1, 0)` is refused
+too; `substr($x - 1, 0)` is fine.
 
 ## Blocks, if and unless
 
@@ -837,11 +849,16 @@ a block:
 
 The statement before the modifier is `say`, `print`, an assignment or
 a `++` or `--`: not a `my`, not a block, not another `if`. One
-modifier to a statement.
+modifier to a statement. After `say (...)` written with a blank
+before its bracket, the modifier is on the line the brackets close
+on, as the semicolon would be.
 
 **A `=` where a value is tested for truth is refused when its right
-side has no variable in it**: `if ($x = 5)` is almost always a
-mistyped `==`, and perl warns of it. That goes for the test of an
+side is a constant**: `if ($x = 5)` is almost always a mistyped `==`,
+and perl warns of it. A right side is a constant when it has no
+variable in it, or none that matters: in `$x = 0 && $y` the `$y` is
+behind a test that is already decided, and perl warns of that as
+well. That goes for the test of an
 `if`, `unless` or modifier, the left of `&&`, `||`, `//`, `and` and
 `or`, the test of `? :`, and any of those through a `!` or `not`.
 `if ($x = $y)` and `if ((my $r = $n % 7) > 3)` are fine.

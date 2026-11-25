@@ -1,0 +1,2 @@
+t/616-condition-assign-folded.pl:7:8: '=' where a value is tested, with nothing but a constant on its right: perl warns that == was meant
+exit: 1

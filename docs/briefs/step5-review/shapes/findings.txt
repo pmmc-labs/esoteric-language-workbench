@@ -42,3 +42,11 @@ say $x;
 my $y = 2; my $x = 0;
 $x =+ $y;
 say $x;
+---
+my $x = 1;
+say ("a")
+if $x;
+---
+my $x = 1;
+print ("a" .
+"b") unless $x;

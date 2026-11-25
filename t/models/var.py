@@ -108,6 +108,12 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/var.py 550 > t/550-step-string-edge.expected
     python3 t/models/var.py --program 551 > t/551-step-string-edge-up.pl
     python3 t/models/var.py 551 > t/551-step-string-edge-up.expected
+    python3 t/models/var.py --program 552 > t/552-step-float-lost-tie.pl
+    python3 t/models/var.py 552 > t/552-step-float-lost-tie.expected
+    python3 t/models/var.py --program 553 > t/553-step-float-lost-negative.pl
+    python3 t/models/var.py 553 > t/553-step-float-lost-negative.expected
+    python3 t/models/var.py --program 554 > t/554-step-float-lost-negative-up.pl
+    python3 t/models/var.py 554 > t/554-step-float-lost-negative-up.expected
 """
 
 import math
@@ -146,7 +152,9 @@ def step(op, v):
     whole = num.integral(v)
     if d > 0 and whole is not None:
         return whole + 1
-    if v + d == v:
+    # Where perl warns `Lost precision`: by where the float is, whether
+    # or not one more or less is another float (T130).
+    if (v >= 2**53 or v < -(2**53)) if d > 0 else (v > 2**53 or v <= -(2**53)):
         raise Fault(STEP_LOST)
     if whole is not None and abs(whole - 1) >= 2**53:
         raise Fault(STEP_FLOAT)
@@ -462,7 +470,7 @@ FAULTS = {
     '520': ('step-overflow', case(MAX - 1, stepped('++')), case(MAX, stepped('++'))),
     '521': ('step-overflow-down', case(MIN + 1, stepped('--', True)), case(MIN, stepped('--', True))),
     '522': ('step-float-lost', quiet(-(2.0**53), stepped('++')), quiet(2.0**53, stepped('++'))),
-    '523': ('step-float-lost-down', quiet(2.0**53, stepped('--')), quiet(1e16, stepped('--'))),
+    '523': ('step-float-lost-down', quiet(2.0**53, stepped('--')), quiet(2.0**53 + 2, stepped('--'))),
     '524': ('step-float-two', quiet(-(2.0**53) + 2, stepped('--')), quiet(-(2.0**53) + 1, stepped('--'))),
     '525': ('step-string', case('12', stepped('++')), case('ab', stepped('++'))),
     '526': ('step-string-down', case(' 12 ', stepped('--')), case('ab', stepped('--'))),
@@ -500,6 +508,11 @@ FAULTS = {
     # breaking the runtime (docs/briefs/step5-mutations.py).
     '550': ('step-string-edge', quiet('9007199254740991', stepped('--')), quiet('9007199254740992', stepped('--'))),
     '551': ('step-string-edge-up', quiet('-9007199254740991', stepped('++')), quiet('-9007199254740992', stepped('++'))),
+    # A float past 2^53 whose step is not lost, one more being a tie
+    # that rounds away: perl warns all the same (T130, by the review).
+    '552': ('step-float-lost-tie', quiet(2.0**53, stepped('--')), quiet(2.0**53 + 2, stepped('++'))),
+    '553': ('step-float-lost-negative', quiet(-(2.0**53), stepped('++')), quiet(-(2.0**53), stepped('--'))),
+    '554': ('step-float-lost-negative-up', quiet(-(2.0**53), stepped('++')), quiet(-(2.0**53) - 2, stepped('++'))),
 }
 
 def commands():
