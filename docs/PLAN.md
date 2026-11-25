@@ -2126,7 +2126,10 @@ D74, what the build settled, are defaults he has not confirmed. (2) The semicolo
 brace. `sub double($x) { $x * 2 }` is how Perl is written, and it is
 refused for want of a `;`. perl takes both. Letting the last
 statement of a block go without one is a small change to the parser
-and to what step 5 decided; it is not made here.
+and to what step 5 decided; it is not made here. **He asked for it
+the same day, and it is D75**: 905 has every shape of it, 604, which
+was the test of the refusal, is a `same` test now, and 906 is the
+file's own last statement, which still ends in its semicolon.
 
 **Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
 and answered the same day: D67 (Q1: not the recommendation; nothing happens at 100 calls

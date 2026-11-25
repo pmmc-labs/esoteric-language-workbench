@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D72 are all Stevan's, and D73 and D74 are defaults he has not yet seen: D1 to D9 from the first conversation, and
+D1 to D72 and D75 are Stevan's, and D73 and D74 are defaults he has not yet seen: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -14,7 +14,8 @@ step 5 took, which he confirmed the same day. D58 to D62 are his
 answers to step 6's proposal, D63 to D66 to step 7's, and D67 to D72
 to step 8's (D68's number is the builder's default, which he said
 to stay with). D73 and D74 are the builder's defaults, from the
-review of step 8 and from building it.
+review of step 8 and from building it, and D75 is his, on seeing
+the build.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1411,6 +1412,21 @@ status 2, as a bad knob does (D63): the limit on depth is counted
 (D68), and the count assumes that much. Rejected: letting `$x .=
 set()` through (one more shape of row to reason about, for a program
 that is hard to read either way).
+
+**D75. The last statement of a block may leave its semicolon out.**
+*(User, 2026-11-25, on seeing that step 8's one-line subs were
+refused: "Allow the last statement in a block to omit the
+semicolon".)* `sub double($x) { $x * 2 }` and `if ($ok) { say "yes"
+}` are how Perl is written, and perl takes both. Step 5 had every
+statement end in one, the last in a block too, as a default nobody
+had numbered. A block is a sub's, a loop's, an `if`'s or a bare one;
+the last statement of the *file* still ends in its semicolon, which
+is the smallest change that was asked for, though perl takes that
+too. `;;` is still refused. Evidence: with the semicolon before
+every closing brace taken out of every `same` test that has a block
+(31 tests, 5,505 semicolons, `briefs/step8-semicolons.py`), perl
+compiles each in silence and prints the same, and so does the
+compiler. Rejected: the rule as it was.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

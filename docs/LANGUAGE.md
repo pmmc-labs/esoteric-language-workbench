@@ -87,8 +87,10 @@ first, so no line may start that way. After a statement on its line,
 
 ## Statements
 
-Every statement ends with a semicolon, the last one in a block too,
-and there is no empty statement: `;;` is refused. A block and an `if`
+Every statement ends with a semicolon, and there is no empty
+statement: `;;` is refused. The last statement of a block may leave
+its semicolon out, `if ($ok) { say "yes" }`, as in perl; the last
+statement of the file may not. A block and an `if`
 end with their closing brace. The statements are `say` and `print`,
 the ones that work on variables (a `my`, an assignment, `++` and
 `--`), blocks, `if` and `unless`, the loops `while`, `until` and
@@ -1136,9 +1138,7 @@ A sub that ends without a `return` is worth its last statement, when
 that is an expression: an assignment, a `++`, a call, a `my`, or a
 value by itself, which is a statement in this one place:
 
-    sub double($x) {
-        $x * 2;
-    }
+    sub double($x) { $x * 2 }
 
 A sub that ends in `say` or `print` is worth `true`, as in perl.
 

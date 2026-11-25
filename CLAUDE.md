@@ -305,7 +305,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D72 are all Stevan's, and D73 and D74 are defaults of the builder's that he has not confirmed** (D57 a default of the builder's at
+**D1 to D72 and D75 are Stevan's, and D73 and D74 are defaults of the builder's that he has not confirmed** (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -385,9 +385,10 @@ the first piece). **Its adversarial review found four ways to be
 WRONG and three shapes perl refuses** before anything was built
 (T143 to T148, `briefs/step8-review/`); **D73, what was done about
 each, is a default Stevan has not confirmed.** **What the build
-found**: every statement ends in a semicolon, the last in a block
-too (step 5), so `sub f($x) { $x * 2 }` is refused, which is how
-Perl is written: his to look at. T132 to T142 were found proposing
+found**: step 5 had every statement end in a semicolon, the last in
+a block too, so `sub f($x) { $x * 2 }` was refused; **D75, his: the
+last statement of a block may leave it out** (not the file's last;
+905, 906, and 604 is a `same` test now). T132 to T142 were found proposing
 the step, and `briefs/step8-names.py` and `step8-stack.c` are its
 evidence for names and for the limit. **What step 8 hands step 9**:
 a list-shaped `return` and D71's fault wait for lists; a runtime

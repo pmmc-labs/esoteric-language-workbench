@@ -259,7 +259,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D72 are decided, and D73 and D74 are defaults taken at step 8. What is left is what the decisions hand to a
+D1 to D72 and D75 are decided, and D73 and D74 are defaults taken at step 8. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it

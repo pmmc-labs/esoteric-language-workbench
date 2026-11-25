@@ -1,0 +1,2 @@
+t/906-no-semicolon-at-the-top.pl:6:1: expected ';', found the end of the file
+exit: 1

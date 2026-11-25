@@ -67,6 +67,15 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (t.kind !== ';') unexpected(t, "';'");
     };
 
+    // The end of a statement: its semicolon, which the last statement of
+    // a block may leave out, as in perl (D75). The brace is the block's
+    // to read.
+    const ending = (): void => {
+        if (peek().kind === '}' && depth > 0) return;
+        semicolon();
+    };
+    const ends = (t: Token): boolean => t.kind === ';' || (t.kind === '}' && depth > 0);
+
     const closing = (): Token => {
         const t = next();
         return t.kind === ')' ? t : unexpected(t, "')'");
@@ -134,7 +143,7 @@ export const parse = (tokens: readonly Token[]): Program => {
                 if (peek().kind === ')') refuse(`${head.text} needs an argument`, head.pos);
                 return { kind: 'apply', name: head.text, args: [bracketed()], pos: head.pos };
             }
-            if (open.kind === ';' || open.kind === ')' || open.kind === ',' || open.kind === 'eof') {
+            if (open.kind === ';' || open.kind === ')' || open.kind === ',' || open.kind === '}' || open.kind === 'eof') {
                 refuse(`${head.text} needs an argument`, head.pos);
             }
             return { kind: 'apply', name: head.text, args: [expression(NAMED_UNARY_ROW)], pos: head.pos };
@@ -333,7 +342,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         // the semicolon or a modifier, and perl wants either on the line
         // the brackets are on (T128); anything else is refused for what
         // it is, below.
-        if (head.kind === 'word' && head.asFunction && (after.kind === ';' || isModifier(after))) {
+        if (head.kind === 'word' && head.asFunction && (ends(after) || isModifier(after))) {
             refuse(`${head.text} (...) after one blank: perl warns unless the brackets close on this line, one in a string counting too, with ${show(after)} after them: write ${head.text}(...)`, open.pos);
         }
         return { ...inner, bracketed: true };
@@ -392,7 +401,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (name?.kind === 'return') {
             next();
             if (!inSub) refuse("return outside a sub: perl dies there, when it gets to it", head.pos);
-            if (peek().kind === ';' || isModifier(peek())) return { kind: 'return', pos: head.pos };
+            if (ends(peek()) || isModifier(peek())) return { kind: 'return', pos: head.pos };
             const value = expression(AND_ROW);
             const after = peek();
             if (after.kind === 'op' && infixOp(after.text)) {
@@ -420,7 +429,7 @@ export const parse = (tokens: readonly Token[]): Program => {
             const word = peek();
             const label: Label | undefined = word.kind === 'word' && isLabel(word.text) ? { name: next().text, pos: word.pos } : undefined;
             const after = peek();
-            if (after.kind !== ';' && !(after.kind === 'word' && NAMES.get(after.text)?.kind === 'if')) {
+            if (!ends(after) && !(after.kind === 'word' && NAMES.get(after.text)?.kind === 'if')) {
                 refuse(`after '${head.text}' comes ';', a label in capitals, or an if or unless: perl takes anything else for an expression that names a label`, after.pos);
             }
             return label === undefined ? { kind: 'jump', name: head.text, pos: head.pos } : { kind: 'jump', name: head.text, label, pos: head.pos };
@@ -617,7 +626,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         const word = peek();
         const modifier = word.kind === 'word' ? NAMES.get(word.text) : undefined;
         if (modifier?.kind !== 'if' && modifier?.kind !== 'while') {
-            semicolon();
+            ending();
             return inner;
         }
         next();
@@ -625,7 +634,7 @@ export const parse = (tokens: readonly Token[]): Program => {
             refuse(`return ${word.text}: a return takes an if or an unless`, word.pos);
         }
         const test = expression(Infinity);
-        semicolon();
+        ending();
         if (modifier.kind === 'while') {
             return modifier.until ? { kind: 'while', test, negate: true, body: [inner], modifier: true, pos: inner.pos }
                 : { kind: 'while', test, body: [inner], modifier: true, pos: inner.pos };
