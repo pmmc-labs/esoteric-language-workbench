@@ -1,0 +1,4 @@
+1
+456
+fault: f returned a list where one value is wanted at t/1024-fault-list-returned-behind-a-plus.pl line 7.
+exit: 1

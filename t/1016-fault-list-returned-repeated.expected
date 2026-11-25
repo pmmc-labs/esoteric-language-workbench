@@ -1,0 +1,4 @@
+1
+11
+fault: f returned a list where one value is wanted at t/1016-fault-list-returned-repeated.pl line 7.
+exit: 1

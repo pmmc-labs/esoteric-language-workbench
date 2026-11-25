@@ -1,0 +1,4 @@
+1
+1,,2
+fault: undef where a string is wanted at t/1044-fault-join-of-an-undef.pl line 12.
+exit: 1

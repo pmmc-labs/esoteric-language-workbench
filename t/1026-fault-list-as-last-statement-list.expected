@@ -1,0 +1,4 @@
+1
+12
+fault: f returned a list where one value is wanted at t/1026-fault-list-as-last-statement-list.pl line 7.
+exit: 1

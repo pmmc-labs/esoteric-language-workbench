@@ -1,0 +1,4 @@
+1
+45
+fault: f returned a list where one value is wanted at t/1015-fault-list-returned-slice-of-a-list.pl line 7.
+exit: 1

@@ -1,0 +1,4 @@
+1
+100000000000000,1
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/1047-fault-join-of-a-number-with-two-spellings.pl line 7.
+exit: 1

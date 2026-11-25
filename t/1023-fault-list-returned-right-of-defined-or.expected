@@ -1,0 +1,4 @@
+1
+1
+fault: f returned a list where one value is wanted at t/1023-fault-list-returned-right-of-defined-or.pl line 7.
+exit: 1

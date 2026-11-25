@@ -1,0 +1,4 @@
+1
+21
+fault: f returned a list where one value is wanted at t/1027-fault-list-as-last-statement-reverse.pl line 7.
+exit: 1

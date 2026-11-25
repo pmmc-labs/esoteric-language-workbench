@@ -1,0 +1,4 @@
+1
+12
+fault: f returned a list where one value is wanted at t/1013-fault-list-returned-range.pl line 7.
+exit: 1

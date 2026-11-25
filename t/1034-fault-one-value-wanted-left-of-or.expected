@@ -1,0 +1,4 @@
+1
+12
+fault: f returned a list where one value is wanted at t/1034-fault-one-value-wanted-left-of-or.pl line 7.
+exit: 1

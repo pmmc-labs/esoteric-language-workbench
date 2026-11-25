@@ -1,0 +1,4 @@
+1
+4
+fault: f returned a list where one value is wanted at t/1017-fault-list-returned-splice.pl line 7.
+exit: 1

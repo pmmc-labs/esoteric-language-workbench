@@ -1,0 +1,5 @@
+1
+worked out
+12
+fault: f returned a list where one value is wanted at t/1041-fault-before-the-list-is-worked-out.pl line 10.
+exit: 1

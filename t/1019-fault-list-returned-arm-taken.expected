@@ -1,0 +1,4 @@
+1
+456
+fault: f returned a list where one value is wanted at t/1019-fault-list-returned-arm-taken.pl line 7.
+exit: 1

@@ -1,0 +1,4 @@
+1
+12
+fault: f returned a list where one value is wanted at t/1035-fault-one-value-wanted-assigned.pl line 7.
+exit: 1
