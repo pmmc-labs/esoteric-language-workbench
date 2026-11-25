@@ -9,8 +9,8 @@ and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic, and variables,
 assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
 on 2026-11-25); and loops: **steps 0 to 6 are done** (step 6 the same
-day). **Step 7, the collector, is agreed (D63 to D66) and being built.**
-Stevan's Mac ran `make test` green after step 6. Steps
+day). Stevan's Mac ran `make test` green after step 6. And the collector:
+**steps 0 to 7 are done** (step 7 the same day). Steps
 7 to 30 are outlines: each is proposed, with options, when it's
 next.
 
@@ -1660,9 +1660,67 @@ with (a) there.
   what perl folds to one, in a loop's test as anywhere.
 - Leave out: everything listed above as later.
 
-### 7. The collector (agreed; being built)
+### 7. The collector (done)
 
 Referee: none; the knobs are the test. Size: large.
+
+**Built 2026-11-25**, by Fable 5.2 (the size the line asks for), as
+agreed below, and with these differences and findings:
+
+- **The cap first, then tests that were red, then the collector.**
+  The knobs and the cap went in alone (a count and a fault). 800 to
+  805 each make a gigabyte of strings under a cap of 16 MB, one for
+  each way garbage is made, and with nothing freed each ended in
+  `out of memory`; 806 and 807 are the cap's own faults. The
+  collector turned them green, and changed no byte of what the 462
+  tests before them print.
+- **What was built is what D66 says**: every variable and temporary
+  is a slot of its function's frame (`f[3]`, where `v3_x` and `t2`
+  were C locals), a variable's slot its depth among those in scope;
+  the mark walks every slot of every frame and the sweep frees what
+  it didn't reach; a number as a string is on the C stack, so each of
+  the five functions that allocate does so once, last; a string read
+  after it was collected is `internal:`, checked in each of the five
+  places a string's bytes are read and again after the allocation in
+  the four functions that read an operand after allocating.
+- **Measured.** A loop that makes a gigabyte of strings a kilobyte at
+  a time peaks at 13 MB and takes 2.4 seconds, with the knobs off or
+  with a collection at every allocation. The whole golden suite takes
+  86 seconds under stress 1 with poison and 83 with the knobs off: so
+  D64's default costs four in a hundred, today. It will cost more
+  from step 9, as the review said.
+- **The runtime's own tests in C** (`runtime/tests/collect.c`, 12 of
+  the unit tests): what a slot keeps and what is freed, every frame,
+  a frame that opens empty and one left open, each knob and what a
+  bad value does, the policy with no knob, and a dead string read
+  each way. Every count in them was worked out by hand before the
+  program was run, and each was right: 100 collections in 100,000
+  kilobyte strings, and 701 strings on the heap at the end.
+- **The collector and the code generator were broken 47 ways on
+  purpose** (`briefs/step7-mutations.py`; a broken runtime is linked
+  with each test's C as first compiled, a broken compiler compiles
+  each again; the runtime's own tests run against each copy). 45
+  were caught the first time. The two that weren't were tests that
+  did not test what they were written for: the test of a frame
+  opening empty filled its slots with a pattern the collector skips,
+  and 810's string was not in the frame's last slot. Both put right,
+  and the last slot is now seen by a golden test as well as by C.
+- **One expected output of mine was wrong**, worked out by hand and
+  corrected by hand: 807's loop makes two kilobyte strings each time
+  round, not one, so its cap is reached at about 950 and not 1,900.
+- **`make sanitize` runs the suite twice** now: with poison on, as
+  every test runs, where the runtime itself sees a dead string; and
+  with it off, where the memory is really freed and the sanitizer
+  sees a use of it.
+- **The knobs are said in one file**, `t/knobs.sh`, which `t/run.sh`
+  sources and `t/checks.py` and the mutation scripts read, so a
+  test's binary runs the same way wherever it is run.
+- Left for their steps, as D66 lists: marking through a value that
+  holds values, and a mark stack (9, 13); a variable that outlives
+  its frame (14); unwinding at a caught `die` (15); a heap for each
+  context (29). And from the review: step 8's limit on recursion
+  must count a frame's bytes, not calls; step 9 must say that a stale
+  slot can hold a whole array.
 
 **Proposed 2026-11-25, amended the same day by its adversarial
 review, which could not break its rule and corrected a good deal
