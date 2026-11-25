@@ -3,14 +3,15 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D57 are all Stevan's: D1 to D9 from the first conversation, and
+D1 to D62 are all Stevan's: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
 D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
 3's, D46 to what the review of step 3 left open, D47 to D51 to step
 4's, and D52 to D56 to step 5's. D57 was a default the builder of
-step 5 took, which he confirmed the same day.
+step 5 took, which he confirmed the same day. D58 to D62 are his
+answers to step 6's proposal.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1097,6 +1098,73 @@ Rejected: joining a row
 as perl does, in the generated C (it would need perl's folding rules
 to know what a row is, and step 16's interpolation will meet the same
 thing and can decide it once); leaving it, which is WRONG.
+
+**D58. `do BLOCK while COND` is left out.** *(User: accepted as
+recommended, 2026-11-25; step 6, Q1.)* To perl it is not a loop: it
+is `do BLOCK`, an expression, under a modifier that perl special-cases
+to test afterwards (T64). So a `last` or `next` in its block leaves
+the loop round the `do`, in silence, or dies with none round it.
+`do BLOCK` has a value and a context of its own (D18) and belongs to
+the step that takes it; until then the loop is `while (1) { ...; last
+unless COND; }`. Rejected: taking it now as a loop form of its own,
+with `last` and `next` refused inside its block.
+
+**D59. A `last` or `next` with no label is refused when the nearest
+thing round it that perl counts as a loop is a bare block.** *(User:
+accepted as recommended, 2026-11-25; step 6, Q2. It reverses the
+plan's reading of T32.)* To perl a bare block is a loop that runs
+once, so `while (...) { { last; } say "here"; }` never leaves the
+`while`, and perl says nothing. An `if`'s block is no loop, and
+`last` goes through it. Here a bare block is a scope and nothing
+else: the unlabelled `last` is refused, with a message that says
+which braces it would leave, and `W: while (...) { { last W; } }`
+says what was meant, to perl as well. Rejected: as perl, which keeps
+the idiom of a block one can jump out of; it accepts strictly more
+programs, so this can be reversed without breaking one.
+
+**D60. A comma in a C-style `for`, in its first and third parts
+only.** *(User: accepted as recommended, 2026-11-25; step 6, Q3.)*
+`for (my $i = 0, my $j = 9; $i < $j; $i++, $j--)`. The comma joins
+what could each be a statement: assignments and steps, and in the
+first part a `my`. Not in the test, where perl tests the last part
+alone and warns that the others are useless (T122). The comma
+operator is nowhere else in the language. Rejected: no comma, one
+expression to a part.
+
+**D61. A label is on a loop, in capitals, and is checked as the
+program compiles.** *(User: accepted as recommended, 2026-11-25; step
+6, Q4.)* `NAME:` before a `while`, an `until` or a C-style `for`, one
+to a loop; a capital letter, then capitals, digits and `_`; hard
+against its colon. `last NAME` and `next NAME` must name a loop that
+is round them, or the program is refused; of two loops with one name
+the inner is meant, as in perl. perl takes a label on any statement,
+in any case, with a blank before the colon, and looks the name up
+only when the `last` runs: `Label not found`, in the middle of a run
+(T121). Not on a bare block (the surface had cut that), an `if`, or
+anything else. Rejected: no labels until something needs them, which
+D59 does.
+
+**D62. What a loop is.** *(User: seen with the proposal, 2026-11-25;
+step 6, Q5: nothing to choose.)* `while (TEST) {...}`, `until (TEST)
+{...}`, `for (FIRST; TEST; EACH) {...}` with any part empty and no
+TEST true, and `STATEMENT while TEST;` and `until`, which test first.
+A test is a test as an `if`'s is (D53). **`last` and `next` are
+statements**: alone, with a label, and with an `if` or `unless`
+modifier. perl takes them as expressions, `$done and last;`, `$x ?
+last : next;`, and takes what follows one for an expression that
+names a label, so `last + 1;` dies looking for a loop called `1`
+(T120). `... or next` is asked again when `or die` comes (15). **A
+`my` in a loop's block or in a `while`'s or `until`'s test is undef
+again each time round**, as in perl; in a C-style `for` a `my` is in
+FIRST only, where it is one variable for the whole loop; a `my` under
+a `while` or `until` modifier is refused, as under `if` (T119).
+**`while ()` is refused** (T123). **A fault in a loop's test or its
+EACH names the line of its `while`, `until` or `for`**, and under a
+modifier the line its statement starts on: perl agrees, but for a
+`while`'s test after the first time round, where it names whichever
+statement the block ran last (T124). `redo`, `goto` and `continue`
+blocks stay cut; `foreach` and a `for` over a list are steps 9 and
+10.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

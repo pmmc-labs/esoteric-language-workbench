@@ -218,8 +218,8 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D57 are all Stevan's** (D57 a default of the builder's at
-step 5, which he confirmed). The ones a builder meets first: the
+**D1 to D62 are all Stevan's** (D57 a default of the builder's at
+step 5, which he confirmed; D58 to D62 his answers to step 6). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
 be caught (D13); perl's warnings are faults (D15); loop variables are
 read-only and containers freeze (D17); a sub can't see its context
@@ -242,15 +242,15 @@ variable's past shows nowhere the language doesn't fault, stood**:
 10,000 pairs of programs and 223,000 singles, nothing but the Num at
 2^53. The builder's own evidence
 (`docs/briefs/step5-increments.py`) had missed that one for want of
-a value, and has it now. **Next: step 6**, loops, is **proposed in full
-in `docs/PLAN.md` and waits on Stevan's answers to its four
-questions** (Q1: `do BLOCK while`, left out; Q2: an unlabelled `last`
-or `next` in a bare block, which leaves only the block to perl,
-refused; Q3: the comma in a C-style `for`, in its first and third
-parts; Q4: labels, on loops only, in capitals, checked as the program
-compiles). Nothing of step 6 is built; write its model before its
-compiler, as step 5 did, and test that a `my` in a block is undef
-again each time round. The runtime gains nothing at step 6. `docs/briefs/step4-comparisons.py`
+a value, and has it now. **Step 6, loops, is agreed and being built** (D58:
+`do BLOCK while` left out; D59: an unlabelled `last` or `next` in a
+bare block, which leaves only the block to perl, refused; D60: the
+comma in a C-style `for`, in its first and third parts; D61: labels,
+on loops only, in capitals, checked as the program compiles; D62:
+what a loop is). Its proposal is in `docs/PLAN.md`. Its model,
+`t/models/loop.py`, comes before its compiler, and must test that a
+`my` in a block is undef again each time round. The runtime gains
+nothing at step 6. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
 operand: 57,376 comparisons, no new fault needed. **What every step
 must ask again**: whether a value's past shows anywhere the

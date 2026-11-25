@@ -20,7 +20,7 @@ What a row can say:
 - **Cut**: refused, and not planned. Reopening one is a proposal.
 - **New**: perl doesn't have it; an exception to D2.
 
-Steps 0 to 5 are built and nothing after them, so "In" is a plan and
+Steps 0 to 5 are built, 6 is being built, and nothing after them, so "In" is a plan and
 not a fact; [`LANGUAGE.md`](LANGUAGE.md) is what works.
 [`TRAPS.md`](TRAPS.md) has the programs that show why a row says
 what it does.
@@ -86,18 +86,19 @@ comparison: *in*, *out*, or *n/a*.
 | `unless` with `else` or `elsif` | Cut | | | D54 |
 | `EXPR if COND`, `unless` | In | 5 | in | The statement is `say`, `print`, an assignment or a step; a fault in the test names the statement's line (T118) |
 | `=` with a constant on its right, where a value is tested for truth: `if ($x = 5)`, `if ($x = 0 && $y)` | Cut | | | D53, T112: perl warns that `==` was meant; through `!`, `not` and `+` too, and for what it folds to a constant |
-| `while`, `until`, postfix forms | In | 6 | in | |
-| `for (init; cond; step)` | In | 6 | in | |
+| `while`, `until`, postfix forms | In | 6 | in | D62. A `my` in the block or the test is new each time round; `while ()` is refused (T123) |
+| `for (init; cond; step)` | In | 6 | in | D60, D62. A comma in the first and third parts only; `my` in the first only |
 | `foreach my $x (LIST)` | In | 9 | in | `$x` is read-only; every container that can reach the list is frozen (D17) |
 | `foreach $x (LIST)` with a variable that isn't `my` | Cut | | in | T14 |
 | `foreach` with no variable, postfix `for` | In | 10 | in | `$_`, read-only, and only inside the block that binds it |
 | `foreach` over `($p, $q)` naming variables | Later | 9 | in | D17: perl aliases them |
 | A closure over, or `\` of, a loop variable or `$_` | Later | 14 | in | D17: perl keeps the alias after the loop |
 | `foreach my ($k, $v) (%h)` | Later | 12 | | 5.36's; to be proposed |
-| `last`, `next`, labels | In | 6 | in | Only inside a loop of the same sub, as written |
+| `last`, `next`, labels | In | 6 | in | D61, D62. Statements, not expressions (T120); only inside a loop of the same sub, as written; a label is on a loop, in capitals, and is checked as the program compiles |
+| `last` or `next` with no label, straight inside a bare block | Cut | | | D59, T32: it leaves only the block, to perl |
 | `last` or `next` reaching a loop from a called sub, or from a `map`, `grep` or `sort` block | Cut | | | T59, T60: perl leaves the outer loop |
 | `redo`, `goto`, `continue` blocks | Cut | | out, `redo` in | |
-| Bare blocks | In | 5 | in | A loop that runs once, for `last` and `next` (step 6); a label on one: cut. An empty one is an anonymous hash to perl, and refused (T116) |
+| Bare blocks | In | 5 | in | A scope. To perl it is also a loop that runs once, which D59 cuts; a label on one: cut. An empty one is an anonymous hash to perl, and refused (T116) |
 | `return`, `return LIST` | In | 8, 10 | in | D18 |
 | Ending a sub in `if`, `unless`, a loop, a block or `try`, and using its value | Fault | 8 | | D18: perl returns the condition, or the `try`'s value |
 | `wantarray` | Cut | | in | D18 |
@@ -106,7 +107,7 @@ comparison: *in*, *out*, or *n/a*.
 | `eval BLOCK`, `$@` | Cut | | out | D20: `try` |
 | `eval STRING` | Cut | | out | D20 |
 | `do BLOCK` | Later | 5 | | Small; when wanted |
-| `do BLOCK while COND` | Later | 6 | | Runs the block first, and `last` doesn't work in it (T64) |
+| `do BLOCK while COND` | Later | | | D58: left out at step 6, for the step that takes `do BLOCK`. It runs the block first, and is not a loop to perl: `last` in it leaves the loop round it (T64) |
 | `...` as a statement | Later | 15 | | It is a `die` |
 | `given`, `when`, smartmatch | Cut | | | Not on under `use v5.42` either |
 | `exit` | In | 21 | | |

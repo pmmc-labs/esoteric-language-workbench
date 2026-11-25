@@ -70,7 +70,7 @@ rebuilding something D17 to D22 cut.
 | T29 | `sub dbl(@x) { return map { $_ * 2 } @x } my @s = sort dbl(3,1,2); say "@s";` | `3 1 2` | 10 | Refuse `sort NAME(...)` |
 | T30 | `sub f($c) { my $x = 10 if $c; $x++; return $x } say f(1); say f(0); say f(0);` | `11 1 2` | 5 | Refuse `my` under a modifier |
 | T31 | `for my $i (1..3) { my $n = $i * 10; sub get() { return $n } say get(); }` | `10 10 10` | 8 | Refuse a named sub inside a block |
-| T32 | `for my $i (1..3) { { last; } say $i }` | `1 2 3` | 6 | Agree: a bare block is a loop that runs once |
+| T32 | `for my $i (1..3) { { last; } say $i }` | `1 2 3` | 6 | D59: refuse an unlabelled `last` or `next` whose nearest loop, as perl counts them, is a bare block. (The plan's first reading was to agree) |
 | T33 | `say 2 == 2 == 2 ? "y" : "n"; say 1 < 5 < 3 ? "y" : "n";` | `y`, `n` | 4 | Refuse chained comparisons until proposed; read left to right they give `n`, `y` |
 | T34 | `say "cost: $$";` | the process id; and `say "user@example.com";` doesn't compile | 3 | Refuse an unescaped `$` or `@` in a double-quoted string until step 16 |
 

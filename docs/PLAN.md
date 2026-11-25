@@ -8,8 +8,8 @@ be a session or two each.
 and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic, and variables,
 assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
-on 2026-11-25). **Step 6, loops, is proposed, below, and waits on
-four answers from Stevan** (Q1 to Q4); nothing of it is built. Steps
+on 2026-11-25). **Step 6, loops, is agreed (D58 to D62) and being
+built**, its model first. Steps
 7 to 30 are outlines: each is proposed, with options, when it's
 next.
 
@@ -1364,13 +1364,14 @@ if you would rather meet that at step 10.
   assigning operators are the operators.
 - Leave out: everything listed above as later.
 
-### 6. Loops (proposed, not agreed)
+### 6. Loops (agreed; being built)
 
 Referee: perl. Size: medium.
 
-**Proposed 2026-11-25. Nothing is built, and four questions are
-Stevan's: Q1 to Q4 below; Q5 is six things with nothing to choose
-that are worth his eye.** Everything here about perl was run under
+**Proposed 2026-11-25, and agreed the same day: Stevan took the
+recommendation on each question below, which are now D58 (Q1), D59
+(Q2), D60 (Q3), D61 (Q4) and D62 (Q5, what had nothing to choose).**
+The text is kept as it was proposed. Everything here about perl was run under
 5.42.0 and is in `briefs/claims.py` (31 rows, `T32-next` to
 `PLAN6-cut`). Traps: T32, T64, and T119 to T124, found writing this.
 The outline this replaces said: `while`, `until`, their postfix
