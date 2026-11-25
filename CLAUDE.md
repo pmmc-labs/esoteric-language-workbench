@@ -132,9 +132,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 357 of them now, and all hold under 5.42.0,
+about perl as a program, 386 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T109, by step. **Found at step 0**: T72 (a
+keeps the programs, T1 to T114, by step. **Found at step 0**: T72 (a
 line that starts `#!`, D33), T73 (`use utf8;` on a line before the
 first character past ASCII), T74 (`# line N "file"` comments, step
 15), T75 (`use v5.42#c`). **At step 1**: T76. **Proposing step 2**:
@@ -168,8 +168,14 @@ read-only and containers freeze (D17); a sub can't see its context
 a program's own calls (D21); a number is integral or it isn't (D35),
 and a value has no past (D36, D40, D45); the name (D32). perigrin has
 agreed to the probe corpus (D11). **Next: step 5**, lexical scalars,
-assignment, blocks and `if`, to be proposed; write its model before
-its compiler (step 4 didn't). `docs/briefs/step4-comparisons.py`
+assignment, blocks and `if`, is **proposed in full in `docs/PLAN.md`
+and waits on Stevan's answers to its four questions** (Q1: `++` and
+`--`, a table by what the variable holds, a stepped string being a
+Num; Q2: a `=` with a constant right side as a condition, which perl
+warns of; Q3: `unless` with `else`; Q4: names ASCII for now, and `$a`
+and `$b` refused). Nothing of step 5 is built; write its model before
+its compiler (step 4 didn't). `docs/briefs/step5-increments.py` holds
+Q1's table to perl under seven pasts of the variable. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
 operand: 57,376 comparisons, no new fault needed. **What step 5 must
 ask again**:

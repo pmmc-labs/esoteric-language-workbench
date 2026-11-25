@@ -7,9 +7,10 @@ be a session or two each.
 **Progress:** steps 0 to 3 were done on 2026-11-24: arithmetic on Ints
 and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic: **steps 0 to 4
-are done** (step 4 on 2026-11-25). **Next: step 5**, variables, to be
-proposed. Steps 5 to 30 are outlines: each is proposed, with options,
-when it's next.
+are done** (step 4 on 2026-11-25). **Step 5, variables, assignment,
+blocks and `if`, is proposed, below, and waits on four answers from
+Stevan** (Q1 to Q4); nothing of it is built. Steps 6 to 30 are
+outlines: each is proposed, with options, when it's next.
 
 [`TRAPS.md`](TRAPS.md) lists, by step, the programs where the obvious
 implementation would be WRONG. A step's proposal starts from its rows,
@@ -1059,20 +1060,188 @@ Consistent, and a known trap kept.
   5; `if` and the other statements (5, 6); `^^`; chains unless Q4 is
   (b).
 
-### 5. Lexical scalars, assignment, blocks, `if`
+### 5. Lexical scalars, assignment, blocks, `if` (proposed, not agreed)
 
-Referee: perl. Size: medium.
+Referee: perl. Size: large.
 
-`my $x`, assignment and the assigning operators, `++` and `--`, blocks
-and their scopes, `if`, `elsif`, `else`, `unless`, the `if` and
-`unless` modifiers. The resolver arrives: a name to its declaration, a
-use before `my` refused, as perl refuses it; a second `my` of a name
-in one scope refused (perl warns, D15). Variables are read when their
-operator runs (D14, T1). Decides: `++` and `--` on a string that
-isn't a number (proposed: fault, T44); the assigning operators on
-undef (perl is silent for some and warns for others: T43). In `my $x
-= $x`, the right side is the outer `$x` (T58). Traps: T1, T26, T30,
-T43, T44, T58.
+**Proposed 2026-11-25. Nothing is built, and four questions are
+Stevan's: Q1 to Q4 below; Q5 is four things with nothing to choose
+that are worth his eye.** Everything here about perl was run under
+5.42.0: [`briefs/step5-increments.py`](briefs/step5-increments.py)
+(`++`, `--` and the assigning operators under every past of the
+variable) and `briefs/claims.py`. Traps: T1, T26, T30, T43, T44, T58,
+T93, and T110 to T114, found writing this.
+
+#### The picture
+
+Until now a program was a list of things to print, each worked out
+from literals. This step gives it **places to keep a value**, and
+**statements that choose**.
+
+```
+ my $x = 5;              a place, in the block it is declared in
+ $x = $x + 1;  $x += 1;  $x++;      putting a value in a place
+ { ... }                 a block: a scope for the places declared in it
+ if (...) { ... } elsif (...) { ... } else { ... }
+ say $x if $x > 3;       one statement, on a condition
+```
+
+Three things are new for the compiler, and they are the step.
+
+**A resolver.** Every `$x` is tied to its `my` before any code is
+made: use before `my`, a second `my` in one scope, and `my $x = $x`
+with no outer `$x` are refused, as perl refuses or warns of each.
+
+**A value now has a past, in perl.** Every rule of steps 2 to 4 was
+written so that a value needs none: it faults where perl's answer
+turns on what a value was used as before. With no variables that was
+a promise about the future; from here a program can use `$x` as a
+float on one line and as an integer on the next. Those rules were
+each tested that way (their evidence scripts are programs with
+variables), so nothing changes, but this is the step where they are
+load-bearing, and the review is asked to break them again. What this
+step adds to the question is `++` and `--`, which change a variable
+where it stands by routes of their own (Q1).
+
+**An operand that is a variable is read when its operator runs** (D14,
+decided). `my $x = 3; say $x + ($x = 5);` prints 10. The generated C
+already has the shape for it: a variable is a C local and is never
+copied into a temporary. What is new is how far "is a variable"
+reaches (Q5).
+
+#### The language at step 5
+
+- **`my $x;`** and **`my $x = EXPR;`**: one variable, undef until it
+  is given a value, visible from the next statement to the end of its
+  block. A name is a letter or `_`, then letters, digits and `_` (Q4).
+- **`$x = EXPR`**, and **`+= -= *= /= %= **= .= x= ||= &&= //=`**:
+  `$x OP= E` is `$x = $x OP E` (held to perl on 7,524 operations
+  under every past), with `||=`, `&&=` and `//=` working `E` out only
+  if it is wanted.
+- **`++$x`, `$x++`, `--$x`, `$x--`** (Q1).
+- **Blocks** `{ ... }`; **`if`**, **`elsif`**, **`else`**,
+  **`unless`** (Q3); **`STATEMENT if COND;`** and **`unless`**.
+- A statement is `say`, `print`, a `my`, an assignment, a `++` or
+  `--`, a block, or an `if`. An expression that only has a value,
+  `$x + 1;`, is refused: perl warns that it is useless.
+
+Left for later, and refused: `my ($a, $b)` and every list (9);
+`our`, `local`, `state`; loops (6); `do BLOCK`; a `my` in the right
+operand of `&&`, `||`, `//` or a branch of `? :`, or under a
+modifier (D21, T30); the special variables.
+
+#### The questions
+
+**Q1. `++` and `--`.** perl has five routes through each, by what
+the variable holds and what it has been used as. The rule, held to
+perl on 456 cases under seven pasts each:
+
+| The variable holds | `++` | `--` |
+|---|---|---|
+| undef | 1 (and `$x++` is worth 0) | -1 (and `$x--` is worth undef: T43) |
+| true, false | the Int one more | the Int one less |
+| an Int | the Int one more, or `integer overflow` | one less, or `integer overflow` |
+| a Num | what `$x + 1` is (D35): the Int if the Num is whole and below 2^53, otherwise the Num | the Num one less, always; a fault if the Num is whole and the answer reaches 2^53 in size (T93) |
+| a Num so large that the step is lost (`1e16`) | a fault: perl warns | a fault: perl warns |
+| a string that is a number | the Num one more or less, whatever kind of number it is; a fault if it is whole and reaches 2^53, and for `++` if it is digits that begin with a zero | |
+| any other string | a fault (T44) | a fault |
+
+Three rows need a word. **`--` on a Num is not `$x - 1`**: perl
+subtracts as a float unless the Num has been used as an integer, so
+the answer is a Num where `$x - 1` is an Int, and at 2^53 the two
+part. **A string stepped is a Num**, because perl steps a fresh
+string of digits as text (`"12"` becomes the string `"13"`, `"009"`
+becomes `"010"`) and one that has been used as a number as an
+integer, 10. The Num prints as both do, and faults where they
+differ. (My first run of the evidence missed the `"009"` case: it
+compared the numbers and not what printed. It compares both now.)
+**perl's string increment** (`"aa"` to `"ab"`, `"Az"` to `"Ba"`,
+`"zz"` to `"aaa"`) is cut, as `SURFACE.md` has had it, and so is the
+silent -1 that `--` makes of `"ab"`.
+(a) **Recommended: the table.**
+(b) `++` and `--` on an Int, a Num or an undef only, and a fault on a
+string or a boolean. Two rows fewer, and `"12"` stops being a number
+in this one place.
+
+**Q2. An assignment as a condition.** `if ($x = 5)` is nearly always
+a slip for `==`, and perl warns `Found = in conditional` when the
+right side is a constant, after it has folded what it can: `if ($x =
+2 + 3)`, `($x = 6) && ...`, `if (my $y = 6)`, `if (1 && ($x = 6))`.
+It says nothing of `if ($x = $y)` or `if ($x += 1)` (T112).
+(a) **Recommended: refuse a `=` whose right side has no variable in
+it, wherever its value is tested for truth** (an `if` or `unless`, a
+modifier, the test of `? :`, the left of `&&`, `||`, `//`, `and`,
+`or`, and what those pass a test down to). That is every case perl
+warns of and a few it doesn't, with no constant folder; and `if ((my
+$n = next_one()) > 0)` and, later, `if (my $m = f())` stay.
+(b) Refuse every `=` as a condition. Simpler to say, and the idiom
+`if (my $m = f())` is lost for good.
+
+**Q3. `unless` with `else`.** perl allows `unless (...) { } else { }`
+and `unless (...) { } elsif (...) { }`.
+(a) **Recommended: `unless` alone, and as a modifier.** With an
+`else` it is an `if` written backwards, and most style guides say
+so.
+(b) As perl.
+
+**Q4. Names.** `SURFACE.md` has "an identifier past ASCII, with `use
+utf8`" as In at this step. perl's rule for which characters make a
+name is Unicode's, with its own exceptions.
+(a) **Recommended: names are ASCII for now** (Later, not Cut). A
+character past ASCII stays refused outside strings and comments.
+(b) Unicode names now, as perl has them, which is a table and its
+edges.
+With either, **`$a` and `$b` are refused as names**: perl allows `my
+$a`, and then `sort { $a <=> $b }` in the same scope is broken. Say
+if you would rather meet that at step 10.
+
+**Q5. Nothing to choose, but worth your eye.**
+- **How far "the variable itself" reaches** (T110). `$x`, `($x)`,
+  `+$x`, `$x = E`, `$x += E`, `++$x`, and whichever operand `||`,
+  `&&`, `//` and `? :` give, are the variable, read late: `($x || 0)
+  + ($x = 5)` is 10. `$x++`, `-$x`, `$x . ""` are values: 8, 2. The
+  language agrees, as D14 has it; the generated C keeps a pointer
+  where it used to keep a copy.
+- **What an assignment may be assigned to**: a variable. perl takes
+  `($x = 5) = 7`, `($x += 1) *= 3` and `(1 ? $x : $y) = 8`; D17
+  already has values flowing and not places, and these are refused.
+- **`say $x -1;` dies** (T26, T111): perl takes `$x` for a file
+  handle when a variable comes first after `say` or `print` and what
+  follows the blank after it could begin a value: `-1`, `+$y`, `.5`,
+  `++`, `<name`. `say($x -1)` dies the same way. `say $x - 1;` and
+  `say $x-1;` are fine. Refused, by perl's own list of what it looks
+  for, read from its source.
+- **Which statements are refused**: one that only has a value (perl
+  warns); `my` under a modifier, `my $x = 10 if $c;`, which is
+  silent and leaves the last call's value behind (T30).
+
+#### The build, once the questions are answered
+
+- **`t/models/var.py` first, red before any code** (step 4 didn't,
+  and the plan said it should). The model has an environment, and
+  writes programs of several statements: every `++` and `--` over
+  the edges of Q1's table, before and after the variable is used
+  each way; every assigning operator over step 3's and 4's values,
+  an undef on the left included; late reads, each shape of T110;
+  scopes and shadowing; each branch of an `if` chain taken and not.
+  And a fault test for each fault at its edge.
+- **An adversarial review of this proposal**, started with it: the
+  definition against perl, and the claim that a variable's past
+  shows nowhere the language doesn't fault, now that a program can
+  give it one. The last three reviews each refuted a claim of that
+  kind.
+- **Lexer**: `$name`; `++` and `--`; the assigning operators; `{`
+  `}`; perl's file-handle guess after `say` (T111). **Parser**:
+  statements in blocks; `if` chains and modifiers; assignment, right
+  to left; `my`. **Resolver** (new): scopes, each name to its
+  declaration, the three refusals. **Checker**: Q2's rule; what a
+  statement may be; D21's places for `my`. **Generated C**: a
+  variable is a C local in a C block; a value that is one of two
+  operands (`||`, `? :`) is a pointer to it; temporaries are declared
+  at the top of their statement so that a pointer to one outlives
+  the branch that set it. **Runtime**: `rt_inc`, `rt_dec`; the
+  assigning operators are the operators.
+- Leave out: everything listed above as later.
 
 ### 6. Loops
 
@@ -1329,7 +1498,8 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 
 ## Proposals
 
-None waiting. D1 to D51 are agreed. **Step 5 is next to propose.**
+Waiting: **step 5**, written out above with its four questions. D1
+to D51 are agreed.
 
 ## Example-port table
 
