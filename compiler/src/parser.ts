@@ -3,9 +3,9 @@
 // operator means comes from the table of names; the rules of the language
 // (which `use`, which integers) are the checker's.
 import { refuse } from './errors.ts';
-import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, OPERATORS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, prefixOp, stepOp } from './names.ts';
+import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, NAME_MAX_LENGTH, OPERATORS, PERL_WORDS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, isVersionString, prefixOp, stepOp } from './names.ts';
 import type { Token } from './lexer.ts';
-import type { Arm, Expr, Label, Program, Stmt, Var } from './ast.ts';
+import type { Arm, Expr, Label, Param, Program, Stmt, Var } from './ast.ts';
 
 // A token as a diagnostic names it. A string is shown if it is short.
 const show = (t: Token): string =>
@@ -37,6 +37,30 @@ export const parse = (tokens: readonly Token[]): Program => {
     // with no bracket of its own round it yet: there a word operator would
     // take the rest of the list, commas and all (D51).
     let inList = false;
+    // How many blocks are open, and whether a sub's is: a sub stands at
+    // the top level, and a `return` in a sub (D72).
+    let depth = 0;
+    let inSub = false;
+
+    // Whether token `k + 1` is hard against token `k`, a word.
+    const touching = (k: number): boolean => {
+        const [a, b] = [tokens[k]!, tokens[k + 1]!];
+        return b.pos.line === a.pos.line && b.pos.col === a.pos.col + a.text.length;
+    };
+
+    // `-e(2)` is a file test to perl, of a file called 2, and `5-f(2)`
+    // doesn't compile: a minus hard against one letter and no more, wherever
+    // it stands (T135).
+    for (let k = 0; k + 1 < tokens.length; k++) {
+        const [minus, word] = [tokens[k]!, tokens[k + 1]!];
+        if (minus.kind === 'op' && minus.text === '-' && word.kind === 'word' && /^[A-Za-z]$/.test(word.text) && touching(k)) {
+            refuse(`-${word.text}: a minus hard against one letter is a file test, to perl; put a blank after the minus, or brackets round what it negates`, minus.pos);
+        }
+    }
+
+    // A word that could be the name of one of the program's subs: not one
+    // of the language's, and not one of perl's.
+    const callable = (t: Token): boolean => t.kind === 'word' && !NAMES.has(t.text) && !PERL_WORDS.has(t.text);
 
     const semicolon = (): void => {
         const t = next();
@@ -129,6 +153,30 @@ export const parse = (tokens: readonly Token[]): Program => {
         return { kind: 'apply', name: head.text, args, pos: head.pos };
     };
 
+    // A call of one of the program's subs, its name just read and a
+    // bracket next (D21). One comma may follow the last argument, as in
+    // perl; two together are one to perl, which counts the arguments
+    // either side as if nothing were wrong (T137).
+    const invoke = (head: Token): Expr => {
+        next();
+        const outer = inList;
+        inList = true;
+        const args: Expr[] = [];
+        while (peek().kind !== ')') {
+            if (peek().kind === ',') refuse("a comma with no argument before it: perl leaves it out, in silence, where it doesn't refuse it", peek().pos);
+            args.push(expression(COMMA_ROW));
+            const t = peek();
+            if (t.kind === 'op' && (infixOp(t.text)?.row ?? 0) > COMMA_ROW) {
+                refuse(`'${t.text}' in a list of arguments takes the whole list for its left side, to perl: bracket what it joins`, t.pos);
+            }
+            if (t.kind !== ',') break;
+            next();
+        }
+        inList = outer;
+        closing();
+        return { kind: 'invoke', name: head.text, args, pos: head.pos };
+    };
+
     // A prefix operator and its operand, the operator just read: the
     // operand may hold only what binds tighter than the operator.
     const prefixed = (t: Token, row: number): Expr => {
@@ -188,8 +236,16 @@ export const parse = (tokens: readonly Token[]): Program => {
         }
         const name = t.kind === 'word' ? NAMES.get(t.text) : undefined;
         if (name?.kind === 'constant' || name?.kind === 'unary' || name?.kind === 'function' || name?.kind === 'statement') return apply(t);
-        // perl takes `$done and last` and `$x ? last : next` (T120).
-        if (name?.kind === 'jump') return refuse(`${t.text} is a statement, not a value: write '${t.text} if ...;' or '${t.text} unless ...;'`, t.pos);
+        // perl takes `$done and last` and `$x ? last : next` (T120), and
+        // `my $x = return 5;` (T139).
+        if (name?.kind === 'jump' || name?.kind === 'return') {
+            return refuse(`${t.text} is a statement, not a value: write '${t.text} if ...;' or '${t.text} unless ...;'`, t.pos);
+        }
+        if (name?.kind === 'sub') return refuse('a sub with no name, as a value, is not in the language yet', t.pos);
+        if (callable(t)) {
+            if (peek().kind === '(') return invoke(t);
+            return refuse(`'${t.text}' is not in the language; a call of a sub of the program's has brackets: ${t.text}(...)`, t.pos);
+        }
         return unexpected(t, 'a value');
     };
 
@@ -246,6 +302,16 @@ export const parse = (tokens: readonly Token[]): Program => {
 
     // The one argument of `say` or `print`, in brackets or not (D21).
     const argument = (head: Token): Expr => {
+        // The first word after `say`, behind any opening brackets, is a
+        // file handle to perl when a blank follows it, unless perl has
+        // already seen a sub of that name: `say f (1);` compiles after
+        // `sub f` and not before (T136).
+        let first = i;
+        while (tokens[first]!.kind === '(') first += 1;
+        if (callable(tokens[first]!) && tokens[first + 1]!.kind === '(' && !touching(first)) {
+            const word = tokens[first]!.text;
+            refuse(`a blank between ${word} and its bracket, first after ${head.text}: perl takes ${word} for a file handle unless it has seen the sub already; write ${word}(...)`, tokens[first + 1]!.pos);
+        }
         const open = peek();
         // The word operators bind more loosely than `say` does: `say 0 or
         // 2;` is `(say 0) or 2` (T106). So without brackets the argument
@@ -281,7 +347,8 @@ export const parse = (tokens: readonly Token[]): Program => {
         // `$done and last;`: the commonest of them, and the answer is an
         // `if` (T120).
         const then = tokens[i + 1];
-        if (after.kind === 'op' && infixOp(after.text) && then?.kind === 'word' && NAMES.get(then.text)?.kind === 'jump') {
+        const thenKind = then?.kind === 'word' ? NAMES.get(then.text)?.kind : undefined;
+        if (after.kind === 'op' && infixOp(after.text) && then !== undefined && (thenKind === 'jump' || thenKind === 'return')) {
             refuse(`${then.text} is a statement, not a value: write '${then.text} if ...;' or '${then.text} unless ...;'`, then.pos);
         }
         if (after.kind === 'op' && infixOp(after.text)) {
@@ -293,8 +360,10 @@ export const parse = (tokens: readonly Token[]): Program => {
     const block = (): Stmt[] => {
         const open = next();
         if (open.kind !== '{') unexpected(open, "'{'");
+        depth += 1;
         const body: Stmt[] = [];
         while (peek().kind !== '}' && peek().kind !== 'eof') body.push(statement());
+        depth -= 1;
         const close = next();
         if (close.kind !== '}') unexpected(close, "'}'");
         return body;
@@ -313,7 +382,24 @@ export const parse = (tokens: readonly Token[]): Program => {
     const simple = (): Stmt => {
         const head = peek();
         const name = head.kind === 'word' ? NAMES.get(head.text) : undefined;
-        if (head.kind === 'word' && name === undefined) return refuse(`'${head.text}' is not in the language`, head.pos);
+        if (head.kind === 'word' && name === undefined && !(callable(head) && tokens[i + 1]!.kind === '(')) {
+            return refuse(callable(head) ? `'${head.text}' is not in the language; a call of a sub of the program's has brackets: ${head.text}(...)`
+                : `'${head.text}' is not in the language`, head.pos);
+        }
+        // `return;` and `return VALUE;` (D72). What follows the value may
+        // be a modifier, and no operator: `return $v or 9;` is `(return
+        // $v) or 9` to perl, which warns (T139).
+        if (name?.kind === 'return') {
+            next();
+            if (!inSub) refuse("return outside a sub: perl dies there, when it gets to it", head.pos);
+            if (peek().kind === ';' || isModifier(peek())) return { kind: 'return', pos: head.pos };
+            const value = expression(AND_ROW);
+            const after = peek();
+            if (after.kind === 'op' && infixOp(after.text)) {
+                refuse(`'${after.text}' after return's value: it binds more loosely than return does, and perl warns of it; bracket the value, return (... ${after.text} ...)`, after.pos);
+            }
+            return { kind: 'return', value, pos: head.pos };
+        }
         if (name?.kind === 'statement') {
             next();
             const args = [argument(head)];
@@ -417,6 +503,72 @@ export const parse = (tokens: readonly Token[]): Program => {
             semicolon();
             return { kind: 'pragma', name: what.text, args, pos: head.pos };
         }
+        // `no warnings 'recursion';` (D67): the pragma named `no warnings`.
+        if (name?.kind === 'no') {
+            next();
+            const what = next();
+            const pragma = `no ${what.text}`;
+            if (what.kind !== 'word' || !PRAGMAS.has(pragma)) return refuse(`'${pragma}' is not in the language`, what.pos);
+            const args = peek().kind === ';' ? [] : list();
+            semicolon();
+            return { kind: 'pragma', name: pragma, args, pos: head.pos };
+        }
+        // `sub NAME(PARAMETERS) { ... }` (D72). perl ties a named sub in a
+        // loop or a sub to the first time round (T31).
+        if (name?.kind === 'sub') {
+            next();
+            if (depth > 0) refuse('a sub stands at the top level of the file: not in a block, a loop or another sub', head.pos);
+            const named = next();
+            if (named.kind !== 'word' && named.kind !== 'version') return refuse(`after 'sub' comes a name, found ${show(named)}: a sub with no name is not in the language yet`, named.pos);
+            // perl ignores a sub named for one of its own words, or doesn't
+            // compile the call (T28); it reads `v1_0` as a version string
+            // where it hasn't seen the sub yet (T136); and it stops at a
+            // name too long. Here, so that the definition is what is
+            // refused, and not the first call of it.
+            if (NAMES.has(named.text) || PERL_WORDS.has(named.text)) refuse(`a sub may not be called ${named.text}: perl has a meaning of its own for the word`, named.pos);
+            if (named.kind === 'version' || isVersionString(named.text)) {
+                refuse(`a sub may not be called ${named.text}: perl reads v and digits as a version, where it has not yet seen the sub`, named.pos);
+            }
+            if (named.text.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, named.pos);
+            const open = next();
+            if (open.kind !== '(') return refuse(`sub ${named.text} needs a signature: sub ${named.text}(...) { ... }, with () for no parameters`, open.pos);
+            const params: Param[] = [];
+            while (peek().kind !== ')') {
+                const v = next();
+                // perl has `@rest` and `%opts`, which are steps 10 and 12;
+                // tree-sitter-perl takes `:$x`, and perl doesn't (T55).
+                if (v.kind !== 'var') return refuse(`a parameter is $name, found ${show(v)}`, v.pos);
+                const assign = peek();
+                let param: Param = v.name === '' ? { pos: v.pos } : { my: { kind: 'my', name: v.name, pos: v.pos }, pos: v.pos };
+                if (assign.kind === 'op' && (assign.text === '=' || assign.text === '//=' || assign.text === '||=')) {
+                    next();
+                    param = { ...param, op: assign.text };
+                    if (peek().kind !== ',' && peek().kind !== ')') {
+                        const outer = inList;
+                        inList = true;
+                        param = { ...param, default: expression(COMMA_ROW) };
+                        inList = outer;
+                    } else if (v.name !== '') {
+                        refuse(`'${assign.text}' with no default after it: perl refuses it`, assign.pos);
+                    }
+                } else if (assign.kind === 'op') {
+                    refuse(`'${assign.text}' in a signature: a default is given with =, //= or ||=`, assign.pos);
+                }
+                params.push(param);
+                const after = peek();
+                if (after.kind === ',') {
+                    next();
+                    if (peek().kind === ',') refuse('two commas together in a signature', peek().pos);
+                } else if (after.kind !== ')') {
+                    unexpected(after, "',' or ')'");
+                }
+            }
+            next();
+            inSub = true;
+            const body = block();
+            inSub = false;
+            return { kind: 'sub', name: named.text, params, body, pos: head.pos, named: named.pos, end: tokens[i - 1]!.pos };
+        }
         // A block. An empty one is an anonymous hash to perl, `{}`, and a
         // statement that is only a value (T116).
         if (head.kind === '{') {
@@ -469,6 +621,9 @@ export const parse = (tokens: readonly Token[]): Program => {
             return inner;
         }
         next();
+        if (inner.kind === 'return' && modifier.kind === 'while') {
+            refuse(`return ${word.text}: a return takes an if or an unless`, word.pos);
+        }
         const test = expression(Infinity);
         semicolon();
         if (modifier.kind === 'while') {

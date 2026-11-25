@@ -1,0 +1,2 @@
+t/950-sub-in-a-block.pl:5:5: a sub stands at the top level of the file: not in a block, a loop or another sub
+exit: 1

@@ -29,7 +29,7 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // `(x + y)`. The tree's shape already holds the grouping; this is for the
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
-export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply;
+export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke;
 
 // A variable, `$name`; and `my $name`, which declares one where it stands
 // and is that variable (D56). Which declaration a `Var` means is the
@@ -53,10 +53,15 @@ export type Ternary = { kind: 'ternary'; test: Expr; then: Expr; else: Expr; pos
 // `substr($s, 1)`. `pos` is the name's.
 export type Apply = { kind: 'apply'; name: string; args: readonly Expr[]; pos: Pos; bracketed?: true };
 
+// A call of one of the program's own subs, `name(args)` (D21, D72). `pos`
+// is the name's.
+export type Invoke = { kind: 'invoke'; name: string; args: readonly Expr[]; pos: Pos; bracketed?: true };
+
 export type Use = { kind: 'use'; version: string; pos: Pos };
 
 // `use NAME ARGS;` (D16). Which names there are, and with which
 // arguments, is the checker's to say, from the table.
+// (`no warnings ...;` is the pragma named `no warnings`, D67.)
 export type Pragma = { kind: 'pragma'; name: string; args: readonly Expr[]; pos: Pos };
 
 // A builtin that is a statement, `say` and `print`, and its arguments.
@@ -88,8 +93,21 @@ export type For = { kind: 'for'; first: readonly Expr[]; test?: Expr; each: read
 // `last;` and `next;`, with a label or without (D62). `name` is the word.
 export type Jump = { kind: 'jump'; name: string; label?: Label; pos: Pos };
 
+// A parameter of a sub (D72): `$name`, or `$` alone, which takes an
+// argument and names nothing; and its default, if it has one, with the
+// operator it was written with: `=`, `//=` or `||=`. `my` is the variable
+// as a declaration, for the resolver. `pos` is the `$`'s.
+export type Param = { my?: My; op?: string; default?: Expr; pos: Pos };
+
+// `sub name(params) { body }`. `pos` is the word `sub`'s, `named` the
+// name's, and `end` the closing brace's.
+export type Sub = { kind: 'sub'; name: string; params: readonly Param[]; body: readonly Stmt[]; pos: Pos; named: Pos; end: Pos };
+
+// `return;` and `return value;`.
+export type Return = { kind: 'return'; value?: Expr; pos: Pos };
+
 export type Loop = While | For;
-export type Stmt = Use | Pragma | Call | Do | Block | If | While | For | Jump;
+export type Stmt = Use | Pragma | Call | Do | Block | If | While | For | Jump | Sub | Return;
 
 // `end` is where the file ends, for a diagnostic about what isn't there.
 export type Program = { kind: 'program'; body: readonly Stmt[]; end: Pos };

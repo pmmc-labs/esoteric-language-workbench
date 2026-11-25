@@ -1,0 +1,2 @@
+t/964-parameter-with-a-colon.pl:4:7: a parameter is $name, found ':'
+exit: 1

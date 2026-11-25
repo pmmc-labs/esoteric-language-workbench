@@ -1,0 +1,2 @@
+t/953-sub-named-q.pl:4:5: a sub may not be called q: perl has a meaning of its own for the word
+exit: 1

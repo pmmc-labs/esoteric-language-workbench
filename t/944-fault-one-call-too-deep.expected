@@ -1,0 +1,3 @@
+3742
+fault: recursion too deep at t/944-fault-one-call-too-deep.pl line 12.
+exit: 1

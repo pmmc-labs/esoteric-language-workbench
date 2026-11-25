@@ -194,3 +194,20 @@ test('a knob is a whole number in digits, and anything else stops the program be
         assert.deepEqual(run('collect', 'constant', env), { status: 0, output: fine }, JSON.stringify(env));
     }
 });
+
+// The limit on recursion (D68): the numbers by hand. A frame counts 1,024
+// bytes and 16 a slot; 4 MB is 4,096 frames of no slots.
+test('an open frame counts against the limit on recursion, and a closed one no longer does (D68)', () => {
+    const head = 'one frame of no slots: 1024\nand one of forty: 2688\nboth closed: 0\n';
+    assert.deepEqual(run('deep', '4096'), { status: 0, output: head + '4096 open: 4194304\nclosed: 0\n' });
+    assert.deepEqual(run('deep', '4097'), { status: 1, output: head + 'fault: recursion too deep at deep.pl line 7.\n' });
+});
+
+// The count must run out before the C stack does, so a program that was
+// given less stack than the count assumes is stopped before it starts.
+test('a program given a stack of less than 8 MB does not start (D68)', () => {
+    run('deep', '1');
+    const r = spawnSync('sh', ['-c', 'ulimit -s 4096 && exec "$0" 1 2>&1', join(build, 'deep')], { encoding: 'utf8' });
+    assert.deepEqual({ status: r.status, output: r.stdout },
+        { status: 2, output: 'curly: the stack is limited to 4194304 bytes, and a program needs 8388608 (ulimit -s)\n' });
+});

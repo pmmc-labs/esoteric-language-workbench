@@ -1,0 +1,2 @@
+t/960-no-such-sub.pl:5:1: the program has no sub called g
+exit: 1

@@ -1,0 +1,2 @@
+t/955-sub-named-begin.pl:4:5: a sub may not be called BEGIN: perl has a meaning of its own for the word
+exit: 1

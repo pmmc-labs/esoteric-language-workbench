@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include "rt.h"
 
 // 2^53: a double holds every whole number below it, and not every one
@@ -68,7 +69,15 @@ static const rt_str *alive(rt_ctx *cx, const rt_str *s) {
     return s;
 }
 
+// What a frame counts for against the limit on recursion (D68).
+static uint64_t weight(uint64_t count) {
+    return count * sizeof(rt_value) + RT_CALL_BYTES;
+}
+
 void rt_enter(rt_ctx *cx, rt_frame *frame, rt_value *slots, uint64_t count) {
+    // Before the frame is touched: the line is still the caller's.
+    if (weight(count) > RT_DEPTH_LIMIT - cx->deep) rt_fault(cx, "recursion too deep");
+    cx->deep += weight(count);
     memset(slots, 0, count * sizeof(rt_value));
     frame->prev = cx->frames;
     frame->count = count;
@@ -79,6 +88,7 @@ void rt_enter(rt_ctx *cx, rt_frame *frame, rt_value *slots, uint64_t count) {
 void rt_leave(rt_ctx *cx, rt_frame *frame) {
     if (cx->frames != frame) rt_internal(cx, "a frame was closed that is not the newest");
     cx->frames = frame->prev;
+    cx->deep -= weight(frame->count);
 }
 
 void rt_collect(rt_ctx *cx) {
@@ -144,6 +154,14 @@ int rt_run(void (*body)(rt_ctx *cx), const char *file) {
     cx.stress = knob("CURLY_GC_STRESS", UINT32_MAX);
     cx.poison = knob("CURLY_GC_POISON", 1);
     cx.cap = knob("CURLY_HEAP_CAP", (uint64_t)1 << 62);
+    // The limit on recursion is counted, and must be reached before the C
+    // stack ends (D68): so the stack has to be what the count assumes.
+    struct rlimit stack;
+    if (getrlimit(RLIMIT_STACK, &stack) == 0 && stack.rlim_cur != RLIM_INFINITY && (uint64_t)stack.rlim_cur < RT_STACK_NEEDED) {
+        fprintf(stderr, "curly: the stack is limited to %" PRIu64 " bytes, and a program needs %" PRIu64 " (ulimit -s)\n",
+                (uint64_t)stack.rlim_cur, RT_STACK_NEEDED);
+        exit(2);
+    }
     body(&cx);
     // The generated C closes what it opens; a frame still here would be
     // one the next function's collections walked after its slots were gone.
@@ -1098,6 +1116,22 @@ void rt_fault(rt_ctx *cx, const char *what) {
     fprintf(stderr, "fault: %s at %s line %" PRId64 ".\n", what, cx->file, cx->line);
     release(cx);
     exit(1);
+}
+
+// perl says `expected 2`, or `at least` the required ones when too few
+// came and some are optional, or `at most` all of them when too many.
+void rt_fault_arguments(rt_ctx *cx, const char *name, int64_t got, int64_t least, int64_t most) {
+    char what[512];
+    int few = got < least;
+    snprintf(what, sizeof what, "too %s arguments for %.300s: got %" PRId64 ", expected %s%" PRId64, few ? "few" : "many", name, got,
+             least == most ? "" : few ? "at least " : "at most ", few ? least : most);
+    rt_fault(cx, what);
+}
+
+void rt_fault_sub(rt_ctx *cx, const char *name, const char *what) {
+    char both[512];
+    snprintf(both, sizeof both, "%.300s %s", name, what);
+    rt_fault(cx, both);
 }
 
 void rt_internal(rt_ctx *cx, const char *what) {

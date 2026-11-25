@@ -1,0 +1,6 @@
+in
+2
+in
+in
+fault: undef where a number is wanted at t/945-fault-line-after-a-call.pl line 14.
+exit: 1

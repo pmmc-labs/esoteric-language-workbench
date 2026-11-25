@@ -53,6 +53,9 @@ export const lex = (src: string): Token[] => {
     // began), and where in the source it ended.
     let lastLine = 0;
     let lastEnd = 0;
+    // How many brackets of a sub's signature are open: there, and nowhere
+    // else, a `$` may stand alone, a parameter with no name (D72).
+    let signature = 0;
     const at = (): string => src[i] ?? '';
     const pos = (): Pos => ({ line, col });
     const push = (t: Token): void => {
@@ -306,6 +309,10 @@ export const lex = (src: string): Token[] => {
             // A variable is `$name`, and nothing else (D55): perl also
             // takes `$ name` and `${name}`, and warns of the second.
             take();
+            if (signature > 0 && !isWordStart(at())) {
+                push({ kind: 'var', text: '$', name: '', pos: start });
+                continue;
+            }
             if (!isWordStart(at())) refuse("after '$' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
             if (RESERVED.has(name)) refuse(`$${name} is not a name a variable may have`, start);
@@ -343,6 +350,10 @@ export const lex = (src: string): Token[] => {
             }
             push({ kind: 'var', text: '$' + name, name, pos: start });
         } else if (c === ';' || c === '(' || c === ')' || c === ',' || c === '?' || c === ':' || c === '{' || c === '}') {
+            // `sub NAME (` opens a signature, and its own `)` closes it.
+            const [word, name] = [tokens.at(-2), tokens.at(-1)];
+            if (c === '(' && (signature > 0 || (word?.kind === 'word' && NAMES.get(word.text)?.kind === 'sub' && name?.kind === 'word'))) signature += 1;
+            if (c === ')' && signature > 0) signature -= 1;
             push({ kind: c, text: take(), pos: start });
             // `use utf8;` is in force from the next line (T73). Whether it
             // may stand where it does is the checker's to say.

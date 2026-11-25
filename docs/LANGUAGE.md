@@ -35,16 +35,18 @@ left out, and it must be `v5.42` exactly. It appears once. The `v5.42`
 is followed by its semicolon or by a blank: a comment hard against it,
 `use v5.42#`, is refused, because perl then reads something else.
 
-Two more lines may follow it, in either order, each once, before
+Three more lines may follow it, in any order, each once, before
 anything else:
 
     use utf8;
     use open ':std', ':encoding(UTF-8)';
+    no warnings 'recursion';
 
-The first lets the program's text hold characters past ASCII, and the
-second lets the program print them; each is described where it
-matters, below. They are written exactly so (either kind of quote will
-do), and no other `use` is in the language.
+The first lets the program's text hold characters past ASCII, the
+second lets the program print them, and the third keeps perl quiet
+about a sub that calls itself a hundred deep; each is described where
+it matters, below. They are written exactly so (either kind of quote
+will do), and no other `use` or `no` is in the language.
 
 ## The text of a program
 
@@ -90,7 +92,9 @@ and there is no empty statement: `;;` is refused. A block and an `if`
 end with their closing brace. The statements are `say` and `print`,
 the ones that work on variables (a `my`, an assignment, `++` and
 `--`), blocks, `if` and `unless`, the loops `while`, `until` and
-`for`, and `last` and `next`; each is described below.
+`for`, `last` and `next`, a call of a sub, and in a sub `return`;
+each is described below. A `sub` is written at the top level, and
+ends with its closing brace.
 
 ## say and print
 
@@ -1004,6 +1008,214 @@ names the line of the `while`, `until` or `for`. Under a `while` or
 
 A loop that never ends is a program that never ends; nothing stops
 it.
+
+## Subs
+
+A sub is a piece of the program with a name, which the program calls:
+
+    sub area($width, $height) {
+        return $width * $height;
+    }
+    say area(3, 4);
+
+It stands at the top level of the file, among the statements, and may
+be called from anywhere in the file, before the sub is written or
+after. It is not written inside a block, a loop or another sub: perl
+ties a sub written there to the first time round, and warns of one in
+a sub.
+
+A sub always has a **signature**, the brackets after its name, with
+`()` for no parameters. A sub without one is Perl's older kind, with
+its arguments in `@_`, and is not in the language.
+
+A sub's name is letters, digits and `_`, at most 251 characters. It
+may not be a word perl has a meaning for, whether the language has
+the word or not: perl would ignore the sub, or not compile the call
+(with `sub q($x) {...}`, `q(5)` is the string `5`). That is perl's
+whole list of keywords and functions; the names `use v5.42;` brings
+in, `trim`, `ceil`, `indexed` and the rest; the names perl calls by
+itself, `BEGIN`, `END`, `AUTOLOAD`, `DESTROY`, `import`; and its file
+handles, `STDIN`, `STDOUT`. Nor may it be `v` and digits, `v65` or
+`v1_0`, which perl reads as a version string where it hasn't yet seen
+the sub. Two subs may not have one name.
+
+### Parameters
+
+A parameter is a variable of the sub's, given its value by the call:
+
+- `$name`: an argument is required.
+- `$name = EXPR`: the argument may be left out, and then the
+  parameter is EXPR, the default.
+- `$name //= EXPR`: the default is used when the argument is left
+  out and also when it is undef.
+- `$name ||= EXPR`: when it is left out, and when it is false.
+- `$` alone takes an argument and names nothing; `$=` takes one or
+  none; `$ = EXPR` runs EXPR when there is none.
+
+The required ones come first. `@rest` and `%opts` come with arrays and
+hashes.
+
+    sub greet($name, $greeting = "hello") {
+        return $greeting . ", " . $name;
+    }
+    say greet("world");             # hello, world
+    say greet("world", "goodbye");  # goodbye, world
+
+A default is worked out at each call that needs it, and only then, so
+`$n++` as a default counts those calls. The parameters are filled in
+from the left, and a default may use the ones before it: `sub box($w,
+$h = $w)`. A default is read before its own parameter exists, as the
+right side of a `my` is: in `sub f($x = $x)`, the default is the
+file's `$x`.
+
+**A parameter is a copy.** Assigning to one changes nothing outside
+the sub. Two parameters may not have one name, and a `my` at the top
+of the body may not take a parameter's name: perl warns of both. A
+parameter may have the name of one of the file's variables, and hides
+it.
+
+**Too few arguments, or too many, is a fault**: `too few arguments
+for area: got 1, expected 2`. Every argument is worked out first, as
+in perl, which dies there.
+
+### Calling
+
+A call is the name and brackets, `area(3, 4)`, with `()` for no
+arguments: always the brackets, since without them perl has to know
+whether it has seen the sub. A comma may follow the last argument. Two
+commas together are refused: perl takes `f(1,,2)` for two arguments,
+in silence.
+
+A call is a value, and it is a statement by itself:
+
+    hanoi(10, "a", "c", "b");
+    log_line("done") if $verbose;
+
+The arguments are worked out from the left. **An argument that is a
+variable is read as the sub takes it**, after the other arguments
+have run, as an operand is (see "When a variable is read"): with a sub
+`set` that changes `$x`, `show($x, set())` hands `show` the new `$x`.
+`show($x + 0, set())` hands it the old one, a value worked out before
+`set` ran. A sub takes its arguments one at a time, a default running
+when its turn comes, so a `//=` default that changes a variable is
+seen by the arguments after it.
+
+Three things perl reads another way are refused:
+
+- **A minus hard against a one-letter name**, `-e(2)`: to perl that
+  is a file test, of a file called `2`. Write `- e(2)` or `-(e(2))`.
+- **A blank between a name and its bracket, first after `say` or
+  `print`**, `say f (1);`: perl takes `f` for a file handle unless it
+  has already seen the sub. Anywhere else the blank is fine.
+- **`(...) x N` as an argument, after `return`, or as a sub's last
+  statement**: with the brackets it repeats a list, to perl, and is
+  that many arguments or values. Without them, `"ab" x 3`, it is one
+  string.
+
+### return, and what a sub is worth
+
+`return EXPR;` ends the call, from inside any loops and blocks, and
+the call is worth EXPR. `return;` ends it with nothing to give. Either
+may have an `if` or an `unless` after it:
+
+    sub sign($n) {
+        return "negative" if $n < 0;
+        return "zero" unless $n;
+        return "positive";
+    }
+
+`return` is a statement, and only that: perl takes `$ok and return
+1;` and `my $x = return 5;`, and the language asks for the `if`. It is
+not written outside a sub.
+
+**What a call gives is a copy**: with `sub get() { return $total; }`,
+`get() + step()` uses what `$total` held when `get` returned,
+whatever `step` does to it afterwards.
+
+A sub that ends without a `return` is worth its last statement, when
+that is an expression: an assignment, a `++`, a call, a `my`, or a
+value by itself, which is a statement in this one place:
+
+    sub double($x) {
+        $x * 2;
+    }
+
+A sub that ends in `say` or `print` is worth `true`, as in perl.
+
+**A sub that ends any other way has no value**: in an `if` or
+`unless`, a loop, a block, or a statement with a modifier, `return 1
+if $x;` being one. Calling it as a statement is fine. Using its value
+is a fault, `f has no value: it does not end in a return or an
+expression`. (perl gives the last thing it happened to work out,
+which is usually the test: `sub f($x) { if ($x) { "yes" } }` gives 0
+for `f(0)`.) End the sub with a `return`.
+
+**A sub that returns nothing**, by `return;` or an empty body, is
+undef where one value is wanted: `my $v = f();`. Where perl wants a
+list, as an argument of a call or of `say`, it is no value at all to
+perl (`g(f())` calls `g` with no arguments, and `say f();` prints an
+empty line), and the language has no lists yet: that is a fault, `f
+returned nothing where a list is wanted`. `return undef;` is one
+value, an undef, everywhere.
+
+A call hands on how it was called: `return g();`, a last statement
+`g();`, the branches of `? :`, the right side of `||`, `&&`, `//`,
+`and` and `or`, brackets and a unary plus all pass to `g` whether a
+value, a list or nothing was wanted of the sub they are in.
+
+### Variables in a sub
+
+A `my` in a sub is the sub's own, and new at every call: a sub that
+calls itself has its variables once for each call that is open.
+
+A sub may also read and change **the file's variables**: those
+declared by a `my` at the top level of the file, above the sub.
+
+    my $count = 0;
+    sub tick() {
+        $count++;
+    }
+
+A file variable is undef from the moment the program starts, and its
+`my` does not empty it. That shows only when a sub that uses the
+variable is called above the `my`: after `tick(); my $count;`, with
+`tick` written below, `$count` is 1. (A `my` in a block, a loop or a
+sub is undef each time it is reached, as before.)
+
+**In a row of `.`, a later piece may not call a sub that can change a
+variable an earlier piece reads**: perl joins the row as one
+operation and reads every piece late, so `$x . "-" . ch()` has the
+`$x` that `ch` left. "Can change" means by the sub's own assignments,
+or those of any sub it calls. The left side of `.=` is the first
+piece. Make the call a statement of its own:
+
+    my $c = ch();
+    say $x . "-" . $c;
+
+A `last` or `next` in a sub is for a loop of that sub.
+
+### How deep
+
+A sub may call itself, and subs may call each other. perl warns,
+`Deep recursion`, when one sub has 100 calls of itself open at once;
+the language says nothing there, and a program that goes that deep
+carries one more line at its top, with the pragmas, so that perl is
+as quiet:
+
+    use v5.42;
+    no warnings 'recursion';
+
+The line changes nothing about what the program does, here or in
+perl.
+
+There is a limit all the same, and it is the implementation's, not
+the language's: today the calls that are open may hold 4 MB between
+them, about 3,700 calls deep for a small sub and fewer for a large
+one. Past it the program stops with `fault: recursion too deep`. perl
+has no such limit.
+
+A fault names the line of the statement that was running: one in the
+sub while the sub runs, and the caller's again once it has returned.
 
 ## Memory
 

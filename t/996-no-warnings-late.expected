@@ -1,0 +1,2 @@
+t/996-no-warnings-late.pl:5:1: 'no warnings' goes at the top, after 'use v5.42;' and before anything else
+exit: 1

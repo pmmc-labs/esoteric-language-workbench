@@ -2,7 +2,7 @@
 // on is here, with what the passes need to know of it, and no pass
 // switches on a source string that isn't. It grows a row per feature. D21
 // wants every name perl gives a meaning to in it, so that a program can't
-// define a sub called `q`; that list comes with subs, at step 8.
+// define a sub called `q`: that list is PERL_WORDS, below.
 
 export type Name =
     // `use VERSION;` and `use PRAGMA ...;` (D16).
@@ -31,6 +31,11 @@ export type Name =
     | { kind: 'while'; until?: true }
     | { kind: 'for' }
     | { kind: 'jump'; leaves?: true }
+    // The words of step 8's (D72): `sub NAME(...) { }`, `return`, and
+    // `no`, which begins the one pragma that is turned off (D67).
+    | { kind: 'sub' }
+    | { kind: 'return' }
+    | { kind: 'no' }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -59,9 +64,75 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['for', { kind: 'for' }],
     ['last', { kind: 'jump', leaves: true }],
     ['next', { kind: 'jump' }],
+    ['sub', { kind: 'sub' }],
+    ['return', { kind: 'return' }],
+    ['no', { kind: 'no' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);
+
+// Every word perl 5.42 gives a meaning to: its own keyword table, whole
+// (regen/keywords.pl of the 5.42.0 source, 266 words), whether the
+// language has the word or not. A program may not name a sub for one
+// (D21): perl would ignore the definition, or not compile the call (T28).
+export const PERL_KEYWORDS: readonly string[] = [
+    'ADJUST', 'AUTOLOAD', 'BEGIN', 'CHECK', 'DESTROY', 'END', 'INIT',
+    'UNITCHECK', '__CLASS__', '__DATA__', '__END__', '__FILE__', '__LINE__',
+    '__PACKAGE__', '__SUB__', 'abs', 'accept', 'alarm', 'all', 'and', 'any',
+    'atan2', 'bind', 'binmode', 'bless', 'break', 'caller', 'catch', 'chdir',
+    'chmod', 'chomp', 'chop', 'chown', 'chr', 'chroot', 'class', 'close',
+    'closedir', 'cmp', 'connect', 'continue', 'cos', 'crypt', 'dbmclose',
+    'dbmopen', 'default', 'defer', 'defined', 'delete', 'die', 'do', 'dump',
+    'each', 'else', 'elsif', 'endgrent', 'endhostent', 'endnetent',
+    'endprotoent', 'endpwent', 'endservent', 'eof', 'eq', 'eval', 'evalbytes',
+    'exec', 'exists', 'exit', 'exp', 'fc', 'fcntl', 'field', 'fileno',
+    'finally', 'flock', 'for', 'foreach', 'fork', 'format', 'formline', 'ge',
+    'getc', 'getgrent', 'getgrgid', 'getgrnam', 'gethostbyaddr',
+    'gethostbyname', 'gethostent', 'getlogin', 'getnetbyaddr', 'getnetbyname',
+    'getnetent', 'getpeername', 'getpgrp', 'getppid', 'getpriority',
+    'getprotobyname', 'getprotobynumber', 'getprotoent', 'getpwent',
+    'getpwnam', 'getpwuid', 'getservbyname', 'getservbyport', 'getservent',
+    'getsockname', 'getsockopt', 'given', 'glob', 'gmtime', 'goto', 'grep',
+    'gt', 'hex', 'if', 'index', 'int', 'ioctl', 'isa', 'join', 'keys', 'kill',
+    'last', 'lc', 'lcfirst', 'le', 'length', 'link', 'listen', 'local',
+    'localtime', 'lock', 'log', 'lstat', 'lt', 'm', 'map', 'method', 'mkdir',
+    'msgctl', 'msgget', 'msgrcv', 'msgsnd', 'my', 'ne', 'next', 'no', 'not',
+    'oct', 'open', 'opendir', 'or', 'ord', 'our', 'pack', 'package', 'pipe',
+    'pop', 'pos', 'print', 'printf', 'prototype', 'push', 'q', 'qq', 'qr',
+    'quotemeta', 'qw', 'qx', 'rand', 'read', 'readdir', 'readline',
+    'readlink', 'readpipe', 'recv', 'redo', 'ref', 'rename', 'require',
+    'reset', 'return', 'reverse', 'rewinddir', 'rindex', 'rmdir', 's', 'say',
+    'scalar', 'seek', 'seekdir', 'select', 'semctl', 'semget', 'semop',
+    'send', 'setgrent', 'sethostent', 'setnetent', 'setpgrp', 'setpriority',
+    'setprotoent', 'setpwent', 'setservent', 'setsockopt', 'shift', 'shmctl',
+    'shmget', 'shmread', 'shmwrite', 'shutdown', 'sin', 'sleep', 'socket',
+    'socketpair', 'sort', 'splice', 'split', 'sprintf', 'sqrt', 'srand',
+    'stat', 'state', 'study', 'sub', 'substr', 'symlink', 'syscall',
+    'sysopen', 'sysread', 'sysseek', 'system', 'syswrite', 'tell', 'telldir',
+    'tie', 'tied', 'time', 'times', 'tr', 'truncate', 'try', 'uc', 'ucfirst',
+    'umask', 'undef', 'unless', 'unlink', 'unpack', 'unshift', 'untie',
+    'until', 'use', 'utime', 'values', 'vec', 'wait', 'waitpid', 'wantarray',
+    'warn', 'when', 'while', 'write', 'x', 'xor', 'y',
+];
+
+// And the names that are not keywords and are not free either: the
+// functions `use v5.42;` brings in from `builtin` (perl warns of a sub
+// named for one, T28), with the rest of that module's; the subs perl
+// calls by itself; and its file handles, which it would rather read after
+// `say` than call.
+export const PERL_OTHER: readonly string[] = [
+    'true', 'false', 'inf', 'nan', 'weaken', 'unweaken', 'is_weak', 'blessed', 'refaddr', 'reftype', 'ceil', 'floor',
+    'is_tainted', 'trim', 'stringify', 'created_as_string', 'created_as_number', 'indexed', 'is_bool', 'export_lexically',
+    'load_module',
+    'import', 'unimport', 'CLONE', 'CLONE_SKIP',
+    'STDIN', 'STDOUT', 'STDERR', 'ARGV', 'ARGVOUT', 'DATA', 'ENV', 'INC',
+];
+
+export const PERL_WORDS: ReadonlySet<string> = new Set([...PERL_KEYWORDS, ...PERL_OTHER]);
+
+// `v`, a digit, and digits or underscores: a version string to perl when
+// it has not yet seen a sub of that name (T136).
+export const isVersionString = (word: string): boolean => /^v[0-9][0-9_]*$/.test(word);
 
 // The perl whose meaning the language keeps (D2, D16).
 export const VERSION = 'v5.42';
@@ -72,6 +143,10 @@ export const VERSION = 'v5.42';
 export type Pragma = { args: readonly string[]; rt?: string };
 export const PRAGMAS: ReadonlyMap<string, Pragma> = new Map<string, Pragma>([
     ['utf8', { args: [] }],
+    // Written `no warnings 'recursion';` (D67): it changes nothing here,
+    // and under perl it silences the warning at 100 calls deep. The key is
+    // the two words, since `use warnings` is no pragma of the language's.
+    ['no warnings', { args: ['recursion'] }],
     // perl's standard streams as UTF-8 (D39).
     ['open', { args: [':std', ':encoding(UTF-8)'], rt: 'rt_use_open' }],
 ]);

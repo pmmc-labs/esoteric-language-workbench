@@ -1,0 +1,2 @@
+t/976-minus-against-a-letter.pl:5:9: -e: a minus hard against one letter is a file test, to perl; put a blank after the minus, or brackets round what it negates
+exit: 1

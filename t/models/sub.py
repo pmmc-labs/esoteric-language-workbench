@@ -586,7 +586,8 @@ def late_cases():
         return [('my', x, 1), sub(f('set'), [req('p')], do(set_(x, P)), ret(3)),
                 do(set_(x, ucall(f('set'), 50))), say_(G('x')),
                 do(set_(x, ucall(f('set'), 50), '+=')), say_(G('x')),
-                do(set_(x, ucall(f('set'), 'z'), '.=')), say_(G('x')),
+                # (`$x .= set('z')` is refused: D69 has the left of `.=` for
+                # the first piece of a row, as D57 does.)
                 do(set_(x, ucall(f('set'), 0), '||=')), say_(G('x')),
                 do(set_(x, 2)), say_(('*', G('x'), ucall(f('set'), 10))),
                 do(set_(x, 2)), say_(('*', ucall(f('set'), 10), G('x'))),

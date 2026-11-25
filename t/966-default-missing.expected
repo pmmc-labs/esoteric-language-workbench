@@ -1,0 +1,2 @@
+t/966-default-missing.pl:4:10: '=' with no default after it: perl refuses it
+exit: 1

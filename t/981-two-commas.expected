@@ -1,0 +1,2 @@
+t/981-two-commas.pl:5:9: a comma with no argument before it: perl leaves it out, in silence, where it doesn't refuse it
+exit: 1

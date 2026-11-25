@@ -1,0 +1,2 @@
+t/959-sub-twice.pl:5:5: a second sub called f: perl warns that it is redefined, and takes this one
+exit: 1

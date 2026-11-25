@@ -1,0 +1,2 @@
+t/962-call-without-brackets-as-a-value.pl:5:9: 'f' is not in the language; a call of a sub of the program's has brackets: f(...)
+exit: 1

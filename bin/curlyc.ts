@@ -50,7 +50,7 @@ try {
     const program = parse(lex(text));
     // The passes in D29's order: names, then the rules, then the C.
     const names = resolve(program);
-    check(program);
+    check(program, names);
     c = generate(program, names, src);
 } catch (e) {
     try { rmSync(out, { force: true }); } catch { /* not a file of ours to remove */ }

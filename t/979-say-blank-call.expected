@@ -1,0 +1,2 @@
+t/979-say-blank-call.pl:4:7: a blank between f and its bracket, first after say: perl takes f for a file handle unless it has seen the sub already; write f(...)
+exit: 1

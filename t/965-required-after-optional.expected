@@ -1,0 +1,2 @@
+t/965-required-after-optional.pl:4:15: a required parameter after an optional one: perl refuses it
+exit: 1

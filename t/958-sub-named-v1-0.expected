@@ -1,0 +1,2 @@
+t/958-sub-named-v1-0.pl:4:5: a sub may not be called v1_0: perl reads v and digits as a version, where it has not yet seen the sub
+exit: 1

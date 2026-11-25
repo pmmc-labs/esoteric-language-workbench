@@ -1,0 +1,2 @@
+t/973-return-or.pl:5:15: 'or' after return's value: it binds more loosely than return does, and perl warns of it; bracket the value, return (... or ...)
+exit: 1

@@ -1,0 +1,2 @@
+t/982-comma-first.pl:5:7: a comma with no argument before it: perl leaves it out, in silence, where it doesn't refuse it
+exit: 1

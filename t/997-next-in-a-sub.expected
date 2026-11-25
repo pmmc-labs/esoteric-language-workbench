@@ -1,0 +1,2 @@
+t/997-next-in-a-sub.pl:4:11: next outside a loop
+exit: 1

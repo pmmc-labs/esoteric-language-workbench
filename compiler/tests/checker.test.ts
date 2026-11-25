@@ -3,9 +3,14 @@ import assert from 'node:assert/strict';
 import { lex } from '../src/lexer.ts';
 import { parse } from '../src/parser.ts';
 import { check } from '../src/checker.ts';
+import { resolve } from '../src/resolver.ts';
 import { CompileError } from '../src/errors.ts';
 
-const accepted = (src: string) => check(parse(lex(src)));
+// The driver's order: the names first, which the checker is handed.
+const accepted = (src: string) => {
+    const program = parse(lex(src));
+    check(program, resolve(program));
+};
 const refused = (src: string, message: string, line: number, col: number) =>
     assert.throws(() => accepted(src), (e: unknown) => {
         assert.ok(e instanceof CompileError, String(e));
@@ -140,20 +145,20 @@ test("the list that say's argument is reaches the right of || and both branches 
 // What perl says of each is in docs/briefs/claims.py (T114).
 test('a statement that only has a value, which perl warns is useless (T114)', () => {
     const message = 'this statement only has a value, and nothing is done with it: perl warns that it is useless';
-    refused('use v5.42;\n42;', message, 2, 1);
-    refused('use v5.42;\nlength "abc";', message, 2, 1);
-    refused('use v5.42;\nsubstr("abc", 1);', message, 2, 1);
-    refused('use v5.42;\n"abc";', message, 2, 1);
-    refused('use v5.42;\n(1);', message, 2, 1);
-    refused('use v5.42;\n- 1;', message, 2, 1);
-    refused('use v5.42;\n  $x + 1;', message, 2, 3);
-    refused('use v5.42;\n$x;', message, 2, 1);
-    refused('use v5.42;\n$x == 1;', message, 2, 1);
-    refused('use v5.42;\n$x || ($y = 1);', message, 2, 1);
-    refused('use v5.42;\n1 ? ($x = 1) : 2;', message, 2, 1);
-    refused('use v5.42;\n{ 42; }', message, 2, 3);
-    refused('use v5.42;\nif (1) { $x; }', message, 2, 10);
-    refused('use v5.42;\n$x if 1;', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n42;', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\nlength "abc";', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\nsubstr("abc", 1);', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n"abc";', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n(1);', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n- 1;', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n  $x + 1;', message, 2, 3);
+    refused('use v5.42; my $x = 1; my $y = 1;\n$x;', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n$x == 1;', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n$x || ($y = 1);', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n1 ? ($x = 1) : 2;', message, 2, 1);
+    refused('use v5.42; my $x = 1; my $y = 1;\n{ 42; }', message, 2, 3);
+    refused('use v5.42; my $x = 1; my $y = 1;\nif (1) { $x; }', message, 2, 10);
+    refused('use v5.42; my $x = 1; my $y = 1;\n$x if 1;', message, 2, 1);
     accepted('use v5.42;\nmy $x;\n$x = 1;\n$x++;\n--$x;\n$x += 2;\n$x ||= 3;\nmy $y = $x;\n$y = $x = 4;');
 });
 

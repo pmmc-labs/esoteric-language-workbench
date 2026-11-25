@@ -1,0 +1,2 @@
+t/974-return-while.pl:5:14: return while: a return takes an if or an unless
+exit: 1

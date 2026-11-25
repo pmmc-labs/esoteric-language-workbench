@@ -62,9 +62,9 @@ comparison: *in*, *out*, or *n/a*.
 | `state` | In | 14 | in | |
 | `our`, package variables, `$Pkg::x` | Cut | | in | D19 |
 | `local` | Cut | | in | D17; parked |
-| `sub name (signature) { }` | In | 8 | in | A signature is required; at the top of the file; not named for anything perl knows (D21) |
+| `sub name (signature) { }` | In | 8 | in | D72. A signature is required; at the top level of the file; not named for anything perl knows (D21, T28), nor `v` and digits (T136); called before or after it is written |
 | A sub without a signature, `@_`, `shift` on it | Cut | | out | D17 |
-| Defaults in a signature, slurpy `@rest`, `%opts` | In | 8, 10, 12 | in | |
+| Defaults in a signature, slurpy `@rest`, `%opts` | In | 8, 10, 12 | in | Defaults are in (D72); `@rest` and `%opts` are steps 10 and 12 |
 | Prototypes, `&` calls, `goto &sub` | Cut | | out | D21 |
 | `my sub`, anonymous `sub`, closures | In | 14 | in | |
 | `__SUB__` | In | 14 | | |
@@ -75,7 +75,12 @@ comparison: *in*, *out*, or *n/a*.
 | A sub that ends in `say` or `print`, and its value used | In | 8 | | D70: `true`, as perl |
 | A sub that returns nothing, as an argument or `say`'s | Fault | 8 | | D71, until step 10: perl passes no argument |
 | A row of dots in which a later piece calls a sub that can change a variable an earlier piece reads | Cut | | | D69, T132 |
-| Signature placeholders `$`, `@`, `%`; defaults with `//=` and `\|\|=`; a default that reads an earlier parameter | In | 8 | | |
+| Signature placeholders `$`, `@`, `%`; defaults with `//=` and `\|\|=`; a default that reads an earlier parameter | In | 8 | | `$`, `$=`, `$ = EXPR` are in; each argument is copied as its parameter's turn comes, a default running in between (T144, D73) |
+| A call, `name(args)`; one comma after the last argument | In | 8 | | D21, D72. An argument that is a variable is read as the sub takes it (T1) |
+| A call without brackets; `f(1,,2)`; a blank between a call's name and its bracket first after `say` or `print`; a minus hard against a one-letter name | Cut | | | D21, T137, T136, T135 |
+| Too few or too many arguments | Fault | 8 | | D13: perl dies, after the arguments have run |
+| A sub in a block, a loop or a sub; two subs of one name; a call of a sub the program doesn't have | Cut | | | T31, D72; a sub in a block comes back with closures (14) |
+| A parameter named twice; a `my` of a parameter's name in the body | Cut | | | T141: perl warns |
 | `my $x = $x`: the right side sees the outer `$x` | In | 5 | | T58 |
 | `my` in a condition, `if ((my $n = f()) > 3)` | In | 5 | | |
 | `my (undef, $x) = ...` | In | 9 | | |
@@ -104,8 +109,10 @@ comparison: *in*, *out*, or *n/a*.
 | `last` or `next` reaching a loop from a called sub, or from a `map`, `grep` or `sort` block | Cut | | | T59, T60: perl leaves the outer loop |
 | `redo`, `goto`, `continue` blocks | Cut | | out, `redo` in | |
 | Bare blocks | In | 5 | in | A scope. To perl it is also a loop that runs once, which D59 cuts; a label on one: cut. An empty one is an anonymous hash to perl, and refused (T116) |
-| `return`, `return LIST` | In | 8, 10 | in | D18 |
-| Ending a sub in `if`, `unless`, a loop, a block or `try`, and using its value | Fault | 8 | | D18: perl returns the condition, or the `try`'s value |
+| `return`, `return LIST` | In | 8, 10 | in | D18, D72. `return;` and `return EXPR;`, with an `if` or `unless`; a statement, not an operand (T139) |
+| A sub's last statement as its value: an expression, a value alone, `say` | In | 8 | | D18, D70, T140 |
+| `(...) x N` as an argument, after `return`, or as a sub's last statement | Cut | | | T143, D73, until step 10: a list to perl |
+| Ending a sub in `if`, `unless`, a loop, a block, a statement with a modifier or `try`, and using its value | Fault | 8 | | D18, T145: perl returns the condition, or the `try`'s value |
 | `wantarray` | Cut | | in | D18 |
 | `die`, `try`, `catch` | In | 15 | in | |
 | `finally`, `defer` | Later | 15 | out | Experimental in 5.42; to be proposed |

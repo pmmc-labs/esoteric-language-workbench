@@ -3,7 +3,13 @@
 // nothing; a tree that comes through is a program.
 import { refuse } from './errors.ts';
 import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, PRAGMAS, VERSION, infixOp, prefixOp } from './names.ts';
-import type { Call, Expr, Pragma, Program, Stmt } from './ast.ts';
+import type { Expr, Invoke, My, Pragma, Program, Stmt, Sub, Var } from './ast.ts';
+import type { Resolution } from './resolver.ts';
+
+// What the checks need of the whole program (D20): the names, and for
+// each sub the file variables a call of it can change, its own
+// assignments and steps and those of every sub it calls (D69).
+type World = { names: Resolution; changed: readonly ReadonlySet<number>[] };
 
 // The expressions an expression is made of, in the order they are worked
 // out.
@@ -11,7 +17,7 @@ const parts = (e: Expr): readonly Expr[] =>
     e.kind === 'unary' ? [e.operand]
     : e.kind === 'binary' ? [e.left, e.right]
     : e.kind === 'ternary' ? [e.test, e.then, e.else]
-    : e.kind === 'apply' ? e.args
+    : e.kind === 'apply' || e.kind === 'invoke' ? e.args
     : e.kind === 'assign' ? [e.value, e.target]
     : e.kind === 'step' ? [e.target]
     : [];
@@ -52,7 +58,7 @@ const plain = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === u
 // `$y`, which is no constant: this says yes to a little more than perl
 // does, with no folder of its own.
 const folds = (e: Expr): boolean =>
-    e.kind === 'var' || e.kind === 'my' || e.kind === 'assign' || e.kind === 'step' ? false
+    e.kind === 'var' || e.kind === 'my' || e.kind === 'assign' || e.kind === 'step' || e.kind === 'invoke' ? false
     : e.kind === 'ternary' ? folds(e.test)
     : e.kind === 'binary' && infixOp(e.op)?.when ? folds(e.left)
     : parts(e).every(folds);
@@ -67,6 +73,18 @@ const reads = (e: Expr, into = new Set<string>()): Set<string> => {
 const changes = (e: Expr, into = new Set<string>()): Set<string> => {
     if (e.kind === 'assign' || e.kind === 'step') into.add(e.target.name);
     parts(e).forEach(p => changes(p, into));
+    return into;
+};
+
+// The calls of the program's subs in an expression, and its variables.
+const invokes = (e: Expr, into: Invoke[] = []): Invoke[] => {
+    if (e.kind === 'invoke') into.push(e);
+    parts(e).forEach(p => invokes(p, into));
+    return into;
+};
+const variables = (e: Expr, into: (Var | My)[] = []): (Var | My)[] => {
+    if (e.kind === 'var' || e.kind === 'my') into.push(e);
+    parts(e).forEach(p => variables(p, into));
     return into;
 };
 
@@ -109,19 +127,31 @@ const checkLostAssignment = (e: Expr): void => {
     }
 };
 
-const checkConcat = (e: Expr): void => {
+const checkConcat = (w: World, e: Expr): void => {
     checkLostAssignment(e);
     const row = e.kind === 'binary' && infixOp(e.op)?.concat ? pieces(e)
         : e.kind === 'assign' && infixOp(e.op)?.concat ? [e.target, ...pieces(e.value)]
         : [];
     const read = new Set<string>();
+    // The same through a call (D69, T132): the declarations the earlier
+    // pieces read, and the file variables a sub called in this piece can
+    // change.
+    const readIds = new Set<number>();
     for (const piece of row) {
         for (const name of changes(piece)) {
             if (read.has(name)) {
                 refuse(`a later piece of a concatenation changes $${name}, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own`, piece.pos);
             }
         }
+        for (const call of invokes(piece)) {
+            for (const id of w.changed[w.names.calls.get(call)!]!) {
+                if (readIds.has(id)) {
+                    refuse(`a later piece of a concatenation calls ${call.name}, which can change $${w.names.names[id]}, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the call a statement of its own`, call.pos);
+                }
+            }
+        }
         reads(piece, read);
+        variables(piece).forEach(v => readIds.add(w.names.of.get(v)!));
     }
 };
 
@@ -153,28 +183,29 @@ const tested = (in_: Expr): void => {
 // `my`: whether a `my` may stand here (D56, D21): at the head of a
 // statement, or in the test of an `if`, and in neither under an operand
 // that may not be worked out.
-const checkExpr = (e: Expr, my: boolean): void => {
+const checkExpr = (w: World, e: Expr, my: boolean): void => {
     checkLiteral(e);
-    checkConcat(e);
+    checkConcat(w, e);
+    if (e.kind === 'invoke') e.args.forEach(a => checkListContext(a, `as an argument of ${e.name}`));
     if (e.kind === 'my' && !my) {
         refuse(`my $${e.name} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`, e.pos);
     }
     if (e.kind === 'ternary') {
         tested(e.test);
-        checkExpr(e.test, my);
-        checkExpr(e.then, false);
-        return checkExpr(e.else, false);
+        checkExpr(w, e.test, my);
+        checkExpr(w, e.then, false);
+        return checkExpr(w, e.else, false);
     }
     if (e.kind === 'binary' && infixOp(e.op)?.when) {
         tested(e.left);
-        checkExpr(e.left, my);
-        return checkExpr(e.right, false);
+        checkExpr(w, e.left, my);
+        return checkExpr(w, e.right, false);
     }
     if (e.kind === 'assign' && infixOp(e.op)?.when) {
-        checkExpr(e.target, my);
-        return checkExpr(e.value, false);
+        checkExpr(w, e.target, my);
+        return checkExpr(w, e.value, false);
     }
-    parts(e).forEach(p => checkExpr(p, my));
+    parts(e).forEach(p => checkExpr(w, p, my));
 };
 
 // `say`'s argument is in list context, and there perl's `x` repeats a
@@ -187,7 +218,11 @@ const checkExpr = (e: Expr, my: boolean): void => {
 // one operand or the other (`||`, `&&`, `//`, `or`, `and`), and to both
 // branches of `? :` (T104). Not to a left operand, a condition, or
 // through anything that makes one value of its operands.
-const checkListContext = (call: Call): void => {
+//
+// An argument of a call, the value of a `return` and a sub's last
+// statement are lists to perl too, and there a call can count: `g(("a") x
+// 0)` hands `g` no argument at all (T143, D73).
+const checkListContext = (arg: Expr, where: string): void => {
     const visit = (in_: Expr): void => {
         const e = plain(in_);
         if (e.kind === 'ternary') {
@@ -196,11 +231,14 @@ const checkListContext = (call: Call): void => {
         } else if (e.kind === 'binary' && infixOp(e.op)?.when) {
             visit(e.right);
         } else if (e.kind === 'binary' && infixOp(e.op)?.list && plain(e.left).bracketed) {
-            refuse(`(...) ${e.op} as ${call.name}'s argument repeats a list, to perl: take the brackets off the left operand`, e.pos);
+            refuse(`(...) ${e.op} ${where} repeats a list, to perl: take the brackets off the left operand`, e.pos);
         }
     };
-    visit(call.args[0]!);
+    visit(arg);
 };
+
+// A pragma as it is said: `use utf8`, `no warnings`.
+const said = (pragma: string): string => (pragma.startsWith('no ') ? pragma : `use ${pragma}`);
 
 // A pragma is written one way (D16): its arguments are the table's, each
 // a string literal. perl takes `use open qw(:std :encoding(UTF-8))` and
@@ -209,40 +247,44 @@ const checkPragma = (p: Pragma): void => {
     const wanted = PRAGMAS.get(p.name)!.args;
     const written = p.args.map(a => (a.kind === 'str' && !a.bracketed ? a.value : undefined));
     if (written.length !== wanted.length || written.some((w, n) => w !== wanted[n])) {
-        refuse(`'use ${p.name}' is written: use ${[p.name, wanted.map(a => `'${a}'`).join(', ')].join(' ').trim()};`, p.pos);
+        refuse(`'${said(p.name)}' is written: ${[said(p.name), wanted.map(a => `'${a}'`).join(', ')].join(' ').trim()};`, p.pos);
     }
 };
 
 // One of the expressions of the first part of a `for`, or of its third:
 // what could be a statement, and a `my` in the first part only (D60).
-const checkPart = (e: Expr, first: boolean): void => {
+const checkPart = (w: World, e: Expr, first: boolean): void => {
     if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my') {
         refuse('this part of the for only has a value, and nothing is done with it: perl warns that it is useless', e.pos);
     }
     const my = e.kind === 'my' ? e : e.kind === 'assign' && e.target.kind === 'my' ? e.target : undefined;
-    if (my === undefined) return checkExpr(e, false);
+    if (my === undefined) return checkExpr(w, e, false);
     if (!first) refuse(`my $${my.name} in the third part of a for: a my is in the first part, and is one variable for the whole loop`, my.pos);
     if (e.kind !== 'assign') return;
-    checkConcat(e);
-    checkExpr(e.value, false);
+    checkConcat(w, e);
+    checkExpr(w, e.value, false);
 };
 
 // A statement below the top of the file. `modified`: it stands before an
 // `if` or `unless` modifier, where a `my` may be skipped and leave the
 // last value behind (T30).
-const checkStmt = (s: Stmt, modified = false): void => {
+const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     switch (s.kind) {
     case 'use': return refuse(`'use ${s.version};' here: the version is the first statement, and is said once`, s.pos);
-    case 'pragma': return refuse(`'use ${s.name}' goes at the top, after 'use ${VERSION};' and before anything else`, s.pos);
+    case 'pragma': return refuse(`'${said(s.name)}' goes at the top, after 'use ${VERSION};' and before anything else`, s.pos);
     case 'call':
-        s.args.forEach(a => checkExpr(a, false));
-        return checkListContext(s);
+        s.args.forEach(a => checkExpr(w, a, false));
+        return checkListContext(s.args[0]!, `as ${s.name}'s argument`);
     case 'do':
         // perl warns of a statement that only has a value: `Useless use
         // of ... in void context` (T114).
-        if (s.expr.kind !== 'assign' && s.expr.kind !== 'step' && s.expr.kind !== 'my') {
+        // A call is a statement. And a value alone is one where it is
+        // the last of a sub, with no modifier: it is the sub's value
+        // (D72, T140), a list to perl (T143).
+        if (s.expr.kind !== 'assign' && s.expr.kind !== 'step' && s.expr.kind !== 'my' && s.expr.kind !== 'invoke' && !last) {
             refuse('this statement only has a value, and nothing is done with it: perl warns that it is useless', s.pos);
         }
+        if (last) checkListContext(s.expr, "as a sub's last statement");
         // The `my` a statement begins with is the one that may stand in it.
         const my = s.expr.kind === 'my' ? s.expr : s.expr.kind === 'assign' && s.expr.target.kind === 'my' ? s.expr.target : undefined;
         if (my !== undefined) {
@@ -250,38 +292,114 @@ const checkStmt = (s: Stmt, modified = false): void => {
                 refuse('my under a modifier: when the test fails, perl leaves in the variable what it last held; declare it in a statement of its own', my.pos);
             }
             if (s.expr.kind !== 'assign') return;
-            checkConcat(s.expr);
-            return checkExpr(s.expr.value, false);
+            checkConcat(w, s.expr);
+            return checkExpr(w, s.expr.value, false);
         }
-        return checkExpr(s.expr, false);
-    case 'block': return s.body.forEach(b => checkStmt(b));
+        return checkExpr(w, s.expr, false);
+    case 'block': return s.body.forEach(b => checkStmt(w, b));
     case 'if':
         for (const arm of s.arms) {
             tested(arm.test);
-            checkExpr(arm.test, !s.modifier);
-            arm.body.forEach(b => checkStmt(b, s.modifier === true));
+            checkExpr(w, arm.test, !s.modifier);
+            arm.body.forEach(b => checkStmt(w, b, s.modifier === true));
         }
-        return s.otherwise?.forEach(b => checkStmt(b));
+        return s.otherwise?.forEach(b => checkStmt(w, b));
     // A loop's test is a test as an `if`'s is (D53, D62), and a `my` under
     // a `while` modifier is as one under `if` (T119).
     case 'while':
         tested(s.test);
-        checkExpr(s.test, !s.modifier);
-        return s.body.forEach(b => checkStmt(b, s.modifier === true));
+        checkExpr(w, s.test, !s.modifier);
+        return s.body.forEach(b => checkStmt(w, b, s.modifier === true));
     case 'for':
-        s.first.forEach(e => checkPart(e, true));
+        s.first.forEach(e => checkPart(w, e, true));
         if (s.test) {
             tested(s.test);
-            checkExpr(s.test, false);
+            checkExpr(w, s.test, false);
         }
-        s.each.forEach(e => checkPart(e, false));
-        return s.body.forEach(b => checkStmt(b));
+        s.each.forEach(e => checkPart(w, e, false));
+        return s.body.forEach(b => checkStmt(w, b));
     // Which loop it is for is the resolver's to say.
     case 'jump': return;
+    case 'return':
+        if (s.value === undefined) return;
+        checkExpr(w, s.value, false);
+        return checkListContext(s.value, 'after return');
+    // The parser lets a sub stand at the top level only.
+    case 'sub': throw new Error('a sub below the top level');
     }
 };
 
-export const check = (program: Program): void => {
+// A sub (D72): its parameters, and its body, whose last statement may be
+// a value alone. (Its name is the parser's to refuse.)
+const checkSub = (w: World, s: Sub): void => {
+    let optional = false;
+    for (const p of s.params) {
+        if (p.op === undefined && optional) refuse('a required parameter after an optional one: perl refuses it', p.pos);
+        optional = optional || p.op !== undefined;
+        if (p.default) checkExpr(w, p.default, false);
+    }
+    s.body.forEach((b, n) => checkStmt(w, b, false, n === s.body.length - 1));
+};
+
+// The file variables each sub can change: its own assignments and steps,
+// in its body and its defaults, and those of the subs it calls, and so on
+// until nothing is added.
+const changedBy = (names: Resolution): ReadonlySet<number>[] => {
+    const own: Set<number>[] = [new Set()];
+    const callees: Set<number>[] = [new Set()];
+    const expr = (e: Expr, fn: number): void => {
+        if (e.kind === 'assign' || e.kind === 'step') {
+            const id = names.of.get(e.target)!;
+            if (names.owner[id] === 0) own[fn]!.add(id);
+        }
+        if (e.kind === 'invoke') callees[fn]!.add(names.calls.get(e)!);
+        parts(e).forEach(p => expr(p, fn));
+    };
+    const stmt = (s: Stmt, fn: number): void => {
+        switch (s.kind) {
+        case 'call': return s.args.forEach(a => expr(a, fn));
+        case 'do': return expr(s.expr, fn);
+        case 'return': return s.value === undefined ? undefined : expr(s.value, fn);
+        case 'block': return s.body.forEach(b => stmt(b, fn));
+        case 'if':
+            for (const arm of s.arms) {
+                expr(arm.test, fn);
+                arm.body.forEach(b => stmt(b, fn));
+            }
+            return s.otherwise?.forEach(b => stmt(b, fn));
+        case 'while':
+            expr(s.test, fn);
+            return s.body.forEach(b => stmt(b, fn));
+        case 'for':
+            [...s.first, ...(s.test ? [s.test] : []), ...s.each].forEach(e => expr(e, fn));
+            return s.body.forEach(b => stmt(b, fn));
+        default: return;
+        }
+    };
+    for (const [n, s] of names.subs.entries()) {
+        own.push(new Set());
+        callees.push(new Set());
+        s.params.forEach(p => p.default && expr(p.default, n + 1));
+        s.body.forEach(b => stmt(b, n + 1));
+    }
+    for (let grew = true; grew;) {
+        grew = false;
+        for (const [fn, set] of own.entries()) {
+            for (const callee of callees[fn]!) {
+                for (const id of own[callee]!) {
+                    if (!set.has(id)) {
+                        set.add(id);
+                        grew = true;
+                    }
+                }
+            }
+        }
+    }
+    return own;
+};
+
+export const check = (program: Program, names: Resolution): void => {
+    const w: World = { names, changed: changedBy(names) };
     // The line that makes the file mean the same thing to perl (D16).
     const first = program.body[0];
     if (first === undefined || first.kind !== 'use' || first.version !== VERSION) {
@@ -292,12 +410,15 @@ export const check = (program: Program): void => {
     let pragmas = true;
     for (const stmt of program.body.slice(1)) {
         if (stmt.kind === 'pragma' && pragmas) {
-            if (seen.has(stmt.name)) refuse(`'use ${stmt.name}' is said once`, stmt.pos);
+            if (seen.has(stmt.name)) refuse(`'${said(stmt.name)}' is said once`, stmt.pos);
             seen.add(stmt.name);
             checkPragma(stmt);
+        } else if (stmt.kind === 'sub') {
+            pragmas = false;
+            checkSub(w, stmt);
         } else {
             pragmas = false;
-            checkStmt(stmt);
+            checkStmt(w, stmt);
         }
     }
 };

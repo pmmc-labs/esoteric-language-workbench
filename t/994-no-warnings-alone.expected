@@ -1,0 +1,2 @@
+t/994-no-warnings-alone.pl:4:1: 'no warnings' is written: no warnings 'recursion';
+exit: 1

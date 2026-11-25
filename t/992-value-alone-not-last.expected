@@ -1,0 +1,2 @@
+t/992-value-alone-not-last.pl:5:5: this statement only has a value, and nothing is done with it: perl warns that it is useless
+exit: 1

@@ -1,0 +1,2 @@
+t/954-sub-named-trim.pl:4:5: a sub may not be called trim: perl has a meaning of its own for the word
+exit: 1

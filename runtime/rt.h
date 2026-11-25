@@ -3,6 +3,7 @@
 // and its <sys/types.h> defines major() and minor() as macros.
 #ifndef RT_H
 #define RT_H
+#include <stddef.h>
 #include <stdint.h>
 
 // On a local the generated C declares and a program may never read: a
@@ -110,6 +111,8 @@ typedef struct rt_ctx {
     int64_t line;           // the line of the statement that is running
     int out_utf8;           // `use open ':std', ':encoding(UTF-8)';` was said (D39)
     rt_frame *frames;       // the roots: the newest frame, and through it the rest
+    rt_value *shared;       // the file's variables, which a sub reaches through here
+    uint64_t deep;          // what the open frames count for, against the limit on recursion
     struct rt_block *heap;  // every string made and not yet collected
     struct rt_block *dead;  // under poison, the collected: kept, never handed out again
     uint64_t held;          // the bytes of both, headers and all: what the cap is on
@@ -226,6 +229,30 @@ rt_value rt_str_gt(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_str_le(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_str_ge(rt_ctx *cx, rt_value a, rt_value b);
 rt_value rt_str_cmp(rt_ctx *cx, rt_value a, rt_value b);
+
+// The context of a call, perl's three (D18). A compiled sub is handed one
+// and, for each parameter, where its argument is, or NULL.
+enum { RT_VOID = 0, RT_SCALAR = 1, RT_LIST = 2 };
+
+// The limit on recursion (D68), which is the implementation's and no part
+// of the language: the frames that are open may count for this much, each
+// counting 16 bytes a slot and RT_CALL_BYTES besides, which is more of the
+// C stack than a call was measured to take under any compiler
+// (docs/briefs/step8-stack.c). So the count runs out, and `recursion too
+// deep` is the fault, while half of an 8 MB stack is left; and rt_run
+// stops a program that was given a smaller stack before it starts.
+#define RT_CALL_BYTES 1024
+#define RT_DEPTH_LIMIT (UINT64_C(4) << 20)
+#define RT_STACK_NEEDED (UINT64_C(8) << 20)
+
+// The faults of a call: a wrong number of arguments, as `too few
+// arguments for NAME: got 1, expected 2`; and `NAME WHAT`, for a sub whose
+// value was used when it has none (D18), and for one that returned nothing
+// where perl wants a list (D71).
+#define RT_NO_VALUE "has no value: it does not end in a return or an expression"
+#define RT_NOTHING "returned nothing where a list is wanted"
+void rt_fault_arguments(rt_ctx *cx, const char *name, int64_t got, int64_t least, int64_t most) __attribute__((noreturn));
+void rt_fault_sub(rt_ctx *cx, const char *name, const char *what) __attribute__((noreturn));
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

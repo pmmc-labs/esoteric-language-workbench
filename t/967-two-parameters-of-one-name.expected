@@ -1,0 +1,2 @@
+t/967-two-parameters-of-one-name.pl:4:11: two parameters called $x: perl warns that the second masks the first
+exit: 1

@@ -1,0 +1,5 @@
+a
+b
+c
+fault: too many arguments for two: got 3, expected 2 at t/946-fault-arguments-over-lines.pl line 12.
+exit: 1

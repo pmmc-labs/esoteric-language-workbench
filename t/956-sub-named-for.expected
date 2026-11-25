@@ -1,0 +1,2 @@
+t/956-sub-named-for.pl:4:5: a sub may not be called for: perl has a meaning of its own for the word
+exit: 1

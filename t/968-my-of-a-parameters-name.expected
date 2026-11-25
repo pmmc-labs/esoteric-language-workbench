@@ -1,0 +1,2 @@
+t/968-my-of-a-parameters-name.pl:5:5: my $x again in one scope: perl warns that it masks the first
+exit: 1
