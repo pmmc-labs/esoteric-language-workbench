@@ -1,0 +1,6 @@
+1
+1
+2
+3
+fault: an array was changed while a foreach is over it at t/1114-fault-frozen-for-splice.pl line 15.
+exit: 1

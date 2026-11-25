@@ -1,0 +1,4 @@
+1
+3:<9><2><3>
+fault: an array was changed while a foreach is over it at t/1130-fault-given-back-after-a-map.pl line 22.
+exit: 1

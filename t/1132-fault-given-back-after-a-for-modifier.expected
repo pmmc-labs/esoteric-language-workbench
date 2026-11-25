@@ -1,0 +1,7 @@
+1
+1
+2
+3
+3:<9><2><3>
+fault: an array was changed while a foreach is over it at t/1132-fault-given-back-after-a-for-modifier.pl line 22.
+exit: 1

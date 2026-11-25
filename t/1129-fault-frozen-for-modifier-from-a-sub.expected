@@ -1,0 +1,6 @@
+1
+1
+2
+3
+fault: an array was changed while a foreach is over it at t/1129-fault-frozen-for-modifier-from-a-sub.pl line 7.
+exit: 1

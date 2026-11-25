@@ -1,0 +1,6 @@
+1
+1
+2
+3
+fault: an array was changed while a foreach is over it at t/1116-fault-frozen-for-modifier-store.pl line 12.
+exit: 1

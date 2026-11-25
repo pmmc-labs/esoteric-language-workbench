@@ -1,0 +1,3 @@
+1
+fault: an array was changed while a foreach is over it at t/1133-fault-frozen-after-the-inner-map.pl line 12.
+exit: 1

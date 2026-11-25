@@ -1,0 +1,4 @@
+1
+123
+fault: f returned a list where one value is wanted at t/1151-fault-map-as-a-last-statement-for-one-value.pl line 7.
+exit: 1
