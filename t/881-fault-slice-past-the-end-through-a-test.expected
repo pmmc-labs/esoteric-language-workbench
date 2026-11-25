@@ -1,0 +1,5 @@
+1
+1
+3
+fault: a slice past the end of the array, where perl would make the elements at t/881-fault-slice-past-the-end-through-a-test.pl line 9.
+exit: 1

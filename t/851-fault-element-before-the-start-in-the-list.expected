@@ -1,0 +1,4 @@
+1
+1
+fault: an element past the end of the array in a foreach, where perl would make it at t/851-fault-element-before-the-start-in-the-list.pl line 14.
+exit: 1

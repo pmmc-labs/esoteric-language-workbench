@@ -1,0 +1,8 @@
+1
+7
+1
+2
+3
+7
+fault: an array was changed while a foreach is over it at t/839-fault-names-by-second-of-two.pl line 18.
+exit: 1

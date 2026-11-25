@@ -118,17 +118,21 @@ const listy = (in_: Expr): boolean => {
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
 };
 
+// Where perl would make an element that is not there, and so the language
+// faults for one past either end (T161): nowhere; a slice among a call's
+// arguments; a slice or an element in a `foreach`'s list, through what
+// hands a list on.
+type Strict = 0 | 1 | 2;
+
 // A list, built in a temporary: made empty, and each item added to it in
-// turn, a value or the values of what is itself a list. `strict`: a slice
-// among the items faults for an index past either end, where perl would
-// make the elements (T161: a call's arguments).
-const genList = (items: readonly Expr[], b: Code, strict = false): C => {
+// turn, a value or the values of what is itself a list.
+const genList = (items: readonly Expr[], b: Code, strict: Strict = 0): C => {
     const list = temp(b, 'rt_array_new(cx)');
     items.forEach(item => addItem(item, list.c, b, strict));
     return list;
 };
 
-const addItem = (in_: Expr, list: string, b: Code, strict: boolean): void => {
+const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
     const e = through(in_);
     if (e.kind === 'array') {
         b.lines.push(`rt_list_add_all(cx, ${list}, ${variable(b, e)});`);
@@ -148,19 +152,19 @@ const addItem = (in_: Expr, list: string, b: Code, strict: boolean): void => {
             b.lines.push(`rt_list_add_slice(cx, ${list}, ${from.c}, ${indexes.c}, 1);`);
         }
     } else if (e.kind === 'binary' && isRepeat(e)) {
-        const values = genList([e.left], b);
+        const values = genList([e.left], b, strict === 2 ? 2 : 0);
         const count = genExpr(e.right, b);
         b.lines.push(`rt_list_add_repeat(cx, ${list}, ${values.c}, ${count.c});`);
     } else if (e.kind === 'arrayop' && e.op === 'splice') {
         genSplice(e, b, list);
-    } else if (e.kind === 'ternary' && listy(e)) {
+    } else if (e.kind === 'ternary' && (listy(e) || strict === 2)) {
         const test = genExpr(e.test, b);
         b.lines.push(`if (rt_is_true(cx, ${test.c})) {`);
         addItem(e.then, list, b, strict);
         b.lines.push('} else {');
         addItem(e.else, list, b, strict);
         b.lines.push('}');
-    } else if (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e)) {
+    } else if (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && (listy(e) || strict === 2)) {
         // The left side is one value, an array's count too (T150); the
         // right, if it is wanted, is the list.
         const left = genExpr(e.left, b);
@@ -168,6 +172,10 @@ const addItem = (in_: Expr, list: string, b: Code, strict: boolean): void => {
         b.lines.push(`if (${infixOp(e.op)!.when}(cx, ${kept.c})) {`);
         addItem(e.right, list, b, strict);
         b.lines.push('} else {', `rt_list_add(cx, ${list}, ${kept.c});`, '}');
+    } else if (e.kind === 'elem' && strict === 2) {
+        const at = genExpr(e.index, b);
+        const value = temp(b, `rt_elem_strict(cx, ${variable(b, e)}, ${at.c})`);
+        b.lines.push(`rt_list_add(cx, ${list}, ${value.c});`);
     } else {
         // One value, or none: a sub that returned nothing (D79).
         b.lines.push(`rt_list_add(cx, ${list}, ${genExpr(in_, b, 'list').c});`);
@@ -378,7 +386,7 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         if (e.args.some(listy)) {
             // A list among them: all of them are built as one, copied, and
             // the sub is handed where each of its values is.
-            const values = genList(e.args, b, true);
+            const values = genList(e.args, b, 1);
             b.lines.push(`ac${n} = rt_arguments(cx, ${values.c}, av${n}, ${most});`);
         } else {
             // Each a place, or a temporary: a variable is read when the
@@ -412,7 +420,18 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
 
 // What is being generated: the whole program's strings and names, and the
 // function in hand, its frame, and its sub if it is one.
-type Out = { strings: string[]; names: Resolution; frame: Frame; fn: number; sub?: Sub };
+// `open` is the loops round the statement in hand, the nearest last, each
+// with the C that gives back what it froze: a `last` or `next` to a loop
+// further out, and a `return`, leave by a `goto`, and run it first.
+type Out = { strings: string[]; names: Resolution; frame: Frame; fn: number; sub?: Sub; open: { id: number; thaws: readonly string[] }[] };
+
+const inLoop = (out: Out, id: number | undefined, thaws: readonly string[], body: readonly Stmt[]): string[] => {
+    if (id === undefined) throw new Error('a loop was not resolved');
+    out.open.push({ id, thaws });
+    const lines = body.flatMap(t => genStmt(t, out));
+    out.open.pop();
+    return lines;
+};
 
 // The C of an expression that is a statement's or a test's, and what it
 // is worth. A fault names the line its statement starts on (D34), a test's
@@ -461,6 +480,10 @@ const genArms = (s: If, n: number, out: Out): string[] => {
     return [...test.vars, ...test.code];
 };
 
+// What a `return` gives back on its way out: everything the loops it is
+// in have frozen.
+const leaving = (out: Out): string[] => [...out.open].reverse().flatMap(l => l.thaws);
+
 const genStmt = (s: Stmt, out: Out): string[] => {
     switch (s.kind) {
     // `use v5.42;` says which language this is; it does nothing at run time.
@@ -498,7 +521,7 @@ const genStmt = (s: Stmt, out: Out): string[] => {
         const id = out.names.loops.get(s);
         return [
             'for (;;) {',
-            ...indent([...test.vars, ...test.code, '{', ...indent(s.body.flatMap(t => genStmt(t, out))), '}', `next_${id}: RT_UNUSED;`]),
+            ...indent([...test.vars, ...test.code, '{', ...indent(inLoop(out, id, [], s.body)), '}', `next_${id}: RT_UNUSED;`]),
             '}',
             `last_${id}: RT_UNUSED;`,
         ];
@@ -516,7 +539,7 @@ const genStmt = (s: Stmt, out: Out): string[] => {
             ...indent([
                 ...first.vars, ...first.code,
                 'for (;;) {',
-                ...indent([...(test.length ? ['{', ...indent(test), '}'] : []), '{', ...indent(s.body.flatMap(t => genStmt(t, out))), '}', `next_${id}: RT_UNUSED;`, ...each.code]),
+                ...indent([...(test.length ? ['{', ...indent(test), '}'] : []), '{', ...indent(inLoop(out, id, [], s.body)), '}', `next_${id}: RT_UNUSED;`, ...each.code]),
                 '}',
                 `last_${id}: RT_UNUSED;`,
             ]),
@@ -527,7 +550,54 @@ const genStmt = (s: Stmt, out: Out): string[] => {
         const name = NAMES.get(s.name);
         const id = out.names.jumps.get(s);
         if (name?.kind !== 'jump' || id === undefined) throw new Error(`${s.name} was not resolved`);
-        return [`goto ${name.leaves ? 'last' : 'next'}_${id};`];
+        // What the loops inside the one it is for have frozen is given
+        // back on the way; its own loop's is given back after `last_`.
+        const at = out.open.map(l => l.id).lastIndexOf(id);
+        if (at < 0) throw new Error(`${s.name} is in no loop`);
+        return [...out.open.slice(at + 1).reverse().flatMap(l => l.thaws), `goto ${name.leaves ? 'last' : 'next'}_${id};`];
+    }
+    // The list is built once, into a slot the loop keeps (a statement's
+    // temporaries are the next statement's too), and every array it names
+    // is frozen from then until the loop is left, by any way out (D80,
+    // T162). The variable is a copy, stored anew each time round. A loop
+    // over one range counts in C and builds nothing.
+    case 'foreach': {
+        const id = out.names.loops.get(s);
+        const each = out.names.each.get(s);
+        if (id === undefined || each === undefined) throw new Error('a foreach was not resolved');
+        const b: Code = { vars: [], decls: [], lines: [], temps: 0, values: 0, strings: out.strings, names: out.names, frame: out.frame, fn: out.fn, line: s.pos.line };
+        const slot = (decl: number): string => `${out.names.owner[decl] === out.fn ? 'f' : 'g'}[${out.names.slots[decl]}]`;
+        const x = slot(out.names.of.get(s.var)!);
+        const one = s.items.length === 1 ? through(s.items[0]!) : undefined;
+        const range = one !== undefined && one.kind === 'binary' && isRange(one) ? one : undefined;
+        let loop: string[];
+        if (range) {
+            const from = genExpr(range.left, b);
+            const to = genExpr(range.right, b);
+            b.lines.push(`go_${id} = rt_range_ends(cx, ${from.c}, ${to.c}, &at_${id}, &end_${id});`);
+            loop = [`if (go_${id}) for (;; at_${id}++) {`, `    ${x} = rt_int(at_${id}); // $${s.var.name}`];
+        } else {
+            const list = genList(s.items, b, 2);
+            b.lines.push(`${slot(each.list)} = ${list.c};`);
+            loop = [`for (; at_${id} < rt_list_length(cx, ${slot(each.list)}); at_${id}++) {`, `    ${x} = rt_list_item(cx, ${slot(each.list)}, at_${id}); // $${s.var.name}`];
+        }
+        const thaws = each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`);
+        return [
+            '{',
+            ...indent([
+                `cx->line = ${s.pos.line};`,
+                `int64_t at_${id} = 0, end_${id} RT_UNUSED = 0;`,
+                `int go_${id} RT_UNUSED = 0;`,
+                ...b.decls, ...b.lines,
+                ...each.arrays.map(a => `rt_freeze(cx, ${slot(a)});`),
+                ...loop,
+                ...indent(['{', ...indent(inLoop(out, id, thaws, s.body)), '}', `next_${id}: RT_UNUSED;`, ...(range ? [`if (at_${id} == end_${id}) break;`] : [])]),
+                '}',
+                `last_${id}: RT_UNUSED;`,
+                ...thaws,
+            ]),
+            '}',
+        ];
     }
     // A sub is a function of its own, written by `genSub`.
     case 'sub': return [];
@@ -536,9 +606,9 @@ const genStmt = (s: Stmt, out: Out): string[] => {
     // nothing at all, which the language can't yet say (D71).
     case 'return': {
         if (s.value === undefined) {
-            return ['{', ...indent([`cx->line = ${s.pos.line};`, 'r = want == RT_LIST ? rt_absent() : rt_undef();', 'goto done;']), '}'];
+            return ['{', ...indent([`cx->line = ${s.pos.line};`, 'r = want == RT_LIST ? rt_absent() : rt_undef();', ...leaving(out), 'goto done;']), '}'];
         }
-        return ['{', ...indent(genWhole(s.value, s.pos.line, out, c => [`r = ${c};`, 'goto done;'], 'pass').code), '}'];
+        return ['{', ...indent(genWhole(s.value, s.pos.line, out, c => [`r = ${c};`, ...leaving(out), 'goto done;'], 'pass').code), '}'];
     }
     }
 };
@@ -550,7 +620,7 @@ const genStmt = (s: Stmt, out: Out): string[] => {
 // an expression, `true` after a `say` (D70), and otherwise nothing, which
 // is a fault unless the call was void (D18).
 const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): string[] => {
-    const out: Out = { strings, names, frame: { temporaries: 0 }, fn, sub: s };
+    const out: Out = { strings, names, frame: { temporaries: 0 }, fn, sub: s, open: [] };
     const name = cString(s.name);
     const lines: string[] = [];
     for (const [n, p] of s.params.entries()) {
@@ -611,7 +681,7 @@ const prototype = (s: Sub): string =>
 // `file` is the program's path as the driver was given it, which is the
 // path perl is given too (D10): a fault names it.
 export const generate = (program: Program, names: Resolution, file: string): string => {
-    const out: Out = { strings: [], names, frame: { temporaries: 0 }, fn: 0 };
+    const out: Out = { strings: [], names, frame: { temporaries: 0 }, fn: 0, open: [] };
     const subs = names.subs.flatMap((s, n) => genSub(s, n + 1, out.strings, names));
     const body = program.body.flatMap(s => genStmt(s, out));
     // A frame has a slot at least: C has no array of none.

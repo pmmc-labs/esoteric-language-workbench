@@ -1,0 +1,7 @@
+1
+1
+2
+3
+1
+fault: an array was changed while a foreach is over it at t/838-fault-frozen-push-from-a-sub.pl line 7.
+exit: 1

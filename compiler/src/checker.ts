@@ -551,6 +551,30 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
         }
         s.each.forEach(e => checkPart(w, e, false));
         return s.body.forEach(b => checkStmt(w, b));
+    // A loop over a list (D17, D77, D80).
+    case 'foreach': {
+        checkOrder(w, "the loop's list", s.items, true);
+        s.items.forEach(e => checkExpr(w, e, false, 'list'));
+        // perl walks the variables themselves (T13), and here the list is
+        // a copy: so nothing the loop does may change a scalar its list
+        // names, anywhere in it (T162). An array it names is frozen as
+        // the program runs.
+        const scalars = new Map<number, Expr>();
+        const collect = (e: Expr): void => {
+            if (e.kind === 'var') scalars.set(w.names.of.get(e)!, e);
+            parts(e).forEach(collect);
+        };
+        s.items.forEach(collect);
+        const refused = (id: number, at: Expr): never =>
+            refuse(`this can change ${sigil(w, id)}, which the list of the loop it is in names: perl's loop walks the variable itself; take the value into a my before the loop`, at.pos);
+        const guard = (e: Expr): void => {
+            for (const id of changesItself(w, e)) if (scalars.has(id)) refused(id, e);
+            if (e.kind === 'invoke') for (const id of w.changed[w.names.calls.get(e)!]!) if (scalars.has(id)) refused(id, e);
+            parts(e).forEach(guard);
+        };
+        if (scalars.size > 0) s.body.forEach(b => expressions(b, guard));
+        return s.body.forEach(b => checkStmt(w, b));
+    }
     // Which loop it is for is the resolver's to say.
     case 'jump': return;
     case 'return':
@@ -561,6 +585,48 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     // The parser lets a sub stand at the top level only.
     case 'sub': throw new Error('a sub below the top level');
     }
+};
+
+// Every expression a statement holds, a test and a loop's list too, down
+// through its blocks.
+const expressions = (s: Stmt, f: (e: Expr) => void): void => {
+    switch (s.kind) {
+    case 'call': return s.args.forEach(f);
+    case 'do': return f(s.expr);
+    case 'return': return s.value === undefined ? undefined : f(s.value);
+    case 'block': return s.body.forEach(b => expressions(b, f));
+    case 'if':
+        for (const arm of s.arms) {
+            f(arm.test);
+            arm.body.forEach(b => expressions(b, f));
+        }
+        return s.otherwise?.forEach(b => expressions(b, f));
+    case 'while':
+        f(s.test);
+        return s.body.forEach(b => expressions(b, f));
+    case 'for':
+        [...s.first, ...(s.test ? [s.test] : []), ...s.each].forEach(f);
+        return s.body.forEach(b => expressions(b, f));
+    case 'foreach':
+        s.items.forEach(f);
+        return s.body.forEach(b => expressions(b, f));
+    case 'sub': return s.body.forEach(b => expressions(b, f));
+    default: return;
+    }
+};
+
+// A `foreach`'s variable is read-only (D17): in perl it is the list's own
+// element, and changing it changes the array.
+const checkReadOnly = (program: Program, names: Resolution): void => {
+    const variables = new Set<number>([...names.each.keys()].map(loop => names.of.get(loop.var)!));
+    const w: World = { names, changed: [], defaults: [] };
+    const guard = (e: Expr): void => {
+        for (const id of changesItself(w, e)) {
+            if (variables.has(id)) refuse(`$${names.names[id]} is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my`, e.pos);
+        }
+        parts(e).forEach(guard);
+    };
+    program.body.forEach(s => expressions(s, guard));
 };
 
 // A sub (D72): its parameters, and its body, whose last statement may be
@@ -606,6 +672,9 @@ const changedBy = (names: Resolution): ReadonlySet<number>[] => {
         case 'for':
             [...s.first, ...(s.test ? [s.test] : []), ...s.each].forEach(e => expr(e, fn));
             return s.body.forEach(b => stmt(b, fn));
+        case 'foreach':
+            s.items.forEach(e => expr(e, fn));
+            return s.body.forEach(b => stmt(b, fn));
         default: return;
         }
     };
@@ -644,6 +713,7 @@ export const check = (program: Program, names: Resolution): void => {
         return set;
     })];
     const w: World = { names, changed, defaults };
+    checkReadOnly(program, names);
     // The line that makes the file mean the same thing to perl (D16).
     const first = program.body[0];
     if (first === undefined || first.kind !== 'use' || first.version !== VERSION) {

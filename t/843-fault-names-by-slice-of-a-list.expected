@@ -1,0 +1,6 @@
+1
+1
+2
+1
+fault: an array was changed while a foreach is over it at t/843-fault-names-by-slice-of-a-list.pl line 18.
+exit: 1

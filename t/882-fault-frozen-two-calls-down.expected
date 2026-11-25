@@ -1,0 +1,6 @@
+3
+6
+5
+5
+fault: an array was changed while a foreach is over it at t/882-fault-frozen-two-calls-down.pl line 8.
+exit: 1

@@ -149,3 +149,30 @@ test('a last or next with no label, and a bare block the nearest thing round it 
     assert.equal(jumps('while (1) { { while (1) { last; } } }'), 'last->1');
     assert.equal(jumps('while (1) { if (1) { last; } else { next; } }'), 'last->0 next->0');
 });
+
+// A loop over a list (step 9b; D80): the arrays its list names anywhere,
+// which it freezes; its variable, which the list does not see; and the
+// slot of its list.
+test('a foreach: what its list names, and what its variable is', () => {
+    const program = parse(lex('my @a; my @b; my @c; my $x; for my $x (@a, $b[0] + $#a, f(@b), $x) { say $x; my @d; for my $y (@c) { } }\nsub f($v) { return 0 }'));
+    const names = resolve(program);
+    const outer = program.body.find(s => s.kind === 'foreach');
+    assert.ok(outer?.kind === 'foreach');
+    const each = names.each.get(outer)!;
+    // @a and @b, each once: declarations 0 and 1.
+    assert.deepEqual(each.arrays, [0, 1]);
+    assert.equal(names.names[each.list], 'the list');
+    // The `$x` in the list is the file's, 3; the loop's is its own.
+    const last = outer.items.at(-1)!;
+    assert.deepEqual([names.of.get(last), names.of.get(outer.var) !== 3], [3, true]);
+    const inner = outer.body.find(s => s.kind === 'foreach');
+    assert.ok(inner?.kind === 'foreach');
+    assert.deepEqual(names.each.get(inner)!.arrays, [2]);
+    // The list and the variable are neighbours in the frame, after the
+    // file's four; and the inner loop's come after the block's @d.
+    const slot = (id: number) => names.slots[id]!;
+    assert.deepEqual([slot(each.list), slot(names.of.get(outer.var)!)], [4, 5]);
+    assert.deepEqual([slot(names.each.get(inner)!.list), slot(names.of.get(inner.var)!)], [7, 8]);
+    refused('for my $x (1) { } say $x;', '$x is not declared: my $x', 1, 23);
+    refused('for my $x ($x) { }', '$x is not declared: my $x', 1, 12);
+});

@@ -1,0 +1,7 @@
+1
+1
+2
+3
+1
+fault: an array was changed while a foreach is over it at t/844-fault-names-by-through-and.pl line 18.
+exit: 1

@@ -211,3 +211,63 @@ test('a program given a stack of less than 8 MB does not start (D68)', () => {
     assert.deepEqual({ status: r.status, output: r.stdout },
         { status: 2, output: 'curly: the stack is limited to 4194304 bytes, and a program needs 8388608 (ulimit -s)\n' });
 });
+
+// Arrays under the collector (step 9; D80). The numbers by hand: a block's
+// header is 24 bytes and an array 40 after it, so an empty array holds 64;
+// its first storage is for 8 values, 128 bytes; the string `ab1` is 24 of
+// header, 32 of rt_str, 3 bytes and a NUL, 60.
+test('an array in a slot keeps what it holds, and one a slot lets go is freed with its storage', () => {
+    assert.deepEqual(run('arrays', 'kept-through'), { status: 0, output: [
+        'made: 3 on the heap, 3 made, 0 collections, 312 bytes held',
+        'collected: 2 on the heap, 3 made, 1 collections, 252 bytes held',
+        'ab1',
+        'and again: 0 on the heap, 3 made, 2 collections, 0 bytes held', ''].join('\n') });
+});
+
+test('an array in no slot is collected, and one used after that is an internal error', () => {
+    assert.deepEqual(run('arrays', 'dropped', { CURLY_GC_POISON: '1' }), { status: 2, output:
+        'collected: 0 on the heap, 1 made, 1 collections, 64 bytes held\ninternal: an array was used after it was collected at arrays.pl line 1.\n' });
+});
+
+test("an array's values count against the cap, and an array holds no array", () => {
+    // 4,096 values are 65,536 bytes; the next needs as much again.
+    assert.deepEqual(run('arrays', 'storage', { CURLY_HEAP_CAP: '100000' }), { status: 1, output: 'pushing\nfault: out of memory at arrays.pl line 1.\n' });
+    assert.deepEqual(run('arrays', 'storage', { CURLY_HEAP_CAP: '200000' }), { status: 1, output: 'pushing\nfault: out of memory at arrays.pl line 1.\n' });
+    assert.deepEqual(run('arrays', 'storage', { CURLY_HEAP_CAP: '300000' }), { status: 0, output: 'pushing\nnot reached\n' });
+    assert.deepEqual(run('arrays', 'no-array-in-an-array'), { status: 1, output: 'fault: not a value at arrays.pl line 1.\n' });
+});
+
+test('every way an array is changed, and read at the edges of the integers', () => {
+    // (1,2,3) pushed onto itself is 6; unshifted, 9; the last off, 3; the
+    // first off, 1; seven are left. A store at 9 makes it ten long. The
+    // last two out, and three in.
+    assert.deepEqual(run('arrays', 'every-way'), { status: 0, output: '6\n9\n3\n1\n2312312\n5\n9\n\n5\n\n\n2\n11\n' });
+});
+
+// The freeze (step 9b; D17, D80): a count, and while it is not 0 every way
+// of changing the array faults, and every way of reading it works.
+test('a frozen array is read and not changed, until it is given back as often as it was frozen', () => {
+    const frozen = 'fault: an array was changed while a foreach is over it at arrays.pl line 1.\n';
+    // Read while frozen twice: 3, 2, 3, 1, 2, and a list of it, 123. Given
+    // back once, it is frozen still.
+    for (const way of ['push', 'unshift', 'pop', 'shift', 'splice', 'store', 'make', 'assign', 'rest']) {
+        assert.deepEqual(run('arrays', `frozen-${way}`), { status: 1, output: '3\n2\n3\n1\n2\n123\n' + frozen }, way);
+    }
+    // Given back twice, everything works again: four values after a push.
+    assert.deepEqual(run('arrays', 'frozen-none'), { status: 0, output: '3\n2\n3\n1\n2\n123\n4\n' });
+    assert.deepEqual(run('arrays', 'thaw-unfrozen'), { status: 2, output: 'internal: an array that no foreach is over was given back at arrays.pl line 1.\n' });
+});
+
+test("a foreach's own: an element that must be there, and the ends of a range", () => {
+    // The last element by either index; 1 to 3 has values, 3 to 1 none, and
+    // the ends are cut toward zero; the smallest end perl takes.
+    assert.deepEqual(run('arrays', 'strict'), { status: 0, output: '3\n3\n1 1 3\n0 3 1\n1 -1 1\n1 -9223372036854775295 0\n' });
+    const past = 'fault: an element past the end of the array in a foreach, where perl would make it at arrays.pl line 1.\n';
+    assert.deepEqual(run('arrays', 'strict-past'), { status: 1, output: past });
+    assert.deepEqual(run('arrays', 'strict-before'), { status: 1, output: past });
+    const low = 'fault: a foreach over a range that begins or ends this near the smallest integer: perl refuses it at arrays.pl line 1.\n';
+    assert.deepEqual(run('arrays', 'range-low'), { status: 1, output: low });
+    assert.deepEqual(run('arrays', 'range-low-end'), { status: 1, output: low });
+    assert.deepEqual(run('arrays', 'range-string'), { status: 1, output: 'fault: a string as the end of a range at arrays.pl line 1.\n' });
+    assert.deepEqual(run('arrays', 'range-string-from'), { status: 1, output: 'fault: a string as the end of a range at arrays.pl line 1.\n' });
+});

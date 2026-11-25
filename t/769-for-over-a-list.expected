@@ -1,2 +1,3 @@
-t/769-for-over-a-list.pl:4:5: for over a list is not in the language yet: this for is for (FIRST; TEST; EACH)
-exit: 1
+1
+2
+3

@@ -9,7 +9,7 @@ runtime. The driver is `curlyc`, and a program is a `.pl` file.
 
 ## Status
 
-**Steps 0 to 8 of [`docs/PLAN.md`](docs/PLAN.md) are done**
+**Steps 0 to 9 of [`docs/PLAN.md`](docs/PLAN.md) are done**
 (2026-11-24 and 25, all by Fable 5.2). **The language** is `use
 v5.42;`, then `use utf8;` and `use open ':std', ':encoding(UTF-8)';`
 if wanted, then statements: `say EXPR;` and `print EXPR;` (brackets
@@ -163,7 +163,8 @@ or an operator comes next from the token before, T90), `parser.ts`
 `str`, `constant`, `var`, `my`, `assign`, `step`, `unary`, `binary`,
 `ternary`, `apply`, `invoke`; `use`, `pragma`, `call`, `do`, `block`, `if`,
 `sub`, `return`,
-`while`, `for`, `jump`),
+`while`, `for`, `foreach`, `jump`; and step 9's `array`, `myarray`,
+`elem`, `lastindex`, `list`, `slice`, `arrayop`, `listassign`),
 `resolver.ts` (each variable to its `my`, and each `last` and `next`
 to its loop, by number; it runs before the checker), `checker.ts`, `codegen.ts`, `names.ts` (the statements, the builtins
 by shape, the constants, the pragmas, and all 25 rows of perlop's
@@ -265,9 +266,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 604 of them now, and all hold under 5.42.0,
+about perl as a program, 609 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T168, by step (T119 to T124 found proposing
+keeps the programs, T1 to T172, by step (T119 to T124 found proposing
 step 6, T132 to T142 proposing step 8, T143 to T148 by its review, T125 to T130 by the review of step 5, T131 building step 6).
 **T131 is the one to remember**: where the language faults perl may
 carry on, so a loop that only the fault would end never ends under
@@ -305,7 +306,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D80 are all Stevan's** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
+**D1 to D80 are all Stevan's, and D81 is the builder's defaults at step 9, for him to confirm** (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -335,28 +336,66 @@ prototype of the design) could not break its rule, and corrected the
 proposal round it: poison must check wherever a string is read and
 again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
-green after step 6 and again after step 7. **Next: step
-9**, arrays and lists. **It is proposed and agreed** (2026-11-25,
-`docs/PLAN.md`; D76 to D80, each the recommendation as the review
-had amended it): a list is a row of values copied as it is built, and
-a later part of an expression or a list may not change what an
-earlier part names, refused by one walk over the whole program
-(D76); `for my $x ($p, $q)` copies, and is refused when the loop can
-change a scalar its list names (D77); a list assignment is a
-statement (D78); a sub that returns nothing is no value in a list,
-and D71's fault ends (D79); D80 has what an array and a list are,
-the order of an assignment to an element, and the freeze. **Two
-sub-steps: 9a arrays, lists, elements and the builtins; 9b `foreach`
-and the freeze.** T149 to T156 were found
-proposing it, with 52 statements about perl. **Its adversarial review
-found eleven ways to be WRONG** (T157 to T168,
-`briefs/step9-review/`): perl's lists hold every container, a scalar
-variable and a whole array too, and three forms don't run left to
-right. The proposal is amended at its end, "What the review found":
-Q1 is one walk for everything a list or an expression names, the
-freeze is of every array named anywhere in the loop's list, and the
-order of an assignment to an element is written down. Nothing of it
-is built.
+green after step 6 and again after step 7. **Step 9, arrays and
+lists, is built** (2026-11-25; D76 to D81; `docs/PLAN.md` has the
+build's own account, and `docs/LANGUAGE.md`, "Arrays and lists", the
+language). **An array**, `my @a`, is a variable of its own name (`@x`
+and `$x` are two): `$a[I]`, `$#a`, `scalar(@a)`, and the count
+wherever one value is wanted; a read past either end is undef and
+makes nothing, a store past the end makes the array longer, one
+before the start is a fault. **A list** is values copied as it is
+built, and flattens: `(...)`, a range, `(LIST) x N`, the slices
+`@a[...]` and `(LIST)[...]`; `say` and `print` take one; an array
+among a call's arguments flattens, so a sub is handed a count and a
+pointer to each argument and faults for a wrong count itself. **A
+list assignment is a statement** (D78): `my ($x, @rest) = ...`,
+`($x, $y) = ($y, $x)`, `@a = LIST`. `push`, `pop`, `shift`,
+`unshift`, `splice`. A sub that returns nothing is no value in a
+list (D79). **D76: a later part of an expression or a list may not
+change what an earlier part names** (an element, a slice, an array,
+`$#a`, a scalar that is an item of a list), refused by one walk over
+the whole program, `checkOrder`. **The orders are perl's** (D80):
+`$a[I] = V` is V, then I, then the store; `$a[I] OP= V` and a step
+are I, the target made, then V; a list assignment is its right side,
+every target's index, then the stores; a list slice its indexes
+first. **`for my $x (LIST)`, spelled `foreach` too** (9b): the list
+is copied once, `$x` is a copy, new each time round and read-only; a
+range alone is counted in C and builds nothing; **every array named
+anywhere in the list is frozen while the loop runs**, a count on the
+array, given back on every way out (the end, `last`, a jump to a
+loop further out, `return`), and a store to it or a change of its
+size, from the block or a sub it calls, is the fault `an array was
+changed while a foreach is over it`. `$#a` names `@a`: the loop that
+changes an array as it goes takes the count into a `my` first.
+**D77**: a loop is refused when its block, or a sub the block calls,
+can change a scalar named anywhere in its list, a range's end too
+(T172; D81 says the exception is sound and not made). An element or
+a slice past either end in a loop's list is a fault, through every
+shape perl would make it by (T161, T169), and so is a slice in a
+call's arguments, and a counted range within 512 of the smallest
+integer (T166). **In the runtime** an array is a block of the
+collector's with storage of its own (`realloc`, counted against the
+cap, starting no collection), a list is an array in a temporary, and
+a loop's list has a slot of its own, a declaration no program can
+name. **Tests**: 410 to 417 and 420 to 439 from `t/models/list.py`,
+450 to 453 by hand, 460 to 494 refusals (9a); 811 to 813 and 820 to
+854 from `t/models/each.py`, 814 by hand, 855 to 859, 881 and 882
+faults by hand, 860 to 880 and 883 to 885 refusals (9b); 691 golden
+tests and 124 unit tests in all. **Broken on purpose**: 9a's 66 of
+69 caught the first time, two holes closed by 453 and one test the
+script had not been running; 9b's 55 all caught when it ran, five tests having been added while the list of breakages was written, for what it showed nothing would catch. **T131 came back**: a
+fault test that pushes onto the array its loop is over never ends
+under perl, so every change in such a loop is followed by `last`.
+**Refused until step 10**: `return` of a list, `@rest` in a
+signature, `for (LIST)` and the `for` modifier (both `$_`), a slice
+on the left of `=`, `$#a = N`, `@a` in a string. **Step 9's
+proposal** was reviewed adversarially before it was built: eleven
+ways to be WRONG (T157 to T168, `briefs/step9-review/`), which is
+where "named anywhere" and the written orders come from. **Next:
+step 10**, list operators, `$_` and list returns, to be proposed.
+`map`, `grep` and `sort` with a block are the first things that want
+the runtime to call generated code, and D68 says the proposal has to
+say how.
 **Step 8, subs** (D67 to D73; `docs/PLAN.md` has the build's own
 account). **A sub** stands at the top level, always with a
 signature, and is called with brackets, before or after it is
@@ -582,9 +621,9 @@ in `pmmc-labs/esoteric-language-workbench`.
 | `bin/curlyc.ts` | The driver: `curlyc -o out file.pl` |
 | `compiler/src/` | One file per pass: `lexer.ts`, `parser.ts`, `resolver.ts`, `checker.ts`, `codegen.ts`; `ast.ts`, the tree; `names.ts`, the one table of names: statements, builtins, pragmas, operators (D29); `errors.ts` |
 | `compiler/tests/` | Unit tests, per pass |
-| `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` (`collect.c` is the collector's, `deep.c` the limit on recursion's) |
-| `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `knobs.sh`, what every test assumes of the runtime; `checks.py`; `checks/`, the oracle check's own tests; `harness/`, the test runner's own; `models/` (`arith`, `num`, `str`, `bool`, `var`, `loop`, `sub`) |
-| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py`, `step4-comparisons.py` and `step5-increments.py` (the evidence for those steps' rules), `step3-mutations.py` to `step8-mutations.py` (the runtime, and from step 5 the compiler, broken on purpose; each is a record of its step and stops at a piece of text a later step has changed), `step8-names.py` and `step8-stack.c` (step 8's evidence for which names a sub may have, and for the limit on recursion), `step3-review/`, `step4-review/` and `step5-review/` (each reviewer's model, and the scripts that ran the compiler against it), `step7-review/` (the reviewer's prototype of the collector), and `step8-review/` (the findings of step 8's review, with their programs) |
+| `runtime/` | `rt.h`, `rt.c`; `tests/`, C programs that call the runtime directly, each run by `rt.test.ts` (`collect.c` is the collector's, `deep.c` the limit on recursion's, `arrays.c` arrays, the freeze and a foreach's own) |
+| `t/` | Golden tests `NNN-name.pl` and `.expected`; `run.sh`; `knobs.sh`, what every test assumes of the runtime; `checks.py`; `checks/`, the oracle check's own tests; `harness/`, the test runner's own; `models/` (`arith`, `num`, `str`, `bool`, `var`, `loop`, `sub`, `list`, `each`) |
+| `docs/` | The documents above; `PROCESS.md`, `MODELS.md` and `REPORT.md`, the workbench's; `briefs/`, with `claims.py` (every statement about perl, as a program), `step1-review/` (a reviewer's model of step 1's language, and the scripts that ran the compiler against it), `step2-*`, `step3-strings-as-numbers.py`, `step4-comparisons.py` and `step5-increments.py` (the evidence for those steps' rules), `step3-mutations.py` to `step8-mutations.py`, `step9a-mutations.py` and `step9b-mutations.py` (the runtime, and from step 5 the compiler, broken on purpose; each is a record of its step and stops at a piece of text a later step has changed), `step8-names.py` and `step8-stack.c` (step 8's evidence for which names a sub may have, and for the limit on recursion), `step3-review/`, `step4-review/` and `step5-review/` (each reviewer's model, and the scripts that ran the compiler against it), `step7-review/` (the reviewer's prototype of the collector), and `step8-review/` and `step9-review/` (the findings of those steps' reviews, with their programs) |
 | `exp/`, `tools/decisions/` | The workbench's: its experiments (`MODELS.md` cites them) and the decision-log browser |
 | `build/` | Output (ignored) |
 

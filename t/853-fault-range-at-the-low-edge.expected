@@ -1,0 +1,5 @@
+1
+-9223372036854775295
+-9223372036854775294
+fault: a foreach over a range that begins or ends this near the smallest integer: perl refuses it at t/853-fault-range-at-the-low-edge.pl line 12.
+exit: 1

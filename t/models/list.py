@@ -117,6 +117,10 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/list.py 436 > t/436-fault-popped-undef.expected
     python3 t/models/list.py --program 437 > t/437-fault-slice-index.pl
     python3 t/models/list.py 437 > t/437-fault-slice-index.expected
+    python3 t/models/list.py --program 438 > t/438-fault-range-begins-with-a-string.pl
+    python3 t/models/list.py 438 > t/438-fault-range-begins-with-a-string.expected
+    python3 t/models/list.py --program 439 > t/439-fault-range-ends-with-a-string.pl
+    python3 t/models/list.py 439 > t/439-fault-range-ends-with-a-string.expected
 """
 
 import os
@@ -135,9 +139,19 @@ SPLICE_PAST = 'splice past the end of the array'
 SPLICE_BEFORE = 'splice before the start of the array'
 RANGE_STRING = 'a string as the end of a range'
 
+FROZEN = 'an array was changed while a foreach is over it'
+
 class Arr:
     def __init__(self, items=()):
         self.items = list(items)
+        self.frozen = 0         # how many `foreach` loops are over it (each.py)
+
+def changing(a):
+    """An array about to be changed: a fault if a `foreach` is over it
+    (D17, D80). Nothing in this file freezes one."""
+    if a.frozen:
+        raise Fault(FROZEN)
+    return a
 
 # What is a list wherever it stands, and so is flattened.
 LISTY = ('@', 'list', '..', 'slice', 'lslice', 'xl', 'splice')
@@ -188,6 +202,7 @@ class Run(subs.Program):
         j = i + n if i < 0 else i
         if j < 0:
             raise Fault(BEFORE)
+        changing(a)
         a.items += [UNDEF] * (j + 1 - n)
         return j
 
@@ -259,6 +274,7 @@ class Run(subs.Program):
             end = max(start, n + length)
         else:
             end = min(n, start + length)
+        changing(a)
         removed = a.items[start:end]
         a.items[start:end] = new
         return removed
@@ -297,13 +313,13 @@ class Run(subs.Program):
             values = self.evl(e)
             return values[0] if values else UNDEF
         if kind in ('pop', 'shift'):
-            a = self.arr(e[1])
+            a = changing(self.arr(e[1]))
             if not a.items:
                 return UNDEF
             return a.items.pop() if kind == 'pop' else a.items.pop(0)
         if kind in ('push', 'unshift'):
             new = [v for item in e[2] for v in self.evl(item)]
-            a = self.arr(e[1])
+            a = changing(self.arr(e[1]))
             a.items[:] = a.items + new if kind == 'push' else new + a.items
             return len(a.items)
         if kind == 'stepel':
@@ -343,11 +359,11 @@ class Run(subs.Program):
             else:
                 a = self.scopes[-1]['@' + s[1]] = Arr()
             if values is not None:
-                a.items[:] = values
+                changing(a).items[:] = values
         elif kind == 'seta':
             self.mark(s)
             values = [v for item in s[2] for v in self.evl(item)]
-            self.arr(s[1]).items[:] = values
+            changing(self.arr(s[1])).items[:] = values
         elif kind == 'lassign':
             self.mark(s)
             _, declares, targets, items = s
@@ -371,7 +387,7 @@ class Run(subs.Program):
                 if t is None:
                     values = values[1:]
                 elif t[0] == '@':
-                    self.arr(t[1]).items[:] = values
+                    changing(self.arr(t[1])).items[:] = values
                     values = []
                 else:
                     v = values[0] if values else UNDEF
@@ -821,6 +837,9 @@ def faults():
         '434': ('fault-too-many-flattened', [two, loud], block(mya('a', 1, 2), say_(ucall('two', A('a')))), block(a3, say_(ucall('two', ucall('loud', 'ran'), A('a'))))),
         '435': ('fault-too-few-flattened', [two], block(mya('a', 1), say_(ucall('two', A('a'), 2))), block(('mya', 'a', None), say_(ucall('two', A('a'), 2)))),
         '436': ('fault-popped-undef', [], block(mya('a', 1), say_(('+', ('pop', 'a'), 1))), block(mya('a', 1), do(('pop', 'a')), say_(('+', ('pop', 'a'), 1)))),
+        # Either end alone: each is asked.
+        '438': ('fault-range-begins-with-a-string', [], block(('mya', 'r', [('..', 1, 3)]), say_(('scalar', 'r'))), block(('mya', 'r', [('..', '1', 3)]))),
+        '439': ('fault-range-ends-with-a-string', [], block(('mya', 'r', [('..', 1, 3)]), say_(('scalar', 'r'))), block(('mya', 'r', [('..', 1, '3')]))),
         '437': ('fault-slice-index', [], block(a3, mya('s', ('slice', 'a', [0, '1'])), say_(('scalar', 's'))), block(a3, mya('s', ('slice', 'a', [0, 'one'])))),
     }
 

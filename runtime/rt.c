@@ -1170,6 +1170,24 @@ static rt_array *array_of(rt_ctx *cx, rt_value v) {
     return v.as.a;
 }
 
+// An array about to be stored to or to change its size: a fault while a
+// `foreach` is over it (D17, D80).
+static rt_array *changing(rt_ctx *cx, rt_value v) {
+    rt_array *a = array_of(cx, v);
+    if (a->frozen != 0) rt_fault(cx, "an array was changed while a foreach is over it");
+    return a;
+}
+
+void rt_freeze(rt_ctx *cx, rt_value array) {
+    array_of(cx, array)->frozen += 1;
+}
+
+void rt_thaw(rt_ctx *cx, rt_value array) {
+    rt_array *a = array_of(cx, array);
+    if (a->frozen == 0) rt_internal(cx, "an array that no foreach is over was given back");
+    a->frozen -= 1;
+}
+
 // A value an array may hold: one of the five kinds, and no array.
 static rt_value scalar(rt_ctx *cx, rt_value v) {
     if (v.tag < RT_TAG_INT || v.tag > RT_TAG_BOOL) rt_fault(cx, "not a value");
@@ -1183,6 +1201,7 @@ rt_value rt_array_new(rt_ctx *cx) {
     a->count = a->room = 0;
     a->items = NULL;
     a->dead = 0;
+    a->frozen = 0;
     rt_value v;
     v.tag = RT_TAG_ARRAY;
     v.as.a = a;
@@ -1206,6 +1225,13 @@ static void reserve(rt_ctx *cx, rt_array *a, uint64_t count) {
     cx->held += more;
     cx->since += more;
     ((rt_block *)a - 1)->size += more;
+}
+
+// Values moved within an array's storage. An array that has never held a
+// value has no storage, and C leaves arithmetic on a null pointer
+// undefined, by a count of nothing too.
+static void shift_values(rt_array *a, uint64_t to, uint64_t from, uint64_t count) {
+    if (count != 0) memmove(a->items + to, a->items + from, count * sizeof(rt_value));
 }
 
 static void append(rt_ctx *cx, rt_array *a, rt_value v) {
@@ -1288,7 +1314,7 @@ void rt_list_add_repeat(rt_ctx *cx, rt_value list, rt_value values, rt_value cou
 }
 
 void rt_array_assign(rt_ctx *cx, rt_value array, rt_value list) {
-    rt_array *a = array_of(cx, array);
+    rt_array *a = changing(cx, array);
     rt_array *from = array_of(cx, list);
     if (a == from) return;
     reserve(cx, a, from->count);
@@ -1302,12 +1328,36 @@ rt_value rt_list_item(rt_ctx *cx, rt_value list, int64_t n) {
 }
 
 void rt_array_rest(rt_ctx *cx, rt_value array, rt_value list, int64_t n) {
-    rt_array *a = array_of(cx, array);
+    rt_array *a = changing(cx, array);
     rt_array *from = array_of(cx, list);
     uint64_t count = (uint64_t)n < from->count ? from->count - (uint64_t)n : 0;
     reserve(cx, a, count);
     for (uint64_t k = 0; k < count; k++) a->items[k] = from->items[(uint64_t)n + k];
     a->count = count;
+}
+
+int64_t rt_list_length(rt_ctx *cx, rt_value list) {
+    return (int64_t)array_of(cx, list)->count;
+}
+
+rt_value rt_elem_strict(rt_ctx *cx, rt_value array, rt_value index) {
+    int64_t i = whole_of(cx, index);
+    rt_array *a = array_of(cx, array);
+    int64_t at = place(a->count, i);
+    if (at < 0) rt_fault(cx, "an element past the end of the array in a foreach, where perl would make it");
+    return a->items[at];
+}
+
+int rt_range_ends(rt_ctx *cx, rt_value from, rt_value to, int64_t *lo, int64_t *hi) {
+    if (from.tag == RT_TAG_STR) rt_fault(cx, "a string as the end of a range");
+    *lo = whole_of(cx, from);
+    if (to.tag == RT_TAG_STR) rt_fault(cx, "a string as the end of a range");
+    *hi = whole_of(cx, to);
+    // perl counts such a loop in a way that can't hold these (T166).
+    if (*lo < INT64_MIN + 513 || *hi < INT64_MIN + 513) {
+        rt_fault(cx, "a foreach over a range that begins or ends this near the smallest integer: perl refuses it");
+    }
+    return *lo <= *hi;
 }
 
 rt_value rt_count(rt_ctx *cx, rt_value array) {
@@ -1336,8 +1386,10 @@ int64_t rt_elem_make(rt_ctx *cx, rt_value array, rt_value index) {
     if (i < 0) {
         int64_t at = place(a->count, i);
         if (at < 0) rt_fault(cx, "an element before the start of the array");
+        changing(cx, array);
         return at;
     }
+    changing(cx, array);
     if ((uint64_t)i >= ARRAY_MAX) rt_fault(cx, "array too long");
     if ((uint64_t)i >= a->count) {
         reserve(cx, a, (uint64_t)i + 1);
@@ -1364,32 +1416,33 @@ rt_value rt_elem_store(rt_ctx *cx, rt_value array, rt_value index, rt_value v) {
 }
 
 rt_value rt_push(rt_ctx *cx, rt_value array, rt_value list) {
+    changing(cx, array);
     rt_list_add_all(cx, array, list);
     return rt_count(cx, array);
 }
 
 rt_value rt_unshift(rt_ctx *cx, rt_value array, rt_value list) {
-    rt_array *a = array_of(cx, array);
+    rt_array *a = changing(cx, array);
     rt_array *from = array_of(cx, list);
     uint64_t more = from->count;
     reserve(cx, a, a->count + more);
-    memmove(a->items + more, a->items, a->count * sizeof(rt_value));
+    shift_values(a, more, 0, a->count);
     for (uint64_t n = 0; n < more; n++) a->items[n] = from->items[n];
     a->count += more;
     return rt_count(cx, array);
 }
 
 rt_value rt_pop(rt_ctx *cx, rt_value array) {
-    rt_array *a = array_of(cx, array);
+    rt_array *a = changing(cx, array);
     return a->count == 0 ? rt_undef() : a->items[--a->count];
 }
 
 rt_value rt_shift(rt_ctx *cx, rt_value array) {
-    rt_array *a = array_of(cx, array);
+    rt_array *a = changing(cx, array);
     if (a->count == 0) return rt_undef();
     rt_value first = a->items[0];
     a->count -= 1;
-    memmove(a->items, a->items + 1, a->count * sizeof(rt_value));
+    shift_values(a, 0, 1, a->count);
     return first;
 }
 
@@ -1420,11 +1473,12 @@ void rt_splice(rt_ctx *cx, rt_value removed, rt_value array, int given, rt_value
     }
     uint64_t gone = end - start;
     uint64_t came = in->count;
+    changing(cx, array);
     for (uint64_t n = start; n < end; n++) append(cx, out, a->items[n]);
     // `in` may be the array's own values in a list of their own, never
     // the array: a list is a copy (D76).
     reserve(cx, a, count - gone + came);
-    memmove(a->items + start + came, a->items + end, (count - end) * sizeof(rt_value));
+    shift_values(a, start + came, end, count - end);
     for (uint64_t n = 0; n < came; n++) a->items[start + n] = in->items[n];
     a->count = count - gone + came;
 }

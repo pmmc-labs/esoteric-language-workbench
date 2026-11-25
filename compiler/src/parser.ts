@@ -643,9 +643,23 @@ export const parse = (tokens: readonly Token[]): Program => {
         const head = next();
         const name = NAMES.get(head.text);
         const open = next();
+        // `for my $x (LIST) { }`, a loop over a list (step 9b).
+        if (name?.kind === 'for' && open.kind === 'word' && NAMES.get(open.text)?.kind === 'my') {
+            const v = next();
+            if (v.kind === '(') refuse(`${head.text} my (...) takes a list several values at a time, which is not in the language`, v.pos);
+            if (v.kind !== 'var') return refuse(`after '${head.text} my', expected a variable, found ${show(v)}`, v.pos);
+            const paren = next();
+            if (paren.kind !== '(') unexpected(paren, `'(' after ${head.text} my $${v.name}`);
+            // perl does not compile it (T155).
+            if (peek().kind === ')') refuse(`${head.text} my $${v.name} () is a loop over nothing, and perl does not compile it`, paren.pos);
+            const items = itemsTo(')');
+            const body = block();
+            return { kind: 'foreach', var: { kind: 'my', name: v.name, pos: open.pos }, items, body, pos: head.pos, ...(label ? { label } : {}) };
+        }
         if (open.kind !== '(') {
-            // `for my $x (LIST)` and its kin are step 9's.
-            if (name?.kind === 'for') refuse("for over a list is not in the language yet: this for is for (FIRST; TEST; EACH)", open.pos);
+            // perl makes a variable from outside the loop's own while it
+            // runs, and gives it back after.
+            if (name?.kind === 'for' && open.kind === 'var') refuse(`${head.text} $${open.name} (...) borrows a variable from outside the loop: ${head.text} my $${open.name} (...)`, open.pos);
             unexpected(open, `'(' after ${head.text}`);
         }
         if (name?.kind === 'while') {
@@ -664,7 +678,9 @@ export const parse = (tokens: readonly Token[]): Program => {
             if (kind === ';' && depth === 0) semicolons += 1;
             if (kind === '{' && depth === 0) break;
         }
-        if (semicolons === 0) refuse("for over a list is not in the language yet: this for is for (FIRST; TEST; EACH)", open.pos);
+        if (semicolons === 0) refuse(`${head.text} (...) with no variable is a loop over $_, which is not in the language: ${head.text} my $x (...)`, open.pos);
+        // To perl `foreach` is `for`, with three parts too (T122).
+        if (name?.kind === 'for' && name.each) refuse('foreach is the loop over a list here, foreach my $x (...): the loop of three parts is spelled for', head.pos);
         const first = part(';');
         let test: Expr | undefined;
         if (peek().kind !== ';') test = expression(Infinity);

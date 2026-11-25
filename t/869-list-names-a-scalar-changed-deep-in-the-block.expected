@@ -1,0 +1,2 @@
+t/869-list-names-a-scalar-changed-deep-in-the-block.pl:10:16: this can change $p, which the list of the loop it is in names: perl's loop walks the variable itself; take the value into a my before the loop
+exit: 1

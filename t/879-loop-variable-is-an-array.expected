@@ -1,0 +1,2 @@
+t/879-loop-variable-is-an-array.pl:5:8: after 'for my', expected a variable, found '@x'
+exit: 1

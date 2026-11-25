@@ -27,6 +27,7 @@ typedef struct rt_array {
     uint64_t room;          // how many values `items` has space for
     struct rt_value_ *items;
     uint64_t dead;
+    uint64_t frozen;        // how many `foreach` loops are over it (D80)
 } rt_array;
 
 // A Str (D24): Unicode characters, held as UTF-8, and never changed once
@@ -295,6 +296,17 @@ void rt_list_add_repeat(rt_ctx *cx, rt_value list, rt_value values, rt_value cou
 // for an array, the last target, every value from `n` on.
 rt_value rt_list_item(rt_ctx *cx, rt_value list, int64_t n);
 void rt_array_rest(rt_ctx *cx, rt_value array, rt_value list, int64_t n);
+// A `foreach` (D17, D80): how many values its list has; an element in its
+// list, a fault past either end, where perl would make it (T161); and the
+// freeze of an array its list names, a count, for a loop in a loop: while
+// it is not 0, whatever stores to the array or changes its size faults.
+int64_t rt_list_length(rt_ctx *cx, rt_value list);
+rt_value rt_elem_strict(rt_ctx *cx, rt_value array, rt_value index);
+void rt_freeze(rt_ctx *cx, rt_value array);
+void rt_thaw(rt_ctx *cx, rt_value array);
+// A `foreach` over one range: its ends, and whether it has any values. An
+// end below -2^63 + 513 is a fault, as perl has it (T166).
+int rt_range_ends(rt_ctx *cx, rt_value from, rt_value to, int64_t *lo, int64_t *hi);
 // `@a = LIST`: the array's values are the list's, copied.
 void rt_array_assign(rt_ctx *cx, rt_value array, rt_value list);
 // How many, and the last index, -1 for none.

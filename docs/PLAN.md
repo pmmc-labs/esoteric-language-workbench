@@ -2520,9 +2520,94 @@ see.
 - **Not checked by it**: the generated C, the collector's roots and
   D68's numbers, nothing being built; clang, the sanitizers, the Mac.
 
-### 9. Arrays and lists
+### 9. Arrays and lists (done)
 
 Referee: perl. Size: large.
+
+**Built 2026-11-25**, by Fable 5.2 (the size the line asks for), in
+the two sub-steps Q5 asked for, as agreed below and as D76 to D80
+have it, with the builder's own defaults in D81 and these findings:
+
+- **9a, arrays and lists. The model first, red before any code**
+  (`t/models/list.py`, commit 6d946b0), on step 8's: an array is a
+  Python list with a name, a list is the values copied as they are
+  met, and the orders of D80 are written out (an assignment to an
+  element, `OP=`, a list assignment, a slice of a list). It writes
+  410 to 417, about 900 lines on which perl 5.42 agrees with it, and
+  20 programs that fault once each, 420 to 439. `t/models/sub.py`
+  has D79: 930 to 933, D71's faults, are gone, and a sub that
+  returns nothing is no value in a list.
+- **The runtime's array** is the collector's second kind of thing: a
+  block with its count, its room and storage of its own, which counts
+  against the cap. A list is an array with no name, in a temporary of
+  the statement that builds it. The kind is a bit of the header's
+  mark word, so a string's block is the size it was and step 7's
+  numbers stand. Nothing allocates twice: a list is made empty, in a
+  slot, and grows by `realloc`, which starts no collection.
+- **A call's arguments** are a pointer each when none of them is a
+  list, as at step 8, and otherwise one list and a pointer into it
+  for each value (`rt_arguments`); either way the sub is handed a
+  count and the pointers, and faults for a wrong count itself.
+- **D76's walk** is `checkOrder` in the checker: over the parts of
+  an expression or a list in the order they run, what each names,
+  and whether a later one can change it, through the subs it calls
+  (step 8's sets of what each sub changes, which now hold arrays).
+- **What the oracle and the sanitizers found in 9a**: `$a['x']`
+  warns as perl compiles it, and is refused (the fault test goes
+  through a variable); `@a[]` does not compile; `splice` on an array
+  that has never held a value did arithmetic on a null pointer, which
+  C leaves undefined (UBSan; `shift_values`).
+- **9a broken on purpose** (`briefs/step9a-mutations.py`): 66 of 69
+  caught the first time. Two were holes, a `splice` whose length runs
+  past the end from where it starts, and the left of `||` in a list
+  when it is the one given, and 453 closes both; the third was caught
+  by a test of step 5's that the script had not been running.
+- **9b, `foreach` and the freeze. The model first** again
+  (`t/models/each.py`, on `list.py`): 811 to 813, and 35 programs
+  that fault once each, 820 to 854, one for every way a frozen array
+  is changed, from the block and from a sub, and one for every shape
+  that names an array. **T131 came back while it was being
+  written**: three of the fault tests pushed onto the array in the
+  loop, and perl, which carries on where the language faults, never
+  left them. Every change in a fault test's loop is followed by a
+  `last`.
+- **The freeze is a count on the array**, added to as the loop
+  starts, for each array the resolver saw named in the loop's list,
+  and taken off on every way out: after the loop's `last_` label,
+  before the `goto` of a `last` or `next` to a loop further out, and
+  before a `return`'s. The code generator keeps the loops that are
+  open round a statement for that. Whatever stores to an array or
+  changes its size asks the count first.
+- **The loop's list is in a slot of its own**, a declaration no
+  program can name, since a statement's temporaries are the next
+  statement's too. A loop over one range has no list: two C integers.
+- **D77 and the read-only variable** are two walks in the checker.
+  D77's is over every scalar anywhere in the list, as its words have
+  it, and so it refuses `for my $i (1 .. $n) { $n-- }`, where perl
+  would have agreed (T172, D81).
+- **T169, found building**: which shapes in a loop's list make the
+  element. The fault reaches each of them.
+- **9b broken on purpose** (`briefs/step9b-mutations.py`): all 55
+  caught the first time it ran; but writing the list of breakages had
+  already shown five that nothing would have caught (a change inside
+  an expression of the block, in a loop of the sub's own, in the
+  third part of a `for`; a string as a counted range's first end; a
+  range too long to build), and each got its test before the run.
+- **The numbers**: 691 golden tests, 124 unit tests, 609 statements
+  about perl; green under gcc, clang, and UBSan with ASan, poison on
+  and off.
+- **What step 9 hands step 10**: `return` of a list, `@rest` in a
+  signature and a list as a sub's last statement are refused still,
+  and D79's "one value or none" widens to any number; `$_`, and with
+  it `for (LIST)` and the `for` modifier; `map`, `grep` and `sort`,
+  which freeze as `foreach` does and are the first to want the
+  runtime to call generated code (D68); a slice on the left of `=`,
+  `$#a = N`, `exists` and `delete` of an element, `@a` in a string,
+  `join`, `reverse`, `wantarray`. The exception D81 leaves open, a
+  range's ends in D77, is one line in the checker.
+
+**The proposal, as it was agreed**, with its review's amendments at
+the end:
 
 **Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
 and agreed the same day: Stevan took the recommendation on each

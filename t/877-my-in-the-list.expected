@@ -1,0 +1,2 @@
+t/877-my-in-the-list.pl:4:18: an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
+exit: 1

@@ -26,10 +26,11 @@ export type Name =
     | { kind: 'elsif' }
     | { kind: 'else' }
     // The words of step 6's (D62). `until` is a `while` whose test is
-    // turned round; both are modifiers too. `for` is the C-style loop.
+    // turned round; both are modifiers too. `for` is the C-style loop, and the
+    // loop over a list, which is all `foreach` is here (step 9b).
     // `last` leaves its loop, and `next` goes on to its next time round.
     | { kind: 'while'; until?: true }
-    | { kind: 'for' }
+    | { kind: 'for'; each?: true }
     | { kind: 'jump'; leaves?: true }
     // The words of step 8's (D72): `sub NAME(...) { }`, `return`, and
     // `no`, which begins the one pragma that is turned off (D67).
@@ -67,6 +68,7 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['while', { kind: 'while' }],
     ['until', { kind: 'while', until: true }],
     ['for', { kind: 'for' }],
+    ['foreach', { kind: 'for', each: true }],
     ['last', { kind: 'jump', leaves: true }],
     ['next', { kind: 'jump' }],
     ['sub', { kind: 'sub' }],

@@ -118,6 +118,11 @@ export type While = { kind: 'while'; test: Expr; negate?: true; body: readonly S
 // commas between them (D60), and no TEST is true.
 export type For = { kind: 'for'; first: readonly Expr[]; test?: Expr; each: readonly Expr[]; body: readonly Stmt[]; label?: Label; pos: Pos };
 
+// `for my $x (LIST) { }`, and spelled `foreach` (D17, D77, D80): the
+// block once for each value of the list, `var` a copy of it and new each
+// time round.
+export type Foreach = { kind: 'foreach'; var: My; items: readonly Expr[]; body: readonly Stmt[]; label?: Label; pos: Pos };
+
 // `last;` and `next;`, with a label or without (D62). `name` is the word.
 export type Jump = { kind: 'jump'; name: string; label?: Label; pos: Pos };
 
@@ -134,8 +139,8 @@ export type Sub = { kind: 'sub'; name: string; params: readonly Param[]; body: r
 // `return;` and `return value;`.
 export type Return = { kind: 'return'; value?: Expr; pos: Pos };
 
-export type Loop = While | For;
-export type Stmt = Use | Pragma | Call | Do | Block | If | While | For | Jump | Sub | Return;
+export type Loop = While | For | Foreach;
+export type Stmt = Use | Pragma | Call | Do | Block | If | While | For | Foreach | Jump | Sub | Return;
 
 // `end` is where the file ends, for a diagnostic about what isn't there.
 export type Program = { kind: 'program'; body: readonly Stmt[]; end: Pos };

@@ -1529,6 +1529,40 @@ signature, `@a` in a string. **Built as two sub-steps** (Q5): 9a is
 arrays, lists, elements, the builtins and D76; 9b is `foreach`,
 ranges, the freeze and D77.
 
+**D81. What building step 9 settled.** *(User: defaults of the
+builder's, 2026-11-25, for Stevan to confirm or change.)* **D77
+holds for the end of a range too**: `for my $i (1 .. $n) { $n-- }`
+is refused, though perl fixes a range's ends as the loop starts and
+would have agreed (T172). D77's words are "named anywhere in the
+loop's list, whatever it stands in", and one rule with no exceptions
+is the cheaper; the cost is a `my $end = $n;`. Rejected for now: an
+exception for a range's ends, which is sound and can be added.
+**`foreach` is the loop over a list alone**: `foreach (FIRST; TEST;
+EACH)` is refused, where to perl the two words are one (T122, T171).
+**`for $x (LIST)` with no `my` is refused** (T14, T171: perl lends
+the variable to the loop and gives it back). **A string that is no
+number as a literal index, `$a['x']`, is refused** as the program
+compiles, where perl warns as it compiles; through a variable it is
+the fault. **Where perl would make an element in a `foreach`'s
+list** (T169) is every place D80's fault is: the item itself, a
+branch of `? :`, the right of `|| && //`, a list repeated, a unary
+plus; the left of `||` and an operand of anything else is a value,
+and undef past the end, as perl has it. **The freeze is by name, and
+not by reach**: `for my $i (0 .. $#a)` freezes `@a`, since `$#a`
+names it, and the loop that changes an array as it goes takes the
+count into a `my` first. **The words of the faults**: `an array was
+changed while a foreach is over it`; `an element past the end of the
+array in a foreach, where perl would make it`; `a slice past the end
+of the array, where perl would make the elements`; `a foreach over a
+range that begins or ends this near the smallest integer: perl
+refuses it`; and 9a's, `an element before the start of the array`,
+`array too long`, `splice past the end of the array`, `splice before
+the start of the array`, `a string as the end of a range`. **Their
+lines**: a fault in a loop's list names the loop's line. **An array
+is 40 bytes and its header**, the freeze's count among them, and an
+array given back more often than it was frozen is `internal:`, exit
+2: the compiler's mistake, never a program's.
+
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as

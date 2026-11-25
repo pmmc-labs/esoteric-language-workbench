@@ -22,7 +22,7 @@
 // declared before it, and no `last` or `next` in it reaches a loop
 // outside it (T60).
 import { refuse } from './errors.ts';
-import type { Expr, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
+import type { Expr, Foreach, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
 
 // A declaration is a number, in the order the `my`s are met; `of` says
 // which one each variable in the tree means, and `names` what each is
@@ -59,7 +59,14 @@ export type Resolution = {
     calls: ReadonlyMap<Invoke, number>;
     loops: ReadonlyMap<Loop, number>;
     jumps: ReadonlyMap<Jump, number>;
+    each: ReadonlyMap<Foreach, Each>;
 };
+
+// What a `foreach` has beside its variable: `list`, a declaration no
+// program can name, whose slot holds the loop's list while it runs; and
+// `arrays`, every array named anywhere in the list, which the loop
+// freezes (D80, T162).
+export type Each = { list: number; arrays: readonly number[] };
 
 // What is round a statement that perl counts as a loop: a loop, or a
 // bare block, which runs once (T32).
@@ -76,7 +83,11 @@ export const resolve = (program: Program): Resolution => {
         const found = [...scopes].reverse().find(scope => scope.has('@' + name));
         if (found === undefined) return refuse(`@${name} is not declared: my @${name}`, e.pos);
         of.set(e, found.get('@' + name)!);
+        naming?.add(found.get('@' + name)!);
     };
+    // The arrays named while a `foreach`'s list is read.
+    let naming: Set<number> | undefined;
+    const each = new Map<Foreach, Each>();
     const slots: number[] = [];
     const owner: number[] = [];
     const frames: number[] = [0];
@@ -267,6 +278,30 @@ export const resolve = (program: Program): Resolution => {
             round.pop();
             close();
             return;
+        case 'foreach': {
+            loops.set(s, loops.size);
+            // The list is read where the loop stands: the loop's variable
+            // is not in it.
+            naming = new Set<number>();
+            whole(...s.items);
+            const arrays = naming;
+            naming = undefined;
+            scopes.push(new Map());
+            // (No name has a blank in it.)
+            const list: MyArray = { kind: 'myarray', name: 'the list', pos: s.pos };
+            for (const d of [list, s.var]) {
+                of.set(d, names.length);
+                isArray.push(d.kind === 'myarray');
+                names.push(d.name);
+                declare(d);
+            }
+            each.set(s, { list: of.get(list)!, arrays: [...arrays] });
+            round.push({ loop: s });
+            inner(s.body);
+            round.pop();
+            close();
+            return;
+        }
         case 'jump': {
             if (s.label !== undefined) {
                 const name = s.label.name;
@@ -312,5 +347,5 @@ export const resolve = (program: Program): Resolution => {
         if (owner[id] === 0 && !fileSlots.has(id)) slots[id]! += file;
     }
     frames[0] = file + variables;
-    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, loops, jumps };
+    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, loops, jumps, each };
 };

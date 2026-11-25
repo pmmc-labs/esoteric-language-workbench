@@ -1,2 +1,2 @@
-t/771-foreach.pl:4:1: 'foreach' is not in the language
+t/771-foreach.pl:5:1: foreach is the loop over a list here, foreach my $x (...): the loop of three parts is spelled for
 exit: 1

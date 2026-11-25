@@ -117,9 +117,10 @@ prints
     print "no newline";
     print "\n";
 
-Each takes exactly one expression, with brackets round it or without: `say "a", "b";` waits
-for lists. Neither has a value, so neither can stand inside an
-expression. What is said of `say` below goes for `print` too.
+Each takes one expression or a list of them, with brackets or
+without, and prints each value with nothing between: `say "a", "b";`
+prints `ab` (see "Arrays and lists"). Neither has a value, so neither
+can stand inside an expression. What is said of `say` below goes for `print` too.
 
 **To print a character past ASCII, the program says `use open ':std',
 ':encoding(UTF-8)';` at the top.** With that line perl writes its
@@ -387,12 +388,11 @@ refused. Its count is cut to a whole number, so `"a" x 2.7` is `aa`. A
 count below zero is a fault (`negative repeat count`), `-0.5`
 included, and so is a result of 2^31 characters or more.
 
-One spelling is refused: brackets round the left operand when the
-repetition is the whole of what `say` or `print` is given,
-`say(("ab") x 3);`. To perl that repeats a list of values and not a
-string, and lists come later. `say "ab" x 3;` says what is meant, and
-inside a larger expression, `("ab") x 3 . "!"`, the brackets are
-harmless.
+Brackets round the left operand, where a list is wanted, make it a
+list that is repeated: `say(("ab") x 3);` is three values to `say`,
+which prints the same, and `my @r = ("ab") x 3;` is three elements
+(see "Arrays and lists"). Where one value is wanted, `("ab") x 3 .
+"!"`, the brackets are harmless and it is a string.
 
 After a value, a dot is always the operator, whatever follows it: `1
 .5` is `15`, and `"a".5` is `a5`.
@@ -915,7 +915,7 @@ be several of those with commas between, which run left to right:
 
 That is the only place a comma joins expressions. The test is one
 expression. `for` with a list to go through, `for my $x (1, 2, 3)`,
-waits for lists, and `foreach` with it.
+is another loop, under "Arrays and lists" below.
 
 A statement may be followed by `while TEST` or `until TEST`, and then
 it runs again and again, the test first each time:
@@ -1109,9 +1109,10 @@ Three things perl reads another way are refused:
 - **A blank between a name and its bracket, first after `say` or
   `print`**, `say f (1);`: perl takes `f` for a file handle unless it
   has already seen the sub. Anywhere else the blank is fine.
-- **`(...) x N` as an argument, after `return`, or as a sub's last
-  statement**: with the brackets it repeats a list, to perl, and is
-  that many arguments or values. Without them, `"ab" x 3`, it is one
+- **`(...) x N` after `return`, or as a sub's last statement**: with
+  the brackets it repeats a list, to perl, and a sub returns one
+  value until lists are returned. As an argument it is that list, and
+  that many arguments. Without the brackets, `"ab" x 3`, it is one
   string.
 
 ### return, and what a sub is worth
@@ -1151,12 +1152,10 @@ which is usually the test: `sub f($x) { if ($x) { "yes" } }` gives 0
 for `f(0)`.) End the sub with a `return`.
 
 **A sub that returns nothing**, by `return;` or an empty body, is
-undef where one value is wanted: `my $v = f();`. Where perl wants a
-list, as an argument of a call or of `say`, it is no value at all to
-perl (`g(f())` calls `g` with no arguments, and `say f();` prints an
-empty line), and the language has no lists yet: that is a fault, `f
-returned nothing where a list is wanted`. `return undef;` is one
-value, an undef, everywhere.
+undef where one value is wanted: `my $v = f();`. In a list it is no
+value at all, as in perl: `g(f())` calls `g` with no arguments, `say
+f();` prints an empty line, and `my @r = f();` is empty. `return
+undef;` is one value, an undef, everywhere.
 
 A call hands on how it was called: `return g();`, a last statement
 `g();`, the branches of `? :`, the right side of `||`, `&&`, `//`,
@@ -1216,6 +1215,298 @@ has no such limit.
 
 A fault names the line of the statement that was running: one in the
 sub while the sub runs, and the caller's again once it has returned.
+
+## Arrays and lists
+
+An array is a row of values with a name:
+
+    my @primes = (2, 3, 5, 7);
+    say $primes[0];          # 2, the first
+    say $primes[-1];         # 7, the last
+    say scalar(@primes);     # 4, how many
+
+`@primes` is the array, and `$primes[1]` one **element** of it. An
+array's name is its own: `@x` and `$x` are two variables, and `$x[0]`
+is an element of `@x`. An array may be called `@a` or `@b`, though a
+variable may not be `$a` or `$b`.
+
+`my @a;` makes an empty one. A `my` in a block, a loop or a sub makes
+a new array each time it is reached.
+
+### Lists
+
+A **list** is values with commas between them, in brackets: `(1, 2,
+3)`. It has no name, and it **flattens**: a list in a list, or an
+array in a list, is its values, so `(0, (1, 2), @primes)` is seven
+values in a row. `()` is the list of none. One comma may follow the
+last value.
+
+A list is a row of values, **copied as it is built**. What a list is
+for:
+
+    my @b = (1, 2, 3);          # assigned to an array
+    @b = (@b, 4);               # the array's own values among them
+    say "x", @b, "y";           # printed, one after another
+    total(@b, 10);              # handed to a sub, as its arguments
+
+`say` and `print` take a list, and print each value with nothing
+between. `say @b;` prints `1234`.
+
+A **range**, `1 .. 5`, is the whole numbers from one end to the other,
+in a list. Each end is cut toward zero (`1.9 .. 4.1` is 1 to 4), and a
+range whose first end is past its second is no values. A string for
+either end is a fault: perl's range of strings (`"a" .. "e"`) is
+another thing.
+
+**`(LIST) x N`**, a list in brackets and a count, is the list N times,
+where a list is wanted: `my @zeros = (0) x 10;`. Without the brackets,
+or where one value is wanted, `x` repeats a string, as before.
+
+A call of a sub in a list is its value; a sub that returned nothing
+(`return;`) is no value there, so `(1, none(), 2)` is two values.
+
+### Elements
+
+`$a[I]` is the element at index I, counted from 0; a negative index
+counts from the end, `$a[-1]` the last. The index is a whole number,
+by the rule `substr` has for a position: a fraction is cut toward
+zero, and an undef, a string that is no number, or a number too large
+to be a whole one is a fault.
+
+**Reading past either end gives undef**, in silence, and makes
+nothing: the array is as long as it was.
+
+**Storing past the end makes the array longer**, and the elements
+between are undef:
+
+    my @a = (1, 2);
+    $a[4] = 5;               # (1, 2, undef, undef, 5)
+
+Storing before the start (`$a[-3] = 0` in an array of two) is a
+fault.
+
+An element is assigned and worked on as a variable is: `$a[0] = 5`,
+`$a[$i] += 2`, `$a[1] .= "x"`, `$a[3] //= 0`, `$a[0]++`. An operator
+that reads the element and stores it (`+=`, `.=`, `||=`, `++` and the
+rest) makes the element first, so `$a[9] //= 0` makes the array ten
+long whatever it then stores.
+
+The order things are worked out in is perl's. For `$a[I] = V`: V,
+then I, then the store. For `$a[I] += V` and its kin: I first, then V.
+
+`$#a` is the last index, which is one less than how many, and -1 for
+an empty array.
+
+### How many
+
+`scalar(@a)` is how many values an array holds. And **wherever one
+value is wanted, an array is that count**:
+
+    my $n = @a;              # how many
+    if (@a) { ... }          # true unless it is empty
+    while (@a > 2) { ... }
+    say "holds " . @a;
+
+That goes for the left side of `||`, `&&` and `//` too: `@a || (9)`
+is the count of `@a`, if it is not empty, and not `@a`.
+
+`length(@a)` and `defined(@a)` are refused: perl warns of the first
+and does not compile the second.
+
+A list, a slice, a range and `splice` are refused where one value is
+wanted: `my $x = (4, 5, 6);` gives 6 in perl, with warnings.
+
+### List assignment
+
+A list of variables in brackets, on the left of `=`, takes the values
+of the list on the right, one each:
+
+    my ($first, $second) = (10, 20);
+    ($first, $second) = ($second, $first);     # a swap
+    my ($head, @rest) = @a;
+
+The right side is worked out first, the whole of it, which is why the
+swap works. When the values run out the rest of the targets are
+undef; values left over are dropped. A target may be a variable, an
+element, `undef` (to skip a value), and, last, an array, which takes
+every value that is left. `my ($x) = @a;` is the first element, where
+`my $x = @a;` is the count.
+
+`@a = LIST;` gives an array new values, and `my @b = @a;` copies one:
+the two are then separate.
+
+**An assignment of a list is a statement.** In perl it has a value,
+the count of its right side, so that `if ((my @r = f()))` tests
+whether `f` gave anything; here that is `my @r = f(); if (@r)`.
+
+`my ($x, $y);` declares both, undef.
+
+### push, pop, shift, unshift, splice
+
+`push @a, LIST` adds values at the end, and `unshift @a, LIST` at the
+start; each is worth the new count, and each needs a value to add.
+With brackets or without: `push(@a, 1, 2)`.
+
+`pop(@a)` takes the last value off and gives it, and `shift(@a)` the
+first; from an empty array each gives undef. The brackets may be left
+off only where the array ends the expression, `my $x = pop @a;`: perl
+does not compile `pop @a + 1`. `shift` always names its array.
+
+`splice(@a, OFFSET, LENGTH, LIST)` takes LENGTH values out at OFFSET,
+puts LIST there, and gives what it took, as a list:
+
+    my @a = (0, 1, 2, 3, 4, 5);
+    my @gone = splice(@a, 1, 2);       # @gone is (1, 2); @a is (0, 3, 4, 5)
+    splice(@a, 1, 0, 7, 8);            # nothing out, two in: (0, 7, 8, 3, 4, 5)
+    splice(@a, -1);                    # the last one out
+
+With no LENGTH, everything from OFFSET on; a negative OFFSET counts
+from the end; a negative LENGTH leaves that many at the end. An
+OFFSET past the end or before the start is a fault.
+
+### Slices
+
+`@a[1, 2]` is a **slice**: the elements at those indexes, as a list,
+undef for an index past either end. The indexes are a list themselves,
+so `@a[1 .. 3]` and `@a[@which]` are slices. `(LIST)[2]` and
+`(LIST)[0, 2]` slice a list; a slice of a list with no values is no
+values.
+
+`@a[0]`, a slice with one index, is refused: perl warns that `$a[0]`
+was meant. And `@a[...] = ...`, a slice on the left of `=`, is not in
+the language yet.
+
+### A loop over a list
+
+    for my $x (LIST) {
+        ...
+    }
+
+runs its block once for each value of the list, with `$x` that value.
+`foreach` is another spelling of the same word:
+
+    my @primes = (2, 3, 5, 7);
+    my $sum = 0;
+    foreach my $p (@primes) {
+        $sum += $p;
+    }
+
+The list is any list: an array, several, values, a slice, a call,
+`(@a, 0, @b)`. It is **worked out once, before the first time round,
+and copied**. `$x` is the loop's own variable: new each time round,
+gone when the loop ends, and another variable from any `$x` outside.
+`last` and `next` and labels are as in any loop.
+
+**`$x` is read-only.** In perl it is the element itself, so that `$x
+*= 2` in the block rewrites the array; here it is a copy, and a
+program that assigns it, steps it or appends to it is refused. Take
+it into a `my` to change it, or store by index (below).
+
+**A range alone is counted, and never built**: `for my $i (1 ..
+1000000)` holds no list of a million numbers. Its ends are fixed when
+the loop starts.
+
+#### While the loop runs, its arrays are frozen
+
+perl's loop walks the array itself: a `push` in the block makes the
+loop longer, a `shift` makes it skip, a store shows up in `$x`. Here
+the loop walks a copy, so those programs would print something else;
+and so **every array named anywhere in the loop's list is frozen
+until the loop is left**. Reading it is fine, by the block or by a
+sub the block calls. Storing to an element of it, or changing its
+size, by either, is a fault:
+
+    for my $x (@a) {
+        push @a, $x * 2;      # fault: an array was changed while a
+    }                         # foreach is over it
+
+The array is given back however the loop is left: at its end, by
+`last`, by a `last` or `next` to a loop outside it, by `return`.
+
+"Named anywhere" is meant: `(@a, @b)`, `@a[0, 1]`, `$a[0]`, `$#a` and
+`scalar(@a)` in the list all name `@a`. So `for my $i (0 .. $#a)`
+freezes `@a` too. To change an array as you go through it, take its
+count first, which names nothing:
+
+    my $n = @a;
+    for my $i (0 .. $n - 1) {
+        $a[$i] *= 2;
+    }
+
+or build a new array from the old one.
+
+The same goes for a plain variable, where there is nothing to freeze:
+**a loop whose block can change a variable its list names is
+refused**, as the program compiles, the subs the block calls
+included.
+
+    for my $x ($lo, $hi) {
+        $lo = 0;              # refused: the list names $lo
+    }
+
+That is one rule for every place the variable can stand in the list,
+and it refuses `for my $i (1 .. $n) { $n-- }` too, where perl would
+have agreed; `my $end = $n;` before the loop says what is meant.
+
+**An element or a slice past either end of its array, in the loop's
+list, is a fault**: perl would make the element, and the array
+longer. (Read anywhere else it is undef, and makes nothing.)
+
+A range in a loop of its own may not begin or end within 512 of the
+smallest integer: perl refuses that loop, and so it is a fault.
+
+#### What is refused
+
+`for $x (LIST)`, with no `my`: perl lends the loop a variable from
+outside and gives it its old value back after. `for (LIST)` and
+`STATEMENT for LIST;`, which are loops over `$_`. `for my $x ()`,
+which perl does not compile. `for my ($k, $v) (LIST)`, two at a time.
+And `foreach (FIRST; TEST; EACH)`: to perl `foreach` and `for` are
+one word, and here the loop of three parts is spelled `for`.
+
+### Arrays and subs
+
+An array among a call's arguments flattens, like any list: with `my
+@p = (3, 4);`, `area(@p)` is `area(3, 4)`. So how many arguments a
+call has may only be known as the program runs, and the fault for too
+few or too many comes then.
+
+A sub may use the file's arrays, those declared at the top level
+above it, and its own. A file's array is empty from the moment the
+program starts, and its `my` does not empty it again (as a file's
+variable).
+
+A sub returns one value. `return @a;`, and an array or a list as a
+sub's last statement, are refused until lists are returned (`return
+scalar(@a);` is the count); so is `@rest` in a signature.
+
+### What a list may not do
+
+perl's lists are rows of the variables themselves, not of their
+values, so a change made after a list was begun shows through it: in
+perl, with a sub `bump` that changes `$x`, `my @b = ($x, bump());`
+has the *new* `$x`. Here a list is a row of values. So that the two
+never differ:
+
+**A later part of an expression or a list may not change what an
+earlier part names.** What is named is an element, a slice, an array
+or `$#a`, and a variable that is an item of a list. "Change" is by
+assigning it, storing to it, or changing its size, there or in a sub
+that is called, however deep. The compiler works that out over the
+whole program, and refuses:
+
+    say $a[0] + shift(@a);        # refused: shift changes @a
+    my @b = ($x, bump());         # refused: bump changes $x
+    push @a, $a[0], grow();       # refused, if grow changes @a
+
+The message says to take the value into a `my` first, which says
+which value is meant:
+
+    my $first = $a[0];
+    say $first + shift(@a);
+
+`$a[0] + $a[1]`, `($x, $y) = ($y, $x)`, `@a = (@a, 1)` and `push @a,
+@a` change nothing they name after naming it, and are as they look.
 
 ## Memory
 

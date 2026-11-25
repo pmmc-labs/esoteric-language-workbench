@@ -302,14 +302,25 @@ test('while, until and for, with a label or without (D61, D62)', () => {
     assert.deepEqual([m.pos, m.modifier], [{ line: 1, col: 1 }, true]);
 });
 
+test('a loop over a list', () => {
+    for (const word of ['for', 'foreach']) {
+        const [s] = parse(lex(`OUT: ${word} my $x (1, @a, 2 .. 3) { next OUT; }`)).body;
+        assert.ok(s?.kind === 'foreach');
+        assert.deepEqual([s.var.name, s.items.map(i => i.kind), s.label?.name, s.body.map(b => b.kind)], ['x', ['int', 'array', 'binary'], 'OUT', ['jump']]);
+    }
+});
+
 test('what a loop may not be', () => {
-    const list = 'for over a list is not in the language yet: this for is for (FIRST; TEST; EACH)';
     refused('while () { }', 'while () is while (1), to perl: say that, or for (;;)', 1, 7);
     refused('until () { }', "expected a value, found ')'", 1, 8);
-    refused('for my $i (1, 2) { }', list, 1, 5);
-    refused('for (1, 2) { }', list, 1, 5);
-    refused('for ($x) { }', list, 1, 5);
-    refused('foreach (;;) { }', "'foreach' is not in the language", 1, 1);
+    const bare = 'for (...) with no variable is a loop over $_, which is not in the language: for my $x (...)';
+    refused('for (1, 2) { }', bare, 1, 5);
+    refused('for ($x) { }', bare, 1, 5);
+    refused('foreach (;;) { }', 'foreach is the loop over a list here, foreach my $x (...): the loop of three parts is spelled for', 1, 1);
+    refused('for my $x () { }', 'for my $x () is a loop over nothing, and perl does not compile it', 1, 11);
+    refused('for $x (1) { }', 'for $x (...) borrows a variable from outside the loop: for my $x (...)', 1, 5);
+    refused('foreach my ($k, $v) (1, 2) { }', 'foreach my (...) takes a list several values at a time, which is not in the language', 1, 12);
+    refused('for my $x 1 { }', "expected '(' after for my $x, found 1", 1, 11);
     refused('do { } while ($x);', "'do' is not in the language", 1, 1);
     refused('while ($x) say 1;', "expected '{', found 'say'", 1, 12);
     refused('while $x { }', "expected '(' after while, found '$x'", 1, 7);

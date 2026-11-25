@@ -1,0 +1,2 @@
+t/873-loop-over-nothing.pl:4:11: for my $x () is a loop over nothing, and perl does not compile it
+exit: 1

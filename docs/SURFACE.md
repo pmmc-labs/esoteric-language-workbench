@@ -73,7 +73,7 @@ comparison: *in*, *out*, or *n/a*.
 | `no warnings 'recursion';`, with the pragmas | In | 8 | | D67: it changes nothing here, and keeps perl quiet past 100 calls deep |
 | Recursion past the implementation's limit | Fault | 8 | | D68: `recursion too deep`; perl has no limit |
 | A sub that ends in `say` or `print`, and its value used | In | 8 | | D70: `true`, as perl |
-| A sub that returns nothing, as an argument or `say`'s | Fault | 8 | | D71, until step 10: perl passes no argument |
+| A sub that returns nothing, in a list | In | 9 | | D79 (which retired D71's fault): no value, as perl; undef where one value is wanted |
 | A row of dots in which a later piece calls a sub that can change a variable an earlier piece reads | Cut | | | D69, T132 |
 | Signature placeholders `$`, `@`, `%`; defaults with `//=` and `\|\|=`; a default that reads an earlier parameter | In | 8 | | `$`, `$=`, `$ = EXPR` are in; each argument is copied as its parameter's turn comes, a default running in between (T144, D73) |
 | A call, `name(args)`; one comma after the last argument | In | 8 | | D21, D72. An argument that is a variable is read as the sub takes it (T1) |
@@ -83,7 +83,7 @@ comparison: *in*, *out*, or *n/a*.
 | A parameter named twice; a `my` of a parameter's name in the body | Cut | | | T141: perl warns |
 | `my $x = $x`: the right side sees the outer `$x` | In | 5 | | T58 |
 | `my` in a condition, `if ((my $n = f()) > 3)` | In | 5 | | |
-| `my (undef, $x) = ...` | In | 9 | | |
+| `my (undef, $x) = ...`, `my ($x, $y);`, `my ($head, @rest) = ...` | In | 9 | | D80. An array is the last target; `my ($x, $x)` is refused (T168) |
 | `my $a`, `my $b`; `$a`, `$b` and `$_` as names | Cut | | | D55, T61: perl warns, and `sort` then misbehaves; and perl lets them by without a `my` |
 | `\my $x`, `foreach \my %h (...)` | Cut | | | Not in the `use v5.42` bundle |
 | Attributes other than the class ones | Cut | | | `:lvalue` among them |
@@ -98,10 +98,12 @@ comparison: *in*, *out*, or *n/a*.
 | `=` with a constant on its right, where a value is tested for truth: `if ($x = 5)`, `if ($x = 0 && $y)` | Cut | | | D53, T112: perl warns that `==` was meant; through `!`, `not` and `+` too, and for what it folds to a constant |
 | `while`, `until`, postfix forms | In | 6 | in | D62. A `my` in the block or the test is new each time round; `while ()` is refused (T123) |
 | `for (init; cond; step)` | In | 6 | in | D60, D62. A comma in the first and third parts only; `my` in the first only |
-| `foreach my $x (LIST)` | In | 9 | in | `$x` is read-only; every container that can reach the list is frozen (D17) |
+| `foreach my $x (LIST)`, `for my $x (LIST)` | In | 9 | in | `$x` is a copy, and read-only; the list is copied once; every array named anywhere in it is frozen while the loop runs, and a change is a fault (D17, D80); a range alone is counted and not built; an element or a slice past the end in the list is a fault (T161, T169), and so is a counted range within 512 of the smallest integer (T166) |
+| `foreach (FIRST; TEST; EACH)` | Cut | | | D81: `for` is the loop of three parts (T122) |
+| `for my $x () { }` | Cut | | | T155: perl does not compile it |
 | `foreach $x (LIST)` with a variable that isn't `my` | Cut | | in | T14 |
 | `foreach` with no variable, postfix `for` | In | 10 | in | `$_`, read-only, and only inside the block that binds it |
-| `foreach` over `($p, $q)` naming variables | Later | 9 | in | D17: perl aliases them |
+| `foreach` over `($p, $q)` naming variables | In | 9 | in | D77: copies; refused when the block, or a sub it calls, can change a scalar named anywhere in the list, the end of a range too (T13, T162, T172) |
 | A closure over, or `\` of, a loop variable or `$_` | Later | 14 | in | D17: perl keeps the alias after the loop |
 | `foreach my ($k, $v) (%h)` | Later | 12 | | 5.36's; to be proposed |
 | `last`, `next`, labels | In | 6 | in | D61, D62. Statements, not expressions (T120); only inside a loop of the same sub, as written; a label is on a loop, in capitals, and is checked as the program compiles |
@@ -126,7 +128,7 @@ comparison: *in*, *out*, or *n/a*.
 | `say;`, `print;` with no argument | In | 10 | | They print `$_` |
 | A builtin's brackets and then an operator, `say (1 + 2) * 3;` | Cut | | | D21, T25: perl prints 3 |
 | `say (...)` after one space, not ending on its line, or with a bracket in a string or a comment that perl's count of them trips on | Cut | | | T76, T100: perl warns. `say(...)`, hard against, may run over lines |
-| `(...) x N` as the whole argument of `say` or `print` | Later | 9 | | T101: perl repeats a list there. Refused until lists |
+| `(LIST) x N`, a list repeated, where a list is wanted | In | 9 | | D80, T101. After `return` and as a sub's last statement: refused until step 10 (T143); a comma list on the left of `x` where one value is wanted: Cut (T168) |
 | `print STDERR ...`, `say STDERR ...` | In | 15 | | With `warn` |
 | `1;` ending a module | In | 18 | | Not needed under `use v5.42`; harmless |
 
@@ -161,7 +163,7 @@ Precedence and associativity are `perlop`'s. Chalk's
 | The comma operator in scalar position, `my $x = (4, 5, 6)` | Cut | | perl warns (D15). In the slots of a C-style `for`: In, step 6 |
 | `-bareword` | Cut | | perl gives the string `-foo`, even under strict (T69) |
 | `^^`, `^^=` | Later | 4 | New in perl 5.40 and 5.42 |
-| `..` in list context | In | 9 | On numbers; a string as either end faults (perl's string ranges are string increment) |
+| `..` in list context | In | 9 | D80. Whole numbers, each end cut toward zero; a string or an undef for either end faults (T154: perl's string ranges are string increment); where one value is wanted it is perl's flip-flop, and refused (T151) |
 | `..` and `...` in scalar context (flip-flop) | Cut | | |
 | `x` on a list, `(1, 2) x 3` | Later | 10 | |
 | `& \| ^ ~ << >>` | In | 22 | Numeric, as under `use v5.42`; a non-number faults |
@@ -200,13 +202,13 @@ Precedence and associativity are `perlop`'s. Chalk's
 | Interpolation of `$x`, `${x}`, `@a`, elements, `->` chains | In | 16 | The shapes perl has to guess at are refused |
 | `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
 | `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
-| Arrays: literals, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | |
-| List assignment, `my ($p, $q) = @x`, swaps | In | 9 | The right side is finished first |
+| Arrays: `my @a`, lists that flatten, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | D80. A read past either end is undef and makes nothing; a store past the end grows the array, before the start faults; `@a[one index]`, `$a[0][0]`, `length(@a)`, `defined(@a)`: Cut (T167, T168) |
+| List assignment, `my ($p, $q) = @x`, swaps, an element as a target | In | 9 | D80. The right side, then every target's index, then the stores (T158) |
 | `my $n = () = ...`, a list assignment's count as a number | Cut | | |
-| A list assignment as a condition, `if (my @r = f())` | Later | 9 | It is the count, tested |
-| An array in a scalar operand, `"x" . @a`, `-@a` | In | 9 | Its count, as in perl |
+| A list assignment as a value, `if ((my @r = f()))`, `my $n = () = ...` | Cut | | D78: a statement. perl gives the count of the right side |
+| An array where one value is wanted, `"x" . @a`, `-@a`, `if (@a)`, `@a \|\| LIST` | In | 9 | Its count, as in perl (T21, T150) |
 | Assigning to `$#a` | Cut | | |
-| Slices `@a[...]`, `@h{...}`, `%h{...}`, `%a[...]` | In | 9, 12 | As values; on the left of `=`: Later |
+| Slices `@a[...]`, `(LIST)[...]`; `@h{...}`, `%h{...}`, `%a[...]` | In | 9, 12 | As values (D80); a slice of an empty list is empty (T164); where one value is wanted: Cut, but `(LIST)[N]` (T151). On the left of `=`: Later |
 | Hashes: literals, `$h{k}`, `exists`, `delete`, `keys`, `values` | In | 12 | Insertion order (D27) |
 | `each`, the iterator | Cut | | D22 |
 | A hash in list context | In | 12 | In its own order |
@@ -219,7 +221,7 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `=>` quoting the word on its left, `q`, `y`, `s` and `time` included | In | 12 | The lexer looks for `=>` before taking `q` as a quote operator |
 | A number as a hash key, `(010 => "a")` | In | 12 | The key is the number as a string, `8` (T63) |
 | `qw` with commas in it | Cut | | perl warns (D15) |
-| `keys`, `values`, `exists`, `delete` on an array | Later | 9 | |
+| `keys`, `values`, `exists`, `delete` on an array; `$#a = N` | Later | | |
 | `$\|`, `$?`, `$.`, `$^O`, `$0` | Later | 21 | `$\|` first; the rest when wanted |
 | `%SIG`, `@INC`, `%INC`, `$^W`, `` $` ``, `$'`, `@-`, `@+` | Cut | | |
 
@@ -237,7 +239,9 @@ Opal's notation, `docs/BUILTINS.md`.
 | `chr` of a surrogate, of a number past U+10FFFF or below zero; printing a noncharacter | Fault | 3 |
 | `substr` and `index` without brackets; a sign after a named unary operator that perl calls ambiguous, `length - 5` | Cut | |
 | `substr` on the left of `=`, `vec`, `pos`, `lc` and friends without an argument | Cut | |
-| `push`, `pop`, `shift`, `unshift`, `splice`, `reverse`, `sort`, `map`, `grep`, `join`, `scalar` | In | 9, 10 |
+| `push`, `pop`, `shift`, `unshift`, `splice`, `scalar`; `reverse`, `sort`, `map`, `grep`, `join` | In | 9; 10 | D80. `pop` and `shift` in brackets unless the array ends the expression, and never without an array (T152); `splice` in brackets, as a list or a statement |
+| A later part of an expression or a list that can change what an earlier part names: an element, a slice, an array, `$#a`, a variable that is an item of a list | Cut | | D76 (T149, T157): perl reads it after the change. By one walk over the whole program |
+| `say LIST`, `print LIST` | In | 9 | Each value, nothing between; every value is looked at before any is written |
 | `sort` with `$a` and `$b` | In | 10 |
 | `any`, `all` (experimental in 5.42, and not in the bundle) | Later | 10 |
 | `map EXPR, LIST`, `grep EXPR, LIST` | In | 10 |

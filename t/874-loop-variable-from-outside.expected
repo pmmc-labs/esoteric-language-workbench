@@ -1,0 +1,2 @@
+t/874-loop-variable-from-outside.pl:6:5: for $x (...) borrows a variable from outside the loop: for my $x (...)
+exit: 1
