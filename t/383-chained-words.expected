@@ -1,0 +1,2 @@
+t/383-chained-words.pl:4:16: 'le' after 'lt': perl chains two comparisons, or refuses them, and never reads them from the left; bracket one, or join two with &&
+exit: 1

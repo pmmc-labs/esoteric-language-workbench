@@ -1,0 +1,2 @@
+t/386-xor-after-print.pl:4:9: 'xor' after print's argument: it binds more loosely than print does, and joins what print returns, to perl; bracket the argument, print(... xor ...)
+exit: 1

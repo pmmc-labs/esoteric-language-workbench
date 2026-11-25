@@ -1,0 +1,2 @@
+t/402-logical-xor.pl:4:7: '^^' is not in the language yet
+exit: 1

@@ -1,0 +1,2 @@
+t/390-not-in-arguments.pl:5:22: not in a list of arguments takes the rest of the list, to perl: write not(...)
+exit: 1

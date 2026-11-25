@@ -1,0 +1,2 @@
+t/399-word-hard-against.pl:4:7: expected ';', found 'lt2'
+exit: 1

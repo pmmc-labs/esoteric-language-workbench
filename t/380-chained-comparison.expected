@@ -1,0 +1,2 @@
+t/380-chained-comparison.pl:4:11: '<' after '<': perl chains two comparisons, or refuses them, and never reads them from the left; bracket one, or join two with &&
+exit: 1

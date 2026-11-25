@@ -72,6 +72,18 @@ test('the sign of a zero', () => {
     ].join('\n') });
 });
 
+test('and so do the comparisons and the tests of truth (step 4)', () => {
+    const numbers = ['num_eq-left', 'num_eq-right', 'num_ne-left', 'num_ne-right', 'num_lt-left', 'num_lt-right', 'num_gt-left', 'num_gt-right', 'num_le-left', 'num_le-right', 'num_ge-left', 'num_ge-right', 'num_cmp-left', 'num_cmp-right'];
+    const values = ['str_eq-left', 'str_eq-right', 'str_ne-left', 'str_ne-right', 'str_lt-left', 'str_lt-right', 'str_gt-left', 'str_gt-right', 'str_le-left', 'str_le-right', 'str_ge-left', 'str_ge-right', 'str_cmp-left', 'str_cmp-right'].concat(['xor-left', 'xor-right', 'not', 'defined', 'is-true', 'is-false', 'is-undef']);
+    for (const [cases, what] of [[numbers, 'not a numeric value'], [values, 'not a value']] as const) {
+        for (const which of cases) {
+            const r = run('tags', which);
+            assert.equal(r.output, `2\nfault: ${what} at tags.pl line 3.\n`, which);
+            assert.equal(r.status, 1, which);
+        }
+    }
+});
+
 test('a repeated string of 2^31 characters is too long', () => {
     assert.deepEqual(run('limit'), { status: 1, output: '2000\nfault: repeated string too long at limit.pl line 5.\n' });
 });

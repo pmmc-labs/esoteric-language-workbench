@@ -1,0 +1,2 @@
+t/387-not-brackets-operator.pl:5:13: '||' after not (...): perl takes the brackets for all of not's operand; bracket the whole of it, not ((...) || ...), or the not itself
+exit: 1

@@ -1,0 +1,2 @@
+t/396-true-brackets.pl:4:9: true is written without brackets
+exit: 1

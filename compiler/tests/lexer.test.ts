@@ -142,6 +142,32 @@ test('a string token is the literal as written, and where it starts', () => {
     ]);
 });
 
+test('the operators of step 4: the longest wins, and a word is one only where an operator may stand', () => {
+    assert.deepEqual(literals('1 <=> 2 <= 3 < 4 == 5 != 6 >= 7 > 8'),
+        ['int 1', 'op <=>', 'int 2', 'op <=', 'int 3', 'op <', 'int 4', 'op ==', 'int 5', 'op !=', 'int 6', 'op >=', 'int 7', 'op >', 'int 8']);
+    assert.deepEqual(literals('1&&2||3//4'), ['int 1', 'op &&', 'int 2', 'op ||', 'int 3', 'op //', 'int 4']);
+    assert.deepEqual(literals('!1 ? !!2 : 3'), ['op !', 'int 1', '? ?', 'op !', 'op !', 'int 2', ': :', 'int 3']);
+    assert.deepEqual(literals('1?2:3'), ['int 1', '? ?', 'int 2', ': :', 'int 3']);
+    assert.deepEqual(literals('"a"lt"b" cmp 1 eq 2'), ['str "a"', 'op lt', 'str "b"', 'op cmp', 'int 1', 'op eq', 'int 2']);
+    assert.deepEqual(literals('1 and 2 or not 3 xor 4'), ['int 1', 'op and', 'int 2', 'op or', 'op not', 'int 3', 'op xor', 'int 4']);
+    // Where a value is wanted `lt` and `and` are words, and where an
+    // operator is, `not` is; and a longer word is never an operator.
+    assert.deepEqual(literals('say lt'), ['word say', 'word lt']);
+    assert.deepEqual(literals('1 not 2'), ['int 1', 'word not', 'int 2']);
+    assert.deepEqual(literals('1 lt2'), ['int 1', 'word lt2']);
+    assert.deepEqual(literals('1 andy 2'), ['int 1', 'word andy', 'int 2']);
+    // `true`, `false` and `undef` are values: an operator comes next.
+    assert.deepEqual(literals('true .5'), ['word true', 'op .', 'int 5']);
+    assert.deepEqual(literals('false x 3'), ['word false', 'op x', 'int 3']);
+    assert.deepEqual(literals('undef lt 1'), ['word undef', 'op lt', 'int 1']);
+    assert.deepEqual(literals('defined .5'), ['word defined', 'num .5']);
+    // Only a sign is ambiguous after a named unary operator.
+    assert.deepEqual(literals('defined !1'), ['word defined', 'op !', 'int 1']);
+    assert.deepEqual(literals('length ! 1'), ['word length', 'op !', 'int 1']);
+    assert.deepEqual(literals('length not 1'), ['word length', 'op not', 'int 1']);
+    refused('say defined - 1;', 'defined -: perl warns that this is ambiguous: write defined(-...)', 1, 13);
+});
+
 test('a sign after a named unary operator: a blank before it and none after', () => {
     assert.deepEqual(literals('length -5'), ['word length', 'op -', 'int 5']);
     assert.deepEqual(literals('ord +"a"'), ['word ord', 'op +', 'str "a"']);
@@ -235,12 +261,19 @@ test("the longest of perl's operators is the token, in the language or not (T27)
     refused('say 1--2;', "'--' is not in the language yet", 1, 6);
     refused('say ++5;', "'++' is not in the language yet", 1, 5);
     refused('say 2 **= 3;', "'**=' is not in the language yet", 1, 7);
-    refused('say 1 <=> 2;', "'<=>' is not in the language yet", 1, 7);
+    refused('say 1 << 2;', "'<<' is not in the language yet", 1, 7);
+    refused('say 1 ^^ 2;', "'^^' is not in the language yet", 1, 7);
+    refused('say 1 ~~ 2;', "'~~' is not in the language yet", 1, 7);
+    refused('say 1 =~ 2;', "'=~' is not in the language yet", 1, 7);
+    refused('say 1 !~ 2;', "'!~' is not in the language yet", 1, 7);
+    refused('say 1 = 2;', "'=' is not in the language yet", 1, 7);
+    refused('say 1 ||= 2;', "'||=' is not in the language yet", 1, 7);
+    refused('say 1 //= 2;', "'//=' is not in the language yet", 1, 7);
     refused('say 1 -> 2;', "'->' is not in the language yet", 1, 7);
     refused('say 7 %= 2;', "'%=' is not in the language yet", 1, 7);
     refused('say 1 .. 5;', "'..' is not in the language yet", 1, 7);
     refused('say 1 .= 5;', "'.=' is not in the language yet", 1, 7);
-    refused('say 1 // 2;', "'//' is not in the language yet", 1, 7);
+    refused('say 1 & 2;', "'&' is not in the language yet", 1, 7);
     refused('say 1 => 2;', "'=>' is not in the language yet", 1, 7);
     // With a blank between them they are two, as they are to perl.
     assert.deepEqual(lex('- - + +').map(t => t.text), ['-', '-', '+', '+', '']);

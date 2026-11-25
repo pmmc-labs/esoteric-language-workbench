@@ -1,0 +1,2 @@
+t/385-and-after-say.pl:4:10: 'and' after say's argument: it binds more loosely than say does, and joins what say returns, to perl; bracket the argument, say(... and ...)
+exit: 1

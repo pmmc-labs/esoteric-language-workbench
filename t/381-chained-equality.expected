@@ -1,0 +1,2 @@
+t/381-chained-equality.pl:4:12: '==' after '!=': perl chains two comparisons, or refuses them, and never reads them from the left; bracket one, or join two with &&
+exit: 1

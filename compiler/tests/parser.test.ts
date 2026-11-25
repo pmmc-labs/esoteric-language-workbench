@@ -18,6 +18,8 @@ const shape = (e: Expr): string => {
     const s = e.kind === 'int' || e.kind === 'num' || e.kind === 'str' ? e.text
         : e.kind === 'unary' ? `(${e.op}${shape(e.operand)})`
         : e.kind === 'apply' ? `${e.name}[${e.args.map(shape).join(', ')}]`
+        : e.kind === 'constant' ? e.name
+        : e.kind === 'ternary' ? `(${shape(e.test)} ? ${shape(e.then)} : ${shape(e.else)})`
         : `(${shape(e.left)} ${e.op} ${shape(e.right)})`;
     return e.bracketed ? s + '*' : s;
 };
@@ -195,8 +197,7 @@ test('use takes a version, or a pragma and its arguments', () => {
     refused('use "utf8";', "after 'use', expected a version or a pragma, found \"utf8\"", 1, 5);
     refused('use', "after 'use', expected a version or a pragma, found the end of the file", 1, 4);
     refused('use utf8', "expected a value, found the end of the file", 1, 9);
-    // The lexer is first: a colon outside a string.
-    refused('use open qw(:std);', "':' is not in the language yet", 1, 13);
+    refused('use open qw(:std);', "expected a value, found 'qw'", 1, 10);
     refused('use open qw(std);', "expected a value, found 'qw'", 1, 10);
     refused('use v5.42 say 1;', "expected ';', found 'say'", 1, 11);
 });
@@ -230,8 +231,8 @@ test('where an operator or an end is wanted', () => {
     refused('say (1) (2);', "expected ';', found '('", 1, 9);
     refused('say 1 + (2 3);', "expected ')', found 3", 1, 12);
     // One of perl's operators that is a word.
-    refused('say 1 and 2;', "'and' is not in the language yet", 1, 7);
-    refused('say not 1;', "'not' is not in the language yet", 1, 5);
+    refused('say 1 isa 2;', "'isa' is not in the language yet", 1, 7);
+    refused('say lt 1;', "expected a value, found 'lt'", 1, 5);
     refused('say 1 foo 2;', "expected ';', found 'foo'", 1, 7);
 });
 
@@ -270,4 +271,111 @@ test('every statement ends with its semicolon, and only one', () => {
     refused('use v5.42;\nsay 1', "expected ';', found the end of the file", 2, 6);
     refused('say 1\nsay 2;', "expected ';', found 'say'", 2, 1);
     refused('say 1;;', "expected a statement, found ';'", 1, 7);
+});
+
+// What perl makes of each is in t/360-logic-precedence.pl, t/361 and
+// t/362, which perl checks.
+test("comparison and logic: perlop's rows", () => {
+    assert.equal(grouped('say !2 ** 2;'), '(!(2 ** 2))');
+    assert.equal(grouped('say !1 + 1;'), '((!1) + 1)');
+    assert.equal(grouped('say - !0;'), '(-(!0))');
+    assert.equal(grouped('say 1 + 2 == 3 . 0;'), '((1 + 2) == (3 . 0))');
+    assert.equal(grouped('say 1 < 2 == 3 > 4;'), '((1 < 2) == (3 > 4))');
+    assert.equal(grouped('say 1 == 2 < 3;'), '(1 == (2 < 3))');
+    assert.equal(grouped('say 1 <=> 2 lt 3;'), '(1 <=> (2 lt 3))');
+    assert.equal(grouped('say 1 && 0 || 2;'), '((1 && 0) || 2)');
+    assert.equal(grouped('say 1 || 0 && 2;'), '(1 || (0 && 2))');
+    assert.equal(grouped('say 0 || 0 // 5 || 6;'), '(((0 || 0) // 5) || 6)');
+    assert.equal(grouped('say 1 == 1 && 2 == 2;'), '((1 == 1) && (2 == 2))');
+    assert.equal(grouped('say length "ab" == 2;'), '(length["ab"] == 2)');
+    assert.equal(grouped('say defined 1 + 1 && 2;'), '(defined[(1 + 1)] && 2)');
+    assert.equal(grouped('say(1 or 2 and 3 xor 4);'), '((1 or (2 and 3)) xor 4)*');
+    assert.equal(grouped('say(not 1 || 2 and 3);'), '((not(1 || 2)) and 3)*');
+    assert.equal(grouped('say(1 + not 0 || 1);'), '(1 + (not(0 || 1)))*');
+    assert.equal(grouped('say(not not 1);'), '(not(not1))*');
+    assert.equal(grouped('say not 1;'), '(not1)');
+});
+
+test('? : groups from the right, and its middle is its own', () => {
+    assert.equal(grouped('say 1 ? 2 : 3;'), '(1 ? 2 : 3)');
+    assert.equal(grouped('say 0 ? 2 : 3 ? 4 : 5;'), '(0 ? 2 : (3 ? 4 : 5))');
+    assert.equal(grouped('say 1 ? 0 ? 1 : 2 : 3;'), '(1 ? (0 ? 1 : 2) : 3)');
+    assert.equal(grouped('say 1 || 2 ? 3 : 4 || 5;'), '((1 || 2) ? 3 : (4 || 5))');
+    assert.equal(grouped('say 1 + 2 ? 3 + 4 : 5 + 6;'), '((1 + 2) ? (3 + 4) : (5 + 6))');
+    assert.equal(grouped('say(not 1 ? 2 : 3);'), '(not(1 ? 2 : 3))*');
+    assert.equal(grouped('say(1 ? 2 : 3 or 4);'), '((1 ? 2 : 3) or 4)*');
+    assert.equal(grouped('say 1 ? not 0 : 2;'), '(1 ? (not0) : 2)');
+    refused('say 1 ? 2;', "expected ':', found ';'", 1, 10);
+    refused('say 1 ? : 2;', "expected a value, found ':'", 1, 9);
+    refused('say 1 ? 2 : ;', "expected a value, found ';'", 1, 13);
+    refused('say ? 1 : 2;', "expected a value, found '?'", 1, 5);
+    refused('say 1 : 2;', "expected ';', found ':'", 1, 7);
+});
+
+test('two comparisons of one row are refused (D50)', () => {
+    const message = (b: string, a: string) => `'${b}' after '${a}': perl chains two comparisons, or refuses them, and never reads them from the left; bracket one, or join two with &&`;
+    refused('say 1 < 2 < 3;', message('<', '<'), 1, 11);
+    refused('say 1 < 2 ge 3;', message('ge', '<'), 1, 11);
+    refused('say 1 == 2 == 3;', message('==', '=='), 1, 12);
+    refused('say 1 != 2 eq 3;', message('eq', '!='), 1, 12);
+    refused('say 1 <=> 2 <=> 3;', message('<=>', '<=>'), 1, 13);
+    refused('say 1 cmp 2 == 3;', message('==', 'cmp'), 1, 13);
+    refused('say 1 < 2 == 3 == 4;', message('==', '=='), 1, 16);
+    assert.equal(grouped('say((1 < 2) < 3);'), '((1 < 2)* < 3)*');
+    assert.equal(grouped('say 1 < 2 && 2 < 3;'), '((1 < 2) && (2 < 3))');
+});
+
+test('undef, true and false (D47, D48)', () => {
+    assert.equal(grouped('say undef // 1;'), '(undef // 1)');
+    assert.equal(grouped('say undef || undef && 2;'), '(undef || (undef && 2))');
+    assert.equal(grouped('say undef ? 1 : undef;'), '(undef ? 1 : undef)');
+    assert.equal(grouped('say defined undef;'), 'defined[undef]');
+    assert.equal(grouped('say defined(undef) // 1;'), '(defined[undef] // 1)');
+    assert.equal(grouped('say defined undef // 1;'), '(defined[undef] // 1)');
+    assert.equal(grouped('say substr("a", undef, undef);'), 'substr["a", undef, undef]');
+    assert.equal(grouped('say((undef) + 1);'), '(undef* + 1)*');
+    assert.equal(grouped('say(undef or undef xor 1);'), '((undef or undef) xor 1)*');
+    assert.equal(grouped('say true -1 . false x 3;'), '((true - 1) . (false x 3))');
+    const before = (what: string) => `undef before ${what}: perl takes what follows undef for its argument; write (undef)`;
+    refused('say undef + 1;', before("'+'"), 1, 5);
+    refused('say undef * 2;', before("'*'"), 1, 5);
+    refused('say undef == 1;', before("'=='"), 1, 5);
+    refused('say undef . "a";', before("'.'"), 1, 5);
+    refused('say undef x 3;', before("'x'"), 1, 5);
+    refused('say undef lt 1;', before("'lt'"), 1, 5);
+    refused('say undef 1;', before('1'), 1, 5);
+    refused('say undef "a";', before('"a"'), 1, 5);
+    refused('say undef undef;', before("'undef'"), 1, 5);
+    refused('say undef !1;', before("'!'"), 1, 5);
+    refused('say undef(1);', 'undef is written without brackets', 1, 10);
+    refused('say undef ();', 'undef is written without brackets', 1, 11);
+    refused('say true();', 'true is written without brackets', 1, 9);
+    refused('say false (1);', 'false is written without brackets', 1, 11);
+});
+
+test('the word operators: after say, in a list of arguments, after not (...) (D51)', () => {
+    const loose = (op: string) => `'${op}' after say's argument: it binds more loosely than say does, and joins what say returns, to perl; bracket the argument, say(... ${op} ...)`;
+    refused('say 0 or 2;', loose('or'), 1, 7);
+    refused('say 1 and 2;', loose('and'), 1, 7);
+    refused('say not 1 xor 2;', loose('xor'), 1, 11);
+    refused('say (0) or 2;', "'or' after say (...): perl takes the brackets for all of say's arguments; bracket the whole expression", 1, 9);
+    const rest = 'not in a list of arguments takes the rest of the list, to perl: write not(...)';
+    refused('say substr("abc", not 0, 1);', rest, 1, 19);
+    refused('say substr("abc", 1 + not 0, 1);', rest, 1, 23);
+    refused('say index("abc", length not 1);', rest, 1, 25);
+    refused('say substr("abc", 0 or 1);', "'or' in a list of arguments takes the whole list for its left side, to perl: bracket what it joins", 1, 21);
+    assert.equal(grouped('say substr("abc", (not 0), not(1));'), 'substr["abc", (not0)*, (not1*)]');
+    assert.equal(grouped('say substr("abc", (0 or 1));'), 'substr["abc", (0 or 1)*]');
+    assert.equal(grouped('say length(not 1);'), 'length[(not1)]');
+    const after = (op: string) => `'${op}' after not (...): perl takes the brackets for all of not's operand; bracket the whole of it, not ((...) ${op} ...), or the not itself`;
+    refused('say(not (0) || 1);', after('||'), 1, 13);
+    refused('say(not(0) + 1);', after('+'), 1, 12);
+    refused('say(not (0) == 1);', after('=='), 1, 13);
+    refused('say(not (0) ? 1 : 2);', after('?'), 1, 13);
+    refused('say(not (0) x 2);', after('x'), 1, 13);
+    refused('say(not());', 'not needs an operand', 1, 5);
+    assert.equal(grouped('say(not (0) and 1);'), '((not0*) and 1)*');
+    assert.equal(grouped('say(not (0) or not (1));'), '((not0*) or (not1*))*');
+    assert.equal(grouped('say not (1);'), '(not1*)');
+    assert.equal(grouped('say((not 0) || 1);'), '((not0)* || 1)*');
 });

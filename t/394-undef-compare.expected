@@ -1,0 +1,2 @@
+t/394-undef-compare.pl:4:5: undef before '==': perl takes what follows undef for its argument; write (undef)
+exit: 1
