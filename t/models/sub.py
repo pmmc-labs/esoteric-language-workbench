@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/900 to t/939: subs (step 8; D67 to D73).
+"""t/900 to t/904 and t/919 to t/939: subs (step 8; D67 to D73).
 
 The definition, which is all this file knows of the language beyond
 t/models/loop.py (loops, and through it variables, values and operators).
@@ -57,7 +57,7 @@ defaults, the file's variables from three calls deep, a call before a
 calls before the definition, `return` out of loops in loops. 903 is
 context: what a sub that returns nothing is worth, and how a context is
 handed on. 904 is a value with no past: the operators of steps 1 to 6 on
-values that came through a sub, as an argument and as a return. 920 on
+values that came through a sub, as an argument and as a return. 919 on
 each fault once.
 
 Every command that writes a file, one a line (t/checks.py runs them all):
@@ -72,6 +72,8 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/sub.py 903 > t/903-context.expected
     python3 t/models/sub.py --program 904 > t/904-through-a-sub.pl
     python3 t/models/sub.py 904 > t/904-through-a-sub.expected
+    python3 t/models/sub.py --program 919 > t/919-fault-last-statement-hands-on.pl
+    python3 t/models/sub.py 919 > t/919-fault-last-statement-hands-on.expected
     python3 t/models/sub.py --program 920 > t/920-fault-too-few.pl
     python3 t/models/sub.py 920 > t/920-fault-too-few.expected
     python3 t/models/sub.py --program 921 > t/921-fault-too-many.pl
@@ -568,7 +570,10 @@ def late_cases():
     # T134, T147: a sub called before a `my` of the file's runs; the `my`
     # stores nothing, and with an operator it works on what is there.
     def before(f, g, G):
-        return [do(ucall(f('bump'))), ('my', g('x'), None), shown(G('x')),
+        # (A block's variable first: the file's `$x` is not in the slot
+        # the block has just left.)
+        return [('block', [('my', 't', 'junk'), say_(('$', 't'))]),
+                do(ucall(f('bump'))), ('my', g('x'), None), shown(G('x')),
                 do(ucall(f('bump'))), do(ucall(f('bump'))), do(my(g('y'), 10, '+=')), shown(G('y')),
                 do(ucall(f('tag'))), do(my(g('s'), 'a', '.=')), shown(G('s')),
                 do(ucall(f('one'))), do(my(g('d'), 10, '//=')), shown(G('d')),
@@ -706,6 +711,8 @@ def context_cases():
         for name in ('if', 'else', 'unless', 'while', 'for', 'block', 'mod', 'retif', 'setif', 'tail'):
             calls += [do(ucall(f(name), 1)), do(ucall(f(name), 0)), ('mod', do(ucall(f(name), 2)), 'if', 1)]
         calls += [('my', g('k'), 0), ('for', None, [set_(g('k'), 0)], ('<', G('k'), 2), [step(g('k'))], [do(ucall(f('if'), G('k')))])]
+        # A call as a part of a `for` is void too.
+        calls += [('for', None, [ucall(f('if'), 1), set_(g('k'), 0)], ('<', G('k'), 2), [ucall(f('mod'), G('k')), step(g('k'))], [say_(G('k'))])]
         calls += [('mod', do(ucall(f('mod'), 1)), 'while', ('<', step(g('k')), 4))]
         # A sub that has a value when it returns one, though it ends
         # without: the value is the `return`'s.
@@ -776,6 +783,11 @@ def faults():
     opt2 = sub('opt', [req('p'), opt('q', 2), opt('r', 3)], ret(join(P, ',', Q, ',', R)))
     loud = sub('loud', [req('p')], say_(P), ret(P))
     return {
+        # A last statement that is a call hands its context on, as a
+        # `return` does: void, the sub with no value is fine, and scalar
+        # it is not.
+        '919': ('fault-last-statement-hands-on', [sub('ends', [req('p')], ('if', [(P, [say_('yes')])], None)), sub('tail', [req('p')], do(ucall('ends', P)))],
+                do(ucall('tail', 1)), ('my', 'v', ucall('tail', 0))),
         '920': ('fault-too-few', [two], say_(ucall('two', 1, 2)), say_(ucall('two', 1))),
         '921': ('fault-too-many', [two], say_(ucall('two', 1, 2)), say_(ucall('two', 1, 2, 3))),
         '922': ('fault-too-few-optional', [opt2], say_(ucall('opt', 1)), say_(ucall('opt'))),

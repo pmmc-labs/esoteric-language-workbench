@@ -9,7 +9,7 @@ runtime. The driver is `curlyc`, and a program is a `.pl` file.
 
 ## Status
 
-**Steps 0 to 7 of [`docs/PLAN.md`](docs/PLAN.md) are done**
+**Steps 0 to 8 of [`docs/PLAN.md`](docs/PLAN.md) are done**
 (2026-11-24 and 25, all by Fable 5.2). **The language** is `use
 v5.42;`, then `use utf8;` and `use open ':std', ':encoding(UTF-8)';`
 if wanted, then statements: `say EXPR;` and `print EXPR;` (brackets
@@ -17,8 +17,11 @@ or not), `my $x;`, `my $x = EXPR;`, an assignment, `$x++` and its
 three kin, a block, `if (...) {...}` with `elsif`s and an `else`,
 `unless (...) {...}`, `while (...) {...}`, `until (...) {...}`, `for
 (FIRST; TEST; EACH) {...}`, a label before a loop, `last;` and
-`next;` with a label or without, and `STATEMENT if EXPR;` or
-`unless`, `while`, `until`. An
+`next;` with a label or without, `STATEMENT if EXPR;` or
+`unless`, `while`, `until`, and from step 8 `sub NAME(PARAMETERS)
+{...}` at the top level, a call `NAME(ARGUMENTS)` as a statement or a
+value, `return;` and `return EXPR;` in a sub, and `no warnings
+'recursion';` with the pragmas. An
 expression is a number, a string, `true`, `false`,
 `undef`, a variable, brackets, unary `-` `+` `!`, `++` and `--`,
 `=` and `+= -= *= /= %= **= .= x= ||= &&= //=`,
@@ -158,7 +161,8 @@ each token, every character checked there; it knows whether a value
 or an operator comes next from the token before, T90), `parser.ts`
 (precedence climbing over perlop's table), `ast.ts` (`int`, `num`,
 `str`, `constant`, `var`, `my`, `assign`, `step`, `unary`, `binary`,
-`ternary`, `apply`; `use`, `pragma`, `call`, `do`, `block`, `if`,
+`ternary`, `apply`, `invoke`; `use`, `pragma`, `call`, `do`, `block`, `if`,
+`sub`, `return`,
 `while`, `for`, `jump`),
 `resolver.ts` (each variable to its `my`, and each `last` and `next`
 to its loop, by number; it runs before the checker), `checker.ts`, `codegen.ts`, `names.ts` (the statements, the builtins
@@ -177,7 +181,12 @@ keeps a pointer to it, the statement's temporaries all declared at
 its top; a loop is `for (;;)` with its test inside it and its block
 in a C block of its own, and `last` and `next` are each a `goto` to
 a label after the loop or at the end of its block, the only jumps
-there are. **Every variable and temporary is a slot of its
+there are but for `return`, which puts its value in a C local and
+jumps to the one place its function closes its frame. **A sub is a C
+function**, handed its context and a pointer to each argument, or
+NULL; the file's variables are the first slots of the file's frame,
+reached from a sub through the context (`g[n]`); the line is stored
+again after every call. **Every variable and temporary is a slot of its
 function's frame**, `f[n]`, the variables first, each at its depth
 among those in scope, then the temporaries, which each statement
 numbers again from the first (D66). **The runtime**:
@@ -213,9 +222,14 @@ fault once), 740 to 743 by hand with perl's answers, 750 to 791
 refusals by hand (step 6); 800 to 807 the cap tests, a gigabyte of
 garbage each under 16 MB and the cap's own faults, and 810, a made
 string in every kind of slot (step 7; no model: there is no second
-derivation of what a collector frees); 114 unit tests, the runtime's
+derivation of what a collector frees); 116 unit tests now, the runtime's
 own in C (`collect.c` drives the collector by hand) and three of the
-test runner itself (`t/harness/`). **Every golden test runs with a
+test runner itself (`t/harness/`); 900 to 904 and 920 to 939 from
+`t/models/sub.py` (about 1,100 lines, and 21 programs that each
+fault once, 919 the first), 940 to 942 by hand with perl's answers, 943 to 946 the
+limit on depth from both sides and two faults whose line is the
+point, 947, 948 and 950 to 999 refusals by hand (step 8), and two more unit tests
+in C (`deep.c`: what a frame counts for, and the stack check). **Every golden test runs with a
 collection at every allocation, poison, and a cap of 256 MB** (D64,
 D65; `t/knobs.sh`, which `t/run.sh` sources and `t/checks.py` reads);
 a test says otherwise in its `# env:`. **The oracle
@@ -240,7 +254,10 @@ compiler alone, the runtime having gained nothing, 46 of 49 caught the first tim
 (`step6-mutations.py`, which runs the refused tests too); step 7's
 breaks the collector, the knobs and the code generator's frames, 45
 of 47 caught the first time and two tests mended that did not test
-what they were written for (`step7-mutations.py`); the limit of `x` is tested from C
+what they were written for (`step7-mutations.py`); step 8's breaks the
+runtime and every pass of the compiler, 77 of 81 caught the first
+time, three holes closed and one breakage that nothing in the
+language can see (`step8-mutations.py`); the limit of `x` is tested from C
 (`runtime/tests/limit.c`), since perl can't be asked for 2^31
 characters. **A fault that never happens is
 invisible to a test of what prints: every fault needs a fault test of
@@ -248,7 +265,7 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 524 of them now, and all hold under 5.42.0,
+about perl as a program, 529 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
 keeps the programs, T1 to T148, by step (T119 to T124 found proposing
 step 6, T132 to T142 proposing step 8, T143 to T148 by its review, T125 to T130 by the review of step 5, T131 building step 6).
@@ -288,7 +305,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D72 are all Stevan's** (D57 a default of the builder's at
+**D1 to D72 are all Stevan's, and D73 and D74 are defaults of the builder's that he has not confirmed** (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -319,29 +336,65 @@ proposal round it: poison must check wherever a string is read and
 again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
 green after step 6 and again after step 7. **Next: step
-8**, subs. **It is proposed and answered** (2026-11-25,
-`docs/PLAN.md`; D67 to D72): nothing happens at 100 calls deep, and `no
-warnings 'recursion';` is accepted so that perl is as quiet (D67,
-his, against the recommendation: D15's one exception; a test that
-goes deep carries the line); the open frames
-may hold 4 MB, about 3,800 calls deep, a default he said to stay with, which D68 keeps out
-of the language so that step 29 can take calls off the C stack; D57
-through a call (D69); a sub that ends in `say` is worth `true` (D70,
-his, against the recommendation); a sub that returns nothing faults
-where perl wants a list (D71). **Its adversarial review found four ways to be WRONG and three
-shapes perl refuses** (T143 to T148, `briefs/step8-review/`), and
-**D73, a default Stevan has not yet seen**, says what was done about
-each: a sub copies each argument as its parameter's turn comes;
-`(...) x N` is refused as an argument, in a `return` and as a last
-statement; a last statement with a modifier has no value; context
-goes down through brackets, a unary plus and `and`/`or`. **Nothing
-of step 8 is built: the model comes next, red** (`docs/PLAN.md`, "The
-build", with the review's holes as tests). T132 to T142 were found proposing it, and its 59 statements
-about perl are in `claims.py`; `briefs/step8-names.py` and
-`step8-stack.c` are its evidence for names and for the limit. What step 7
-hands it: a sub opens a frame and closes it on every way out; its
-arguments are copied into its own slots before anything allocates;
-and the limit on recursion counts a frame's bytes, not calls. `docs/briefs/step4-comparisons.py`
+9**, arrays and lists, which is an outline and has to be proposed.
+**Step 8, subs** (D67 to D73; `docs/PLAN.md` has the build's own
+account). **A sub** stands at the top level, always with a
+signature, and is called with brackets, before or after it is
+written. Its name is not a word of perl's (`names.ts` has perl's own
+keyword table, 266 words, and what `use v5.42;` brings in), not `v`
+and digits, and not used twice. **A parameter** is `$p`, `$p = E`,
+`$p //= E`, `$p ||= E`, or a placeholder; a copy; **a sub copies
+each argument as its parameter's turn comes, a default running in
+between** (perl's order, T144), so an argument that is a variable is
+read late (T1) and a `//=` default is seen by the arguments after
+it. **A wrong number of arguments is a fault**, after they have all
+run. **`return` is a statement**, with an `if` or `unless` or
+without. **A sub's value** with no `return` is its last statement's
+when that is an expression with no modifier (a value alone is a
+statement there and nowhere else), and `true` after a `say` (D70);
+any other ending has none, and using it faults, void calls aside
+(D18, T145). **Context** is perl's three, handed on by `return`, a
+last statement, `? :`, the right of `|| && // and or`, brackets and
+a unary plus (T146): a sub that returns nothing is undef to a
+scalar and a fault where perl wants a list (D71), until step 10.
+**A file variable**, a `my` at the top level, has a slot of its own,
+is undef as the program starts, and its `my` stores nothing (T134,
+T147): a sub written after it may be called before it. **Nothing
+happens at 100 calls deep** (D67: `no warnings 'recursion';` keeps
+perl as quiet, and a test that goes deep carries it). **The limit on
+depth is the implementation's** (D68): the open frames count 16
+bytes a slot and 1 KB a call, and past 4 MB the next call is
+`recursion too deep`, about 3,700 deep for a small sub; a program
+given less than 8 MB of stack stops before it starts. D68 lists what
+keeps a call free to stop being a C call at step 29. **Refused at
+step 8**: a sub in a block, a loop or a sub (T31), with no
+signature, named for a word of perl's, named twice; a call with no
+brackets, of a sub the program doesn't have, with two commas
+together (T137); a minus hard against one letter, anywhere (T135:
+`-e(2)` is a file test); a blank between a name and its bracket
+first after `say` or `print`, through any brackets (T136); `return`
+as a value, after `and`, in a default, outside a sub, with a `while`,
+with a word operator after its value (T139); a required parameter
+after an optional one, a parameter named twice, a `my` of a
+parameter's name (T141); `(...) x N` as an argument, after `return`
+or as a last statement (T143); a value alone that is not a sub's
+last statement or has a modifier; **a row of dots in which a later
+piece calls a sub that can change a variable an earlier piece reads,
+worked out over the whole program** (D69, T132; the left of `.=` is
+the first piece). **Its adversarial review found four ways to be
+WRONG and three shapes perl refuses** before anything was built
+(T143 to T148, `briefs/step8-review/`); **D73, what was done about
+each, is a default Stevan has not confirmed.** **What the build
+found**: every statement ends in a semicolon, the last in a block
+too (step 5), so `sub f($x) { $x * 2 }` is refused, which is how
+Perl is written: his to look at. T132 to T142 were found proposing
+the step, and `briefs/step8-names.py` and `step8-stack.c` are its
+evidence for names and for the limit. **What step 8 hands step 9**:
+a list-shaped `return` and D71's fault wait for lists; a runtime
+function that holds more than one value opens a frame, which counts
+against the limit on depth like any other; step 10's `sort` with a
+block is the first thing that will want the runtime to call
+generated code, and D68 says it has to say how. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
 operand: 57,376 comparisons, no new fault needed. **What every step
 must ask again**: whether a value's past shows anywhere the

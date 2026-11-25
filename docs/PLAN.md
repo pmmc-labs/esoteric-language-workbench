@@ -2036,9 +2036,97 @@ it.
   or state in the context (its frame is one static array); clang and
   the sanitizers; a gigabyte loop.
 
-### 8. Subs
+### 8. Subs (done)
 
 Referee: perl. Size: large.
+
+**Built 2026-11-25**, by Fable 5.2 (the size the line asks for), as
+agreed below and as D67 to D73 have it, and with these differences
+and findings:
+
+- **The model first, red before any code** (`t/models/sub.py`,
+  commit 2545ef2), on step 6's: a call is a Python call with its
+  context, a `return` an exception, an argument a place that is read
+  when its parameter's turn comes. It writes 900 to 904, about 1,100
+  lines on which perl 5.42 agrees with it (every form of parameter
+  and default with each kind of value; what is read when; recursion,
+  99 deep at the most; context; and the operators of steps 1 to 6 on
+  values that came through a sub), and 21 programs that fault once
+  each, 919 to 939. **perl agreed with the model on all five the
+  first time they were compared**, once the model's own layout of a
+  `return` was right; and every fault test's output is the start of
+  perl's, with perl's line where perl has one.
+- **The compiler went green on all 25 the first time it compiled
+  them.** The parser has `sub`, a signature, `return`, a call and
+  `no`; the resolver gives each sub a function of its own, ties each
+  call to its sub, and gives the file's variables slots of their
+  own; the checker has D69's walk and T143's refusals; the code
+  generator writes a C function for each sub. The runtime gained
+  the count of open frames, the stack check, and two faults that
+  take a name: no operator.
+- **D67 changed what was built**: there is no count for each sub,
+  and nothing happens at 100 calls deep. `no warnings 'recursion';`
+  is a pragma that does nothing here. 942 goes 3,000 deep with it.
+- **The limit, measured where it is.** A call of the smallest
+  recursive sub (`depth`, 6 slots) counts 1,120 bytes, so 3,743 of
+  them may be open: 943 makes exactly that many and prints, 944
+  makes one more and faults, at the line worked out by hand, under
+  gcc, clang and the sanitizers. The runtime's own test
+  (`runtime/tests/deep.c`) has the numbers with no compiler in the
+  way: 4,096 frames of no slots, and not 4,097; and a program given
+  a 4 MB stack stops before it starts.
+- **By hand**: 940 to 942 with perl's answers (a dozen small
+  programs, factorial to the Tower of Hanoi; how a sub and a call
+  may be written; deep recursion); 943 to 946, the limit from both
+  sides and two faults whose line is the point; 950 to 999, fifty
+  refusals (and 947 and 948, from the mutation run), each with what perl does in its comment and its line,
+  column and message worked out before the compiler was run. 33
+  were right. Of the 17 that weren't, two were the builder's own
+  miscounted columns; one was the lexer refusing `v65(` before the
+  parser could, with a message of its own; **and 14 were one rule
+  the builder had forgotten: every statement ends in a semicolon,
+  the last in a block too (step 5, t/604), so `sub f() { return 1 }`
+  is refused**, and so was every one-line sub in the proposal's own
+  examples. The rule stands; it is worth Stevan's eye now that subs
+  make it bite (below).
+- **A test of the builder's that perl rejected**: 940's Collatz
+  count of 27 is 112 calls deep, and perl warned, which the oracle
+  check would not have. It counts from 7 now.
+- **One refusal D69 makes that the proposal didn't spell out**:
+  `$x .= set();`, where `set` can change `$x`. The left of `.=` is
+  the first piece of a row (D57), so it is refused (988), though the
+  generated C would have agreed with perl there.
+- **A call may be a part of a `for`**, `for (init(); ...; step())`,
+  where D60 had refused whatever only has a value: a call is
+  something done. It is void there, as the review said (D7 of its
+  findings).
+- **A sub's name is refused where it is defined**, by the parser,
+  so that `sub q(...)` is what the message is about and not the
+  first `q(5)`. A word perl has no meaning for, at the head of a
+  statement with no bracket after it, is now told that a call has
+  brackets.
+- **The runtime and each pass were broken 81 ways on purpose**
+  (`briefs/step8-mutations.py`, which runs every test of step 8, the
+  refused ones too). 77 were caught the first time. Three were
+  holes in the tests, each closed: a last statement that is a call
+  handing its context on (919), a default that is not checked (947),
+  and a `$` alone outside a signature (948). The last can't be
+  caught: a sub that ends in `say` being worth the Int 1 and not
+  `true`, which nothing in the language can tell apart.
+- **gcc, clang, and the sanitizers with poison on and off**: green.
+- Left for their steps: lists in and out of a sub, and with them
+  the end of D71's fault and T143's refusals (9, 10); `@rest` and
+  `%opts` (10, 12); anonymous subs, closures, a sub in a block
+  (14); a caught `die` unwinding frames, and a `return` on its own
+  line with its value on the next, where perl names the value's
+  line (15); a call that is not a C call (29, D68).
+
+**For Stevan, from the build**: (1) D73, the review's ways out, and
+D74, what the build settled, are defaults he has not confirmed. (2) The semicolon before a closing
+brace. `sub double($x) { $x * 2 }` is how Perl is written, and it is
+refused for want of a `;`. perl takes both. Letting the last
+statement of a block go without one is a small change to the parser
+and to what step 5 decided; it is not made here.
 
 **Proposed 2026-11-25, by Fable 5.2 (the size the line asks for),
 and answered the same day: D67 (Q1: not the recommendation; nothing happens at 100 calls
@@ -2050,7 +2138,7 @@ ends in `say` is worth `true`, as in perl), D71 (Q5, as recommended)
 and D72 (what had nothing to choose). The text is kept as it was
 proposed, and **its adversarial review found four ways to be WRONG:
 "What the review found", at the end, and D73 for what was done about
-each**. Nothing is built.** Everything here about perl was run under 5.42.0
+each**.** Everything here about perl was run under 5.42.0
 and is in `briefs/claims.py` (59 rows, `T1-args` to `T60-label`).
 Traps: T1, T19, T28, T31, T55, T60, and T132 to T142, found writing
 this. The outline this replaces said: named subs with signatures,

@@ -16,7 +16,9 @@ run two ways, and is caught if either goes red:
            the compiler as it is, and linked again with the broken
            runtime; for a broken compiler each is compiled again by the
            copy
-  unit     the runtime's own tests, runtime/tests/ of the copy
+  unit     the runtime's own tests of the limit on recursion, the two of
+           runtime/tests/rt.test.ts that name D68, in the copy (all of
+           them take a minute, and the rest are step 7's)
 
 A record of step 8, and not part of make test: each breakage is a piece
 of the text as it was then, and one that no longer matches stops the
@@ -76,7 +78,9 @@ MUTATIONS = [
  ("a sub with no value gives an undef", GEN, "        lines.push(`if (want != RT_VOID) {`,", "        lines.push(`if (0) {`,"),
  ("a sub with no value faults when it was called void", GEN, "        lines.push(`if (want != RT_VOID) {`,", "        lines.push(`if (1) {`,"),
  ("a sub that ends in say is worth undef", GEN, "        lines.push('r = rt_bool(1);');", "        lines.push('r = rt_undef();');"),
- ("a sub that ends in say is worth the Int 1", GEN, "        lines.push('r = rt_bool(1);');", "        lines.push('r = rt_int(1);');"),
+ # (Not here: a sub that ends in `say` being worth the Int 1 and not
+ # `true`. Nothing in the language can tell the two apart: each is 1 as a
+ # number and `1` as a string, and `++` makes an Int of either.)
  ("a default is used though the argument was given", GEN, "            : `a${n} != NULL`;", "            : '0';"),
  ("//= is =", GEN, "p.op === '//=' ? `a${n} != NULL && !rt_is_undef(cx, *a${n})`", "p.op === '//=' ? `a${n} != NULL`"),
  ("||= is //=", GEN, "`a${n} != NULL && rt_is_true(cx, *a${n})`", "`a${n} != NULL && !rt_is_undef(cx, *a${n})`"),
@@ -169,7 +173,7 @@ def golden(driver):
 
 def unit(tree):
     """How many of the runtime's own tests fail, in the copy."""
-    r = subprocess.run(['node', '--test', f'{tree}/runtime/tests/rt.test.ts'], capture_output=True, text=True)
+    r = subprocess.run(['node', '--test', '--test-name-pattern', 'D68', f'{tree}/runtime/tests/rt.test.ts'], capture_output=True, text=True)
     return len(re.findall(r'^not ok', r.stdout, re.M)) if r.returncode else 0
 
 def copy():

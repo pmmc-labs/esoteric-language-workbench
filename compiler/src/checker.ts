@@ -254,7 +254,8 @@ const checkPragma = (p: Pragma): void => {
 // One of the expressions of the first part of a `for`, or of its third:
 // what could be a statement, and a `my` in the first part only (D60).
 const checkPart = (w: World, e: Expr, first: boolean): void => {
-    if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my') {
+    // A call is something done, as it is where it is a statement (D72).
+    if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my' && e.kind !== 'invoke') {
         refuse('this part of the for only has a value, and nothing is done with it: perl warns that it is useless', e.pos);
     }
     const my = e.kind === 'my' ? e : e.kind === 'assign' && e.target.kind === 'my' ? e.target : undefined;

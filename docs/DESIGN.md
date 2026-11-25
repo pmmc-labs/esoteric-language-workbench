@@ -170,6 +170,21 @@ Four ideas do the cleaning, and `SURFACE.md` applies them:
   a collection can happen, which is only inside an allocation; a
   runtime function allocates at most once, last, or opens a frame of
   its own.
+- **A sub is a C function with a frame of its own** (step 8; D72,
+  D73). It is handed perl's context of the call (D18), and where
+  each argument is, a pointer into its caller's frame or the file's:
+  it copies each as that parameter's turn comes, a default running
+  in between, which is perl's order, and until then the argument is
+  in a slot the collector sees. What it returns is a copy. The
+  file's variables are the first slots of the file's frame, each its
+  own, undef from the start, and a sub reaches them through the
+  context.
+- **Recursion has a limit that is the implementation's** (D68): the
+  frames that are open are counted, 16 bytes a slot and 1 KB a call,
+  and past 4 MB the next call is the fault `recursion too deep`. The
+  count is of frames and not of the C stack, and the generated C
+  touches a frame only through `rt_enter` and `rt_leave`: so that
+  when concurrency comes (step 29) a call can stop being a C call.
 - No global state in the runtime: one context, passed everywhere (D28).
 
 ## The runtime
@@ -244,7 +259,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D72 are decided. What is left is what the decisions hand to a
+D1 to D72 are decided, and D73 and D74 are defaults taken at step 8. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it

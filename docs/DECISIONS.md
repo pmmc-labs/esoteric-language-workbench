@@ -3,7 +3,7 @@
 What was decided, why, and what was turned down, roughly in the order it
 came up. **User** means Stevan decided it; **default** means the agent
 proposed it and it wasn't explicitly discussed, and is fair to revisit.
-D1 to D72 are all Stevan's, and D73 is a default he has not yet seen: D1 to D9 from the first conversation, and
+D1 to D72 are all Stevan's, and D73 and D74 are defaults he has not yet seen: D1 to D9 from the first conversation, and
 D10 to D32 on 2026-11-24, each either picked from options laid out for
 it or accepted as the agent proposed it, which the attribution says.
 D33 and D34 were defaults taken at steps 0 and 1, which he confirmed;
@@ -13,7 +13,8 @@ D35 to D38 are his answers to step 2's proposal, D39 to D45 to step
 step 5 took, which he confirmed the same day. D58 to D62 are his
 answers to step 6's proposal, D63 to D66 to step 7's, and D67 to D72
 to step 8's (D68's number is the builder's default, which he said
-to stay with).
+to stay with). D73 and D74 are the builder's defaults, from the
+review of step 8 and from building it.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1388,6 +1389,28 @@ variable holds** (T147), as T134. Rejected: refusing a `//=` or `||=`
 default that calls a sub when a parameter follows (agreeing costs a
 calling convention and nothing else); agreeing with T145 (the test's
 own value when it fails: T19, decided the other way in D18).
+
+**D74. What building step 8 settled.** *(default: the builder's,
+2026-11-25; small, and for Stevan to see.)* **A call may be a part of
+a `for`**, `for (init(); $n < 8; step())`, void as perl has it: D60
+refused a part that only has a value, and a call is something done.
+**`$x .= set();` is refused when `set` can change `$x`**: D69 through
+D57's rule that the left of `.=` is the first piece of a row, though
+here the straight-line C would have agreed with perl (`b3`). **The
+words of the faults**: `too few arguments for f: got 1, expected 2`,
+with `at least` and `at most` where perl has them; `f has no value: it
+does not end in a return or an expression`; `f returned nothing where
+a list is wanted`; `recursion too deep`. **Their lines**: a wrong
+number of arguments and `recursion too deep` name the caller's
+statement; a sub with no value, its last statement; `return;` to a
+list, the `return`; an empty body, the `sub`; a fault in a default,
+the line its parameter is on. **A sub's name is refused where the sub
+is written**, not at the first call of it. **A program given less
+than 8 MB of stack stops before it starts**, with a message and exit
+status 2, as a bad knob does (D63): the limit on depth is counted
+(D68), and the count assumes that much. Rejected: letting `$x .=
+set()` through (one more shape of row to reason about, for a program
+that is hard to read either way).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

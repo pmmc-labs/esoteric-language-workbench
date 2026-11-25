@@ -593,6 +593,12 @@ CLAIMS = [
     c('T147', 'TRAPS; PLAN 8', 'bump(); my $x += 10; say $x; tag(); my $s .= "a"; say $s; one(); my $d //= 10; say $d; sub bump() { $x++ } sub tag() { $s = "q" } sub one() { $d = 1 }', out='11\nqa\n1\n'),
     c('T148', 'TRAPS; PLAN 8', 'my $n; sub v($x) { $x * 2 } say "a";\nv($n);', out='a\n', err='Use of uninitialized value \\$x in multiplication \\(\\*\\)'),
     c('T132-not-a-rule', 'TRAPS; PLAN 8', 'my $x = "a"; sub ch() { $x = "b"; return "c" } say "<" . ($x . "-") . ch(); $x = "a"; say(($x . "-") . ch());', out='<a-c\nb-c\n'),
+    # ---- found building step 8
+    c('PLAN8-bare-call', 'PLAN 8; t/962', 'sub f() { return 1 }\nmy $x = f + 1;', out='', err="Too many arguments for subroutine 'main::f' \\(got 1; expected 0\\)", exit=255),
+    c('PLAN8-for-call', 'PLAN 8; D74', 'my $n = 0; sub init() { $n = 5; } sub step() { $n++; } for (init(); $n < 8; step()) { print $n; } say "";', out='567\n'),
+    c('PLAN8-append', 'PLAN 8; D74', 'my $x = "a"; sub set() { $x = "b"; return 3 } $x .= set(); say $x;', out='b3\n'),
+    c('PLAN8-collatz', 'PLAN 8', 'sub collatz($n, $steps = 0) { return $steps if $n == 1; return collatz($n % 2 ? $n * 3 + 1 : $n / 2, $steps + 1); } say collatz(27);', out='111\n', err='Deep recursion on subroutine "main::collatz"'),
+    c('PLAN8-no-semicolon', 'PLAN 8', 'sub double($x) { $x * 2 } say double(4); if (true) { say "a" }', out='8\na\n'),
     c('T31-nested', 'TRAPS; PLAN 8', 'sub outer($x) { sub innr() { return $x } return innr() } say outer(1); say outer(2);', out='1\n1\n', err='Variable "\\$x" will not stay shared'),
     c('T31-block', 'TRAPS; PLAN 8', '{ sub inner() { return 1 } } say inner(); if (true) { sub in2() { return 2 } } say in2();', out='1\n2\n'),
     c('T60-label', 'TRAPS; PLAN 8', 'sub f() { last OUT; } my $i = 0; OUT: while ($i++ < 3) { f(); say $i }', out='', err='Exiting subroutine via last'),

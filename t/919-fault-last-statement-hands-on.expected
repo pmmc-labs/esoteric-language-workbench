@@ -1,0 +1,4 @@
+1
+yes
+fault: ends has no value: it does not end in a return or an expression at t/919-fault-last-statement-hands-on.pl line 6.
+exit: 1

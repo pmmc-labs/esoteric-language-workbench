@@ -137,6 +137,10 @@ say(a104(1));
 say($n104);
 say(a104(10));
 say($log104);
+{
+    my $t = 'junk';
+    say($t);
+}
 bump105();
 my $x105;
 say(defined($x105) ? (('[' . $x105) . ']') : 'undef');
