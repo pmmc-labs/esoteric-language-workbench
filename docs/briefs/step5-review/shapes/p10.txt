@@ -1,0 +1,126 @@
+my $x = 1; {}
+---
+my $x = 1; { }
+say $x;
+---
+my $x = 1; {
+}
+say $x;
+---
+my $x = 1; {
+# c
+}
+say $x;
+---
+my $x = 1; if ($x) { } say $x;
+---
+my $x = 1; if ($x) {} else { {} } say $x;
+---
+my $x = 1; { {} }
+---
+my $x = 1; { { say $x; } {} }
+---
+my $k = 9; my $c = 1;
+if ($c) { say $k; } elsif ((my $k = 1) > 0) { say $k; } else { say $k; }
+---
+my $k = 9; my $c = 0;
+if ($c) { say $k; } elsif ((my $k = 1) > 5) { say $k; } else { say $k; }
+---
+my $c = 0;
+if ($c) { say 1; } elsif ((my $k = $c) > 5) { say $k; } else { say $k; }
+---
+my $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1; say $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+---
+my $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1; say $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+---
+my $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1; say $vaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+---
+my $x; my $y = 1; my $z = 0; $x = not $y and $z; say defined $x ? "[$x]" : "u";
+---
+my $x; my $y = 1; my $z = 0; say($x = not $y and $z); say defined $x ? "[$x]" : "u";
+---
+my $x; my $y = 1; my $z = 0; say($x = not $y = 0); say $y;
+---
+my $x; my $y = 1; my $z = 0; say($x = not $y || $z);
+---
+my $x; my $y = 1; my $z = 0; say(1 + not $y);
+---
+my $x; my $y = 1; my $z = 0; say($z ? $x = 1 : 2); say defined $x ? 1 : 0;
+---
+my $x; my $y = 1; my $z = 0; say($y ? $x = 1 : 2); say $x;
+---
+my $x = 1; my $y = 1; $x **= 2 ** 3; say $x; $x = $y += 2; say $x; $x ||= $y &&= 3; say $x . $y;
+---
+my $x = 2; say ++$x ** 2; say $x++ ** 2; say -$x++; say - --$x; say !++$x;
+---
+my $x = 2; ++$x = 5; say $x;
+---
+my $x = 2; say $x x= 3;
+---
+my $x = 2; my$y = 3; say $x+$y;
+---
+my $x = 2; my
+$y = 3; say $x+$y;
+---
+my $x = 2; my # c
+ $y = 3; say $x+$y;
+---
+my $x = 2; say $ x;
+---
+my $x = 2; say ${x};
+---
+my $x = 2; say ${ x };
+---
+my $x = 2; say $x#c
+-1;
+---
+my $x = 2; say $x # c
+# d
+ +1;
+---
+my $x = 2; print $x # c
+ -1;
+---
+my $x = "abc"; say substr($x # c
+-1, 0);
+---
+my $x = "abc"; say substr($x -1);
+---
+my $x = 5; say substr("abcdefgh", $x -1);
+---
+my $x = "abc"; say index($x x 2, "c");
+---
+my $x = "abc"; say substr(($x -1), 0);
+---
+my $x = 5; say chr($x +60); say ord($x -1); say uc($x .5); say lc($x -1); say length($x -1); say defined($x -1);
+---
+my $x = 5; say uc $x .5; say chr $x +60; say ord $x -1;
+---
+my $x = 5; say not($x -1); say(not $x -5);
+---
+my $x = 5; say(substr($x x 2, 1) . "|" . index($x lt 3, "5"));
+---
+my $x = 3; say $x . "-" . ($x = 5);
+---
+my $x = 3; my $y = $x . "" . ($x = 5); say $y;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1";
+$t .= ($u = $x . $z);
+say $t;
+say $u;
+---
+my $x = 1; my $y;
+$y = $x++ . $x . ++$x; say $y;
+---
+my $x = 1; my $y;
+$y = $x . $x++ . $x; say $y;
+---
+my $x = 1; say $x . ($x + 1) . ($x = 7);
+---
+my $x = 1; say $x . ($x . "a") . ($x = 7);
+---
+my $x = 1; say "<" . $x . ">" . ($x = 7);
+---
+my $x = 1; say "<" . $x++ . ">" . $x;
+---
+my $x = 1; say "<$x>";

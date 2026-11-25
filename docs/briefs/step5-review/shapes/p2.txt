@@ -1,0 +1,215 @@
+my $x =- 1; say $x;
+---
+my $y = 2; my $x =- $y; say $x;
+---
+my $y = 2; my $x =+ $y; say $x;
+---
+my $y = 2; my $x =-
+$y; say $x;
+---
+my $y = 2; my $x =! $y; say $x;
+---
+my $y = 2; my $x = 3; $x =- $y; say $x;
+---
+my $y = 2; my $x = 3; $x=-$y; say $x;
+---
+my $y = 2; my $x = 3; $x=- $y; say $x;
+---
+my $y = 2; my $x = 3; say $x ==- $y;
+---
+my $y = 2; my $x = 3; say $x <=- $y;
+---
+my $y = 2; my $x = 3; $x +=- $y; say $x;
+---
+my $y = 2; my $x = 3; $x .=- $y; say $x;
+---
+my $y = 2; my $x = 3; $x .=+ $y; say $x;
+---
+my $x = 0;
+if (!($x = 5)) { say "a"; }
+say $x;
+---
+my $x = 0;
+if (not $x = 5) { say "a"; }
+say $x;
+---
+my $x = 0; my $y = 3;
+if ($x = 0 && $y) { say "a"; }
+say $x;
+---
+my $x = 0; my $y = 3;
+if ($x = (1 || $y)) { say "a"; }
+say $x;
+---
+my $x = 0; my $y = 3;
+if ($x = (1 ? 2 : $y)) { say "a"; }
+say $x;
+---
+my $x = 0; my $y = 3;
+if ($x = ($y x 0)) { say "a"; }
+say $x;
+---
+my $x = 0; my $y = 3;
+say "a" if !($x = 5);
+say $x;
+---
+my $x = 0; my $y = 3;
+say(!($x = 5) ? 1 : 2);
+---
+my $x = 0; my $y = 3;
+say((($x = 5) xor 1) ? 1 : 2);
+---
+my $x = 0; my $y = 3;
+say(!($x = 5) && 1);
+---
+my $x = 0; my $y = 3;
+say(!!($x = 5) && 1);
+---
+my $x = 0; my $y = 3;
+say(-($x = 5) && 1);
+---
+my $x = 0; my $y = 3;
+say(+($x = 5) && 1);
+---
+my $x = 0; my $y = 3;
+unless (!($x = 5)) { say "a"; }
+---
+my $x = 0; my $y = 3;
+if (($x = 5) == 5) { say "a"; }
+---
+my $x = 1;
+$x
+=uc "a";
+say $x;
+---
+my $x = 1;
+$x
+=length "abc";
+say $x;
+---
+my $x = 1;
+my $y
+=true;
+say $y;
+---
+my $x = 1;
+say $x # c
+ -1;
+---
+my $x = 1;
+say $x
+ -1;
+---
+my $x = 1;
+say
+$x -1;
+---
+my $x = 1;
+say($x -1);
+---
+my $x = 1;
+say(($x -1));
+---
+my $x = 1;
+say +$x -1;
+---
+my $x = 1;
+say -$x -1;
+---
+my $x = 1;
+say !$x -1;
+---
+my $x = "abc";
+say substr($x -1, 0);
+---
+my $x = "abc";
+say index($x -1, "b");
+---
+my $x = "abc";
+say length $x -1;
+---
+my $x = 2;
+say $x ?1 : 2;
+---
+my $x = 2; my $y = 0;
+say $x if $y;
+say $x unless $y;
+---
+my $x = 2; my $y = 0;
+say($x or $y);
+say($x and $y);
+say($x xor $y);
+---
+my $x = 2; my $y = 0;
+print $x x 3;
+print $x eq 2;
+print $x cmp 2;
+---
+my $x = 2;
+say $x -= 1;
+---
+my $x = 2;
+say $x - 1;
+---
+my $x = 2;
+say $x	-1;
+---
+my $x = 2;
+say $x <1;
+---
+my $x = 2;
+say $x < 1;
+---
+my $x = 2; my $y = 1;
+say $x <$y;
+---
+my $x = 2; my $y = 1;
+say $x *$y;
+---
+my $x = 2; my $y = 1;
+say $x %$y;
+---
+my $x = 2; my $y = 1;
+say $x &&$y;
+---
+my $x = 2; my $y = 1;
+say $x /$y;
+---
+my $x = 2; my $y = 1;
+say $x **$y;
+---
+my $x = 2; my $y = 1;
+say $x ==$y;
+---
+my $x = 2; my $y = 1;
+say $x !=$y;
+---
+my $x = 2; my $y = 1;
+say $x .$y;
+---
+my $x = 2; my $y = 1;
+say $x ||$y;
+---
+my $x = 2; my $y = 1;
+say $x //$y;
+---
+my $x = 2; my $y = 1;
+say $x <=>$y;
+---
+my $x = 2; my $y = 1;
+say $x <=$y;
+---
+my $x = 2; my $y = 1;
+say $x >$y;
+---
+my $x = 2; my $y = 1;
+say $x ?$y :$x;
+---
+my $x = 2; my $y = 1;
+say $x ? $y :$x;
+---
+my $x = 2; my $y = 1;
+say $x x$y;
+---
+my $x = 2; my $y = 1;
+say $x =$y;

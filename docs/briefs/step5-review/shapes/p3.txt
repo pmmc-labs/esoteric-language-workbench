@@ -1,0 +1,168 @@
+my $n = 100;
+if ((my $n = 5) > 3 && $n < 10) { say $n; } else { say "else $n"; }
+say $n;
+---
+my $n = 100;
+if ((my $n = 5) > 3) { say $n; } elsif ($n > 1) { say "elsif $n"; } else { say "else $n"; }
+say $n;
+---
+my $n = 100;
+if ((my $n = 5) > 30) { say $n; } elsif ($n > 1) { say "elsif $n"; } else { say "else $n"; }
+say $n;
+---
+my $n = 100;
+if ((my $n = 5) > 30) { say $n; } elsif ((my $n = 7) > 10) { say "elsif $n"; } else { say "else $n"; }
+say $n;
+---
+my $n = 100;
+if ((my $n = $n + 5) > 3) { my $n = 2; say $n; }
+say $n;
+---
+my $n = 100;
+if ((my $m = $n + 5) > 300) { say $m; } else { my $m = 3; say $m; }
+---
+my $n = 100;
+if ((my $m = $n + 5) > 300) { say $m; } elsif ((my $k = $m + 1) > 0) { say $k + $m; }
+---
+my $n = 100;
+unless ((my $m = $n) > 300) { say $m; }
+---
+my $n = 100;
+if (my $m = $n) { say $m; }
+---
+my $n = 100;
+if (my $m) { say 1; } else { say defined $m ? "d" : "u"; }
+---
+my $n = 100;
+if (!(my $m = $n)) { say $m; } else { say $m + 1; }
+---
+my $n = 100;
+if ((my $m = $n) + (my $k = 2)) { say $m + $k; }
+---
+my $n = 100;
+if ((my $m = $n) + (my $m = 2)) { say $m; }
+---
+my $n = 100;
+if ((my $m = $n) > 3) { say $m; }
+if ((my $m = $n) > 3) { say $m + 1; }
+---
+my $n = 100;
+if ((my $n = $n) > 3) { say $n; } elsif ((my $n = $n) > 4) { say $n; }
+---
+my $x = 5; { my $x = $x + 1; say $x; { my $x = $x * 2; say $x; } say $x; } say $x;
+---
+my $x = 5; { $x = 6; my $x = 7; say $x; } say $x;
+---
+{ my $y = 1; } { my $y = 2; say $y; }
+---
+{} say 1;
+---
+{ { } } say 1;
+---
+my $x = 1; { say $x } say 2;
+---
+my $x = 1; { $x = 2 } say $x;
+---
+my $x = 1; if ($x) { say 1 } else { say 2 }
+---
+my $x = 1; if ($x) {} else {} say 3;
+---
+my $x = 1; {; } say 3;
+---
+my $x = 1; if ($x) { say 1; };
+---
+my $x = 1; say 1 if 0 or 1;
+---
+my $x = 1; say 1 if $x, 2;
+---
+my $x = 1; $x++ if $x; say $x;
+---
+my $x = 0; $x = 5 unless $x; say $x;
+---
+my $x = 0; ($x) = 5; say $x;
+---
+my $x = 0; ($x)++; say $x;
+---
+my $x = 0; ++($x); say $x;
+---
+my $x = 0; ++(++$x); say $x;
+---
+my $x = 0; ++++$x; say $x;
+---
+my $x = 0; (++$x)++; say $x;
+---
+my $x = 0; ++($x = 5); say $x;
+---
+my $x = 0; ($x = 5)++; say $x;
+---
+my $x = 0; ($x += 1) += 2; say $x;
+---
+my $x = 0; ($x = 5) = 7; say $x;
+---
+my $x = 0; my $y = 1; ($x ? $x : $y) = 7; say $y;
+---
+my $x = 0; my $y = 1; ($x || $y) = 7; say $y;
+---
+my $x = 0; my $y = 1; ($x || $y)++; say $y;
+---
+my $x = 0; my $y = 1; ($x ? $x : $y)++; say $y;
+---
+my $x = 0; +$x = 7; say $x;
+---
+my $x = 0; my $y = +$x++; say $x;
+---
+my $x = 0; +$x++; say $x;
+---
+my $x = 0; +(+$x)++; say $x;
+---
+my $x = 0; +($x++); say $x;
+---
+my $x = 0; ($x)++ if 1; say $x;
+---
+my $x = 0; (($x = 5)); say $x;
+---
+my $x = 0; ($x = 5) if 1; say $x;
+---
+my $length = 1; my $say = 2; my $if = 3; my $q = 4; my $y = 5; my $s = 6; my $m = 7; my $tr = 8; my $qq = 9; my $x = 10; my $e = 11; my $my = 12; my $undef = 13; my $true = 14; my $ARGV = 15; my $ENV = 16; my $STDOUT = 17; my $__ = 18; my $_1 = 19; my $x1 = 20; my $_x = 21; my $qw = 22; my $print = 23; my $lt = 24; my $ne = 25; my $unless = 26; my $else = 27; my $elsif = 28; my $not = 29; my $xor = 30; my $use = 31; my $v5 = 32; my $A = 33; my $B = 34; my $aa = 35; my $STDIN = 36; my $INC = 37; my $ARGVOUT = 38; my $STDERR = 39;my $main = 40; my $CORE = 41; my $defined = 42; my $__PACKAGE__ = 43; my $__END__ = 44; my $DATA = 45; my $BEGIN = 46; my $END = 47; my $sub = 48;
+say $length + $say + $if + $q + $y + $s + $m + $tr + $qq + $x + $e + $my + $undef + $true + $ARGV + $ENV + $STDOUT + $__ + $_1 + $x1 + $_x + $qw + $print + $lt + $ne + $unless + $else + $elsif + $not + $xor + $use + $v5 + $A + $B + $aa + $STDIN + $INC + $ARGVOUT + $STDERR + $main + $CORE + $defined + $__PACKAGE__ + $__END__ + $DATA + $BEGIN + $END + $sub;
+say $STDOUT;
+say $ENV;
+say $y;
+say $s;
+say $q;
+say $m;
+print $STDERR;
+---
+my $x = 5; my $y = $x + (my $z = 1); say $y;
+---
+my $x = my $y = 3; say $x + $y;
+---
+say my $x = 5;
+---
+my $x; say $x = 5;
+---
+my $x; say($x = 5);
+---
+my $x = undef; say defined $x ? 1 : 0;
+---
+my $x = undef // 1; say $x;
+---
+my $x; say defined $x ? 1 : 2; say length $x // "u"; say $x // 1;
+---
+my $x = "abc"; say defined $x + 1;
+---
+my $x = 2; say -$x; say !$x; say ++$x; say $x++; print $x; print "\n";
+---
+my $x = 2; say "$x";
+---
+my $x = 2; my $x = 3; say $x;
+---
+my $x = 2; say $y;
+---
+my $x = $x; say 1;
+---
+my $x = 2; if ($x) { my $z = 1; } say $z;
+---
+my $x = 2; if ((my $z = $x) > 1) { say 1; } say $z;
+---
+my $z = 7; my $x = 2; if ((my $z = $x) > 1) { say $z; } say $z;

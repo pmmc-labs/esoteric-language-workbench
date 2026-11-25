@@ -1,0 +1,8 @@
+my $x = 3;
+say $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . $x . ($x = 5);
+---
+my $x = 3; my $y = "-";
+say $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . ($x = 5);
+---
+my $x = 3; my $y = "-";
+say $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . $x . $y . ($x = 5);

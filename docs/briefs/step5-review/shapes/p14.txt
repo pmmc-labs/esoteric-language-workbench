@@ -1,0 +1,69 @@
+my $x = 5; say length -$x; say length +$x; say ord -$x; say defined -$x; say uc -$x; say chr +$x;
+---
+my $x = 5; my $y = 3; say $x-->$y; say $x;
+---
+my $x; my $y; if ($x = $y = 3) { say $x + $y; }
+---
+my $x; my $y = 1; say(($x = 5) // 1);
+---
+my $x; say(!($x = 5)); say(not $x = 6); say $x;
+---
+my $x; my $y = 1; $x ||= ($y = 5); say $x . $y;
+---
+my $x; my $y = 1; unless ($x = $y) { say 1; } say $x;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = $x . 5); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = 5 . $x); say $t; say $u;
+---
+my $t = "t"; my $x = "a"; $t .= (my $w = "b" . $x); say $t; say defined $w ? $w : "w undef";
+---
+my $t = "t"; my $u = "u"; my $x = "a"; say($t .= ($u = $x . $x)); say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $v = "v"; $t .= ($u = ($v = $x . $x)); say $t . "|" . $u . "|" . $v;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u .= $x . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = $x . $x) if 1; say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $w = ($t .= ($u = $x . $x)); say $w . "|" . $u;
+---
+my $t; my $u = "u"; my $x = "a"; $t .= ($u = $x . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = uc($x) . lc($x)); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = $x . ($x . "b")); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = ($x . "b") . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = $x x 2 . "b"); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t x= ($u = $x . 1) > 0 ? 2 : 1; say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t = $t . ($u = $x . $x); say $t . "|" . $u;
+---
+my $x = 3; print $x . "-" . ($x = 5); print "\n";
+---
+my $x = 3; my $s = "<" . $x . ">" . ($x = 7); say $s;
+---
+my $x = 3; my $s = "s"; $s .= $x . ">" . ($x = 7); say $s;
+---
+my $x = 3; my $s = "s"; $s = $s . $x . ($x = 7); say $s;
+---
+my $x = 3; say $x . ($x + 0) . ($x = 7);
+---
+my $x = 3; say(($x . "") + ($x = 7));
+---
+my $x = 3; say(($x . "") . ($x = 7));
+---
+my $x = 3; say(($x . "a") x 1 . ($x = 7));
+---
+my $x = 3; say((-$x) . "a" . ($x = 7));
+---
+my $x = 3; my $y = 4; say($y . "a" . ($x = 7) . $x);
+---
+my $x = 3; my $y = 4; say($y . $x++ . $x);
+---
+my $x = 3; my $y = 4; say($y . ++$x . $x++);
+---
+my $x = 3; my $y = 4; say(($x . $y) . ($y = 9) . $y);

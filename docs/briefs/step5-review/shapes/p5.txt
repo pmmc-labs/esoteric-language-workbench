@@ -1,0 +1,110 @@
+my $x = 0.5; my $y = 112; my $z = 12;
+say((($y++) // (!$x)) && ((-(($z) / $x)) x 1));
+say "next";
+---
+my $x = 0.5; my $y = 112; my $z = 12;
+say($y && ((-$z) x 1));
+say "next";
+---
+my $x = 0.5; my $y = 112; my $z = 12;
+say($y && (($z) x 1));
+say "next";
+---
+my $x = 0.5; my $y = 112; my $z = 12;
+say($y && (($z) x 2));
+say "next";
+---
+my $x = 0.5; my $y = 112; my $z = 12;
+say($y && ("ab") x 2);
+say "next";
+---
+say(1 && ("ab") x 2);
+say "next";
+---
+say((2 > 1) && ("ab") x 2);
+say "next";
+---
+my $y = 1;
+say($y ? ("ab") x 2 : 0);
+say "next";
+---
+my $y = 1;
+say($y || ("ab") x 2);
+say "next";
+---
+my $y = 0;
+say($y || ("ab") x 2);
+say "next";
+---
+my $y = 0;
+say($y // ("ab") x 2);
+say "next";
+---
+my $y;
+say($y // ("ab") x 2);
+say "next";
+---
+my $y = 5;
+say(($y) x 2);
+say "next";
+---
+my $y = 5;
+say(+($y) x 2);
+say "next";
+---
+my $y = 5;
+say((($y) x 2));
+say "next";
+---
+my $y = 5;
+say((($y) x 2) . "");
+say "next";
+---
+my $y = 5;
+print($y && ("ab") x 2);
+print "next\n";
+---
+my $y = 5; my $w = ($y && ("ab") x 2);
+say $w;
+---
+my $y = 5; my $w = $y && (("ab") x 2) ? 1 : 2;
+say $w;
+---
+my $y = 5;
+say(length($y && ("ab") x 2));
+---
+my $y = 5;
+say(($y && ("ab") x 2) . "c");
+---
+my $y = 5;
+say "t" if $y && ("ab") x 2;
+---
+my $y = 5;
+if ($y && ("ab") x 2) { say "t"; }
+---
+my $y = 5;
+say(substr(($y && ("ab") x 2), 1));
+---
+my $y = 5;
+say(substr("abcdef", ($y && (1) x 2)));
+---
+my $y = 5;
+say($y and ("ab") x 2);
+---
+my $y = 5;
+say(!$y || ("ab") x 2);
+---
+say((0.5 > 0) && ((1) x 3));
+say "next";
+---
+say(true && ((1) x 3));
+say "next";
+---
+say("a" && ((1) x 3));
+say "next";
+---
+say(("a" . "b") && ((1) x 3));
+say "next";
+---
+say(length("a") && ((1) x 3));
+say "next";

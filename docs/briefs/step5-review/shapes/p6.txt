@@ -1,0 +1,100 @@
+say(undef // ((7) x 1));
+say "next";
+---
+say(defined(undef) || ((7) x 1));
+say "next";
+---
+say((undef // 1) && ((7) x 1));
+say "next";
+---
+say((undef) ? 1 : ((7) x 1));
+say "next";
+---
+say(!(undef) && ((7) x 1));
+say "next";
+---
+say(length(undef) // ((7) x 1));
+say "next";
+---
+say(undef // (("ab") x 1));
+say "next";
+---
+print(undef // (("ab") x 1));
+print "next\n";
+---
+say(undef // (("ab") x 1) . "c");
+say "next";
+---
+say(undef // ("ab") x 1);
+say "next";
+---
+say(undef // (("ab" . "c") x 1));
+say "next";
+---
+say(undef // (("ab") x 1.5));
+say "next";
+---
+say(undef // (("ab") x "1"));
+say "next";
+---
+say(undef // (("ab") x true));
+say "next";
+---
+say(undef // (("ab") x (2 - 1)));
+say "next";
+---
+my $n = 1;
+say(undef // (("ab") x $n));
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n && ($s) x $n);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n ? ($s) x 1 : 0);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n ? 0 : ($s) x 1);
+say "next";
+---
+my $n = 0; my $s = "ab";
+say($n ? 0 : ($s) x 1);
+say "next";
+---
+my $n = 0; my $s = "ab";
+say($n ? 0 : ($s) x 0);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n && ($s) x 0);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n && ($s . "c") x 1);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n && (($s) x 1) x 1);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n && +($s) x 1);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say($n and ($s) x 1);
+say "next";
+---
+my $n = 1; my $s = "ab";
+say(($n && ($s) x 1));
+say "next";
+---
+my $n = 1; my $s = "ab";
+say((($n && ($s) x 1)));
+say "next";
+---
+my $n = 1; my $s = "ab";
+say(+($n && ($s) x 1));
+say "next";

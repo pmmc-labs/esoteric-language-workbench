@@ -1,0 +1,109 @@
+my $x = 3; say(($x = 1) . "a" . ($x = 2));
+---
+my $x = 3; say((++$x) . "a" . ($x = 2));
+---
+my $x = 3; say(($x += 1) . "-" . $x++);
+---
+my $x; say(($x ||= 4) . "a" . ($x = 2));
+---
+my $x = 3; say(($x++) . "a" . ($x = 2));
+---
+my $x = 3; say(($x++) . "a" . $x++);
+---
+my $x = 3; say($x++ . $x++ . $x++);
+---
+my $x = 3; say(++$x . ++$x . ++$x);
+---
+my $x = 3; my $y = $x . ($x = 5); say $y;
+---
+my $x = "a"; $x = $x . ($x = "b"); say $x;
+---
+my $x = "a"; $x = ($x = "b") . $x; say $x;
+---
+my $x = "a"; my $y = "y"; $x = $y . ($x = "b"); say $x;
+---
+my $x = "a"; my $y = "y"; $x = ($y = "q") . $x . $y; say $x;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= (1 ? ($u = $x . $x) : 0); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($x && ($u = $x . $x)); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= (0 || ($u = $x . $x)); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= (1 && ($u = $x . $x)); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= (($u = $x . $x)); say $t . "|" . $u;
+---
+my $t = "t"; my $x = "a"; $t .= ($t = $x . $x); say $t;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t = $t . ($u = $x . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = $x . $x) . ""; say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= "" . ($u = $x . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; $t .= ($u = $x . $x . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = 2; $t .= ($u = $x . $x) + 1; say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = 2; $t .= ($u = "<" . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = 2; $t .= ($u = $x . ">"); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = 2; $t .= ($u = "<" . ">"); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = 2; $t .= ($u .= $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = 2; $t .= ($u = $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u = "u"; my $x = 2; $t .= ($u = -$x . $x); say $t . "|" . $u;
+---
+my $t = "t"; my $u; my $x = 2; $t .= ($u = $x . $x); say $t . "|" . (defined $u ? $u : "undef");
+---
+my $t = "t"; my $x = 2; if ($x) { my $u = "u"; $t .= ($u = $x . $x); say $t . "|" . $u; }
+---
+my $t = "t"; my $u = "u"; my $x = 2; if (($t .= ($u = $x . $x)) eq "t22") { say $t . "|" . $u; }
+---
+my $x = 1; my $y = 3; if ($x = 0 and $y) { say "a"; } say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (0 or $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (0 || $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = ("" // $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (undef // $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (1 && 2 && $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (0 ? $y : 4); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = ($y ? 4 : 5); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = -(1 || $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (1 || $y) + 1; say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = "p" . (1 || $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = length(1 || $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = !(1 || $y); say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (1 || $y) x 2; say $x;
+---
+my $x = 1; my $y = 3; say "a" if $x = (1 || $y++); say $x . $y;
+---
+my $x = 1; my $y = 3; say "a" if $x = (1 || ($y = 9)); say $x . $y;
+---
+my $x = 1; my $y = 3; say(($x = (1 || $y)) ? "t" : "f");
+---
+my $x = 1; my $y = 3; say(($x = (0 && $y)) || "f");
+---
+my $x = 1; my $y = 3; if ((my $w = (1 || $y)) > 0) { say $w; }
+---
+my $x = 1; my $y = 3; if (my $w = (1 || $y)) { say $w; }
+---
+my $x = 1; my $y = 3; unless (my $w = (0 && $y)) { say $w; }
+---
+my $x = 1; my $y = 3; if ($y) { say 1; } elsif ($x = (1 || $y)) { say 2; }

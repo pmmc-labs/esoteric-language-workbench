@@ -1,0 +1,106 @@
+say(1 && (("ab") x 2));
+---
+say(1 && ("ab") x 2);
+---
+say(0 || ("ab") x 2);
+---
+say(1 ? ("ab") x 2 : 3);
+---
+say((1 ? ("ab") x 2 : 3));
+---
+say(+(("ab") x 2));
+---
+say(1 && (("ab") x 2) . "c");
+---
+say(undef // ("ab") x 0);
+---
+say(1 && ((1 ? 0.5 : 1) x 1) x 0.3);
+---
+print(1 && (("ab") x 2));
+print "|\n";
+---
+say("x" . (1 && (("ab") x 2)));
+---
+say(1 && ("ab" x 2));
+---
+say(1 and ("ab") x 2);
+---
+say((1 and ("ab") x 2) . "");
+---
+my $x = "a"; $x .= ($x = "b"); say $x;
+---
+my $x = "a"; $x .= ($x = $x . "1"); say $x;
+---
+my $x = "a"; my $z = "1"; $x .= ($x = $x . $z); say $x;
+---
+my $x = "a"; my $z = "1"; $x .= ($x = $z . $x); say $x;
+---
+my $x = "a"; my $z = "1"; $x .= ($x .= $z); say $x;
+---
+my $x = "a"; my $z = "1"; $x .= ($x = $z); say $x;
+---
+my $x = "a"; my $z = "1"; my $y = $x . ($x = $z); say $y;
+---
+my $x = "a"; my $z = "1"; my $y = $x . ($x = $x . $z); say $y;
+---
+my $x = "a"; my $z = "1"; my $y = $x . ($x .= $z); say $y;
+---
+my $x = "a"; my $z = "1"; say $x . ($x = $x . $z);
+---
+my $x = "a"; my $z = "1"; say $x . ($x = ($x . $z));
+---
+my $x = 3; say $x . "-" . ($x = 5);
+---
+my $x = 3; say(($x . "-") . ($x = 5));
+---
+my $x = 3; say $x . ($x = 5);
+---
+my $x = 3; say $x . "" . ($x = 5);
+---
+my $x = 3; my $y = "-"; say $x . $y . ($x = 5);
+---
+my $x = 3; my $y = "-"; say $x . $y . $x++;
+---
+my $x = 3; my $y = "-"; say $x . $y . ++$x;
+---
+my $x = 3; my $y = "-"; say(($x . $y) . ($x += 1));
+---
+my $x = 3; my $y = "-"; say(($x . $y) x 1 . ($x += 1));
+---
+my $x = 3; my $y = "-"; say(($x . $y) + ($x += 1));
+---
+my $x = 3; my $y = "-"; say((1 . $x) + ($x += 1));
+---
+my $x = 3; my $y = "-"; say(length($x . $y) . ($x += 10));
+---
+my $x = 3; my $y = "-"; say($y . ($x . $y) . ($x += 10));
+---
+my $x = 3; my $y = "-"; say($y . (($x . $y) . ($x += 10)));
+---
+my $x = 3; my $y = "-"; say($y . -$x . ($x += 10));
+---
+my $x = 3; my $y = "-"; say(($x + 0) . $y . ($x += 10));
+---
+my $x = 3; my $y = "-"; my $w = $x . $y . ($x += 10); say $w;
+---
+my $x = 3; my $y = "-"; my $w; $w = $x . $y . ($x += 10); say $w;
+---
+my $x = 3; my $y = "-"; my $w = "w"; $w .= $x . $y . ($x += 10); say $w;
+---
+my $x = 3; my $y = "-"; $x = $x . $y . ($x += 10); say $x;
+---
+my $x = 3; my $y = "-"; $x .= $x . $y . ($x += 10); say $x;
+---
+my $x = 3; my $y = "-"; $x .= $y . ($x += 10); say $x;
+---
+my $x = 3; my $y = "-"; $x .= ($x += 10); say $x;
+---
+my $x = 3; my $y = "-"; $x .= ($x += 10) . $y; say $x;
+---
+my $x = 3; my $y = "-"; $y = $x . ($y = "q"); say $y;
+---
+my $x = 3; my $y = "-"; $y = ($y = "q") . $x; say $y;
+---
+my $x = 3; my $y = "-"; $y = $y . ($y = "q"); say $y;
+---
+my $x = 3; my $y = "-"; $y = $x . $y . ($y = "q"); say $y;

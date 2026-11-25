@@ -1,0 +1,29 @@
+my $z = 1; if ($z > 5) { say 1; } elsif (!(my $n = (7 || $z))) { say 2; } else { say 3; }
+---
+my $z = 1; if ($z > 5) { say 1; } elsif (!($z = 7)) { say 2; } else { say 3; }
+---
+my $z = 1; if ($z > 5) { say 1; } elsif ($z = (7 || $z)) { say 2; } else { say 3; }
+---
+my $z = 1; if (!($z = 7)) { say 2; } else { say 3; }
+---
+my $z = 1; if ($z > 5) { say 1; } elsif (not $z = 7) { say 2; } else { say 3; }
+---
+my $z = 1; my $w = !($z = 7) ? 1 : 2; say $w;
+---
+my $z = 1; my $w = !($z = 7) || 2; say $w;
+---
+my $z = 1; unless ($z = (0 && $z)) { say 2; }
+---
+my $z = 1; unless (!($z = (0 && $z))) { say 2; }
+---
+my $z = 1; say 2 unless !($z = 0);
+---
+my $z = 1; say 2 if !!($z = 0);
+---
+my $z = 1; say 2 if !(!($z = 0));
+---
+my $z = 1; say 2 if -($z = 0);
+---
+my $z = 1; say 2 if ($z = 0) == 0;
+---
+my $z = 1; say 2 if ($z = 0, 1);

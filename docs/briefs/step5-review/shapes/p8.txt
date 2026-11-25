@@ -1,0 +1,65 @@
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= $u = $x . $z; say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x . "-"); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $u . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u .= $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($t = $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($t = $x . $z . $x); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x . $z . $x); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t = ($u = $x . $z) . $t; say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t = ($u = $x . $z) . $u; say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t = $u . ($u = $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; say(($u = $x . $z) . $t); say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; say(($u = $x . $z) . $t . $u); say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; say($u . ($u = $x . $z) . $t); say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; say($t . ($u = $x . $z)); say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; my $w = $t . ($u = $x . $z); say $w; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t = $t . ($u = $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x) . $z; say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x + 1); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x x 2); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = ($x . $z) x 2); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= (my $w = $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= +($u = $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = $x . $z) . ""; say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= "" . ($u = $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u ||= $x . $z); say $t; say $u;
+---
+my $t = "t"; my $u = "u"; my $x = "a"; my $z = "1"; $t .= ($u = "$x$z"); say $t; say $u;
+---
+my $t = 5; my $u = 7; my $x = 2; my $z = 3; $t += ($u = $x + $z); say $t; say $u;
+---
+my $t = 5; my $u = 7; my $x = 2; my $z = 3; $t -= ($t = $x + $z); say $t; say $u;
+---
+my $t = 5; my $u = 7; my $x = 2; my $z = 3; $t += ($t = $t + $z); say $t; say $u;
+---
+my $t = 5; my $u = 7; my $x = 2; my $z = 3; $t *= ($t = $t - $z); say $t; say $u;
+---
+my $t = 5; my $u = 7; my $x = 2; my $z = 3; $t x= ($t = $t - $z); say $t; say $u;
+---
+my $t = 5; my $u = 7; my $x = 2; my $z = 3; $t **= ($t = $t - $z); say $t; say $u;

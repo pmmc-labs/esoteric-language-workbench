@@ -9,12 +9,17 @@ runtime. The driver is `curlyc`, and a program is a `.pl` file.
 
 ## Status
 
-**Steps 0 to 4 of [`docs/PLAN.md`](docs/PLAN.md) are done**
+**Steps 0 to 5 of [`docs/PLAN.md`](docs/PLAN.md) are done**
 (2026-11-24 and 25, all by Fable 5.2). **The language** is `use
 v5.42;`, then `use utf8;` and `use open ':std', ':encoding(UTF-8)';`
-if wanted, then any number of `say EXPR;` and `print EXPR;` (brackets
-or not), where an expression is a number, a string, `true`, `false`,
-`undef`, brackets, unary `-` `+` `!`, `+ - * / % **`, `.` and `x`,
+if wanted, then statements: `say EXPR;` and `print EXPR;` (brackets
+or not), `my $x;`, `my $x = EXPR;`, an assignment, `$x++` and its
+three kin, a block, `if (...) {...}` with `elsif`s and an `else`,
+`unless (...) {...}`, and `STATEMENT if EXPR;` or `unless`. An
+expression is a number, a string, `true`, `false`,
+`undef`, a variable, brackets, unary `-` `+` `!`, `++` and `--`,
+`=` and `+= -= *= /= %= **= .= x= ||= &&= //=`,
+`+ - * / % **`, `.` and `x`,
 the comparisons (`== != < <= > >= <=>`, `eq ne lt le gt ge cmp`),
 `&& || //`, `? :`, `not and or xor`, and the builtins `length uc lc
 ord chr defined` (perl's named unary operators, D41) and `substr` and
@@ -45,7 +50,21 @@ that is exactly a double faults beside a whole Num or a string (T92).
 number is wanted, `"1"` or `""` where a string is, in silence, as
 perl has it. **undef** (D48) faults where a number or a string is
 wanted, printing included; `defined`, `//`, the tests of truth and
-`length` take it. **Comparison** (D49) is D35's question again: two
+`length` take it. **A variable** (D55, D56) is `$name`, ASCII, not
+`$a`, `$b` or `$_`; declared by a `my` that begins a statement or
+stands in the test of an `if`; seen from the next statement to the
+end of its block; and **read when the operator it is an operand of
+runs** (D14), as perl reads it: `$x + ($x = 5)` is 10. What is "the
+variable itself": `$x`, `($x)`, `+$x`, an assignment, `++$x`, and
+whichever operand `|| && // or and ? :` give; `$x++` and everything
+else are values. **`++` and `--`** (D52) go by what the variable
+holds: an Int by one or `integer overflow`; undef to 1 or -1; a
+boolean to the Int; a Num as `+ 1` would (`--` always leaves a Num);
+a string as its number, and then a Num; and a fault where perl has
+two answers by the variable's past (a string of digits that begins
+with a zero under `++`, a whole-number string at 2^53, `--` on a
+whole Num reaching 2^53, a Num too large to step). An undef on the
+left of `+=`, `-=` and `.=` is 0 or `""`, as in perl. **Comparison** (D49) is D35's question again: two
 integral operands exactly, otherwise as doubles; strings character by
 character, a number as it prints. Truth is perl's (false: undef,
 `false`, zero, `""`, `"0"`). `&& || // and or` give an operand and
@@ -84,24 +103,42 @@ tighter than `not` after `not (...)` (T107), all D51; an unbracketed
 `!` on the left of a comparison, which perl 5.42 warns of (T115);
 `^^`, `~~`; any
 pragma or spelling of one outside D16's list; `--`,
-`++` and every other operator of perl's, as the longest token perl
-would take (T27); a line that starts `#!` (D33).
+every operator of perl's that isn't in, as the longest token perl
+would take (T27); a line that starts `#!` (D33). **Refused at step
+5**: a variable first after `say` or `print`, a blank, and what could
+begin a value, `say $x -1;` (a file handle, to perl: T111); `=` with
+no variable on its right where a value is tested for truth, through
+`!`, `not` and `+` too (D53, T112); `unless` with `else` or `elsif`
+(D54); `${x}`, `$ x`; a second `my` in a scope, a variable with no
+`my`, `my` under a modifier or where it may not be reached; a
+statement that only has a value, or two joined by a word operator
+(`$x = 1 and $y = 2;`); an assignment to anything but a bare
+variable; a step on anything but a variable; an empty bare block
+(T116); and **D57, which is open**: a concatenation in which a later
+piece changes a variable an earlier piece reads, because perl joins a
+row of dots as one operation and reads each piece late (`$x . "a" .
+($x = 5)` is `5a5`, T117).
 **The compiler**: `lexer.ts` (the whole file, a line and column on
 each token, every character checked there; it knows whether a value
 or an operator comes next from the token before, T90), `parser.ts`
 (precedence climbing over perlop's table), `ast.ts` (`int`, `num`,
-`str`, `constant`, `unary`, `binary`, `ternary`, `apply`; `use`,
-`pragma`, `call`),
-`checker.ts`, `codegen.ts`, `names.ts` (the statements, the builtins
+`str`, `constant`, `var`, `my`, `assign`, `step`, `unary`, `binary`,
+`ternary`, `apply`; `use`, `pragma`, `call`, `do`, `block`, `if`),
+`resolver.ts` (each variable to its `my`, by number; it runs before
+the checker), `checker.ts`, `codegen.ts`, `names.ts` (the statements, the builtins
 by shape, the constants, the pragmas, and all 25 rows of perlop's
-table, of which thirteen are live, each operator with what the passes
+table, of which fifteen are live, each operator with what the passes
 need of it), `errors.ts`, and the driver `bin/curlyc.ts` (D3,
 D29). **The generated C** is straight-line (D31): each operation a
 statement with its result in a temporary, operands left before right,
 the statement's line stored in the context first; a Num literal goes
 over as its 64 bits, a string literal as a constant with its bytes
 and characters counted; an operand that may not be worked out (the
-right of `&&`, a branch of `? :`) is an `if` round its statements. **The runtime**: the two-word value (D25),
+right of `&&`, a branch of `? :`) is an `if` round its statements; a
+variable is a C local in the C block of its scope, never copied to a
+temporary, and where an operator gives one of two operands the C
+keeps a pointer to it, the statement's temporaries all declared at
+its top. **The runtime**: the two-word value (D25),
 the context first in every call (D28), strings on a list the context
 owns and frees at the end (no collector until step 7), every operator
 checking its operands' tags. **Tests**: golden 000 to 009 (step 0);
@@ -113,7 +150,11 @@ once), 170 to 179 by hand with perl's answers, 200 to 237 refusals
 by hand (step 3); 300 to 307 and 320 to 359 from `t/models/bool.py`
 (about 13,000 lines, and 40 programs that each fault once), 360 to
 364 by hand with perl's answers, 380 to 407 refusals by hand (step
-4); 67 unit tests, the runtime's own in C. **The oracle
+4); 500 to 504 and 520 to 546, 550, 551 from `t/models/var.py`
+(about 5,000 lines, and 29 programs that each fault once), 560 to 565
+by hand with perl's answers, 547 to 549 faults whose line is the
+point, 570 to 613 refusals by hand (step 5); 89 unit tests, the
+runtime's own in C. **The oracle
 check** (`t/checks.py oracle`, D10) holds every test to perl 5.42 by
 its kind, **run plain, with no switches** (D39), and has 43 tests of
 its own in `t/checks/`; its seeds are eight of 64 hex digits
@@ -125,8 +166,11 @@ found, and the compiler agrees with the reviewer's own model on
 1,271,555 programs, `docs/briefs/step1-review/`). Each step's runtime
 was broken on purpose until every breakage was caught: step 2's found
 three holes in its own tests that way, step 3's six of 70
-(`docs/briefs/step3-mutations.py`), and step 4's none of 50
-(`step4-mutations.py`); the limit of `x` is tested from C
+(`docs/briefs/step3-mutations.py`), step 4's none of 50
+(`step4-mutations.py`), and step 5's, which breaks the code generator
+too, one of 74 (`step5-mutations.py`; one more it could not see, a
+`my` not made undef again on a second entry to its block, is step
+6's to test with its first loop); the limit of `x` is tested from C
 (`runtime/tests/limit.c`), since perl can't be asked for 2^31
 characters. **A fault that never happens is
 invisible to a test of what prints: every fault needs a fault test of
@@ -134,9 +178,9 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 389 of them now, and all hold under 5.42.0,
+about perl as a program, 402 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T115, by step. **Found at step 0**: T72 (a
+keeps the programs, T1 to T118, by step. **Found at step 0**: T72 (a
 line that starts `#!`, D33), T73 (`use utf8;` on a line before the
 first character past ASCII), T74 (`# line N "file"` comments, step
 15), T75 (`use v5.42#c`). **At step 1**: T76. **Proposing step 2**:
@@ -168,26 +212,29 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D51 are all Stevan's.** The ones a builder meets first: the
+**D1 to D56 are all Stevan's, and D57 is open** (the builder's,
+taken at step 5 as the safe side; he has not seen it). The ones a
+builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
 be caught (D13); perl's warnings are faults (D15); loop variables are
 read-only and containers freeze (D17); a sub can't see its context
 (D18); `class`, and `package` only as a namespace (D19); brackets on
 a program's own calls (D21); a number is integral or it isn't (D35),
 and a value has no past (D36, D40, D45); the name (D32). perigrin has
-agreed to the probe corpus (D11). **Next: step 5**, lexical scalars,
-assignment, blocks and `if`, is **proposed in full in `docs/PLAN.md`
-and waits on Stevan's answers to its four questions** (Q1: `++` and
-`--`, a table by what the variable holds, a stepped string being a
-Num; Q2: a `=` with a constant right side as a condition, which perl
-warns of; Q3: `unless` with `else`; Q4: names ASCII for now, and `$a`
-and `$b` refused). Nothing of step 5 is built; write its model before
-its compiler (step 4 didn't). `docs/briefs/step5-increments.py` holds
-Q1's table to perl under seven pasts of the variable. `docs/briefs/step4-comparisons.py`
+agreed to the probe corpus (D11). **Step 5 is built and its adversarial review is
+not yet in**: `docs/briefs/step5-review/` is the reviewer's work in
+progress, and its findings, when it reports, go into `docs/TRAPS.md`
+and the tests, and the compiler is held to its model as steps 3 and
+4 were. Until then step 5's claim, that a variable's past shows
+nowhere the language doesn't fault, rests on the builder's evidence
+alone (`docs/briefs/step5-increments.py`: `++`, `--` and the
+assigning operators under seven pasts of the variable). **Waiting on
+Stevan: D57.** **Next: step 6**, loops, which is an outline and has
+to be proposed; write its model before its compiler, as step 5 did,
+and test that a `my` in a block is undef again each time round. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
-operand: 57,376 comparisons, no new fault needed. **What step 5 must
-ask again**:
-once there are variables, whether a value's past shows anywhere the
+operand: 57,376 comparisons, no new fault needed. **What every step
+must ask again**: whether a value's past shows anywhere the
 rules don't fault. The claim was refuted once (T92), by a review,
 after the builder's own search had passed it. The evidence is kept:
 `docs/briefs/step2-perl-numbers.py` (D35 against perl, 129,801
