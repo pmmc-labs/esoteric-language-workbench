@@ -9,7 +9,7 @@ runtime. The driver is `curlyc`, and a program is a `.pl` file.
 
 ## Status
 
-**Steps 0 to 6 of [`docs/PLAN.md`](docs/PLAN.md) are done**
+**Steps 0 to 7 of [`docs/PLAN.md`](docs/PLAN.md) are done**
 (2026-11-24 and 25, all by Fable 5.2). **The language** is `use
 v5.42;`, then `use utf8;` and `use open ':std', ':encoding(UTF-8)';`
 if wanted, then statements: `say EXPR;` and `print EXPR;` (brackets
@@ -80,7 +80,13 @@ or in a `while`'s or `until`'s test, is new each time round (T119).
 bare block is no loop** (D59): to perl it is one that runs once, and
 a `last` with no label inside one leaves only the block, so that is
 refused. A fault in a loop's test or its third part names the loop's
-line. **Comparison** (D49) is D35's question again: two
+line. **Memory** (D26, D63 to D66) is collected: a string the program
+can no longer reach is freed, and nothing a program prints can tell.
+`out of memory` is a fault. Every compiled program reads three
+environment variables as it starts, each a whole number and 0 or
+unset for off: `CURLY_GC_STRESS=N` (a collection at every Nth
+allocation), `CURLY_GC_POISON=1` (a collected string's memory is
+never used again), `CURLY_HEAP_CAP=BYTES`. **Comparison** (D49) is D35's question again: two
 integral operands exactly, otherwise as doubles; strings character by
 character, a number as it prints. Truth is perl's (false: undef,
 `false`, zero, `""`, `"0"`). `&& || // and or` give an operand and
@@ -171,10 +177,24 @@ keeps a pointer to it, the statement's temporaries all declared at
 its top; a loop is `for (;;)` with its test inside it and its block
 in a C block of its own, and `last` and `next` are each a `goto` to
 a label after the loop or at the end of its block, the only jumps
-there are. **The runtime**: the two-word value (D25),
-the context first in every call (D28), strings on a list the context
-owns and frees at the end (no collector until step 7), every operator
-checking its operands' tags. **Tests**: golden 000 to 009 (step 0);
+there are. **Every variable and temporary is a slot of its
+function's frame**, `f[n]`, the variables first, each at its depth
+among those in scope, then the temporaries, which each statement
+numbers again from the first (D66). **The runtime**:
+the two-word value (D25),
+the context first in every call (D28), every operator
+checking its operands' tags. **The collector** (step 7) is a mark
+over every slot of every frame and a sweep of the heap's list, in
+`rt_collect`; a collection can happen only inside `str_new`, before
+the string is made. **The rule the whole runtime keeps: a value
+still in use is in a slot whenever a collection can happen.** So a
+runtime function allocates at most once, as the last thing it does,
+or opens a frame of its own (none needs to yet; lists will, at step
+9); a number as a string is a scratch string on the C stack and is
+never returned; and a string is read through `alive`, which stops
+with `internal:` (exit 2) if it was collected, and is called again
+after an allocation by the four functions that read an operand
+then. **Tests**: golden 000 to 009 (step 0);
 010 to 026 from `t/models/arith.py` and 030 to 038 by hand (step 1);
 040 to 078 from `t/models/num.py` and 080 to 093 by hand (step 2);
 100 to 169 and 180 to 191 from `t/models/str.py` (about 15,000 lines
@@ -190,14 +210,22 @@ point, 570 to 613 refusals by hand, and from the review 552 to 554,
 566 and 614 to 624 (step 5); 700 to 703 and 720 to 732 from
 `t/models/loop.py` (about 3,900 lines, and 13 programs that each
 fault once), 740 to 743 by hand with perl's answers, 750 to 791
-refusals by hand (step 6); 105 unit tests, the runtime's own in C
-and three of the test runner itself (`t/harness/`). **The oracle
+refusals by hand (step 6); 800 to 807 the cap tests, a gigabyte of
+garbage each under 16 MB and the cap's own faults, and 810, a made
+string in every kind of slot (step 7; no model: there is no second
+derivation of what a collector frees); 114 unit tests, the runtime's
+own in C (`collect.c` drives the collector by hand) and three of the
+test runner itself (`t/harness/`). **Every golden test runs with a
+collection at every allocation, poison, and a cap of 256 MB** (D64,
+D65; `t/knobs.sh`, which `t/run.sh` sources and `t/checks.py` reads);
+a test says otherwise in its `# env:`. **The oracle
 check** (`t/checks.py oracle`, D10) holds every test to perl 5.42 by
 its kind, **run plain, with no switches** (D39), and has 43 tests of
 its own in `t/checks/`; its seeds are eight of 64 hex digits
 (`PERL_HASH_SEED=1` to `8` are nearly one seed to perl). Its reading
 rule for hashes is by pattern and errs toward rejecting; step 12 will
-meet it first. Green under gcc, clang, and UBSan with ASan. **Each
+meet it first. Green under gcc, clang, and UBSan with ASan (`make sanitize`,
+which since step 7 runs the suite twice, with poison on and off). **Each
 step's language was reviewed adversarially** (step 1's: nothing
 found, and the compiler agrees with the reviewer's own model on
 1,271,555 programs, `docs/briefs/step1-review/`). Each step's runtime
@@ -209,7 +237,10 @@ too, one of 74 and then none of 77 (`step5-mutations.py`; one more it could not 
 `my` not made undef again on a second entry to its block, is step
 6's to test with its first loop, and was); step 6's breaks the
 compiler alone, the runtime having gained nothing, 46 of 49 caught the first time and three holes closed
-(`step6-mutations.py`, which runs the refused tests too); the limit of `x` is tested from C
+(`step6-mutations.py`, which runs the refused tests too); step 7's
+breaks the collector, the knobs and the code generator's frames, 45
+of 47 caught the first time and two tests mended that did not test
+what they were written for (`step7-mutations.py`); the limit of `x` is tested from C
 (`runtime/tests/limit.c`), since perl can't be asked for 2^31
 characters. **A fault that never happens is
 invisible to a test of what prints: every fault needs a fault test of
@@ -282,29 +313,16 @@ variable's past shows nowhere the language doesn't fault, stood**:
 10,000 pairs of programs and 223,000 singles, nothing but the Num at
 2^53. The builder's own evidence
 (`docs/briefs/step5-increments.py`) had missed that one for want of
-a value, and has it now. **Step 7, the collector, is agreed and being
-built** (D63: the knobs are environment variables every compiled
-program reads, `CURLY_GC_STRESS`, `CURLY_GC_POISON`,
-`CURLY_HEAP_CAP`; D64: `t/run.sh` sets stress 1 and poison for
-every golden test; D65: no cap in the language, one for every test;
-D66: what the collector is). Stevan's Mac ran `make test` green
-after step 6.
-D26 is decided and not reopened: precise mark and sweep, roots on a
-shadow stack in the generated C. The proposal's one rule: a value the
-program can still use is in a slot whenever a collection can happen,
-and one can happen only inside an allocation; so variables and
-temporaries become slots of a frame, and every runtime function
-allocates at most once, last (today a number used as a string
-allocates, which has to go). It is the first step with no perl to
-referee it and no model: the knobs are the test. **Its adversarial
-review is in** (`docs/briefs/step7-review/`, with a prototype of the
-design): it could not break the rule, and the proposal is amended by
-what it found (poison must check where a string is read, in three
-places and again after an allocation; the cap must count the
-poisoned dead; ten holes in the test plan). Nothing of it is
-built; build the cap first, then the cap tests, which are red until
-there is a collector. Until it is
-built every string a loop makes stays until the program ends. `docs/briefs/step4-comparisons.py`
+a value, and has it now. **Step 7's adversarial review** (`docs/briefs/step7-review/`, with a
+prototype of the design) could not break its rule, and corrected the
+proposal round it: poison must check wherever a string is read and
+again after an allocation; the cap must count the poisoned dead; ten
+holes in the test plan, each closed. Stevan's Mac ran `make test`
+green after step 6; step 7 has not been run there yet. **Next: step
+8**, subs, which is an outline and has to be proposed. What step 7
+hands it: a sub opens a frame and closes it on every way out; its
+arguments are copied into its own slots before anything allocates;
+and the limit on recursion counts a frame's bytes, not calls. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
 operand: 57,376 comparisons, no new fault needed. **What every step
 must ask again**: whether a value's past shows anywhere the
@@ -515,7 +533,9 @@ in `pmmc-labs/esoteric-language-workbench`.
 - `make census` comes with step 11.
 - Environment: `CURLY_PERL`, the oracle (default `perl`); `CURLY_CC`,
   the C compiler (default `cc`); `TIMEOUT`, the seconds a golden test
-  may run (default 60); `JOBS`. A compiled program reads none yet.
+  may run (default 60); `JOBS`. A compiled program reads three, the
+  collector's knobs: `CURLY_GC_STRESS`, `CURLY_GC_POISON` and
+  `CURLY_HEAP_CAP` (D63), which `t/knobs.sh` sets for every test.
 
 A compiled program prints to stdout and exits 0. A fault is `fault:
 MESSAGE at FILE line N.` on stderr and exit 1, after whatever stdout
