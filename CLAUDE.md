@@ -63,7 +63,8 @@ boolean to the Int; a Num as `+ 1` would (`--` always leaves a Num);
 a string as its number, and then a Num; and a fault where perl has
 two answers by the variable's past (a string of digits that begins
 with a zero under `++`, a whole-number string at 2^53, `--` on a
-whole Num reaching 2^53, a Num too large to step). An undef on the
+whole Num reaching 2^53), and on a Num of 2^53 or more, where perl
+warns `Lost precision` (T130). An undef on the
 left of `+=`, `-=` and `.=` is 0 or `""`, as in perl. **Comparison** (D49) is D35's question again: two
 integral operands exactly, otherwise as doubles; strings character by
 character, a number as it prints. Truth is perl's (false: undef,
@@ -105,10 +106,13 @@ tighter than `not` after `not (...)` (T107), all D51; an unbracketed
 pragma or spelling of one outside D16's list; `--`,
 every operator of perl's that isn't in, as the longest token perl
 would take (T27); a line that starts `#!` (D33). **Refused at step
-5**: a variable first after `say` or `print`, a blank, and what could
-begin a value, `say $x -1;` (a file handle, to perl: T111); `=` with
-no variable on its right where a value is tested for truth, through
-`!`, `not` and `+` too (D53, T112); `unless` with `else` or `elsif`
+5**: a variable first after `say`, `print`, `substr(` or `index(`, a
+blank, and what could begin a value, `say $x -1;` (a file handle, to
+perl: T111, T125); `=` with a constant on its right, or what perl
+folds to one (`0 && $y`), where a value is tested for truth, through
+`!`, `not` and `+` too (D53, T112); `$x =- $y` (T127); a name past
+251 characters (T126); a modifier after `say (...)` that is not on
+the bracket's line (T128); `unless` with `else` or `elsif`
 (D54); `${x}`, `$ x`; a second `my` in a scope, a variable with no
 `my`, `my` under a modifier or where it may not be reached; a
 statement that only has a value, or two joined by a word operator
@@ -117,7 +121,8 @@ variable; a step on anything but a variable; an empty bare block
 (T116); and **D57**: a concatenation in which a later
 piece changes a variable an earlier piece reads, because perl joins a
 row of dots as one operation and reads each piece late (`$x . "a" .
-($x = 5)` is `5a5`, T117).
+($x = 5)` is `5a5`, T117), and a `.=` whose right side is an
+assignment of a concatenation, which perl 5.42 never makes (T129).
 **The compiler**: `lexer.ts` (the whole file, a line and column on
 each token, every character checked there; it knows whether a value
 or an operator comes next from the token before, T90), `parser.ts`
@@ -150,11 +155,11 @@ once), 170 to 179 by hand with perl's answers, 200 to 237 refusals
 by hand (step 3); 300 to 307 and 320 to 359 from `t/models/bool.py`
 (about 13,000 lines, and 40 programs that each fault once), 360 to
 364 by hand with perl's answers, 380 to 407 refusals by hand (step
-4); 500 to 504 and 520 to 546, 550, 551 from `t/models/var.py`
-(about 5,000 lines, and 29 programs that each fault once), 560 to 565
+4); 500 to 504 and 520 to 546, 550 to 554 from `t/models/var.py`
+(about 5,000 lines, and 32 programs that each fault once), 560 to 565
 by hand with perl's answers, 547 to 549 faults whose line is the
-point, 570 to 613 refusals by hand (step 5); 89 unit tests, the
-runtime's own in C. **The oracle
+point, 570 to 613 refusals by hand, and from the review 552 to 554,
+566 and 614 to 624 (step 5); 92 unit tests, the runtime's own in C. **The oracle
 check** (`t/checks.py oracle`, D10) holds every test to perl 5.42 by
 its kind, **run plain, with no switches** (D39), and has 43 tests of
 its own in `t/checks/`; its seeds are eight of 64 hex digits
@@ -168,7 +173,7 @@ was broken on purpose until every breakage was caught: step 2's found
 three holes in its own tests that way, step 3's six of 70
 (`docs/briefs/step3-mutations.py`), step 4's none of 50
 (`step4-mutations.py`), and step 5's, which breaks the code generator
-too, one of 74 (`step5-mutations.py`; one more it could not see, a
+too, one of 74 and then none of 77 (`step5-mutations.py`; one more it could not see, a
 `my` not made undef again on a second entry to its block, is step
 6's to test with its first loop); the limit of `x` is tested from C
 (`runtime/tests/limit.c`), since perl can't be asked for 2^31
@@ -178,10 +183,10 @@ its own, at its edge.**
 
 **perl 5.42 was installed and everything rerun under it**:
 `docs/briefs/claims.py` holds every statement these documents make
-about perl as a program, 433 of them now, and all hold under 5.42.0,
+about perl as a program, 449 of them now, and all hold under 5.42.0,
 run plain as the oracle runs it. [`docs/TRAPS.md`](docs/TRAPS.md)
-keeps the programs, T1 to T124, by step (T119 to T124 found proposing
-step 6). **Found at step 0**: T72 (a
+keeps the programs, T1 to T130, by step (T119 to T124 found proposing
+step 6, T125 to T130 by the review of step 5). **Found at step 0**: T72 (a
 line that starts `#!`, D33), T73 (`use utf8;` on a line before the
 first character past ASCII), T74 (`# line N "file"` comments, step
 15), T75 (`use v5.42#c`). **At step 1**: T76. **Proposing step 2**:
@@ -221,14 +226,23 @@ read-only and containers freeze (D17); a sub can't see its context
 (D18); `class`, and `package` only as a namespace (D19); brackets on
 a program's own calls (D21); a number is integral or it isn't (D35),
 and a value has no past (D36, D40, D45); the name (D32). perigrin has
-agreed to the probe corpus (D11). **Step 5 is built and its adversarial review is
-not yet in**: `docs/briefs/step5-review/` is the reviewer's work in
-progress, and its findings, when it reports, go into `docs/TRAPS.md`
-and the tests, and the compiler is held to its model as steps 3 and
-4 were. Until then step 5's claim, that a variable's past shows
-nowhere the language doesn't fault, rests on the builder's evidence
-alone (`docs/briefs/step5-increments.py`: `++`, `--` and the
-assigning operators under seven pasts of the variable). **Next: step 6**, loops, is **proposed in full
+agreed to the probe corpus (D11). **The review of step 5 found seven kinds of program
+the compiler took and should not have** (T125 to T130, and more of
+T112), all refused or faulted now: `$t .= ($u = $x . $z)`, where
+perl 5.42 itself never assigns `$u` (the one that printed what perl
+doesn't; D57); `++` or `--` on a Num of 2^53 or more, where perl
+warns by where the Num is and not by whether the step is lost; a
+tested `=` that perl folds to a constant, `$x = 0 && $y`; the
+file-handle guess after `substr(` and `index(`; a name past 251
+characters; `$x =- $y`; `say ("a")` with its `if` on the next line.
+Its model is kept, `docs/briefs/step5-review/`, with the drivers
+that hold the compiler to it and to perl (`compiler.py`,
+`spacing.py`, `handles.py`, `shapes.py`). **Step 5's claim, that a
+variable's past shows nowhere the language doesn't fault, stood**:
+10,000 pairs of programs and 223,000 singles, nothing but the Num at
+2^53. The builder's own evidence
+(`docs/briefs/step5-increments.py`) had missed that one for want of
+a value, and has it now. **Next: step 6**, loops, is **proposed in full
 in `docs/PLAN.md` and waits on Stevan's answers to its four
 questions** (Q1: `do BLOCK while`, left out; Q2: an unlabelled `last`
 or `next` in a bare block, which leaves only the block to perl,

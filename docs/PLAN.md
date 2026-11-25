@@ -1145,6 +1145,44 @@ agreed below, and with these differences and findings:
   D57 lets through); 547 to 549 are faults whose line is the point;
   570 to 613 are the 44 refusals, each with what perl does in its
   comment, run to write it.
+- **The adversarial review** (`briefs/step5-review/`) ran beside the
+  build and then on the compiler: 698,000 programs against a model
+  of its own before there was a compiler, 57,000 through the
+  compiler afterwards, and texts cut into tokens and joined again
+  with blanks and comments at random. It found the three things the
+  build had found (D57, the empty block, `!` over a tested `=`), on
+  its own, and **seven kinds of program the compiler took that it
+  should not have** (T125 to T130, and more of T112):
+  - **One printed what perl doesn't.** `$t .= ($u = $x . $z);` never
+    assigns `$u` in perl 5.42 or 5.38: a fault in perl's own joining
+    of dots (T129). Refused, under D57.
+  - **`++` and `--` on a float of 2^53 or more** faulted only when
+    one more was the same float, and perl warns by where the float
+    is: 2^53 + 2 and one more is a tie that rounds away (T130). The
+    builder's evidence script had no such value; it has them now,
+    went red, and the rule in it, the model and the runtime is
+    perl's own line. Tests 523 and 552 to 554, each edge broken on
+    purpose and caught.
+  - **Five where perl warns or doesn't compile**: a tested `=` whose
+    right side perl folds to a constant, `$x = 0 && $y`; a variable
+    taken for a file handle after `substr(` and `index(` (T125); a
+    name of more than 251 characters (T126); `$x =- $y` (T127); and
+    `say ("a")` with its `if` on the next line (T128).
+  All seven are refused or faulted now, tests 566 and 614 to 624.
+- **The claim stood**: that a variable's past shows nowhere the
+  language doesn't fault. 10,000 pairs of programs, one with reads
+  put in that give its variables a past: perl's two outputs parted
+  in 325, and in every one the model had faulted by then. 223,000
+  single programs of pasts broke nothing but T130. That is the
+  second such claim of five to stand, and the first with variables.
+- **The compiler and the reviewer's model never disagreed**: wherever
+  the compiler printed, the model printed the same. Of 57,000
+  programs the compiler agreed with perl on 32,060, faulted on
+  3,886, refused 5,810, and was wrong on 145, all of the seven
+  kinds; 15,099 that the model faults on were sampled, not run.
+- **Not checked by the review**: characters past ASCII; programs of
+  more than about forty statements; the line a fault names; clang.
+  The builder's tests cover the third (547 to 549) and the fourth.
 
 **Proposed 2026-11-25, and agreed the same day: Stevan took the
 recommendation on each question below, which are now D52 (Q1), D53
@@ -1549,8 +1587,11 @@ with (a) there.
   each test turned round, EACH skipped by `next`.
 - **Review**: the rule asks for an adversarial review of a *large*
   step's proposal, and this one is medium, with no new values and no
-  new arithmetic. None is planned; the step 5 review is still out,
-  and what it finds may touch this step's base.
+  new arithmetic. None is planned. The step 5 review came in after
+  this was written, and touches it in two places: T128's rule (a
+  modifier after `say (...)` is on the bracket's line) goes for
+  `while` and `until` as it does for `if`, and D53's constant is
+  what perl folds to one, in a loop's test as anywhere.
 - Leave out: everything listed above as later.
 
 ### 7. The collector
