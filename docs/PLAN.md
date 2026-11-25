@@ -9,7 +9,8 @@ and Nums, and strings, compile, run, and are checked against perl
 5.42. So do booleans, undef, comparison and logic, and variables,
 assignment, blocks and `if`: **steps 0 to 5 are done** (steps 4 and 5
 on 2026-11-25); and loops: **steps 0 to 6 are done** (step 6 the same
-day). Steps
+day). **Step 7, the collector, is proposed, below, and waits on three
+answers from Stevan** (Q1 to Q3); nothing of it is built. Steps
 7 to 30 are outlines: each is proposed, with options, when it's
 next.
 
@@ -1659,16 +1660,224 @@ with (a) there.
   what perl folds to one, in a loop's test as anywhere.
 - Leave out: everything listed above as later.
 
-### 7. The collector
+### 7. The collector (proposed, not agreed)
 
 Referee: none; the knobs are the test. Size: large.
 
-D26: precise mark-and-sweep, the shadow stack in the generated C, the
-stress interval, poison on free, a heap cap. Tests: every earlier
-golden test under stress 1 (a collection at every allocation); a loop
-that allocates a gigabyte of strings under a 16 MB cap; `make
-sanitize`. Before arrays, so that every container after is written
-with roots from its first line.
+**Proposed 2026-11-25. Nothing is built, and three questions are
+Stevan's: Q1 to Q3 below; Q4 is seven things with nothing to choose
+that are worth his eye.** D26 is decided and is not reopened here: a
+precise, non-moving mark and sweep, its roots on a shadow stack the
+generated C maintains, with a stress interval, poison and a heap cap
+from the start; no reference counts, so no `DESTROY` and no `weaken`.
+This is how. The outline it replaces said: every earlier golden test
+under stress 1; a loop that allocates a gigabyte of strings under a
+16 MB cap; `make sanitize`; before arrays, so that every container
+after is written with roots from its first line.
+
+#### The picture
+
+**This step changes nothing a program can print.** It is the first
+step with no language in it and no perl to say what is right. What
+changes is that a program which makes a gigabyte of strings, a
+kilobyte at a time, runs in a few megabytes and not in a gigabyte.
+
+Today every string a program makes goes on one list and stays there
+until the program ends. After this step the runtime can tell which
+strings the program can still reach, and frees the rest:
+
+```
+   the generated C                          the heap
+  +------------------------------+
+  | frame of curly_main          |         +-----------+
+  |  slot 0   $total   Int 15    |    +--> | "abcabc"  |  reached: kept
+  |  slot 1   $name    Str  -----+----+    +-----------+
+  |  slot 2   $line    Str  -----+----+    +-----------+
+  |  slot 3   t1       Str  -----+--+ +--> | "x: 15"   |  reached: kept
+  |  slot 4   t2       undef     |  |      +-----------+
+  +------------------------------+  |      +-----------+
+     every variable and every       +----> | "x: "     |  reached: kept
+     temporary of the function             +-----------+
+     is a slot the collector               +-----------+
+     can see                               | "old"     |  no slot points here: freed
+                                           +-----------+
+  constants ("abc" in the source) are not on the heap, and are never looked at
+```
+
+A collection is two walks. **Mark**: every slot of every frame; a
+slot that holds a heap string marks it. **Sweep**: every string on
+the heap's list; one that wasn't marked is freed. Strings hold no
+other values, so marking goes no deeper yet; arrays, hashes and
+closures will each add how to find what they hold, and that is why
+this comes before them.
+
+The whole of the step is one rule and the three places it has to be
+made true:
+
+> **A value the program can still use is in a slot, at every moment
+> a collection can happen.** A collection can happen only inside an
+> allocation.
+
+1. **The generated C.** A variable and a temporary are C locals
+   today, which the collector can't see. They become slots of one
+   array per function, linked from the context. D31's shape already
+   has every result stored before the next operation begins, so the
+   change is where a value lives, not what the code does.
+2. **Inside the runtime.** `"n = " . $n` allocates three times
+   today: a string for the number, then nothing for the literal, then
+   the answer. The first is held only in a C local of the runtime
+   when the last is allocated, and a collection there would free it.
+   The cure is to stop allocating for a conversion: a number as a
+   string is at most 24 bytes, and can sit on the C stack for as long
+   as the operation runs. Then **every runtime function allocates at
+   most once, and it is the last thing it does**, which is a rule
+   that can be checked by reading and is enforced by the knobs.
+3. **Between the two.** A fresh string is in a C return value for
+   the instant between `rt_concat` returning and the assignment to
+   its slot. No allocation can fall in that instant, because the
+   generated C never passes one call's result straight to another
+   (D31).
+
+Nothing proves the rule but the knobs, which is why D26 has them:
+
+- **Stress**: a collection at every allocation (or every nth). A
+  root that is missed is then missed the first time it could matter,
+  not on the day the heap happens to fill at the wrong line.
+- **Poison**: a freed string is overwritten and marked dead, and
+  under the knob its memory is never handed out again. Anything that
+  still points at it and uses it stops with `internal: a string was
+  used after it was collected`, at once and every time, where a
+  plain `free` would let it read whatever was put there next.
+- **A heap cap**: a program that would hold more than the cap after
+  a collection faults with `out of memory`. A loop that makes a
+  gigabyte of garbage under a 16 MB cap passes only if the garbage
+  is really freed, so this is the one way a golden test can see the
+  collector work.
+
+#### What changes
+
+- **`rt.h`**: a frame (`{ previous frame, how many slots, the slots
+  }`) and the context's list of them; a heap string gains a header
+  (the next string, its size, a mark), and a constant's `rt_str` a
+  flag that says it is one; the context gains the heap's list, its
+  counters and the three knobs. D28 holds: none of it is global.
+- **Generated C**: each function opens a frame for all its variables
+  and the most temporaries any one statement needs, zeroed (a zero
+  tag is no value, and is skipped), and closes it on the way out.
+  `v3_x` and `t2` become `f[3]` and `f[9]`. A variable's slot is its
+  depth among the variables in scope, so a block's slots are used
+  again by the next block.
+- **Runtime**: `str_new` is where a collection may start, before it
+  allocates; conversions go to the C stack; the mark and the sweep,
+  about a hundred lines; the knobs read from the environment once,
+  as the program starts.
+- **Every operator still checks its operands' tags**, and the one
+  place a value becomes a string to read checks that it wasn't
+  collected.
+
+#### The questions
+
+**Q1. How the knobs are set.** They have to reach a compiled program
+somehow, and "you are about to add an environment variable" is a
+point the process says to stop at.
+(a) **Recommended: three environment variables that every compiled
+program reads as it starts**: `CURLY_GC_STRESS=N` (a collection at
+every Nth allocation; unset, the ordinary policy), `CURLY_GC_POISON=1`
+and `CURLY_HEAP_CAP=BYTES`. The binary that is tested is the binary
+that ships, and one build can be run every way. The cost is that
+they are part of what a program is: anyone can slow a program with
+the first, and stop it with the third, from outside. None changes
+what a program prints short of `out of memory`.
+(b) Flags to `curlyc`, baked into the binary. The suite compiles
+every test again for each setting, and what is tested is a different
+binary from what ships.
+(c) A test build of the runtime only (`-DRT_KNOBS`). The same, and
+the shipped runtime's collector is then code no test has run.
+
+**Q2. `make test` under stress.** A golden test finds a missed root
+only if a collection falls between the allocation and the use, and
+under the ordinary policy a small test never collects at all.
+(a) **Recommended: `t/run.sh` sets stress 1 and poison for every
+golden test**, as the place where what every test assumes of the
+runtime is set; a test that is about the cap or the ordinary policy
+says so in its `# env:` header. One run, the strongest one. The cost
+is time, which I will measure before taking it: if the suite more
+than doubles, the interval goes up before the idea goes away.
+(b) `make test` plain, and `make stress` beside `make sanitize` as
+something to run before calling a runtime change done. Faster, and
+it will be skipped.
+
+**Q3. A cap by default.** With no cap a program takes memory until
+the machine says no, which on a shared machine is everyone's
+problem (step 6's runaway test took this one down, by disk).
+(a) **Recommended: the language has no cap of its own, and
+`t/run.sh` gives every test one** (256 MB, far above any test), so a
+test that runs away faults with `out of memory` in a second and
+takes nothing with it.
+(b) A default cap in the runtime, say 1 GB, raised by the variable.
+Safer for a stranger's first program, and one more way a correct
+program stops.
+(c) No cap anywhere unless a test asks.
+
+**Q4. Nothing to choose, worth your eye.**
+- **"Precise" is about what a slot holds, not about whether it will
+  be used.** A variable keeps its last string alive until its slot
+  is given something else or its function returns, used again or
+  not. No analysis of what is still wanted: a slot is reused by the
+  next block, and that bounds it.
+- **A number as a string no longer allocates**, anywhere: comparing,
+  joining, measuring. It is the cure for (2) above and it also takes
+  most of the garbage out of arithmetic-heavy string code.
+- **`out of memory` is a fault like any other**, with the line of
+  the statement, when `malloc` refuses or the cap is passed after a
+  collection. perl's own death for lack of memory is outside what
+  D12 promises (D46), so there is nothing to agree with.
+- **The collector's failures are `internal:` errors**, not faults: a
+  string used after it was collected is a bug in the compiler or the
+  runtime, never in the program, and says so, with exit status 2 as
+  the compiler's own internal errors have.
+- **No finalisers**, as D26 says; nothing runs when a value dies.
+- **What this leaves for later steps, by design**: marking through
+  a value that holds values, and a mark stack so that a long list
+  doesn't overflow C's (arrays, 9, and references, 13); a variable
+  that outlives its frame (closures, 14); unwinding the frames when
+  a `die` is caught (15); a heap for each context (29). Each has a
+  place to go in this shape, and none is built now.
+- **No model.** There is no second derivation of what a collector
+  should free: any program must print the same whatever is freed or
+  kept. The tests are the knobs over everything already tested, the
+  cap tests, and the runtime's own tests in C.
+
+#### The build, once the questions are answered
+
+- **Tests first, red before any code**: the cap tests. Loops that
+  make a gigabyte of strings in pieces, each under a 16 MB cap, one
+  for each way garbage is made: a temporary in an expression, a
+  variable given a new value, a `my` in a loop's block, a string
+  grown and cut back, a number joined to a string; and beside each,
+  what must *not* be freed: a string held in an outer variable
+  across a million collections, read at the end. They are `same`
+  tests (perl runs them too) and today each ends in `out of memory`.
+- **The runtime's own tests in C** (`runtime/tests/`): frames built
+  by hand; make, drop, collect, count; a string in a slot survives,
+  one in no slot doesn't, a constant is never touched; each knob.
+- **Every golden test of steps 0 to 6 under stress 1 with poison**,
+  byte for byte what it prints today; under gcc, clang, and the
+  sanitizers, whose own check for a use after a free needs the
+  poison's quarantine off, so both ways.
+- **Break it on purpose**: a slot left out of the mark, each kind
+  (a variable, a temporary, the last slot); a frame not linked, or
+  not unlinked; the sweep freeing what is marked; the marks not
+  cleared; a constant treated as heap; a conversion allocating
+  again; the cap not counted. Each must turn a test red.
+- **An adversarial review of this proposal**, started with it, as
+  the rule for a large step asks: a sequence of operations that
+  frees a string still in use, or keeps garbage without bound, under
+  this design.
+- **Measure**: the suite's time plain and under stress, and the
+  gigabyte loop's time and peak memory, into this section.
+- Leave out: everything listed above as later; any change to what a
+  program means.
 
 ### 8. Subs
 

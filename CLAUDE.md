@@ -281,12 +281,22 @@ variable's past shows nowhere the language doesn't fault, stood**:
 10,000 pairs of programs and 223,000 singles, nothing but the Num at
 2^53. The builder's own evidence
 (`docs/briefs/step5-increments.py`) had missed that one for want of
-a value, and has it now. **Next: step 7**, the collector, which is an outline
-and has to be proposed (D26 is decided: precise mark and sweep, a
-shadow stack in the generated C, a stress interval, poison on free,
-a heap cap). It is the first step with no perl to referee it: its
-Referee line says the knobs are the test. Until it is built every
-string a loop makes stays until the program ends. `docs/briefs/step4-comparisons.py`
+a value, and has it now. **Next: step 7**, the collector, is **proposed in
+full in `docs/PLAN.md` and waits on Stevan's answers to its three
+questions** (Q1: the knobs as environment variables every compiled
+program reads, `CURLY_GC_STRESS`, `CURLY_GC_POISON`,
+`CURLY_HEAP_CAP`; Q2: `t/run.sh` setting stress 1 and poison for
+every golden test; Q3: no cap in the language, one for every test).
+D26 is decided and not reopened: precise mark and sweep, roots on a
+shadow stack in the generated C. The proposal's one rule: a value the
+program can still use is in a slot whenever a collection can happen,
+and one can happen only inside an allocation; so variables and
+temporaries become slots of a frame, and every runtime function
+allocates at most once, last (today a number used as a string
+allocates, which has to go). It is the first step with no perl to
+referee it and no model: the knobs are the test. Nothing of it is
+built; write the cap tests first, which are red today. Until it is
+built every string a loop makes stays until the program ends. `docs/briefs/step4-comparisons.py`
 holds step 4's rule for comparing to perl under every past of each
 operand: 57,376 comparisons, no new fault needed. **What every step
 must ask again**: whether a value's past shows anywhere the
