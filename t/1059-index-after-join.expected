@@ -1,0 +1,2 @@
+t/1059-index-after-join.pl:5:18: '[' after join(...): perl does not compile it; bracket the whole, (join(...))[...]
+exit: 1

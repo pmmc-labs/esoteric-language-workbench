@@ -1241,6 +1241,11 @@ static void append(rt_ctx *cx, rt_array *a, rt_value v) {
 
 void rt_list_add(rt_ctx *cx, rt_value list, rt_value v) {
     if (v.tag == RT_TAG_ABSENT) return;
+    // What a call gave where a list was wanted: every value of it (D18).
+    if (v.tag == RT_TAG_ARRAY) {
+        rt_list_add_all(cx, list, v);
+        return;
+    }
     append(cx, array_of(cx, list), scalar(cx, v));
 }
 
@@ -1498,10 +1503,56 @@ void rt_print_list(rt_ctx *cx, rt_value list) {
     emit_list(cx, list, 0);
 }
 
-int64_t rt_arguments(rt_ctx *cx, rt_value list, rt_value **where, int64_t most) {
+rt_value rt_only(rt_ctx *cx, rt_value list) {
     rt_array *a = array_of(cx, list);
-    for (int64_t n = 0; n < most && (uint64_t)n < a->count; n++) where[n] = &a->items[n];
-    return (int64_t)a->count;
+    if (a->count > 1) rt_internal(cx, "a sub that gives no list gave one");
+    return a->count == 0 ? rt_absent() : a->items[0];
+}
+
+rt_value *rt_list_items(rt_ctx *cx, rt_value list) {
+    return array_of(cx, list)->items;
+}
+
+void rt_slurp(rt_ctx *cx, rt_value array, int64_t argc, rt_value **argv, rt_value *flat, int64_t from) {
+    rt_array *a = array_of(cx, array);
+    for (int64_t n = from; n < argc; n++) append(cx, a, scalar(cx, flat != NULL ? flat[n] : *argv[n]));
+}
+
+void rt_list_add_reversed(rt_ctx *cx, rt_value list, rt_value values) {
+    rt_array *to = array_of(cx, list);
+    rt_array *from = array_of(cx, values);
+    reserve(cx, to, to->count + from->count);
+    for (uint64_t n = from->count; n > 0; n--) to->items[to->count++] = from->items[n - 1];
+}
+
+// Every value is looked at twice: once for its faults and its size, and
+// once, after the one allocation, to be copied. A number is a scratch
+// string each time.
+rt_value rt_join(rt_ctx *cx, rt_value separator, rt_value list) {
+    rt_array *a = array_of(cx, list);
+    scratch x, y;
+    const rt_str *sep = to_str(cx, separator, &x);
+    uint64_t len = 0, chars = 0;
+    for (uint64_t n = 0; n < a->count; n++) {
+        const rt_str *s = to_str(cx, a->items[n], &y);
+        len += s->len + (n > 0 ? sep->len : 0);
+        chars += s->chars + (n > 0 ? sep->chars : 0);
+        if (chars > (uint64_t)INT32_MAX) rt_fault(cx, "joined string too long");
+    }
+    char *bytes;
+    const rt_str *joined = str_new(cx, len, chars, &bytes);
+    alive(cx, sep);
+    for (uint64_t n = 0; n < a->count; n++) {
+        if (n > 0) {
+            memcpy(bytes, sep->bytes, sep->len);
+            bytes += sep->len;
+        }
+        const rt_str *s = to_str(cx, a->items[n], &y);
+        alive(cx, s);
+        memcpy(bytes, s->bytes, s->len);
+        bytes += s->len;
+    }
+    return rt_string(joined);
 }
 
 // stdout is flushed first, so that what the program printed before the

@@ -2986,6 +2986,49 @@ question, which are now D82 (Q1, with a note on the licence), D83
 found six ways to be WRONG: "What the review found", at the end,
 says what each is and how the proposal is amended (D87). The text
 is kept as it was proposed.**
+
+**10a is built** (2026-11-25, by Fable 5.2): list returns, D18's
+fault, slurpy parameters, `join` and `reverse`. 10b and 10c are not.
+
+- **The model first, red before any code** (`t/models/ret.py`, commit
+  c62a15b), on `each.py`: 1000 to 1002, about 250 lines on which perl
+  5.42 agreed with it the first time they were compared, and 38
+  programs that fault once each, 1010 to 1047: every list shape
+  after `return` and as a last statement, to every kind of place
+  that wants one value.
+- **A sub that gives a list is known as the program compiles**
+  (`shapes.ts`, which the resolver, the checker and the code
+  generator share): one with a list-shaped `return` or last
+  statement, or one that hands on a call of such a sub, and so on
+  until nothing is added. It decides one thing: whether a call's
+  arguments are each handed over as a place, read late (D73), or
+  built as one list, when a call among them may give more than one
+  value. A sub that gives no list still gives a call one value or
+  none.
+- **The call grew one argument**: where the arguments are when they
+  were built as a list, one after another, so that a slurpy
+  parameter can take as many as there are. `rt_arguments` and its
+  array of pointers of a fixed size are gone from that path.
+- **D18's fault** is raised by the `return` itself, before anything
+  of the list is worked out, and names the `return`'s line.
+- **What the build found** (T193): `return 1, 2;` returns both, and
+  is refused for want of brackets; `(5, 6, 7)[two()]` where one
+  value is wanted is the slice's last when `two` gives a list, so a
+  slice by a call that gives a list is refused there; a `sub f(@r,)`
+  compiles in perl and is refused; and five refusals of step 9's
+  became tests of what is now in (480 to 482, 990, 991).
+- **Broken on purpose** (`briefs/step10a-mutations.py`): 51 of 56
+  caught the first time. Three were holes, each a way of being
+  list-shaped that no test reached (brackets and a comma round an
+  array, a slice of an array by one bracketed index, the second arm
+  of a `? :` alone), and 1072 to 1074 close them; one breakage was
+  the builder's own mistake and changed nothing; and one nothing in
+  the language can see: whether `join` reads its separator before or
+  after its list is built, since D87 refuses a list that could change
+  it.
+- **The numbers**: 760 golden tests, 125 unit tests, 677
+  statements about perl; green under gcc, clang, and UBSan with
+  ASan, poison on and off.
 Everything here about perl was run under 5.42.0 and is in
 `briefs/claims.py` (46 rows, `T173` to `T184-global`). Traps: T3,
 T4, T6, T8, T10, T15 to T18, T20, T23, T29, T41, T54, T59, T61, and

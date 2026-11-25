@@ -1,2 +1,2 @@
-t/481-array-as-a-last-statement.pl:5:11: a list as a sub's last statement: a sub returns one value until lists are returned (step 10); scalar(@a) is an array's count
+fault: g returned a list where one value is wanted at t/481-array-as-a-last-statement.pl line 5.
 exit: 1

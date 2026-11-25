@@ -1,0 +1,5 @@
+1
+2
+1
+fault: an array was changed while a foreach is over it at t/1048-fault-frozen-through-reverse.pl line 11.
+exit: 1

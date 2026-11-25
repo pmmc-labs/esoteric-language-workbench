@@ -1,0 +1,2 @@
+t/1066-slice-by-a-call-that-gives-a-list.pl:7:18: a slice where one value is wanted: perl gives its last element; write the element, $a[...]
+exit: 1

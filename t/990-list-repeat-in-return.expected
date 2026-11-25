@@ -1,2 +1,2 @@
-t/990-list-repeat-in-return.pl:5:18: (...) x after return repeats a list, to perl: take the brackets off the left operand
+fault: three returned a list where one value is wanted at t/990-list-repeat-in-return.pl line 6.
 exit: 1

@@ -42,6 +42,10 @@ export type Name =
     // array, in brackets unless it ends the expression (T152); `splice`
     // and `scalar` always have brackets.
     | { kind: 'arrayop'; shape: 'push' | 'pop' | 'splice' | 'scalar'; rt: string }
+    // The builtins that take a list and name no array (step 10a): `join`,
+    // a separator and a list, and `reverse`, a list; with brackets or
+    // without.
+    | { kind: 'listop'; rt: string }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -80,6 +84,8 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['shift', { kind: 'arrayop', shape: 'pop', rt: 'rt_shift' }],
     ['splice', { kind: 'arrayop', shape: 'splice', rt: 'rt_splice' }],
     ['scalar', { kind: 'arrayop', shape: 'scalar', rt: 'rt_count' }],
+    ['join', { kind: 'listop', rt: 'rt_join' }],
+    ['reverse', { kind: 'listop', rt: 'rt_list_add_reversed' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);

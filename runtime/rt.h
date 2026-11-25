@@ -273,6 +273,7 @@ enum { RT_VOID = 0, RT_SCALAR = 1, RT_LIST = 2 };
 // value was used when it has none (D18), and for one that returned nothing
 // where perl wants a list (D71).
 #define RT_NO_VALUE "has no value: it does not end in a return or an expression"
+#define RT_LISTED "returned a list where one value is wanted"
 #define RT_NOTHING "returned nothing where a list is wanted"
 void rt_fault_arguments(rt_ctx *cx, const char *name, int64_t got, int64_t least, int64_t most) __attribute__((noreturn));
 void rt_fault_sub(rt_ctx *cx, const char *name, const char *what) __attribute__((noreturn));
@@ -339,7 +340,20 @@ void rt_say_list(rt_ctx *cx, rt_value list);
 void rt_print_list(rt_ctx *cx, rt_value list);
 // The arguments of a call that were built as a list: where each of the
 // first `most` is, into `where`, and how many there are in all.
-int64_t rt_arguments(rt_ctx *cx, rt_value list, rt_value **where, int64_t most);
+// A call's arguments when they were built as one list: where its values
+// are, one after another. A slurpy parameter: every argument from `from`
+// on, copied into `array`, from `flat` if the arguments are a list and
+// from where `argv` says each is otherwise.
+rt_value *rt_list_items(rt_ctx *cx, rt_value list);
+// The one value of a list of one, and no value for a list of none: what
+// a sub that gives no list gives a call that wants one.
+rt_value rt_only(rt_ctx *cx, rt_value list);
+void rt_slurp(rt_ctx *cx, rt_value array, int64_t argc, rt_value **argv, rt_value *flat, int64_t from);
+// `reverse`: the values of `values`, last first, added to `list`. `join`:
+// the separator made a string, used or not (T190), then each value, as `.`
+// makes one.
+void rt_list_add_reversed(rt_ctx *cx, rt_value list, rt_value values);
+rt_value rt_join(rt_ctx *cx, rt_value separator, rt_value list);
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

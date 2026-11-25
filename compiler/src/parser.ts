@@ -258,6 +258,23 @@ export const parse = (tokens: readonly Token[]): Program => {
         return made([]);
     };
 
+    // `join` and `reverse`, the word just read: a list in brackets, or to
+    // the end of the list they stand in.
+    const listOp = (head: Token): Expr => {
+        let args: Expr[];
+        if (peek().kind === '(') {
+            next();
+            args = itemsTo(')');
+            // perl does not compile `reverse(@x)[0]` (T168's kin).
+            if (peek().kind === '[') refuse(`'[' after ${head.text}(...): perl does not compile it; bracket the whole, (${head.text}(...))[...]`, peek().pos);
+        } else {
+            const t = peek();
+            args = ends(t) || t.kind === ')' || t.kind === ']' || t.kind === ',' || t.kind === 'eof' || isModifier(t) ? [] : list();
+        }
+        if (args.length === 0) refuse(head.text === 'join' ? 'join needs a separator: join(SEP, LIST)' : `${head.text} of nothing`, head.pos);
+        return { kind: 'listop', op: head.text, args, pos: head.pos };
+    };
+
     // A call of one of the program's subs, its name just read and a
     // bracket next (D21). One comma may follow the last argument, as in
     // perl; two together are one to perl, which counts the arguments
@@ -392,6 +409,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         const name = t.kind === 'word' ? NAMES.get(t.text) : undefined;
         if (name?.kind === 'constant' || name?.kind === 'unary' || name?.kind === 'function' || name?.kind === 'statement') return apply(t);
         if (name?.kind === 'arrayop') return arrayOp(t);
+        if (name?.kind === 'listop') return listOp(t);
         // perl takes `$done and last` and `$x ? last : next` (T120), and
         // `my $x = return 5;` (T139).
         if (name?.kind === 'jump' || name?.kind === 'return') {
@@ -582,6 +600,7 @@ export const parse = (tokens: readonly Token[]): Program => {
             if (ends(peek()) || isModifier(peek())) return { kind: 'return', pos: head.pos };
             const value = expression(AND_ROW);
             const after = peek();
+            if (after.kind === ',') refuse('a list after return is in brackets: return (..., ...);', after.pos);
             if (after.kind === 'op' && infixOp(after.text)) {
                 refuse(`'${after.text}' after return's value: it binds more loosely than return does, and perl warns of it; bracket the value, return (... ${after.text} ...)`, after.pos);
             }
@@ -738,9 +757,18 @@ export const parse = (tokens: readonly Token[]): Program => {
             const params: Param[] = [];
             while (peek().kind !== ')') {
                 const v = next();
-                // perl has `@rest` and `%opts`, which are steps 10 and 12;
-                // tree-sitter-perl takes `:$x`, and perl doesn't (T55).
-                if (v.kind !== 'var') return refuse(`a parameter is $name, found ${show(v)}`, v.pos);
+                // A slurpy parameter, `@rest` or `@`: the last, and with
+                // no default; perl compiles neither otherwise (T182).
+                if (v.kind === 'array') {
+                    const after = peek();
+                    if (after.kind === 'op' && (after.text === '=' || after.text === '//=' || after.text === '||=')) refuse('a slurpy parameter has no default: perl refuses one', after.pos);
+                    if (after.kind !== ')') refuse(`${v.text} takes every argument that is left, so it is the last parameter: perl refuses one after it`, after.pos);
+                    params.push(v.name === '' ? { slurpy: true, pos: v.pos } : { slurpy: true, rest: { kind: 'myarray', name: v.name, pos: v.pos }, pos: v.pos });
+                    continue;
+                }
+                // perl has `%opts`, which is step 12's; tree-sitter-perl
+                // takes `:$x`, and perl doesn't (T55).
+                if (v.kind !== 'var') return refuse(`a parameter is $name or, last, @name, found ${show(v)}`, v.pos);
                 const assign = peek();
                 let param: Param = v.name === '' ? { pos: v.pos } : { my: { kind: 'my', name: v.name, pos: v.pos }, pos: v.pos };
                 if (assign.kind === 'op' && (assign.text === '=' || assign.text === '//=' || assign.text === '||=')) {

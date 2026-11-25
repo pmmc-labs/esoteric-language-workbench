@@ -1,0 +1,2 @@
+t/1051-reverse-as-a-test.pl:5:5: reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function
+exit: 1

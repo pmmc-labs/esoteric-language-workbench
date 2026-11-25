@@ -1,0 +1,2 @@
+t/1056-join-of-nothing.pl:4:5: join needs a separator: join(SEP, LIST)
+exit: 1

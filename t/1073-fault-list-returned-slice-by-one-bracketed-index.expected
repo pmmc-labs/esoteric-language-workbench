@@ -1,0 +1,4 @@
+1
+5
+fault: f returned a list where one value is wanted at t/1073-fault-list-returned-slice-by-one-bracketed-index.pl line 6.
+exit: 1

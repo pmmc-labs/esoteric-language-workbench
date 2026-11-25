@@ -1,5 +1,5 @@
-# kind: refused
-# The same for a last statement (T143).
+# kind: fault
+# The same for a last statement (T143). By hand.
 use v5.42;
 sub last2($x) {
     ($x) x 2;

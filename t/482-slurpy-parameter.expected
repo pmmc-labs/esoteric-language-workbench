@@ -1,2 +1,1 @@
-t/482-slurpy-parameter.pl:4:11: a parameter is $name, found '@r'
-exit: 1
+1

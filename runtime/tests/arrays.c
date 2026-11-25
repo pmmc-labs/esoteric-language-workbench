@@ -62,7 +62,42 @@ static void body(rt_ctx *cx) {
     if (is("no-array-in-an-array")) {
         slots[0] = rt_array_new(cx);
         slots[1] = rt_array_new(cx);
-        rt_list_add(cx, slots[0], slots[1]);
+        rt_elem_store(cx, slots[0], rt_int(0), slots[1]);
+    }
+    if (strncmp(which, "handed-", 7) == 0) {
+        // What a call hands about (step 10a): a list added to a list is
+        // its values; reversed; joined; the one value of a list of one.
+        slots[0] = rt_array_new(cx);
+        rt_list_add(cx, slots[0], rt_int(1));
+        rt_list_add(cx, slots[0], ab);
+        rt_list_add(cx, slots[0], rt_num(2.5));
+        slots[1] = rt_array_new(cx);
+        rt_list_add(cx, slots[1], rt_bool(1));
+        rt_list_add(cx, slots[1], slots[0]);
+        rt_list_add(cx, slots[1], rt_absent());
+        rt_say(cx, rt_count(cx, slots[1]));
+        rt_list_add_reversed(cx, slots[1], slots[0]);
+        rt_say_list(cx, slots[1]);
+        rt_say(cx, rt_join(cx, rt_string(&AB), slots[0]));
+        rt_say(cx, rt_join(cx, rt_int(0), slots[1]));
+        slots[2] = rt_array_new(cx);
+        rt_say(cx, rt_length(cx, rt_join(cx, ab, slots[2])));
+        printf("%d\n", rt_only(cx, slots[2]).tag == RT_TAG_ABSENT);
+        rt_list_add(cx, slots[2], rt_int(7));
+        rt_say(cx, rt_only(cx, slots[2]));
+        rt_say(cx, rt_join(cx, ab, slots[2]));
+        // A slurpy parameter, from a list and from places: the second
+        // argument on.
+        rt_value *where[3] = { &slots[0], &slots[1], &slots[2] };
+        rt_value places[3] = { rt_int(4), rt_int(5), rt_int(6) };
+        for (int n = 0; n < 3; n++) where[n] = &places[n];
+        rt_slurp(cx, slots[2], 3, where, NULL, 1);
+        rt_slurp(cx, slots[2], 3, NULL, rt_list_items(cx, slots[0]), 1);
+        rt_slurp(cx, slots[2], 3, where, NULL, 3);
+        rt_say_list(cx, slots[2]);
+        if (is("handed-join-undef")) rt_join(cx, ab, slots[1]) , rt_list_add(cx, slots[0], rt_undef()), rt_join(cx, ab, slots[0]);
+        if (is("handed-separator-undef")) rt_join(cx, rt_undef(), slots[1]);
+        if (is("handed-only-two")) rt_only(cx, slots[0]);
     }
     if (is("every-way")) {
         // What each way of changing an array leaves, read back.

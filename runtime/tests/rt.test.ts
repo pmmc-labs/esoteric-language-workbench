@@ -271,3 +271,16 @@ test("a foreach's own: an element that must be there, and the ends of a range", 
     assert.deepEqual(run('arrays', 'range-string'), { status: 1, output: 'fault: a string as the end of a range at arrays.pl line 1.\n' });
     assert.deepEqual(run('arrays', 'range-string-from'), { status: 1, output: 'fault: a string as the end of a range at arrays.pl line 1.\n' });
 });
+
+// Step 10a. By hand: true and (1, ab, 2.5) are four values; reversed after
+// them, 2.5 ab 1; joined by `ab` (1, ab, ab, ab, 2.5), and by 0; a join of nothing is the empty
+// string; a list of none has no one value, and a list of one has it; the
+// slurpy array is 7, then 5 and 6, then ab and 2.5, and nothing for a
+// start past the last argument.
+test('a list added to a list, reversed, joined, and taken by a slurpy parameter', () => {
+    const out = '4\n11ab2.52.5ab1\n1ababab2.5\n1010ab02.502.50ab01\n0\n1\n7\n7\n756ab2.5\n';
+    assert.deepEqual(run('arrays', 'handed-'), { status: 0, output: out });
+    assert.deepEqual(run('arrays', 'handed-join-undef'), { status: 1, output: out + 'fault: undef where a string is wanted at arrays.pl line 1.\n' });
+    assert.deepEqual(run('arrays', 'handed-separator-undef'), { status: 1, output: out + 'fault: undef where a string is wanted at arrays.pl line 1.\n' });
+    assert.deepEqual(run('arrays', 'handed-only-two'), { status: 2, output: out + 'internal: a sub that gives no list gave one at arrays.pl line 1.\n' });
+});

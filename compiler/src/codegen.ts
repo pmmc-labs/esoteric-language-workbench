@@ -33,8 +33,10 @@
 // (D28: nothing is global). After every call the caller's line is stored
 // again (D34).
 import { NAMES, PRAGMAS, infixOp, prefixOp, stepOp } from './names.ts';
-import type { ArrayOp, Expr, If, Program, Stmt, Sub } from './ast.ts';
+import type { ArrayOp, Expr, If, Invoke, Program, Stmt, Sub } from './ast.ts';
 import type { Resolution } from './resolver.ts';
+import { handsOn, shaped } from './shapes.ts';
+import type { Gives } from './shapes.ts';
 
 // The context an expression is worked out in (D18): one of perl's three,
 // or the one its own sub was called in, which a `return` and a last
@@ -114,6 +116,7 @@ const listy = (in_: Expr): boolean => {
     return e.kind === 'array' || e.kind === 'list' || isRange(e) || isRepeat(e)
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
+        || (e.kind === 'listop' && e.op === 'reverse')
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
 };
@@ -123,6 +126,9 @@ const listy = (in_: Expr): boolean => {
 // arguments; a slice or an element in a `foreach`'s list, through what
 // hands a list on.
 type Strict = 0 | 1 | 2;
+
+// Whether a call is of a sub that gives a list back (D18).
+const gives = (names: Resolution): Gives => (call: Invoke) => names.lists[names.calls.get(call)!] === true;
 
 // A list, built in a temporary: made empty, and each item added to it in
 // turn, a value or the values of what is itself a list.
@@ -157,6 +163,10 @@ const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
         b.lines.push(`rt_list_add_repeat(cx, ${list}, ${values.c}, ${count.c});`);
     } else if (e.kind === 'arrayop' && e.op === 'splice') {
         genSplice(e, b, list);
+    } else if (e.kind === 'listop' && e.op === 'reverse') {
+        // perl's `reverse` makes no element that is not there (T177).
+        const values = genList(e.args, b);
+        b.lines.push(`rt_list_add_reversed(cx, ${list}, ${values.c});`);
     } else if (e.kind === 'ternary' && (listy(e) || strict === 2)) {
         const test = genExpr(e.test, b);
         b.lines.push(`if (rt_is_true(cx, ${test.c})) {`);
@@ -243,8 +253,19 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     }
     // `(LIST)[N]`, where one value is wanted: that one, or undef.
     case 'slice': return temp(b, `rt_first(cx, ${genList([e], b).c})`);
-    // Declarations alone, `my ($x, @a);`.
+    // `join`: the separator, which is read when the list has been built
+    // (T186), and the list.
+    case 'listop': {
+        if (e.op !== 'join') throw new Error(`${e.op} where one value is wanted`);
+        const sep = genExpr(e.args[0]!, b);
+        const kept = sep.place ? sep : temp(b, sep.c);
+        const values = genList(e.args.slice(1), b);
+        return temp(b, `rt_join(cx, ${kept.c}, ${values.c})`);
+    }
+    // Declarations alone, `my ($x, @a);`; and brackets round one value
+    // with a comma after it, where one value is wanted.
     case 'list':
+        if (e.items.length === 1 && !e.my) return genExpr(e.items[0]!, b, want);
         e.items.forEach(item => genExpr(item, b));
         return { c: 'rt_undef()', place: false };
     case 'arrayop': {
@@ -382,12 +403,13 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         const called = b.names.subs[b.names.calls.get(e)! - 1]!;
         const most = called.params.length;
         const n = ++b.temps;
-        b.decls.push(`rt_value *av${n}[${Math.max(1, most, e.args.length)}] RT_UNUSED;`, `int64_t ac${n} RT_UNUSED;`);
-        if (e.args.some(listy)) {
-            // A list among them: all of them are built as one, copied, and
-            // the sub is handed where each of its values is.
+        b.decls.push(`rt_value *av${n}[${Math.max(1, most, e.args.length)}] RT_UNUSED;`, `int64_t ac${n} RT_UNUSED;`, `rt_value *fl${n} RT_UNUSED = NULL;`);
+        if (e.args.some(a => listy(a) || handsOn(a, gives(b.names)))) {
+            // A list among them, or a call that gives one: all of them
+            // are built as one list, copied, and the sub is handed where
+            // its values are, which is one after another.
             const values = genList(e.args, b, 1);
-            b.lines.push(`ac${n} = rt_arguments(cx, ${values.c}, av${n}, ${most});`);
+            b.lines.push(`ac${n} = rt_list_length(cx, ${values.c});`, `fl${n} = rt_list_items(cx, ${values.c});`);
         } else {
             // Each a place, or a temporary: a variable is read when the
             // sub takes it (D73). A call that gave nothing is no argument.
@@ -395,7 +417,7 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
             b.lines.push(`ac${n} = 0;`);
             where.forEach(p => b.lines.push(`if ((${p})->tag != RT_TAG_ABSENT) av${n}[ac${n}++] = ${p};`));
         }
-        const result = temp(b, `sub_${e.name}(cx, ${WANT[want]}, ac${n}, av${n})`);
+        const result = temp(b, `sub_${e.name}(cx, ${WANT[want]}, ac${n}, av${n}, fl${n})`);
         b.lines.push(`cx->line = ${b.line};`);
         return result;
     }
@@ -478,6 +500,27 @@ const genArms = (s: If, n: number, out: Out): string[] => {
         ...(rest.length ? ['} else {', ...indent(rest), '}'] : ['}']),
     ]);
     return [...test.vars, ...test.code];
+};
+
+// What a `return`'s value, or a last statement's, is worth to the call
+// (D18). List-shaped: a fault for a call that wants one value, before
+// anything of it is worked out, and otherwise a list. What may be a list
+// and is not list-shaped (`()`, `(LIST)[N]`, brackets round one value) is
+// a list to a call that wants one and a value to any other. Anything else
+// is one value, or what a call it hands on gave.
+const genGiven = (e: Expr, line: number, out: Out, after: readonly string[]): string[] => {
+    const asList = (): string[] => genListWhole([e], line, out, c => [`r = ${c};`, ...after]).code;
+    const asValue = (): string[] => genWhole(e, line, out, c => [`r = ${c};`, ...after], 'pass').code;
+    if (shaped(e, gives(out.names))) {
+        return ['if (want == RT_SCALAR) {', `    cx->line = ${line};`, `    rt_fault_sub(cx, ${cString(out.sub!.name)}, RT_LISTED);`, '}', ...asList()];
+    }
+    if (!listy(e)) return asValue();
+    // A sub with nothing list-shaped in it is called as one that gives a
+    // value or none (its caller hands on a pointer to what it gave): so
+    // that is what it gives, and the list here holds no more than one.
+    const few = out.names.lists[out.fn] === true ? asList()
+        : genListWhole([e], line, out, c => [`r = rt_only(cx, ${c});`, ...after]).code;
+    return ['if (want == RT_LIST) {', ...indent(few), '} else {', ...indent(asValue()), '}'];
 };
 
 // What a `return` gives back on its way out: everything the loops it is
@@ -608,7 +651,7 @@ const genStmt = (s: Stmt, out: Out): string[] => {
         if (s.value === undefined) {
             return ['{', ...indent([`cx->line = ${s.pos.line};`, 'r = want == RT_LIST ? rt_absent() : rt_undef();', ...leaving(out), 'goto done;']), '}'];
         }
-        return ['{', ...indent(genWhole(s.value, s.pos.line, out, c => [`r = ${c};`, ...leaving(out), 'goto done;'], 'pass').code), '}'];
+        return ['{', ...indent(genGiven(s.value, s.pos.line, out, [...leaving(out), 'goto done;'])), '}'];
     }
     }
 };
@@ -629,7 +672,13 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
             : p.op === '||=' ? `a${n} != NULL && rt_is_true(cx, *a${n})`
             : `a${n} != NULL`;
         const copy = slot === undefined ? [] : [`${slot} = *a${n}; // $${p.my!.name}`];
-        if (p.op === undefined) {
+        if (p.slurpy) {
+            // Filled now, at its turn, from where the arguments are (T191).
+            if (p.rest !== undefined) {
+                const rest = `f[${names.slots[names.of.get(p.rest)!]}]`;
+                lines.push(`${rest} = rt_array_new(cx); // @${p.rest.name}`, `rt_slurp(cx, ${rest}, argc, argv, flat, ${n});`);
+            }
+        } else if (p.op === undefined) {
             lines.push(...copy);
         } else if (p.default === undefined) {
             // `$=`: an argument that may be left out, and names nothing.
@@ -643,6 +692,8 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
     lines.push(...before.flatMap(t => genStmt(t, out)));
     if (last === undefined) {
         lines.push('if (want == RT_LIST) r = rt_absent();');
+    } else if (last.kind === 'do' && listy(last.expr)) {
+        lines.push('{', ...indent(genGiven(last.expr, last.pos.line, out, [])), '}');
     } else if (last.kind === 'do') {
         const whole = genWhole(last.expr, last.pos.line, out, c => [`r = ${c};`], 'pass');
         lines.push(...whole.vars, '{', ...indent(whole.code), '}');
@@ -652,6 +703,8 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
         lines.push(`if (want != RT_VOID) {`, `    cx->line = ${last.pos.line};`, `    rt_fault_sub(cx, ${name}, RT_NO_VALUE);`, '}');
     }
     const slots = Math.max(1, names.frames[fn]! + out.frame.temporaries);
+    const slurpy = s.params.at(-1)?.slurpy === true;
+    const least = s.params.filter(p => p.op === undefined && !p.slurpy).length;
     return [
         `${prototype(s)} {`,
         `    rt_value f[${slots}];`,
@@ -659,8 +712,9 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
         '    rt_value r = rt_undef();',
         '    rt_value *g RT_UNUSED = cx->shared;',
         // The count first, while the line is still the caller's.
-        `    if (argc < ${s.params.filter(p => p.op === undefined).length} || argc > ${s.params.length}) rt_fault_arguments(cx, ${name}, argc, ${s.params.filter(p => p.op === undefined).length}, ${s.params.length});`,
-        ...s.params.map((_, n) => `    rt_value *a${n} RT_UNUSED = argc > ${n} ? argv[${n}] : NULL;`),
+        slurpy ? `    if (argc < ${least}) rt_fault_arguments(cx, ${name}, argc, ${least}, INT64_MAX);`
+            : `    if (argc < ${least} || argc > ${s.params.length}) rt_fault_arguments(cx, ${name}, argc, ${least}, ${s.params.length});`,
+        ...s.params.map((_, n) => `    rt_value *a${n} RT_UNUSED = argc > ${n} ? (flat != NULL ? &flat[${n}] : argv[${n}]) : NULL;`),
         `    rt_enter(cx, &frame, f, ${slots});`,
         ...indent(lines),
         'done: RT_UNUSED;',
@@ -676,7 +730,7 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
 const isFileSlot = (names: Resolution, id: number): boolean => names.fileIds.has(id);
 
 const prototype = (s: Sub): string =>
-    `static rt_value sub_${s.name}(rt_ctx *cx, int want RT_UNUSED, int64_t argc, rt_value **argv RT_UNUSED)`;
+    `static rt_value sub_${s.name}(rt_ctx *cx, int want RT_UNUSED, int64_t argc, rt_value **argv RT_UNUSED, rt_value *flat RT_UNUSED)`;
 
 // `file` is the program's path as the driver was given it, which is the
 // path perl is given too (D10): a fault names it.

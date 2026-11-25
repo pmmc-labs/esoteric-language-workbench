@@ -130,11 +130,10 @@ test('an integer is at most 2^63 - 1 (D23)', () => {
 });
 
 test("the list that say's argument is reaches the right of || and both branches of ? : (T104)", () => {
-    const message = "(...) x as say's argument repeats a list, to perl: take the brackets off the left operand";
     // From step 9 each is a list repeated, and in the language (D80);
-    // after `return` it is still refused, until lists are returned.
+    // from step 10 after `return` too, where it is list-shaped (D18).
     accepted('use v5.42;\nsay(0 || ("a") x 3);\nsay(1 && ("a") x 3);\nsay(undef // ("a") x 3);\nsay(0 or 1 and ("a") x 3);\nsay 1 ? ("a") x 3 : "b";\nsay 0 ? "b" : 1 ? 2 : (("a")) x 3;\nsay 0 || +("a") x 3;');
-    refused('use v5.42;\nsub f($c) { return $c ? ("a") x 3 : "b"; }', message.replace("as say's argument", 'after return'), 2, 31);
+    accepted('use v5.42;\nsub f($c) { return $c ? ("a") x 3 : "b"; }');
     accepted('use v5.42;\nsay(("a") x 3 || 0);\nsay((("a") x 3) ? 1 : 2);\nsay(1 xor ("a") x 3);\nsay(!("a") x 3);\nsay(("a") x 3 eq "aaa");\nsay(0 || "" . ("a") x 3);');
 });
 

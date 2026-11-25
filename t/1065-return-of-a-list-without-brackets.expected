@@ -1,0 +1,2 @@
+t/1065-return-of-a-list-without-brackets.pl:5:13: a list after return is in brackets: return (..., ...);
+exit: 1

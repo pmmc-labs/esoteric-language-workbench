@@ -1,2 +1,2 @@
-t/991-list-repeat-last.pl:5:10: (...) x as a sub's last statement repeats a list, to perl: take the brackets off the left operand
+fault: last2 returned a list where one value is wanted at t/991-list-repeat-last.pl line 5.
 exit: 1

@@ -23,6 +23,7 @@
 // outside it (T60).
 import { refuse } from './errors.ts';
 import type { Expr, Foreach, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
+import { listSubs } from './shapes.ts';
 
 // A declaration is a number, in the order the `my`s are met; `of` says
 // which one each variable in the tree means, and `names` what each is
@@ -57,6 +58,8 @@ export type Resolution = {
     fileIds: ReadonlySet<number>;
     subs: readonly Sub[];
     calls: ReadonlyMap<Invoke, number>;
+    // Which functions give a list back (D18), by number.
+    lists: readonly boolean[];
     loops: ReadonlyMap<Loop, number>;
     jumps: ReadonlyMap<Jump, number>;
     each: ReadonlyMap<Foreach, Each>;
@@ -165,6 +168,7 @@ export const resolve = (program: Program): Resolution => {
         case 'arrayop':
             e.args.forEach(x => walk(x, declared));
             return array(e, e.name);
+        case 'listop': return e.args.forEach(x => walk(x, declared));
         case 'listassign':
             walk(e.value, declared);
             return e.targets.forEach(x => walk(x, declared));
@@ -230,6 +234,12 @@ export const resolve = (program: Program): Resolution => {
         round = [];
         for (const p of s.params) {
             if (p.default) whole(p.default);
+            if (p.rest !== undefined) {
+                of.set(p.rest, names.length);
+                isArray.push(true);
+                names.push(p.rest.name);
+                declare(p.rest);
+            }
             if (p.my === undefined) continue;
             if (scopes.at(-1)!.has(p.my.name)) refuse(`two parameters called $${p.my.name}: perl warns that the second masks the first`, p.my.pos);
             of.set(p.my, names.length);
@@ -347,5 +357,5 @@ export const resolve = (program: Program): Resolution => {
         if (owner[id] === 0 && !fileSlots.has(id)) slots[id]! += file;
     }
     frames[0] = file + variables;
-    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, loops, jumps, each };
+    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, lists: listSubs(subs, calls), loops, jumps, each };
 };

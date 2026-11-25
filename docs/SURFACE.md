@@ -64,7 +64,7 @@ comparison: *in*, *out*, or *n/a*.
 | `local` | Cut | | in | D17; parked |
 | `sub name (signature) { }` | In | 8 | in | D72. A signature is required; at the top level of the file; not named for anything perl knows (D21, T28), nor `v` and digits (T136); called before or after it is written |
 | A sub without a signature, `@_`, `shift` on it | Cut | | out | D17 |
-| Defaults in a signature, slurpy `@rest`, `%opts` | In | 8, 10, 12 | in | Defaults are in (D72); `@rest` and `%opts` are steps 10 and 12 |
+| Defaults in a signature, slurpy `@rest`, `%opts` | In | 8, 10, 12 | in | Defaults are in (D72). `@rest`, or `@` alone, is the last parameter, with no default (T182), a copy, filled at its turn (T191, D87); `%opts` is step 12 |
 | Prototypes, `&` calls, `goto &sub` | Cut | | out | D21 |
 | `my sub`, anonymous `sub`, closures | In | 14 | in | |
 | `__SUB__` | In | 14 | | |
@@ -111,9 +111,10 @@ comparison: *in*, *out*, or *n/a*.
 | `last` or `next` reaching a loop from a called sub, or from a `map`, `grep` or `sort` block | Cut | | | T59, T60: perl leaves the outer loop |
 | `redo`, `goto`, `continue` blocks | Cut | | out, `redo` in | |
 | Bare blocks | In | 5 | in | A scope. To perl it is also a loop that runs once, which D59 cuts; a label on one: cut. An empty one is an anonymous hash to perl, and refused (T116) |
-| `return`, `return LIST` | In | 8, 10 | in | D18, D72. `return;` and `return EXPR;`, with an `if` or `unless`; a statement, not an operand (T139) |
+| `return`, `return LIST` | In | 8, 10 | in | D18, D72. `return;` and `return EXPR;`, with an `if` or `unless`; a statement, not an operand (T139). A list is in brackets, or one thing that is a list; to a call where a list is wanted it is every value |
+| A list-shaped `return`, or last statement, reached by a call that wants one value | Fault | 10 | in | D18, T183, T16 to T18: perl gives a count, a last element, a string or undef, by the shape. By how it is written, whichever arm of `? :` or `\|\|` is taken; before anything of it is worked out |
 | A sub's last statement as its value: an expression, a value alone, `say` | In | 8 | | D18, D70, T140 |
-| `(...) x N` as an argument, after `return`, or as a sub's last statement | Cut | | | T143, D73, until step 10: a list to perl |
+| `(...) x N` as an argument, after `return`, or as a sub's last statement | In | 9, 10 | | T143, D87: a list, as it is to perl, and list-shaped for D18 |
 | Ending a sub in `if`, `unless`, a loop, a block, a statement with a modifier or `try`, and using its value | Fault | 8 | | D18, T145: perl returns the condition, or the `try`'s value |
 | `wantarray` | Cut | | in | D18 |
 | `die`, `try`, `catch` | In | 15 | in | |
@@ -128,7 +129,7 @@ comparison: *in*, *out*, or *n/a*.
 | `say;`, `print;` with no argument | In | 10 | | They print `$_` |
 | A builtin's brackets and then an operator, `say (1 + 2) * 3;` | Cut | | | D21, T25: perl prints 3 |
 | `say (...)` after one space, not ending on its line, or with a bracket in a string or a comment that perl's count of them trips on | Cut | | | T76, T100: perl warns. `say(...)`, hard against, may run over lines |
-| `(LIST) x N`, a list repeated, where a list is wanted | In | 9 | | D80, T101. After `return` and as a sub's last statement: refused until step 10 (T143); a comma list on the left of `x` where one value is wanted: Cut (T168) |
+| `(LIST) x N`, a list repeated, where a list is wanted | In | 9 | | D80, T101. After `return` and as a sub's last statement too, from step 10 (T143); a comma list on the left of `x` where one value is wanted: Cut (T168) |
 | `print STDERR ...`, `say STDERR ...` | In | 15 | | With `warn` |
 | `1;` ending a module | In | 18 | | Not needed under `use v5.42`; harmless |
 
@@ -234,11 +235,12 @@ Opal's notation, `docs/BUILTINS.md`.
 |---|---|---|
 | `say`, `print` to stdout | In | 0, 3 |
 | `length`, `uc`, `lc`, `ord`, `chr`, with brackets or as named unary operators (D41); `substr` (reading, 2 or 3 arguments) and `index` (2 or 3), in brackets | In | 3 |
-| `ucfirst`, `lcfirst`, `rindex`, `substr` with 4 arguments, `reverse` of a string, `sprintf`, `printf`, `join`, `chomp` and `chop` of a variable | In | 16 |
+| `ucfirst`, `lcfirst`, `rindex`, `substr` with 4 arguments, `reverse` of a string, `sprintf`, `printf`, `chomp` and `chop` of a variable | In | 16 |
 | `uc`, `lc` of a character past ASCII (T45, until perl's tables are in) | Fault | 3 |
 | `chr` of a surrogate, of a number past U+10FFFF or below zero; printing a noncharacter | Fault | 3 |
 | `substr` and `index` without brackets; a sign after a named unary operator that perl calls ambiguous, `length - 5` | Cut | |
 | `substr` on the left of `=`, `vec`, `pos`, `lc` and friends without an argument | Cut | |
+| `join(SEP, LIST)`, `reverse(LIST)`, with brackets or without | In | 10 | D84, D87. `join`'s separator is one value, made a string always (T190), and for D76 the first item of its list (T186); `reverse` is a list, names what its list names (T185), and is refused where one value is wanted (T178); neither alone as a statement, and no `[` after their brackets |
 | `push`, `pop`, `shift`, `unshift`, `splice`, `scalar`; `reverse`, `sort`, `map`, `grep`, `join` | In | 9; 10 | D80. `pop` and `shift` in brackets unless the array ends the expression, and never without an array (T152); `splice` in brackets, as a list or a statement |
 | A later part of an expression or a list that can change what an earlier part names: an element, a slice, an array, `$#a`, a variable that is an item of a list | Cut | | D76 (T149, T157): perl reads it after the change. By one walk over the whole program |
 | `say LIST`, `print LIST` | In | 9 | Each value, nothing between; every value is looked at before any is written |

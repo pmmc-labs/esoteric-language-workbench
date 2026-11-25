@@ -1,2 +1,2 @@
-t/480-return-an-array.pl:5:18: a list after return: a sub returns one value until lists are returned (step 10); scalar(@a) is an array's count
+fault: f returned a list where one value is wanted at t/480-return-an-array.pl line 6.
 exit: 1

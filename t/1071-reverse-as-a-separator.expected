@@ -1,0 +1,2 @@
+t/1071-reverse-as-a-separator.pl:6:10: reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function
+exit: 1

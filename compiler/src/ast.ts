@@ -30,7 +30,7 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
 export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
-    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign;
+    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp;
 
 // An array, `@name`, and `my @name`, which declares one (D80).
 export type ArrayVar = { kind: 'array'; name: string; pos: Pos; bracketed?: true };
@@ -53,6 +53,10 @@ export type Slice = { kind: 'slice'; name?: string; items?: readonly Expr[]; ind
 // `splice(@name, args)`, `scalar(@name)`. `pos` is the word's, `at` the
 // array's.
 export type ArrayOp = { kind: 'arrayop'; op: string; name: string; args: readonly Expr[]; pos: Pos; at: Pos; bracketed?: true };
+
+// `join(SEP, LIST)` and `reverse(LIST)`, with brackets or without (step
+// 10a): the builtins that take a list and name no array.
+export type ListOp = { kind: 'listop'; op: string; args: readonly Expr[]; pos: Pos; bracketed?: true };
 
 // A list assignment, `(targets) = value` and `my (targets) = value`: a
 // statement (D78). A target is a variable, an element, `undef`, or, last,
@@ -130,7 +134,9 @@ export type Jump = { kind: 'jump'; name: string; label?: Label; pos: Pos };
 // argument and names nothing; and its default, if it has one, with the
 // operator it was written with: `=`, `//=` or `||=`. `my` is the variable
 // as a declaration, for the resolver. `pos` is the `$`'s.
-export type Param = { my?: My; op?: string; default?: Expr; pos: Pos };
+// A slurpy parameter, `@name` or `@` alone, the last: `slurpy`, and `rest`
+// its array as a declaration if it has a name.
+export type Param = { my?: My; op?: string; default?: Expr; slurpy?: true; rest?: MyArray; pos: Pos };
 
 // `sub name(params) { body }`. `pos` is the word `sub`'s, `named` the
 // name's, and `end` the closing brace's.

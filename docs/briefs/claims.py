@@ -741,6 +741,8 @@ CLAIMS = [
     c('T192-for', 'TRAPS; PLAN 10', 'for () { say 1; }', compiles=False, err='syntax error'),
     c('T192-two', 'TRAPS; PLAN 10', 'my $n = 0; $n += $_ for 1 .. 3 if 1;', compiles=False, err='syntax error'),
     c('T192-handle', 'TRAPS; PLAN 10', 'my @r = map { say $_ -1 } (5);', out='', err='as a symbol ref', exit=255),
+    c('T193', 'TRAPS; PLAN 10', 'sub f() { return 1, 2; } say f(); sub g(@r,) { return scalar(@r); } say g(5); my @b = reverse; say scalar(@b); my @a = (1, 2); sub h(@v) { my @v = (1); return 1; }', out='12\n1\n0\n', err='masks earlier declaration in same scope'),
+    c('T193-wrong', 'TRAPS; PLAN 10', 'sub two() { return (1, 0); } my $x = (5, 6, 7)[two()]; say $x; my @a = (1, 2); for my $x (reverse @a) { push @a, 1; last; } say scalar(@a);', out='5\n3\n'),
     c('T192-loop', 'TRAPS; PLAN 10', 'my @r = map { my $t = 0; for my $i (1, 2, 3) { next if $i == 2; last if $i == 3; $t += $i; } $t + $_ } (10, 20); say "@r"; my @w = sort { $a <=> $b or $a cmp $b } (2, 1); say "@w"; say scalar(@{[ map({ $_ * 2 } 1, 2) ]});', out='11 21\n1 2\n2\n'),
     c('T167', 'TRAPS; PLAN 9', 'my @a = (1,2,3); my $j = 1; my @s = @a[0]; @s = @a[$j];', out='', err='(?s)Scalar value @a\\[0\\] better written as \\$a\\[0\\].*Scalar value @a\\[\\.\\.\\.\\] better written'),
     c('T167-quiet', 'TRAPS; PLAN 9', 'my @a = (1,2,3); my @b = (1); my $j = 1; my @s = @a[0,]; @s = @a[(0)]; @s = @a[@b]; @s = @a[0 .. 0]; @s = (@a)[0]; say scalar(@s);', out='1\n'),

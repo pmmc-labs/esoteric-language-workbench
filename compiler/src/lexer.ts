@@ -369,6 +369,10 @@ export const lex = (src: string): Token[] => {
         } else if (c === '@') {
             // An array, `@name`: perl takes `@ name` and `@{name}` too.
             take();
+            if (signature > 0 && !isWordStart(at())) {
+                push({ kind: 'array', text: '@', name: '', pos: start });
+                continue;
+            }
             if (!isWordStart(at())) refuse("after '@' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
             if (name === '_') refuse('@_ is not in the language: a sub has a signature (D17)', start);

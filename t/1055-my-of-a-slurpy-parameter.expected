@@ -1,0 +1,2 @@
+t/1055-my-of-a-slurpy-parameter.pl:5:5: my @v again in one scope: perl warns that it masks the first
+exit: 1

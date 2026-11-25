@@ -1054,8 +1054,9 @@ A parameter is a variable of the sub's, given its value by the call:
 - `$` alone takes an argument and names nothing; `$=` takes one or
   none; `$ = EXPR` runs EXPR when there is none.
 
-The required ones come first. `@rest` and `%opts` come with arrays and
-hashes.
+The required ones come first. A last parameter may be `@rest`, which
+takes every argument that is left ("Arrays and subs", below);
+`%opts` comes with hashes.
 
     sub greet($name, $greeting = "hello") {
         return $greeting . ", " . $name;
@@ -1102,18 +1103,17 @@ have run, as an operand is (see "When a variable is read"): with a sub
 when its turn comes, so a `//=` default that changes a variable is
 seen by the arguments after it.
 
-Three things perl reads another way are refused:
+Two things perl reads another way are refused:
 
 - **A minus hard against a one-letter name**, `-e(2)`: to perl that
   is a file test, of a file called `2`. Write `- e(2)` or `-(e(2))`.
 - **A blank between a name and its bracket, first after `say` or
   `print`**, `say f (1);`: perl takes `f` for a file handle unless it
   has already seen the sub. Anywhere else the blank is fine.
-- **`(...) x N` after `return`, or as a sub's last statement**: with
-  the brackets it repeats a list, to perl, and a sub returns one
-  value until lists are returned. As an argument it is that list, and
-  that many arguments. Without the brackets, `"ab" x 3`, it is one
-  string.
+
+`(...) x N` after `return`, as a sub's last statement or as an
+argument repeats a list, as it does to perl, and is that many values.
+Without the brackets, `"ab" x 3`, it is one string.
 
 ### return, and what a sub is worth
 
@@ -1476,9 +1476,95 @@ above it, and its own. A file's array is empty from the moment the
 program starts, and its `my` does not empty it again (as a file's
 variable).
 
-A sub returns one value. `return @a;`, and an array or a list as a
-sub's last statement, are refused until lists are returned (`return
-scalar(@a);` is the count); so is `@rest` in a signature.
+**A last parameter may take every argument that is left**, as an
+array of the sub's own:
+
+    sub largest($first, @rest) {
+        my $most = $first;
+        for my $x (@rest) {
+            $most = $x if $x > $most;
+        }
+        return $most;
+    }
+    say largest(3, 9, 4);        # 9
+
+`@rest` is a copy: changing it changes nothing of the caller's. It
+may be empty. `@` alone takes the arguments and names nothing. Such
+a parameter is the last, and has no default. It is filled when its
+turn comes, after the defaults before it have run.
+
+### A sub that gives back a list
+
+`return` takes a list, and so does a sub's last statement:
+
+    sub divide($n, $d) {
+        return (($n - $n % $d) / $d, $n % $d);
+    }
+    my ($q, $r) = divide(17, 5);         # 3 and 2
+
+    sub evens(@v) {
+        my @out;
+        for my $x (@v) {
+            push @out, $x if $x % 2 == 0;
+        }
+        return @out;
+    }
+    my @e = evens(1 .. 10);
+
+A list after `return` is in brackets, unless it is one thing that is
+a list already (`return @out;`, `return reverse @v;`). `return ();`
+is `return;`.
+
+**Where a list is wanted, a call is every value its sub returned**:
+none, one or many. So calls go wherever a list goes: `my @r = f();`,
+`(f(), g())`, `for my $x (f())`, `say f();`, `g(f())`, `(f())[0]`.
+What comes back is a copy, as an array assigned is: the caller's
+array and the sub's are two, and a loop over `f()` freezes nothing.
+
+**Where one value is wanted, a sub that returns a list is a fault.**
+In perl such a call gives something else each time: the count for an
+array, the last for a list in brackets, a string for `reverse`. Here:
+
+    sub all() { return @a; }
+    my $n = all();           # fault: all returned a list where one
+                             # value is wanted
+
+`my ($first) = all();` takes the first, `my @r = all(); my $n = @r;`
+the count, and `return scalar(@a);` returns the count. What counts is
+how the `return` is written, not what it holds as the program runs:
+an array, a list of two or more, a range, a slice, `(LIST) x N`,
+`splice`, `reverse`, and `? :` or `|| && //` with one of those for
+an arm, whichever arm is taken. `return (7);` and `return $x;` are
+one value. `return f();` hands on whatever its own call wanted. And
+a call for nothing, `all();` as a statement, faults for nothing.
+
+### join and reverse
+
+`join(SEP, LIST)` is the values of the list as one string, with SEP
+between them:
+
+    my @parts = ("a", "b", "c");
+    say join(", ", @parts);          # a, b, c
+    say join("", reverse(@parts));   # cba
+    say join "-", 1 .. 4;            # 1-2-3-4
+
+Each value is made a string as `.` makes one, so an undef is a fault;
+SEP is one value (an array there is its count) and is made a string
+even if nothing is joined. A list of none joins to `""`.
+
+`reverse(LIST)` is the list, last first. It is a list, and only where
+a list is wanted: `my $s = reverse("abc");` is refused, since perl's
+`reverse` there is another function, which reverses the characters
+of a string.
+
+Both may be written without brackets, and then take everything to
+the end of the list they stand in: `say join ",", reverse @a;`. With
+brackets, nothing may index them: `(reverse(@a))[0]`, not
+`reverse(@a)[0]`.
+
+For "what a list may not do", below: `reverse` hands on the things
+it was given, so what its list names, it names; and `join` reads its
+separator last, so a later item may not change it.
 
 ### What a list may not do
 

@@ -1,5 +1,6 @@
-# kind: refused
-# perl returns the list to a list, and the count to a scalar (T16): step 10.
+# kind: fault
+# perl returns the list to a list, and the count to a scalar (T16): D18's
+# fault, since step 10. By hand.
 use v5.42;
 my @a = (1, 2, 3);
 sub f() { return @a; }

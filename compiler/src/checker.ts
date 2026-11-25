@@ -5,6 +5,8 @@ import { refuse } from './errors.ts';
 import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, PRAGMAS, VERSION, infixOp, prefixOp } from './names.ts';
 import type { Expr, Invoke, My, Pragma, Program, Stmt, Sub, Var } from './ast.ts';
 import type { Resolution } from './resolver.ts';
+import { handsOn } from './shapes.ts';
+import type { Gives } from './shapes.ts';
 
 // What the checks need of the whole program (D20): the names, and for
 // each sub the file variables a call of it can change, its own
@@ -23,7 +25,7 @@ const parts = (e: Expr): readonly Expr[] =>
     e.kind === 'unary' ? [e.operand]
     : e.kind === 'binary' ? [e.left, e.right]
     : e.kind === 'ternary' ? [e.test, e.then, e.else]
-    : e.kind === 'apply' || e.kind === 'invoke' || e.kind === 'arrayop' ? e.args
+    : e.kind === 'apply' || e.kind === 'invoke' || e.kind === 'arrayop' || e.kind === 'listop' ? e.args
     : e.kind === 'assign' ? [e.value, e.target]
     : e.kind === 'step' ? [e.target]
     : e.kind === 'elem' ? [e.index]
@@ -106,9 +108,13 @@ const listy = (in_: Expr): boolean => {
     return e.kind === 'array' || e.kind === 'myarray' || e.kind === 'list' || isRange(e) || isRepeat(e)
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
+        || (e.kind === 'listop' && e.op === 'reverse')
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
 };
+
+// Whether a call is of a sub that gives a list back (D18).
+const gives = (w: World): Gives => call => w.names.lists[w.names.calls.get(call)!] === true;
 
 // What a node changes by itself: the variable it assigns or steps, the
 // array whose element it stores or whose size it changes.
@@ -147,6 +153,9 @@ const named = (w: World, in_: Expr, scalars: boolean, into = new Set<number>()):
     else if (e.kind === 'ternary') { named(w, e.then, scalars, into); named(w, e.else, scalars, into); }
     else if (e.kind === 'binary' && infixOp(e.op)?.when) { named(w, e.left, scalars, into); named(w, e.right, scalars, into); }
     else if (isRepeat(e) && e.kind === 'binary') named(w, e.left, true, into);
+    // `reverse` hands on the containers it was given, as a list does
+    // (T185, D87); `join` gives a value at once.
+    else if (e.kind === 'listop' && e.op === 'reverse') e.args.forEach(x => named(w, x, true, into));
     return into;
 };
 
@@ -169,11 +178,14 @@ const checkOrder = (w: World, what: string, sequence: readonly Expr[], scalars: 
 };
 
 // Where one value is wanted: what may not stand there (T151, T68, T168).
-const checkOneValue = (e: Expr): void => {
+const checkOneValue = (w: World, e: Expr): void => {
     if (e.kind === 'list') refuse(e.my ? 'my (...) where one value is wanted' : 'a list where one value is wanted: perl gives its last value, and warns of the others', e.pos);
     if (e.kind === 'myarray') refuse(`my @${e.name} where one value is wanted`, e.pos);
     // `(LIST)[N]`, one index that is one value, is an element there.
-    if (e.kind === 'slice' && (e.name !== undefined || e.indexes.length !== 1 || listy(e.indexes[0]!))) refuse('a slice where one value is wanted: perl gives its last element; write the element, $a[...]', e.pos);
+    // perl's `reverse` there joins its arguments and reverses the
+    // characters (T178, D84).
+    if (e.kind === 'listop' && e.op === 'reverse') refuse('reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function', e.pos);
+    if (e.kind === 'slice' && (e.name !== undefined || e.indexes.length !== 1 || listy(e.indexes[0]!) || handsOn(e.indexes[0]!, gives(w)))) refuse('a slice where one value is wanted: perl gives its last element; write the element, $a[...]', e.pos);
     if (isRange(e)) refuse("a range where one value is wanted: '..' is another operator to perl there", e.pos);
     if (e.kind === 'binary' && isRepeat(e) && e.left.kind === 'list') refuse(`a list on the left of '${e.op}' where one value is wanted: perl repeats its last value`, e.left.pos);
     if (e.kind === 'arrayop' && e.op === 'splice') refuse('splice where one value is wanted: perl gives the last element it removed; assign it to an array', e.pos);
@@ -197,6 +209,8 @@ const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
     case 'list': return all(e.items, 'list');
     case 'slice': return [...all(e.indexes, 'list'), ...all(e.items ?? [], 'list')];
     case 'arrayop': return e.op === 'splice' ? [...all(e.args.slice(0, 2), 'scalar'), ...all(e.args.slice(2), 'list')] : all(e.args, 'list');
+    // `join`'s separator is one value (T182).
+    case 'listop': return e.op === 'join' ? [...all(e.args.slice(0, 1), 'scalar'), ...all(e.args.slice(1), 'list')] : all(e.args, 'list');
     case 'listassign': return [[e.value, 'list'], ...all(e.targets, 'list')];
     default: return [];
     }
@@ -324,7 +338,7 @@ const tested = (in_: Expr): void => {
 const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = false): void => {
     checkLiteral(e);
     checkConcat(w, e);
-    if (ctx === 'scalar') checkOneValue(e);
+    if (ctx === 'scalar') checkOneValue(w, e);
     if ((e.kind === 'my' || e.kind === 'myarray' || (e.kind === 'list' && e.my)) && !my) {
         refuse(`${e.kind === 'my' ? `my $${e.name}` : e.kind === 'myarray' ? `my @${e.name}` : 'my (...)'} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`, e.pos);
     }
@@ -359,12 +373,15 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     if (e.kind === 'list') checkOrder(w, 'this list', e.items, true);
     if (e.kind === 'slice') checkOrder(w, 'this slice', [...e.indexes, ...(e.items ?? [])], true);
     if (e.kind === 'arrayop') checkOrder(w, e.op, e.args, true);
+    // `join`'s separator is read when `join` runs, so it is the first
+    // item of its list (T186, D87).
+    if (e.kind === 'listop') checkOrder(w, e.op, e.args, true);
     if (e.kind === 'invoke') {
         const callee = w.names.calls.get(e)!;
         // The arguments are copied into a list when one of them is a
         // list; otherwise a scalar variable is handed over as a place, and
         // read late, as perl reads it (D73).
-        checkOrder(w, `the arguments of ${e.name}`, e.args, e.args.some(listy), { changes: w.defaults[callee]!, at: e });
+        checkOrder(w, `the arguments of ${e.name}`, e.args, e.args.some(a => listy(a) || handsOn(a, gives(w))), { changes: w.defaults[callee]!, at: e });
     }
     if (e.kind === 'assign' && e.target.kind === 'elem') {
         // `=`: the right side, then the index. The others: the index,
@@ -406,20 +423,6 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
             continue;
         }
         checkExpr(w, part, my && reached, where);
-    }
-};
-
-// What may not follow `return`, nor be a sub's last statement: a list, or
-// an array, which perl returns whole to a list (step 10 brings them).
-const checkNoList = (in_: Expr, where: string): void => {
-    const e = plain(in_);
-    if (e.kind === 'ternary') {
-        checkNoList(e.then, where);
-        checkNoList(e.else, where);
-    } else if (e.kind === 'binary' && infixOp(e.op)?.when) {
-        checkNoList(e.right, where);
-    } else if (listy(e) || e.kind === 'slice' || e.kind === 'listassign' || (e.kind === 'assign' && (e.target.kind === 'array' || e.target.kind === 'myarray'))) {
-        refuse(`a list ${where}: a sub returns one value until lists are returned (step 10); scalar(@a) is an array's count`, e.pos);
     }
 };
 
@@ -504,13 +507,6 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
         if (!does && !last) {
             refuse('this statement only has a value, and nothing is done with it: perl warns that it is useless', s.pos);
         }
-        if (last) checkListContext(s.expr, "as a sub's last statement");
-        // A list assignment that ends a sub has no value (D78, T168), and
-        // neither has `splice`; a list or an array may not be one.
-        if (last && s.expr.kind !== 'listassign' && !(s.expr.kind === 'assign' && s.expr.target.kind !== 'var' && s.expr.target.kind !== 'my' && s.expr.target.kind !== 'elem')
-            && !(s.expr.kind === 'arrayop' && s.expr.op === 'splice')) {
-            checkNoList(s.expr, "as a sub's last statement");
-        }
         // The `my` a statement begins with is the one that may stand in it.
         const head = s.expr.kind === 'assign' ? s.expr.target : s.expr;
         const declares = head.kind === 'my' || head.kind === 'myarray' || (head.kind === 'list' && head.my === true) || (s.expr.kind === 'listassign' && s.expr.my === true);
@@ -577,11 +573,9 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     }
     // Which loop it is for is the resolver's to say.
     case 'jump': return;
-    case 'return':
-        if (s.value === undefined) return;
-        checkExpr(w, s.value, false);
-        checkListContext(s.value, 'after return');
-        return checkNoList(s.value, 'after return');
+    // A list, to a call that wants one (D18): the fault for a call that
+    // wants one value is the runtime's.
+    case 'return': return s.value === undefined ? undefined : checkExpr(w, s.value, false, 'list');
     // The parser lets a sub stand at the top level only.
     case 'sub': throw new Error('a sub below the top level');
     }
@@ -634,7 +628,7 @@ const checkReadOnly = (program: Program, names: Resolution): void => {
 const checkSub = (w: World, s: Sub): void => {
     let optional = false;
     for (const p of s.params) {
-        if (p.op === undefined && optional) refuse('a required parameter after an optional one: perl refuses it', p.pos);
+        if (p.op === undefined && !p.slurpy && optional) refuse('a required parameter after an optional one: perl refuses it', p.pos);
         optional = optional || p.op !== undefined;
         if (p.default) checkExpr(w, p.default, false);
     }
