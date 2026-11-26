@@ -1,5 +1,5 @@
 {
-  "perl": "v5.42.0",
+  "perl": "v5.42.2",
   "counts": {"SAME": 718, "WARNS": 0, "LOUD": 66, "REFUSED": 2163, "UNJUDGED": 0, "WRONG": 0},
   "refused": {"later": 1662, "open": 501, "design": 0},
   "by_design": 2633,
