@@ -337,7 +337,8 @@ prototype of the design) could not break its rule, and corrected the
 proposal round it: poison must check wherever a string is read and
 again after an allocation; the cap must count the poisoned dead; ten
 holes in the test plan, each closed. Stevan's Mac ran `make test`
-green after step 6 and again after step 7. **Step 9, arrays and
+green after step 6 and again after step 7, and the tests and the
+sanitizers green after step 11a (2026-11-26). **Step 9, arrays and
 lists, is built** (2026-11-25; D76 to D81; `docs/PLAN.md` has the
 build's own account, and `docs/LANGUAGE.md`, "Arrays and lists", the
 language). **An array**, `my @a`, is a variable of its own name (`@x`
