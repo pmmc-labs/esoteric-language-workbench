@@ -4359,8 +4359,8 @@ slices, `%opts`, an element in a string.
   after it, 7 `exists` or `delete` of an array's element). No probe
   left SAME. `run/` has 2,784 probes now, and the refused are 1,367
   for a later step and 541 open.
-- **What the build settled** (D104, the builder's defaults, for
-  Stevan to confirm): T230's refusal; until 12b a hash in the list of a `for`, a
+- **What the build settled** (D104, the builder's defaults, which
+  Stevan confirmed): T230's refusal; until 12b a hash in the list of a `for`, a
   `map`, a `grep` or a `sort`, other than by `keys`, is refused,
   since the freeze belongs to such a list and has no fault test
   yet; `$h {a}` with a blank is refused; `exists $h{k};` and `keys

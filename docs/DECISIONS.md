@@ -20,8 +20,8 @@ proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
 confirmed. D96 and D97 are his, on the census; D98 to D101 his answers to
 step 12's, D103 his, on the file of differences, and D102 the builder's defaults on its review, which he
-confirmed. D104 is the builder's defaults from building step 12a,
-not yet confirmed.
+confirmed. D104 was the builder's defaults from building step 12a,
+which he confirmed.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1911,8 +1911,8 @@ counted, copied or handed on, and rejects a `sort` block that does
 not only compare `$a` with `$b`, a block that prints between a
 `sort` and its `keys`, and a slice of `keys`.
 
-**D104. What building step 12a settled.** *(Builder's defaults,
-2026-11-26, for Stevan to confirm.)* **Until step 12b, a hash named
+**D104. What building step 12a settled.** *(User: defaults of the
+builder's from the build, confirmed 2026-11-26: "D104 is confirmed".)* **Until step 12b, a hash named
 in the list of a `for`, a `map`, a `grep` or a `sort`, other than
 by `keys`, is refused**: `for my $v (values %h)`, `sort values %h`,
 `map { ... } %h`, an element there. The freeze belongs to such a
