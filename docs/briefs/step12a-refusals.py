@@ -36,7 +36,7 @@ r('my-twice', 'perl warns: "my" variable %h masks earlier declaration in same sc
 r('underscore', 'perl does not compile it: Can\'t use global %_ in "my".', 'my %_ = (a => 1);', '%_', "%_ is perl's own, and not in the language")
 r('key-value-slice', 'a slice of keys and values, to perl: 2.', H + 'my %g = %h{"a", "b"};\nsay scalar(%g);', '%h{', '%h{...} is a slice of keys and values, and not in the language')
 r('of-a-reference', "perl dies: Can't use string (\"1\") as a HASH ref.", 'my $r = 1;\nsay %$r;', '%$', "'%' before a reference: references are not in the language yet (step 13)")
-r('no-name', 'perl does not compile it.', 'say % 2;', '% 2', "after '%' comes a name: a letter or '_', then letters, digits and '_'")
+r('no-name', 'the hash %2, to perl, which is empty: an empty line.', 'say % 2;', '% 2', "after '%' comes a name: a letter or '_', then letters, digits and '_'")
 
 # ---- exists, delete, keys, values (T220, T225)
 ON = lambda shown, op, word: f"{shown} before '{op}': perl reads on for {word}'s argument, or does not compile it; write {word}(...)"
@@ -71,7 +71,7 @@ r('worked-on-and-a-delete', 'perl: 3.', H + '$h{a} += delete($h{b});\nsay $h{a};
 r('element-and-a-sub-that-deletes', 'perl: 2.', H + 'sub del() { delete $h{a}; return 1 }\nsay $h{a} + del();', 'del()', LATER("'+'"), 2)
 r('two-assignments-to-an-element', 'perl reads both late: 14 (T213).', H + 'say(($h{a} = 5) + ($h{a} = 7));', '= 7', LATER("'+'"))
 r('element-and-a-store-in-a-list', 'perl: 55.', H + 'my @l = ($h{a}, $h{a} = 5);\nsay @l;', '= 5', LATER('this list'))
-r('element-and-an-assignment-of-the-hash', 'perl would read a freed value (D102); only a sub can hold the assignment, which is a statement.',
+r('element-and-an-assignment-of-the-hash', 'perl: 2. An assignment to the hash is a change for D76 (D102); only a sub can hold one, since it is a statement.',
   H + 'sub clear() { %h = (); return 1 }\nmy @l = ($h{a}, clear());\nsay scalar(@l);', 'clear())', LATER('this list'))
 r('said-and-deleted', 'perl: 11.', H + 'say $h{a}, delete $h{a};', 'delete', LATER("say's list"))
 
