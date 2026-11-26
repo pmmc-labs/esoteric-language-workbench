@@ -59,7 +59,10 @@ static uint64_t storage(const rt_array *a) {
 static void free_list(rt_block *list) {
     while (list) {
         rt_block *next = list->next;
-        if (list->marked & IS_ARRAY) free(((rt_array *)(list + 1))->items);
+        if (list->marked & IS_ARRAY) {
+            free(((rt_array *)(list + 1))->items);
+            free(((rt_array *)(list + 1))->index);
+        }
         free(list);
         list = next;
     }
