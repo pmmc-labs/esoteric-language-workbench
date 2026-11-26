@@ -4577,6 +4577,96 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 Waiting: **step 5**, written out above with its four questions. D1
 to D51 are agreed.
 
+### A sub or a method with no signature (proposed, open)
+
+*Proposed 2026-11-26, at Stevan's asking, after a look at his
+`stevan/grey-static`: 259 of the subs and methods in the parts of it
+he wants to run have no signature, 224 of them methods like `method
+size { scalar(@items) }`. It moves a row of `SURFACE.md` from Cut to
+In, so it is a proposal, with questions. Nothing is built.*
+
+**What is refused today.** `sub f { ... }` and, at step 17, `method m
+{ ... }`: D17 has "`@_` is refused; a sub has a signature", D72 "a
+signature always", and `SURFACE.md` cuts both rows. The reason was
+`@_`, and the rule was written wider than its reason.
+
+**What perl does**, each run under 5.42.0 on 2026-11-26:
+
+| Program | perl prints |
+|---|---|
+| `sub f { return 7 } say f(1, 2, 3);` | `7`, in silence |
+| `sub f() { return 7 } say f(1);` | dies: `Too many arguments for subroutine 'main::f' (got 1; expected 0)` |
+| `my $n = 0; sub f { return 1 } f($n++, $n++); say $n;` | `2`: the arguments are worked out |
+| `my $f = sub { 3 }; say $f->(1, 2);` | `3` |
+| `my $f = sub () { 3 }; say $f->(1);` | dies: `Too many arguments` |
+| `class P { method m { 5 } } say P->new->m(1, 2);` | `5` |
+| `class P { method z () { 6 } } say P->new->z(1);` | dies: `Too many arguments` |
+| `my @a = (1); sub f { 1 } f(@a[3, 4]); say scalar(@a);` | `5`: a slice past the end among the arguments makes the elements, as T161 |
+| `my @a = (1); sub f { 1 } f($a[5]); say scalar(@a);` | `1` |
+
+So to perl a sub with no signature is one that takes any number of
+arguments and checks nothing; what it is handed is in `@_`, which
+stays out of the language. With `@_`, `$_[N]` and a bare `shift` or
+`pop` refused, as they are, such a sub cannot see its arguments at
+all, and nothing it prints can differ from perl's.
+
+**Q1. What a sub with no signature means.**
+
+- **(a) Any number of arguments, each worked out, none seen. As
+  perl.** *Recommended.* It is the first of "agree, fault, refuse",
+  and it is what the commonest use wants: a callback that ignores
+  what it is handed, `$stream->for_each(sub { $count++ })`, which
+  with `sub () { ... }` dies under perl itself. `()` stays the way to
+  say "takes none", with its fault.
+- (b) The same as `()`: any argument is the fault for a wrong number
+  of arguments. One meaning for both spellings, and a fault where
+  perl runs on, at exactly the callback above.
+- (c) Refused where the compiler can see a call that passes
+  arguments to one (named subs, under D20's closed world), and (a)
+  where it can't (methods, code references). Catches a slip, and is
+  two rules.
+
+**Q2. Which of them.**
+
+- **(a) All three, by one rule decided now**: named subs at once
+  (step 8 is built), anonymous subs when step 14 brings them,
+  methods when step 17 does. *Recommended.*
+- (b) Named subs and methods only, and anonymous subs asked again at
+  step 14.
+
+**Nothing to choose.** Inside a sub or a method with no signature,
+`@_`, `$_[N]`, `"@_"`, and `shift` or `pop` with no array stay
+refused, and the message says to give the sub a signature that names
+what it wants. D80's fault for a slice past the end among a call's
+arguments holds whatever the sub is. A wrong number of arguments is
+never a fault for such a sub; everything else about it is D72's: its
+value, its context, where it may stand, its name.
+
+**What it moves.** D17's first point and D72's first sentence, each
+amended by the new entry; `SURFACE.md`, "A sub without a signature"
+(Cut to In, with `@_` and `shift` on it left Cut) and, under
+Classes, "`method name { }` without a signature"; `LANGUAGE.md`,
+Subs; `DIFFERENCES.md`, the row "`my ($x, $y) = @_;`", whose Curly
+side becomes "name them in a signature" and stays an idiom, met
+often. **The census**: 650 of the 2,633 probes refused by design are
+refused first for a sub with no signature. 298 of them have nothing
+else in sight that is cut, and go back to `run/`, most to be refused
+there for a later step; the other 352 use `@_` or another cut, and
+stay, under another row. SAME can only rise. **Tests**: the refusal
+test of a sub with no signature becomes a `same` test, and
+`t/models/sub.py` gains calls of such subs with none, one and
+several arguments, each with an effect, since the arguments run.
+
+**Size.** Small: the parser takes a block where it wants a bracket,
+and a sub so written skips the count of its arguments. No review of
+its own; the nine programs above are its statements about perl, and
+go into `claims.py` when it is decided.
+
+**Overloading** was the other thing `grey-static` wanted, 18 of its
+files, 13 of them for nothing else. *Stevan, 2026-11-26: revisit it
+with the class system.* Step 17's proposal takes it up; it is Cut
+in `SURFACE.md`, with no decision of its own.
+
 ## Example-port table
 
 | Example | From | Needs | Status |
@@ -4589,3 +4679,4 @@ to D51 are agreed.
 | `Chalk::Grammar::Symbol`, `Rule` | Chalk `lib/Chalk/Grammar/` | step 17 | waits |
 | About 25 small programs: subs, classes, references, `try` | Crayon `docs/superpowers/plans/2026-03-31-crayon-interpreter.md` | steps 8 to 17 | waits; their expected values were written by hand and some are wrong, so perl writes them (D7); four must bend (`show 42`, `:writer`, roles, a subclass reading a parent's field) |
 | The graded corpus, tier by tier | perl5-son `t/corpus/mdtest/pvm/` | step 11 | waits on D11 |
+| Streams, the functional classes, datatypes, concurrency: 98 modules, about 4,000 lines | `stevan/grey-static`, `lib/grey/static/` (`stream/`, `time/stream/`, `io/stream/`, `functional/`, `datatypes/`, `concurrency/`) | steps 12 to 17, 18, 22 | waits. Surveyed by pattern, 2026-11-26, a sub with no signature allowed: 59 modules as written, 4 with small edits, 13 held only by `use overload`, 22 by something cut (`@_` in 7, `Time::HiRes` in 5, `Scalar::Util` in 5, which `use v5.42` imports already). The loader, `error`, `source`, `mop`, `logging` and `tty` are not wanted (Stevan) |
