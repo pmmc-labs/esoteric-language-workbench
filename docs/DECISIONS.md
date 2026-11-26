@@ -1618,8 +1618,8 @@ Q5.)* 10a: list returns, D18's fault, slurpy parameters, `join`,
 `grep`. 10c: `sort`.
 
 **D87. What step 10's review changed.** *(User: defaults of the
-builder's, 2026-11-25, on the review's findings, for Stevan to
-confirm or change; none changes D82 to D86.)* **For D76's walk,
+builder's, 2026-11-25, on the review's findings, confirmed
+2026-11-26: "D87-D89 are confirmed"; none changes D82 to D86.)* **For D76's walk,
 `grep`, `sort` and `reverse` name what their list names**, a scalar
 counted as an item, and `join`'s separator is the first item of its
 list (T185, T186: perl hands the containers on, and reads the
@@ -1646,8 +1646,8 @@ included, and a list assignment is refused there (T192, D78).
 may be statements.**
 
 **D88. What building step 10 settled (10a, 10b).**
-*(User: defaults of the builder's, 2026-11-25, for Stevan to confirm
-or change.)* **A list after `return` is in brackets**, unless it is
+*(User: defaults of the builder's, 2026-11-25, confirmed
+2026-11-26.)* **A list after `return` is in brackets**, unless it is
 one thing that is a list (T193: perl returns `1, 2` whole). **D18's
 fault is raised before anything of the list is worked out**, and a
 call for nothing works a list-shaped `return` out as a list.
@@ -1665,7 +1665,7 @@ changed while a foreach is over it`. And `f returned a list where
 one value is wanted`; `joined string too long`.
 
 **D89. What building `sort` settled (10c).** *(User: defaults of the
-builder's, 2026-11-26, for Stevan to confirm or change.)* **`sort`
+builder's, 2026-11-26, confirmed the same day.)* **`sort`
 takes no brackets of its own**, as D87 has it, though `sort(@a)`
 alone is silent in perl: one rule with `map` and `grep`. **A scalar
 first after `sort` is refused**, as a word is (D21: perl takes it for
@@ -1680,6 +1680,23 @@ never stored`. **`$a` and `$b`** are refused outside a `sort`'s
 block and as declarations, by the resolver and the parser; the lexer
 takes them. **The port lives in `runtime/sort.c`**, included by
 rt.c, with its origin and perl's terms at its head (D82).
+
+**D90. Interpolation is pulled forward, to before the census.**
+*(User, 2026-11-26: "Lets pull interpolation forward and lets do it
+before the census.")* Step 16 had it, with `q`, `qq`, `qw`, heredocs
+and `sprintf`; it is now **step 11a**, alone, and the census is 11b.
+The reason: nearly every Perl program anyone writes has a variable in
+double quotes, so until it is in the census's probes are refused at
+their first string and the census measures little; and the tests of
+steps 9 and 10 were written round its absence. What it interpolates
+is scalars, arrays and elements, as far as the language has them at
+that point (no hashes, no references: steps 12 and 13 widen it), and
+which shapes perl has to guess at and are refused (D21) is for 11a's
+proposal to say. Step 16 keeps the rest: `q`, `qq`, `qw`, heredocs,
+`sprintf`, `printf`, `\U` and its kin, the remaining string
+builtins. Rejected: the census first (it would mostly count
+refusals); all of step 16 forward (large, and most of it is not what
+the probes are refused for).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

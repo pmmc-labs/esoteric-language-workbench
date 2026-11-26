@@ -3446,9 +3446,40 @@ block this proposal had tried. The amendments, which D87 records:
   `reverse`, over 3,000 arrays. Context is syntax, 75 calls; D18's
   shapes, 47 `return`s.
 
-### 11. The census
+### 11a. Interpolation
+
+Referee: perl. Size: large.
+
+**Pulled forward from step 16, to before the census (D90,
+2026-11-26). To be proposed: nothing of it is agreed or built.**
+A variable in a double-quoted string: `"$x"`, `"@a"`, `"$a[0]"`,
+`"@a[0, 1]"`, `"${x}"` and what else the language has to interpolate
+by now (no hashes and no references yet: steps 12 and 13 widen it).
+Decides: exactly which shapes interpolate, since perl guesses at
+`"$x[1]"`, `"@name"` and an email address, and D21 says refuse what
+it has to guess; what joins an array's values (`$"`, which is not in
+the language); an undef in a string (D48: a fault); how an
+interpolated string sits with D57's row of dots and D76's walk,
+since to perl it is a concatenation, and a join for an array; and
+that T34's refusal of a bare `$` or `@` in double quotes ends for
+the shapes that are in. Traps: T9, T22, T23, T34. Every test written
+round its absence since step 5 may use it after.
+
+### 11b. The census
 
 Referee: perl. Size: medium.
+
+**After 11a (D90).** For the proposal, from the discussion of
+2026-11-26: a verdict for each probe, kept in a file, and not counts
+alone (no probe may become WRONG, and none may leave SAME without a
+decision); a fifth verdict for a probe perl warns on and the
+language prints the same for (D15 makes that no SAME); `make census`
+apart from `make test`, which checks the file; the eight-seed rule
+and T131's caps for probes that can not be judged; a note of where
+the probes came from, for the repository's licence, as
+`runtime/sort.c` has. **The session that builds it needs
+`stevan/perl5-son`, `stevan/chalk` and `stevan/pvm` attached**: the
+probes are there.
 
 D11; perigrin has agreed. Import the probes and the graded corpus into
 `t/census/`, each with perl 5.42's output regenerated here; `make
@@ -3516,7 +3547,7 @@ comment that changes it (T74). Traps: T53, T65, T70, T74.
 
 Referee: perl. Size: large.
 
-Interpolation, `q`, `qq`, `qw`, heredocs, `sprintf` and `printf`, the
+(Interpolation went to step 11a: D90.) `q`, `qq`, `qw`, heredocs, `sprintf` and `printf`, the
 remaining string builtins. Decides: exactly which shapes interpolate
 (perl guesses at `"$x[1]"`, `"$h{a}"`, `"@name"` and an email address;
 D21 says refuse what it has to guess). Traps: T9, T22, T23.

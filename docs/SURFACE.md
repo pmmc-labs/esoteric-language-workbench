@@ -201,8 +201,8 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `'...'`, `"..."` with escapes | In | 3 | D43. `\n \t \r \f \b \a \e \0`, `\\ \" \$ \@`, `\xHH`, `\x{...}`, octal, `\o{...}`, `\N{U+...}`, a backslash before a punctuation mark. A character is a Unicode scalar value (D42) |
 | `\q` and other unknown escapes; `\x` with fewer than two digits; `\x{}`; an octal escape cut short by `8` or `9`; a backslash before a tab or a newline | Cut | | D43: perl warns, or makes a NUL in silence (T86, T95) |
 | `\c`, `\N{name}`, `\U \L \u \l \Q \E \F` | Later | 16 | D43: with interpolation |
-| An unescaped `$` or `@` in double quotes | Later | 16 | T34: refused until interpolation |
-| Interpolation of `$x`, `${x}`, `@a`, elements, `->` chains | In | 16 | The shapes perl has to guess at are refused |
+| An unescaped `$` or `@` in double quotes | Later | 11a | T34: refused until interpolation (D90) |
+| Interpolation of `$x`, `${x}`, `@a`, elements, `->` chains | In | 11a; 12, 13 | D90: pulled forward. The shapes perl has to guess at are refused; hash elements and `->` chains come with their steps |
 | `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
 | `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
 | Arrays: `my @a`, lists that flatten, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | D80. A read past either end is undef and makes nothing; a store past the end grows the array, before the start faults; `@a[one index]`, `$a[0][0]`, `length(@a)`, `defined(@a)`: Cut (T167, T168) |
