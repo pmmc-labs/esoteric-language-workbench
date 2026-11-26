@@ -102,6 +102,19 @@ say join(",", map { $_ . "=" . $same{$_} } sort keys %same);
 my ($first, %rest) = ("head", p => 1, q => 2, r => 3, s => 4);
 say $first, join(",", map { $_ . "=" . $rest{$_} } sort keys %rest);
 
+# What follows exists, keys and values without brackets: a comparison may.
+my %cmp = (a => 1, b => 2, c => 3, d => 4);
+say exists $cmp{c} < 2 ? "lt" : "ge", (keys %cmp > 1) ? "many" : "few", (values %cmp != 0) ? "some" : "none", (keys %cmp <= 9) ? "le" : "gt";
+
+# The value, then the key, then the store; and an operator makes the key
+# first, &&= too, which then stores nothing.
+my $ki = "a";
+$cmp{$ki = "k"} = $ki x 1;
+$cmp{$ki = "m"} = uc($ki . "v");
+$cmp{nope} &&= 5;
+my $anded = ($cmp{also} &&= 5);
+say $ki, defined($anded) ? "defined" : "undef", "|", join(",", map { $_ . "=" . ($cmp{$_} // "undef") } sort keys %cmp);
+
 # Elements as the targets of a list assignment: a swap, and keys made.
 my %sw = (l => "left", r => "right", m => "mid", x => "other");
 ($sw{l}, $sw{r}) = ($sw{r}, $sw{l});

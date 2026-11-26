@@ -90,6 +90,16 @@ r('fat-comma-in-a-map-block', 'perl guesses a block: 1,2,3. Refused for the comm
 r('word-and-fat-comma-in-a-map-block', 'perl guesses a hash, and does not compile it: syntax error.', A + 'my %g = map { a => $_ } @a;\nsay join(",", sort keys %g);', 'a =>', "a and a comma first in map's block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets")
 r('two-fat-commas', 'perl leaves one out, and warns: Odd number of elements in hash assignment.', 'my %g = (a => 1, => 2);', '=> 2', "a comma with no value before it: perl leaves it out, in silence, where it doesn't refuse it")
 
+# ---- what breaking the build on purpose found (T230, and two holes)
+JOINED = lambda what, name: f'the {what} changes {name}, which the concatenation on the right reads: perl joins its pieces as it stores, after the {what} is worked out; take the string into a my first'
+r('key-changes-what-a-concatenation-reads', 'perl joins the pieces after the key is worked out: kkv (T230).', 'my %g;\nmy $i = "a";\n$g{$i = "k"} = $i . "v";\nsay %g;', '= "k"', JOINED('key', '$i'))
+r('key-changes-what-a-string-reads', 'an interpolated string is such a row: kk-v (T230).', 'my %g;\nmy $i = "a";\n$g{$i = "k"} = "$i-v";\nsay %g;', '= "k"', JOINED('key', '$i'))
+r('index-changes-what-a-concatenation-reads', "an array's element too, since step 9: 2v (T230).", 'my @a;\nmy $i = 0;\n$a[$i = 2] = $i . "v";\nsay $a[2];', '= 2', JOINED('index', '$i'))
+r('index-steps-what-a-concatenation-reads', 'through what perl folds away: 1v (T230).', 'my @a;\nmy $i = 0;\n$a[$i++] = 0 || $i . "v";\nsay $a[0];', '++', JOINED('index', '$i'))
+r('index-calls-what-changes-what-a-concatenation-reads', 'through a sub: 2v (T230).', 'my @a;\nmy $i = 0;\nsub bump() { $i = 2; return 2 }\n$a[bump()] = $i . "v";\nsay $a[2];', 'bump()]', JOINED('index', '$i'))
+r('change-in-the-key-of-exists', 'perl: 51.', H + 'my %g = (5 => 1);\nmy @l = ($h{a}, exists $g{$h{a} = 5});\nsay @l;', 'exists', LATER('this list'))
+r('key-of-exists-with-a-leading-zero', 'octal, to perl: the key 8.', H + 'say exists $h{010} ? 1 : 0;', '010', '010 starts with a zero: perl reads that as octal, which the language writes 0o17')
+
 def write(first):
     n = first
     for name, why, body, at, message, nth in T:

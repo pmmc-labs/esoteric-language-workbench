@@ -1971,6 +1971,12 @@ the hash itself name it, `keys` does not, and a store, a `delete` and
 an assignment to the hash are changes. `say $h{a}, delete $h{a};` is
 refused: take the value into a `my` first.
 
+**The key or the index of an element that is stored to may not
+change a variable that a concatenation on the right reads**: `$a[$i++]
+= $i . "v";` and `$h{$k = "x"} = "$k-$k";` are refused. perl joins
+such a string as it stores it, after the index is worked out, and
+would read the changed variable. Take the string into a `my` first.
+
 ## Memory
 
 A program doesn't manage memory. A string the program can no longer

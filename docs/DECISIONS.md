@@ -1929,7 +1929,13 @@ of keys and values, stay out**, with no step named: the proposal
 did not have them and nothing has asked. So do perl's `keys`
 and `values` of an array, beside `exists` and `delete` of an
 array's element, which the proposal left out: the four are for a
-hash alone. In the runtime **a hash is
+hash alone. **The index or the key of an element that is stored
+to may not change a variable that a concatenation on the right
+reads**, itself or through a sub it calls: `$a[$i = 2] = $i . "v"`
+stores `2v` under perl, which joins the pieces as it stores, after
+the index (T230). The compiler had printed `0v` since step 9, and
+step 12a's breakages found it; refusing it is D57's answer to the
+same habit of perl's. In the runtime **a hash is
 the block an array is**, with its keys and values by turns in the
 order stored and an index over them, so an array's own block is
 three words longer than it was (88 bytes empty, from 64). Rejected:

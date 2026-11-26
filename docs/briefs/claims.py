@@ -860,6 +860,8 @@ CLAIMS = [
     c('T227-arrow', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say "$h{a}->{b}";""", out='', exit=255, err='as a HASH ref'),
     c('T228', 'TRAPS; PLAN 12', r"""my %h; @h{"a", "b"} = (1); say exists $h{b} ? "made" : "not"; my @a = (9); @a[1, 2] = (5); say scalar(@a); my @b; @b[2, 1] = (); say scalar(@b); my (%g, $x) = (p => 1, q => 2); say join(",", sort keys %g), defined $x ? "set" : "undef";""", out='made\n3\n3\np,qundef\n'),
     c('T229', 'TRAPS; PLAN 12', r"""my %h = (a => 1, b => 2); sub n() { return %h } my $c = n(); say $c;""", out='2\n'),
+    c('T230', 'TRAPS', r"""my @a; my $i = 0; $a[$i = 2] = $i . "v"; say $a[2]; $i = 0; $a[$i = 2] = "$i$i"; say $a[2]; $i = 0; $a[$i = 2] = 0 || $i . "v"; say $a[2]; sub bump() { $i = 2; return 2 } $i = 0; $a[bump()] = $i . "v"; say $a[2]; my %h; $i = "a"; $h{$i = "k"} = $i . "v"; say %h;""", out='2v\n22\n2v\n2v\nkkv\n'),
+    c('T230-early', 'TRAPS', r"""my @a; my $i = 0; $a[$i = 2] = $i x 1; say $a[2]; $i = 0; $a[$i = 2] = uc($i . "v"); say $a[2]; $i = 0; $a[$i = 2] = "$i"; say $a[2]; $i = 0; ($a[$i = 2]) = ($i . "v"); say $a[2];""", out='0\n0V\n0\n0v\n'),
     # ---- step 12a, as built (D104; LANGUAGE "Hashes")
     c('D104-blank', 'DECISIONS D104', r"""my %h = (a => 1); say $h {a};""", out='1\n'),
     c('D104-void-exists', 'DECISIONS D104', r"""my %h = (a => 1); exists $h{a}; keys %h; say "quiet";""", out='quiet\n'),

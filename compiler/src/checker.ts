@@ -456,7 +456,29 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
         // `=`: the right side, then the index. The others: the index,
         // the target made, then the right side, which may not change the
         // array the target is in (T158, T159).
-        if (infixOp(e.op)?.rt === undefined && infixOp(e.op)?.when === undefined) checkOrder(w, `'${e.op}'`, [e.value, e.target.index], false);
+        if (infixOp(e.op)?.rt === undefined && infixOp(e.op)?.when === undefined) {
+            checkOrder(w, `'${e.op}'`, [e.value, e.target.index], false);
+            // perl makes one operation of a concatenation and the store
+            // of it, and joins the pieces after the index is worked out:
+            // `$a[$i = 2] = $i . "v"` stores `2v` (T230). An interpolated
+            // string of more than one piece is such a row. So the index
+            // may not change a variable the row reads, itself or through
+            // a sub it calls; through whatever gives one operand or the
+            // other, which perl may have folded away.
+            const row = wholes(e.value).filter(v => (v.kind === 'binary' && infixOp(v.op)?.concat === true) || (v.kind === 'interp' && v.parts.length > 1));
+            const names = new Set<string>();
+            const ids = new Set<number>();
+            for (const r of row) {
+                reads(r, names);
+                (r.kind === 'interp' ? r.parts : [r]).forEach(x => variables(x).forEach(v => ids.add(w.names.of.get(v)!)));
+                if (r.kind === 'interp') r.parts.forEach(x => reads(x, names));
+            }
+            const changed = [...changes(e.target.index)].find(name => names.has(name));
+            const through = [...changeSet(w, e.target.index)].find(id => ids.has(id));
+            if (changed !== undefined || through !== undefined) {
+                refuse(`the ${e.target.hash ? 'key' : 'index'} changes ${changed !== undefined ? '$' + changed : sigil(w, through!)}, which the concatenation on the right reads: perl joins its pieces as it stores, after the ${e.target.hash ? 'key' : 'index'} is worked out; take the string into a my first`, e.target.index.pos);
+            }
+        }
         else checkOrder(w, `'${e.op}'`, [e.target, e.value], false);
     }
     if (e.kind === 'listassign') {

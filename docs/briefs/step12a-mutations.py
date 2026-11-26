@@ -114,6 +114,9 @@ MUTATIONS = [
  ("a hash may be any target", CHECK, "            if (array && n !== e.targets.length - 1) refuse(", "            if (array && !t.hash && n !== e.targets.length - 1) refuse("),
  ("a key's own expression is not checked", CHECK, "    case 'hashop': return e.key === undefined ? [] : [[e.key, 'scalar']];\n", ""),
  ("a key is not a part of its builtin", CHECK, "    : e.kind === 'hashop' ? (e.key === undefined ? [] : [e.key])\n", ""),
+ ("an index may change what a concatenation on the right reads (T230)", CHECK, "            if (changed !== undefined || through !== undefined) {", "            if (false) {"),
+ ("only the index itself, and no sub it calls, is looked at (T230)", CHECK, "            if (changed !== undefined || through !== undefined) {", "            if (changed !== undefined) {"),
+ ("an interpolated string is no row (T230)", CHECK, " || (v.kind === 'interp' && v.parts.length > 1));\n            const names", ");\n            const names"),
  ("length of a hash is taken", CHECK, "    if (e.kind === 'apply' && (e.name === 'length' || e.name === 'defined') && of?.kind === 'array') {", "    if (e.kind === 'apply' && (e.name === 'length' || e.name === 'defined') && of?.kind === 'array' && !of.hash) {"),
  ("keys is one value to a return", SHAPES, "    case 'hashop': return e.op === 'keys' || e.op === 'values';\n", ""),
  ("a hash is one value to a return", SHAPES, "    case 'array': return true;", "    case 'array': return !e.hash;"),
@@ -142,7 +145,7 @@ if only == ['--match']:
     sys.exit(0)
 knobs = checks.knobs()
 tests = []
-for src in sorted(glob.glob('t/15[0-9][0-9]-*.pl') + glob.glob('t/160[0-6]-*.pl')):
+for src in sorted(glob.glob('t/15[0-9][0-9]-*.pl') + glob.glob('t/16[0-9][0-9]-*.pl')):
     head = open(src, encoding='utf-8', errors='replace').read(1200)
     env = dict(os.environ)
     env.update(knobs)

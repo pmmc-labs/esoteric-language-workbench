@@ -274,6 +274,7 @@ quiet has met few of them.
 | `$h {a}`, a blank before the brace; `exists $h{k};` or `keys %h;` alone as a statement, in silence | Each refused | accident | rarely | data | D104 † |
 | `exists $h{a} + 1` dies as it runs; `keys %h + 1` does not compile | Refused, with the brackets that say what was meant: `exists($h{a}) + 1` | accident | rarely | data | D102 |
 | A row of dots is one operation that reads each piece late: `$x . "a" . ($x = 5)` is `5a5` | Refused when a later piece, or a sub it calls, changes a variable an earlier piece reads. It refuses `$x . ++$x` too, which is `44` either way | accident | rarely | strings | D57, D69, D74 † |
+| `$a[$i++] = $i . "v";` joins the string after the index is worked out, and stores `1v` | Refused when the index or key of an element changes a variable that a concatenation on the right reads | accident | rarely | data, strings | D57, D104 |
 | `$t .= ($u = $x . $z);` never assigns `$u`, in 5.42 | Refused. A fault of perl's, not a rule of it | accident | rarely | strings | D57 |
 | A list is the containers themselves: `$a[0] + ($a[0] = 10)` is 20; `my @b = ($x, bump());` has the `$x` that `bump` left | Refused when a later part can change what an earlier part names (81 of the census's programs, which hunt for this) | accident | rarely | data | D76 |
 | `for my $x ($p, $q)` walks the variables themselves | Copies; refused when the block can change one | accident | rarely | loops | D77 |

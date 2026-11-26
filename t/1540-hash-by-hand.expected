@@ -28,6 +28,8 @@ scalar20224
 0none
 w=5,x=3,y=2,z=4
 headp=1,q=2,r=3,s=4
+ltmanysomele
+mundef|a=1,also=undef,b=2,c=3,d=4,k=a,m=KV,nope=undef
 l=right,m=mid,new1=1,new2=2,new3=undef,r=left,x=other
 11
 22,also
