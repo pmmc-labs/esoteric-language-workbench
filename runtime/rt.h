@@ -129,6 +129,9 @@ typedef struct rt_frame {
 // The context (D28): everything the runtime knows that isn't a value,
 // passed first to every runtime function and every compiled sub, so that
 // nothing is global and a second context can one day run beside this one.
+// A sort that is under way (sort.c).
+typedef struct rt_sort rt_sort;
+
 typedef struct rt_ctx {
     const char *file;       // the program's path, as the compiler was given it
     int64_t line;           // the line of the statement that is running
@@ -136,6 +139,7 @@ typedef struct rt_ctx {
     rt_frame *frames;       // the roots: the newest frame, and through it the rest
     rt_value *shared;       // the file's variables, which a sub reaches through here
     uint64_t deep;          // what the open frames count for, against the limit on recursion
+    struct rt_sort *sorts;  // the sorts that are under way, the newest first
     struct rt_block *heap;  // every string made and not yet collected
     struct rt_block *dead;  // under poison, the collected: kept, never handed out again
     uint64_t held;          // the bytes of both, headers and all: what the cap is on
@@ -349,6 +353,20 @@ rt_value *rt_list_items(rt_ctx *cx, rt_value list);
 // a sub that gives no list gives a call that wants one.
 rt_value rt_only(rt_ctx *cx, rt_value list);
 void rt_slurp(rt_ctx *cx, rt_value array, int64_t argc, rt_value **argv, rt_value *flat, int64_t from);
+// `sort` (step 10c; D82, D83; sort.c). The generated code drives a sort
+// with a block: `rt_sort_begin`, then `rt_sort_next` for as long as it
+// gives two values to compare, the block's value handed to
+// `rt_sort_answer` each time, then `rt_sort_end`, which adds the values in
+// order to `into`. `lone`: a list of one value is looked at once, as perl
+// looks at it for the blocks it throws away (T190). `rt_sort_strings` is
+// a sort with no block, and `rt_sort_in_place` the fault for an undef in
+// an array that perl would sort in place (T187).
+rt_sort *rt_sort_begin(rt_ctx *cx, rt_value list, int lone);
+int rt_sort_next(rt_ctx *cx, rt_sort *s, rt_value *a, rt_value *b);
+void rt_sort_answer(rt_ctx *cx, rt_sort *s, rt_value v);
+void rt_sort_end(rt_ctx *cx, rt_sort *s, rt_value into);
+void rt_sort_strings(rt_ctx *cx, rt_value list, rt_value into);
+void rt_sort_in_place(rt_ctx *cx, rt_value list);
 // `reverse`: the values of `values`, last first, added to `list`. `join`:
 // the separator made a string, used or not (T190), then each value, as `.`
 // makes one.

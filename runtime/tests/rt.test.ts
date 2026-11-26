@@ -284,3 +284,38 @@ test('a list added to a list, reversed, joined, and taken by a slurpy parameter'
     assert.deepEqual(run('arrays', 'handed-separator-undef'), { status: 1, output: out + 'fault: undef where a string is wanted at arrays.pl line 1.\n' });
     assert.deepEqual(run('arrays', 'handed-only-two'), { status: 2, output: out + 'internal: a sub that gives no list gave one at arrays.pl line 1.\n' });
 });
+
+// The sort machine (step 10c; D82, D83), held to perl: for the 4,200 lists
+// of t/models/merge.py, under four ways of comparing (one of them no order
+// at all), the pairs it asks for are the pairs perl's sort hands a block,
+// in perl's order, and the values come out as perl has them. With a sort
+// begun and ended in the middle of every fifth comparison of a fourth of
+// them, which leaves the outer one where it was.
+test("the sort machine asks for perl's pairs, in perl's order", () => {
+    const cases = spawnSync('python3', [join(here, '..', '..', 't', 'models', 'merge.py'), '--cases'], { encoding: 'utf8', maxBuffer: 1 << 28 }).stdout;
+    assert.equal(cases.split('\n').length, 4201);
+    const perl = `use v5.42;
+        while (my $line = <STDIN>) {
+            chomp $line;
+            my ($how, @v) = split / /, $line;
+            my (@log, @s);
+            if ($how eq 'n') { @s = sort { push @log, "$a,$b"; $a <=> $b } @v; }
+            elsif ($how eq 'r') { @s = sort { push @log, "$a,$b"; $b <=> $a } @v; }
+            elsif ($how eq 'm') { @s = sort { push @log, "$a,$b"; ($a * 7 + $b * 13) % 3 - 1 } @v; }
+            else { @s = sort { push @log, "$a,$b"; ($a % 10) <=> ($b % 10) } @v; }
+            say "|", join(" ", @log);
+            say join(" ", @s);
+        }`;
+    const said = spawnSync(process.env.CURLY_PERL ?? 'perl', ['-e', perl], { input: cases, encoding: 'utf8', maxBuffer: 1 << 28 });
+    assert.equal(said.status, 0, said.stderr);
+    run('sortm', '');
+    const ours = spawnSync(join(build, 'sortm'), [], { input: cases, encoding: 'utf8', maxBuffer: 1 << 28 });
+    assert.equal(ours.status, 0, ours.stderr);
+    const [theirs, mine] = [said.stdout.split('\n'), ours.stdout.split('\n')];
+    assert.equal(mine.length, theirs.length);
+    const differ = mine.findIndex((line, n) => line !== theirs[n]);
+    assert.equal(differ, -1, `line ${differ + 1}: ${mine[differ]?.slice(0, 200)} where perl has ${theirs[differ]?.slice(0, 200)}`);
+    // A fault in the middle of a sort stops the program as any does.
+    const stopped = spawnSync(join(build, 'sortm'), ['stop'], { input: 'n 3 1 2 5 4 9 8 7\n', encoding: 'utf8' });
+    assert.deepEqual([stopped.status, stopped.stderr], [1, 'fault: undef where a number is wanted at sortm.pl line 1.\n']);
+});

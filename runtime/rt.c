@@ -65,7 +65,10 @@ static void free_list(rt_block *list) {
     }
 }
 
+static void sorts_release(rt_ctx *cx);
+
 static void release(rt_ctx *cx) {
+    sorts_release(cx);
     free_list(cx->heap);
     free_list(cx->dead);
     cx->heap = NULL;
@@ -1587,3 +1590,6 @@ void rt_internal(rt_ctx *cx, const char *what) {
     release(cx);
     exit(2);
 }
+
+// perl's merge sort, ported: a file of its own, for its origin (D82).
+#include "sort.c"
