@@ -1,0 +1,2 @@
+t/1446-interpolate-repeat-hard-against-a-number.pl:5:11: x2: the repetition operator is a word of its own: write x 2
+exit: 1

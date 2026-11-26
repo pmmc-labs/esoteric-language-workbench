@@ -354,9 +354,9 @@ four characters; and four ways to name a character by its number:
 `\o{101}` (octal), and `\N{U+263A}`. A backslash before any other
 punctuation mark, or a space, is that mark.
 
-**A `$` or an `@` in double quotes must have its backslash**: `"cost:
-\$5"`, `"me\@example.com"`. To perl those begin a variable, and
-putting a variable's value into a string comes later.
+**A `$` or an `@` in double quotes begins a variable**, whose value
+goes into the string: see "A variable in a string", below. For the
+character itself, a backslash: `"cost: \$5"`, `"me\@example.com"`.
 
 Everything else is refused, because perl warns about it or reads it
 as something nobody means: a backslash before a letter or a digit that
@@ -370,6 +370,83 @@ all three digits, `\001`); a number that isn't a character
 A string may run over several lines, and then it holds the newlines. A
 tab may be written as itself; any other control character is written
 as an escape.
+
+### A variable in a string
+
+In double quotes a variable is replaced by its value:
+
+    my $name = "Ada";
+    my @langs = ("Perl", "C");
+    say "$name writes @langs.";          # Ada writes Perl C.
+    say "first: $langs[0], last: $langs[-1], last index: $#langs";
+
+The shapes that do this are a short list:
+
+- **`$x`**, a scalar. The name is the longest one that could be meant:
+  in `"$x_y"` the variable is `$x_y`. **`${x}`** ends the name where
+  you say: `"${x}_y"`, `"${n}th"`.
+- **`@a`**, an array: its values with one space between each two, and
+  nothing for an empty array. `@{a}` is the same.
+- **`$a[0]`**, an element. The index is **a whole number or a scalar
+  variable**: `"$a[0]"`, `"$a[-1]"`, `"$a[$i]"`. Anything more is
+  refused: take the index into a `my` first.
+- **`@a[0, 1]`** and **`@a[1 .. 3]`**, a slice: indexes of that kind
+  with commas between, or a range between two; joined with a space.
+- **`$#a`**, the last index; `$#{a}` is the same.
+
+In the block of a `for`, a `map`, a `grep` or a `sort`, `$_`, `$a` and
+`$b` are variables like any other: `map { "<$_>" } @a`.
+
+**Each value is made a string as `.` makes one**: a number as it
+prints, `true` as `1` and `false` as the empty string. **An undef is a
+fault**, `undef where a string is wanted`, wherever it stands: a
+scalar, an element past the end, a value in an array or a slice. So
+is a whole Num from 10^15, as it is under `.`.
+
+**A string with a variable in it is one value, a Str, made where it
+stands.** `"$n"` is a string and not the number: `"$x" + ($x = 5)`
+adds 5 to what `$x` was. Nothing in a string can change anything, so
+the order its pieces are read in never shows; and nothing later in the
+statement reaches back into it, which is what perl does too:
+
+    my $x = 3;
+    say "$x-" . ($x = 5);       # 3-5: the string was made first
+
+(A row of dots is different: `$x . "-" . ($x = 5)` is refused, since
+perl reads `$x` late there. See "When a variable is read".)
+
+**Where a variable ends.** What comes hard after one of those shapes
+is text: `"$x's"`, `"$x: $y"`, `"$x->y"`, `"$x."`, `"$a[0]s"`. A few
+things perl would take into the variable are refused, each with a
+message that says how to write it:
+
+- **`::`** after a name: `"$x::y"` is a variable of another package to
+  perl. Write `"${x}::y"` or `"$x\::y"`.
+- **`{`**: `"$x{a}"` is an element of a hash, and hashes come later.
+  Write `"${x}{a}"` or `"$x\{a}"`.
+- **`[`** after a scalar is always the element, `"$x[1]"` of `@x`,
+  whether or not there is a `$x`. For the scalar and a bracket, write
+  `"${x}[1]"` or `"$x\[1]"`. A second `[`, after an element or a
+  slice, is refused.
+- **`->`** before `[`, `{`, `@` or `$`: a dereference, to perl. Write
+  `"$x\->[0]"`.
+- **A character past ASCII** after a bare name: `"$xé"` is the
+  variable `$xé` to perl. Write `"${x}é"`.
+
+After a name in braces none of that applies: everything after
+`"${x}"` and `"@{a}"` is text.
+
+**Every other `$` and `@` in double quotes is refused**, and needs its
+backslash: a `$` or `@` with a blank after it or at the end, `$1`,
+`$$`, `@_`, an email address. To perl some of these are text and some
+are variables of its own that print nothing, and the rule here is one
+line: a `$` or `@` begins one of the shapes above, hard against it,
+or it has a backslash. A variable in a string is declared like any
+other: `"user@example.com"` is refused for want of an `@example`.
+
+Not in the language yet: an expression in a string (`"@{[ ... ]}"`,
+`"${\ ... }"`), which waits for references; an element of a hash;
+the case escapes, `\U` and its kin.
 
 ### Joining and repeating
 
@@ -778,7 +855,8 @@ a change to another variable.
 And one more, for a fault in perl itself: `$t .= ($u = $x . $z);`
 never assigns `$u` in perl 5.42. So **the right side of `.=` may not
 be an assignment of a concatenation**. Make the assignment first, in
-a statement of its own.
+a statement of its own. A string with more in it than one variable is
+a concatenation to perl, so `$t .= ($u = "$x$z");` is refused too.
 
 ### A statement that is an expression
 

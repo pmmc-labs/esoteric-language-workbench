@@ -1,0 +1,2 @@
+t/1448-interpolate-assignment-to-a-string.pl:5:6: the left side of '=' is a variable, an element, an array, or a list of them in brackets
+exit: 1

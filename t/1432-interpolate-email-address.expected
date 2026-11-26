@@ -1,0 +1,2 @@
+t/1432-interpolate-email-address.pl:4:10: @example is not declared: my @example; in a string, \@ is the character
+exit: 1

@@ -1,2 +1,0 @@
-t/1433-interpolate-element-with-no-array.pl:5:6: @x is not declared: my @x; in a string $x[ is an element of @x: for the scalar and a bracket, ${x}[ or $x\[
-exit: 1

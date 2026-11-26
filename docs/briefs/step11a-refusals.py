@@ -106,6 +106,8 @@ r('index-at-two-to-the-63', 'perl warns: an element at the smallest integer (T21
 OPEN = "an index in a string that does not close: write \\[ for the character"
 r('index-that-does-not-close', 'perl does not compile it.', A + 'say "$a[0";', '[0', OPEN)
 r('slice-that-does-not-close', 'perl does not compile it.', A + 'say "@a[0, 1";', '[0', OPEN)
+r('index-that-opens-and-ends', 'perl does not compile it.', A + 'say "$a[";', '["', OPEN)
+r('slice-that-ends-after-a-comma', 'perl does not compile it.', A + 'say "@a[0,";', '[0', OPEN)
 r('slice-of-one-index', 'perl warns: Scalar value @a[0] better written as $a[0] (T206).', A + 'say "@a[0]";', '@a[', '@a[...] with one index: perl warns that it is better written $a[...]')
 r('slice-of-one-scalar', 'perl warns: Scalar value @a[...] better written as $a[...] (T206).', I + 'say "@a[$i]";', '@a[', '@a[...] with one index: perl warns that it is better written $a[...]')
 # ---- what is not declared

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/1300 to t/1342: a variable in a double-quoted string (step 11a; D91 to D95).
+"""t/1300 to t/1345: a variable in a double-quoted string (step 11a; D91 to D95).
 
 The definition, which is all this file knows of the language beyond
 t/models/sort.py.
@@ -111,8 +111,14 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/interp.py 1340 > t/1340-fault-interpolate-undef-under-a-for-modifier.expected
     python3 t/models/interp.py --program 1341 > t/1341-fault-interpolate-undef-argument.pl
     python3 t/models/interp.py 1341 > t/1341-fault-interpolate-undef-argument.expected
-    python3 t/models/interp.py --program 1342 > t/1342-fault-interpolate-undef-returned.pl
-    python3 t/models/interp.py 1342 > t/1342-fault-interpolate-undef-returned.expected
+    python3 t/models/interp.py --program 1342 > t/1342-fault-interpolate-left-of-two-an-array-after.pl
+    python3 t/models/interp.py 1342 > t/1342-fault-interpolate-left-of-two-an-array-after.expected
+    python3 t/models/interp.py --program 1343 > t/1343-fault-interpolate-left-of-two-an-index-after.pl
+    python3 t/models/interp.py 1343 > t/1343-fault-interpolate-left-of-two-an-index-after.expected
+    python3 t/models/interp.py --program 1344 > t/1344-fault-interpolate-left-of-two-a-slice-first.pl
+    python3 t/models/interp.py 1344 > t/1344-fault-interpolate-left-of-two-a-slice-first.expected
+    python3 t/models/interp.py --program 1345 > t/1345-fault-interpolate-undef-returned.pl
+    python3 t/models/interp.py 1345 > t/1345-fault-interpolate-undef-returned.expected
 """
 
 import os
@@ -422,6 +428,11 @@ def faults():
           block(mya('a', 2, UNDEF), ('mya', 'r', [srt([A('a')], ('cmp', qq(VA), qq(VB)))])))
     fault('undef-under-a-for-modifier', block(mya('a', 1, 2), formod(say_(qq('<', IT, '>')), A('a'))), block(mya('a', 1, UNDEF), formod(say_(qq('<', IT, '>')), A('a'))))
     fault('undef-argument', say_(ucall('f', qq(('@', 'a')))), say_(ucall('f', qq(('elem', 'a', 5)))), [mya('a', 1, 2), sub('f', [req('s')], returns(D('s')))])
+    # Of two faults in one string, the left one's: a piece is joined on
+    # before the next is worked out.
+    fault('left-of-two-an-array-after', *both(lambda: qq(D('u'), ('@', 'a')), [('my', 'u', ''), mya('a', 1)], [('my', 'u', None), mya('a', 1e15)]))
+    fault('left-of-two-an-index-after', *both(lambda: qq(D('n'), ('elem', 'a', D('i'))), [('my', 'n', 1e16), a3(), ('my', 'i', 0)], [('my', 'n', 1e15), a3(), ('my', 'i', 'x')]))
+    fault('left-of-two-a-slice-first', *both(lambda: qq(('slice', 'a', [0, 1]), D('u')), [mya('a', 1, 2), ('my', 'u', 0)], [mya('a', 1, 1e15), ('my', 'u', None)]))
     fault('undef-returned', say_(ucall('f', 1)), say_(ucall('f', UNDEF)), [sub('f', [req('s')], returns(qq('<', D('s'), '>')))])
     return out
 

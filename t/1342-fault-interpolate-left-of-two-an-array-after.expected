@@ -1,0 +1,4 @@
+1
+1
+fault: undef where a string is wanted at t/1342-fault-interpolate-left-of-two-an-array-after.pl line 14.
+exit: 1

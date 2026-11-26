@@ -1,2 +1,0 @@
-t/1428-interpolate-name-runs-on.pl:5:6: $x_y is not declared: my $x_y; in a string, \$ is the character, and ${name} ends a name sooner
-exit: 1

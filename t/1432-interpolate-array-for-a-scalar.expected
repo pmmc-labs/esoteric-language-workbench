@@ -1,2 +1,0 @@
-t/1432-interpolate-array-for-a-scalar.pl:5:6: $a outside the block of a sort: $a and $b are the two values a sort gives its block, and are seen there alone
-exit: 1

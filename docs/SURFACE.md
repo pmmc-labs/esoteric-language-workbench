@@ -201,8 +201,12 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `'...'`, `"..."` with escapes | In | 3 | D43. `\n \t \r \f \b \a \e \0`, `\\ \" \$ \@`, `\xHH`, `\x{...}`, octal, `\o{...}`, `\N{U+...}`, a backslash before a punctuation mark. A character is a Unicode scalar value (D42) |
 | `\q` and other unknown escapes; `\x` with fewer than two digits; `\x{}`; an octal escape cut short by `8` or `9`; a backslash before a tab or a newline | Cut | | D43: perl warns, or makes a NUL in silence (T86, T95) |
 | `\c`, `\N{name}`, `\U \L \u \l \Q \E \F` | Later | 16 | D43: with interpolation |
-| An unescaped `$` or `@` in double quotes | Later | 11a | T34: refused until interpolation (D90) |
-| Interpolation of `$x`, `${x}`, `@a`, elements, `->` chains | In | 11a; 12, 13 | D90: pulled forward. The shapes perl has to guess at are refused; hash elements and `->` chains come with their steps |
+| A `$` or `@` in double quotes that begins no shape below: with a blank after it, at the end, `$1`, `$$`, `$&`, `@-`, `@_` | Cut | | D92, T34, T200, T204: a backslash says the character. perl's own variables come with the steps that have them, or not at all |
+| Interpolation: `"$x"`, `"${x}"`, `"@a"`, `"@{a}"`, `"$a[I]"`, `"@a[I, J .. K]"`, `"$#a"`, `"$#{a}"` | In | 11a | D91 to D95. One value, a Str, made where it stands (T196). I is a whole number or a scalar variable (D91). An undef is a fault (D48) |
+| An expression as an index in a string, `"$a[$i + 1]"` | Cut | | D91: take it into a `my`. perl reads a string's pieces late (T197) |
+| After a variable in a string: `::`, `{`, a second `[`, `->` before `[ { @ $`, a character past ASCII after a bare name | Cut | | D92, D95: each is the variable going on, to perl (T199, T203, T205); braces or a backslash say what is meant |
+| `"$h{key}"`, `"@h{...}"` | Later | 12 | With hashes |
+| `"$r->[0]"`, `"$$r"`, `"@$r"`, `"@{[ ... ]}"`, `"${\ ... }"` | Later | 13 | With references |
 | `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
 | `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
 | Arrays: `my @a`, lists that flatten, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | D80. A read past either end is undef and makes nothing; a store past the end grows the array, before the start faults; `@a[one index]`, `$a[0][0]`, `length(@a)`, `defined(@a)`: Cut (T167, T168) |

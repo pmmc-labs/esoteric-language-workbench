@@ -1,0 +1,2 @@
+t/1438-interpolate-own-variable-in-its-my.pl:4:11: $s is not declared: my $s; in a string, \$ is the character, and ${name} ends a name sooner
+exit: 1

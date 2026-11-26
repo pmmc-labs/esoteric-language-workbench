@@ -1,0 +1,2 @@
+t/1445-interpolate-map-block-begins-with-a-string-and-a-comma.pl:5:15: "$_" and a comma first in map's block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets
+exit: 1

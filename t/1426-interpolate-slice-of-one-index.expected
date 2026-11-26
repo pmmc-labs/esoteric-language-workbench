@@ -1,2 +1,0 @@
-t/1426-interpolate-slice-of-one-index.pl:5:6: @a[...] with one index: perl warns that it is better written $a[...]
-exit: 1

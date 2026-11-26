@@ -270,7 +270,6 @@ export const lex = (src: string): Token[] => {
             if (slice && src.startsWith('..', i)) {
                 const dots = pos();
                 take(); take();
-                if (at() === '.') refuse(INDEX, pos());
                 blanks();
                 const to = index(open);
                 blanks();

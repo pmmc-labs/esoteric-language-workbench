@@ -1,0 +1,4 @@
+1
+1e+161
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/1343-fault-interpolate-left-of-two-an-index-after.pl line 16.
+exit: 1

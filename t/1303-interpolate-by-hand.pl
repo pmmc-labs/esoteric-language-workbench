@@ -208,6 +208,8 @@ say length("@b");
 my @one = ("@b");
 say scalar(@one);
 if ("$x" eq "3") { say "yes"; }
+my $kept = "";
+if ($kept = "a$x") { say $kept; }
 say "v$x" lt "v10" ? "lt" : "ge";
 
 # A string in a loop's list is a copy (T209).

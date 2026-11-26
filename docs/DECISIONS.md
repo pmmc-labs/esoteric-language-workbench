@@ -1764,7 +1764,14 @@ ASCII hard after a name is refused, perl's rule being Unicode's
 tables (T205). From the review's open ends: a blank after an index's
 minus is refused; a comma may follow a slice's last index; `...` is
 refused. `${\ ...}`, `@{[ ... ]}`, `$$x` and `@$x` wait for step 13,
-`"$x{...}"` for step 12.
+`"$x{...}"` for step 12. *What the build settled:* a character past
+ASCII is refused after a bare name and not after an element or a
+slice, where perl has no name to go on with and there are no braces
+to write; a slice by one index is refused in a string as outside one,
+a comma after it or not (T167); `"$x->$y"`, which is text and a
+variable to perl, is refused with the other arrows before a `$`;
+and of two faults in one string the left one's is raised, each piece
+being joined on before the next is worked out.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

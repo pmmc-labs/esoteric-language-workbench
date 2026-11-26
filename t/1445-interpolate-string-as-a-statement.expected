@@ -1,2 +1,0 @@
-t/1445-interpolate-string-as-a-statement.pl:5:1: this statement only has a value, and nothing is done with it: perl warns that it is useless
-exit: 1

@@ -1,0 +1,2 @@
+t/1437-interpolate-it-outside-a-block.pl:4:7: $_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)
+exit: 1
