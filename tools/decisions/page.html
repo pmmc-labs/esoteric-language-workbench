@@ -122,8 +122,12 @@ a.d:hover { border-bottom-color: var(--accent); }
 .links dd a { font-family: var(--mono); font-size: 12.5px; }
 .links .rt { color: var(--retire); }
 .goto { grid-column: 2; display: flex; gap: 14px; margin-top: 6px; font-size: 12.5px; }
-#doclist .chip[aria-pressed="false"] { opacity: 1; text-decoration: none; }
-#doclist .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+#doclist .chip[aria-pressed="false"], #dfacets .chip[aria-pressed="false"] { opacity: 1; text-decoration: none; }
+#doclist .chip[aria-pressed="true"], #dfacets .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+#dfacets .chip .n { color: var(--muted); font-weight: 400; margin-left: 4px; font-variant-numeric: tabular-nums; }
+#dfacets .chip.none { opacity: .4; }
+#dfacets .clear { margin-top: 10px; }
+#dfacets h2:first-child { margin-top: 16px; }
 .links dd.din { font-family: var(--ui); }
 .links dd.din a { font-family: var(--ui); font-size: 13px; }
 
@@ -290,6 +294,7 @@ tr.flash td { animation: flash 1.6s ease-out; }
             <h2>Documents</h2>
             <div class="chips" id="doclist"></div>
             <div id="dstatus-box"><h2>Status</h2><div class="chips" id="dstatus"></div></div>
+            <div id="dfacets"></div>
             <h2>Contents</h2>
             <ul id="toc"></ul>
         </aside>
@@ -664,7 +669,7 @@ document.addEventListener('keydown', ev => {
 });
 
 /* ---- The documents ---- */
-const dv = { d: DOCS[0] || null, built: new Map(), off: new Set(), hay: new Map() };
+const dv = { d: DOCS[0] || null, built: new Map(), off: new Set(), hay: new Map(), facets: new Map() };
 function docNode(d) {
     if (dv.built.has(d.key)) return dv.built.get(d.key);
     const wrap = document.createElement('div');
@@ -683,8 +688,70 @@ function docNode(d) {
         wrap.append(sec);
     }
     dv.built.set(d.key, wrap);
+    dv.facets.set(d.key, facets(wrap));
     return wrap;
 }
+// A table's column is a facet when its cells are words from a short list,
+// "idiom", "often", "loops, subs": the rows can then be picked by it. Found
+// by looking, over every table of the document with the same heading, so
+// a document needs to say nothing.
+function facets(wrap) {
+    const groups = new Map();
+    for (const t of wrap.querySelectorAll('table')) {
+        const head = [...t.tHead.rows[0].cells].map(c => c.textContent.trim()), key = head.join('|');
+        if (!groups.has(key)) groups.set(key, { head, rows: [] });
+        groups.get(key).rows.push(...t.tBodies[0].rows);
+    }
+    const out = { cols: [], rows: [], on: new Map() };
+    for (const { head, rows } of groups.values()) {
+        if (rows.length < 8) continue;
+        head.forEach((name, i) => {
+            if (!name) return;
+            const seen = new Map(), vals = [];
+            for (const r of rows) {
+                const c = r.cells[i];
+                if (!c || c.querySelector('a, code') || !c.textContent.trim()) return;
+                const vs = c.textContent.split(',').map(v => v.trim()).filter(Boolean);
+                if (vs.some(v => v.length > 14)) return;
+                vs.forEach(v => seen.set(v, (seen.get(v) || 0) + 1));
+                vals.push(vs);
+            }
+            if (seen.size < 2 || seen.size > 12 || seen.size * 2 > rows.length) return;
+            // One facet for a name, whichever tables have the column.
+            const col = out.cols.find(c => c.name === name) || (out.cols.push({ name, values: [], n: 0 }), out.cols.at(-1));
+            for (const v of seen.keys()) if (!col.values.includes(v)) col.values.push(v);
+            col.n += rows.length;
+            rows.forEach((r, k) => {
+                let x = out.rows.find(y => y.tr === r);
+                if (!x) out.rows.push(x = { tr: r, vals: {} });
+                x.vals[name] = vals[k];
+            });
+        });
+    }
+    out.cols = out.cols.filter(c => c.n >= 20 && c.values.length <= 12);
+    return out;
+}
+function fShow() {
+    const f = dv.facets.get(dv.d.key);
+    // A value's count is of the rows the other columns' choices leave.
+    const left = (x, but) => f.cols.every(c => c.name === but || !f.on.get(c.name)?.size || (x.vals[c.name] || []).some(v => f.on.get(c.name).has(v)));
+    $('dfacets').innerHTML = f.cols.map(c => `<h2>${esc(c.name)}</h2><div class="chips">` + c.values.map(v => {
+        const n = f.rows.filter(x => (x.vals[c.name] || []).includes(v) && left(x, c.name)).length;
+        return `<button class="chip${n ? '' : ' none'}" data-col="${esc(c.name)}" data-v="${esc(v)}" aria-pressed="${!!f.on.get(c.name)?.has(v)}">${esc(v)}<span class="n">${n}</span></button>`;
+    }).join('') + '</div>').join('')
+        + ([...f.on.values()].some(s => s.size) ? '<div class="clear"><button class="chip" data-clear="1">Show every row</button></div>' : '');
+}
+$('dfacets').addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    const f = dv.facets.get(dv.d.key);
+    if (b.dataset.clear) f.on.clear();
+    else {
+        const s = f.on.get(b.dataset.col) || new Set();
+        if (s.has(b.dataset.v)) s.delete(b.dataset.v); else s.add(b.dataset.v);
+        f.on.set(b.dataset.col, s);
+    }
+    dFilter();
+});
 function dShow(d) {
     if (!d) return;
     const fresh = dv.d !== d || !$('doc').firstChild;
@@ -723,8 +790,32 @@ function dFilter() {
         if (li) li.classList.toggle('off', !vis);
         if (vis) shown++;
     }
+    // The rows picked by a table's columns: a row is shown when, in each
+    // column with a choice made, it has one of the values chosen. A table
+    // with none left goes.
+    const f = dv.facets.get(d.key), picking = f && [...f.on.values()].some(s => s.size);
+    let rows = 0;
+    if (f && f.rows.length) {
+        const secs = new Map();
+        for (const x of f.rows) {
+            const on = f.cols.every(c => !f.on.get(c.name)?.size || (x.vals[c.name] || []).some(v => f.on.get(c.name).has(v)));
+            x.tr.hidden = !on;
+            const sec = x.tr.closest('.dsec');
+            secs.set(sec, (secs.get(sec) || 0) + (on ? 1 : 0));
+            if (on && !sec.hidden) rows++;
+        }
+        for (const t of $('doc').querySelectorAll('.tbl')) t.hidden = picking && [...t.querySelectorAll('tbody tr')].every(r => r.hidden);
+        // While rows are picked, only the sections that have some of them: the
+        // prose between would hide what was asked for.
+        if (picking) for (const s of d.sections) {
+            const sec = $(s.id);
+            if (!sec.hidden && !secs.get(sec)) { sec.hidden = true; shown--; document.querySelector(`#toc li[data-id="${s.id}"]`)?.classList.add('off'); }
+        }
+        fShow();
+    } else $('dfacets').innerHTML = '';
     $('doc').classList.toggle('q', !!toks || dv.off.size > 0);
-    $('count').textContent = shown === d.sections.length ? `${shown} sections` : `${shown} of ${d.sections.length} sections`;
+    $('count').textContent = (shown === d.sections.length ? `${shown} sections` : `${shown} of ${d.sections.length} sections`)
+        + (picking ? ` · ${rows} of ${f.rows.length} rows` : '');
 }
 $('doclist').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) go(b.dataset.key); });
 $('dstatus').addEventListener('click', ev => {
@@ -739,7 +830,7 @@ function dGo(id) {
     const { d } = SEC.get(id);
     show('docs', d);
     const sec = $(id);
-    if (sec.hidden) { $('search').value = ''; dv.off.clear(); dShow(d); filter(); }
+    if (sec.hidden) { $('search').value = ''; dv.off.clear(); dv.facets.get(d.key)?.on.clear(); dShow(d); filter(); }
     sec.scrollIntoView();
     sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash');
 }
