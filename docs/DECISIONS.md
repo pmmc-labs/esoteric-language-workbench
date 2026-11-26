@@ -1877,6 +1877,10 @@ array's and a hash's.** *(User: picked the recommendation,
 key, then the stores. Step 9 had left the array's out. `%h{...}`,
 the slice that gives keys and values, is cut: perl warns of it
 where one value is wanted. Rejected: reading only.
+*(Building step 12b, 2026-11-26: a slice is the one target of its
+assignment, `@h{...} = LIST;`. Beside other targets in brackets,
+`($x, @h{...}) = ...`, perl takes it and this refuses it. User: "Leave
+the slice as the only target for now.")*
 
 **D101. No `each`, and no loop of two variables, at step 12.**
 *(User: picked the recommendation, 2026-11-26; step 12, Q4.)* `each`
