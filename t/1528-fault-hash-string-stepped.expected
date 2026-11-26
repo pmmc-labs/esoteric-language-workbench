@@ -1,0 +1,4 @@
+1
+4:<a=2>,<b=2>,<c=3>,<d=4>
+fault: not a numeric string at t/1528-fault-hash-string-stepped.pl line 14.
+exit: 1

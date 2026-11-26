@@ -1,0 +1,4 @@
+1
+2
+fault: undef where a number is wanted at t/1525-fault-hash-missing-as-a-number.pl line 12.
+exit: 1

@@ -1,0 +1,4 @@
+1
+1!
+fault: undef where a string is wanted at t/1527-fault-hash-deleted-as-a-string.pl line 13.
+exit: 1

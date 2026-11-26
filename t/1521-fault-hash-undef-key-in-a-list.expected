@@ -1,0 +1,4 @@
+1
+1:<=1>
+fault: undef where a string is wanted at t/1521-fault-hash-undef-key-in-a-list.pl line 11.
+exit: 1

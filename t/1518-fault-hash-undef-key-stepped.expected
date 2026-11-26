@@ -1,0 +1,3 @@
+1
+fault: undef where a string is wanted at t/1518-fault-hash-undef-key-stepped.pl line 14.
+exit: 1

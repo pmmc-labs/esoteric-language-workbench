@@ -12,3 +12,10 @@ say "four" if keys %h == 4;
 say $n + $k, scalar(keys %g);
 sub count($x, %o) { return $x . scalar(keys %o); }
 say count(1, a => 2);
+my %both = (%h, extra => 5);
+say scalar(keys %both), keys(%h) + 1, "n" . keys(%h), (keys(%h) == 4) + 0, values(%h) * 2;
+sub pairs() { return %h; }
+my %back = pairs();
+say scalar(keys(%back));
+my %words = (keys => 1, values => 2, each => 3, other => 4);
+say $words{keys}, $words{ values }, exists $words{each} ? "each" : "none";

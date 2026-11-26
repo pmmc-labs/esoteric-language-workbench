@@ -1,0 +1,4 @@
+1
+undef
+fault: undef where a string is wanted at t/1515-fault-hash-undef-key-read.pl line 14.
+exit: 1

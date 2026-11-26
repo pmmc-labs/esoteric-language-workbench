@@ -1,0 +1,4 @@
+1
+1!
+fault: undef where a string is wanted at t/1526-fault-hash-missing-as-a-string.pl line 12.
+exit: 1

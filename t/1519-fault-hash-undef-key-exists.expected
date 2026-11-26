@@ -1,0 +1,4 @@
+1
+1
+fault: undef where a string is wanted at t/1519-fault-hash-undef-key-exists.pl line 14.
+exit: 1

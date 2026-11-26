@@ -378,6 +378,17 @@ def counted(code, m):
     # Compared with a number.
     if re.match(name + r'\s*(?:==|!=|<=|>=|<(?!=>)|>)\s*\d+\s*[;)]', rest) and not re.search(r'\bsort\b[^;]*$', before):
         return True
+    # In the list a hash is assigned: copied, into a hash of its own order.
+    if re.search(r'%\w+\s*=\s*\([^;]*$', before):
+        return True
+    # An operand of arithmetic, of a dot or of a comparison: its count.
+    operator = r'(?:[-+*/]|(?<!\.)\.(?!\.)|==|!=|<=|>=)'
+    if re.search(operator + r'\s*\(*\s*$', before) or re.match(name + r'\s*\)*\s*' + operator, rest):
+        return True
+    # What a sub gives back: the order shows where the call stands, if it
+    # does, and the seeds are left to see it.
+    if re.search(r'\breturn\s+$', before):
+        return True
     # A parameter of a sub.
     if m.group(0)[0] == '%' and re.search(r'\bsub\s+\w+\s*\([^()]*$', before):
         return True
@@ -395,6 +406,9 @@ def hash_order_shown(path):
         line = code.count('\n', 0, m.start()) + 1
         if what[0] == '%' and m.start() > 0 and code[m.start() - 1] == '\\':
             # `\%h` is a reference: the order shows where it is used.
+            continue
+        # A word that is a key, alone in braces or before `=>`, is a string.
+        if what[0] not in '%-' and (re.match(r'\s*=>', code[m.end():]) or (re.match(r'[ \t]*\}', code[m.end():]) and re.search(r'\{[ \t]*$', code[:m.start()]))):
             continue
         if counted(code, m):
             continue

@@ -1,0 +1,4 @@
+1
+1:<0.5=1>
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/1524-fault-hash-whole-num-key-in-a-list.pl line 11.
+exit: 1

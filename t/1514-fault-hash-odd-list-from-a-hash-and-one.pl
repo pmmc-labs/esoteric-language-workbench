@@ -1,0 +1,16 @@
+# kind: fault
+# model: t/models/hash.py
+use v5.42;
+use open ':std', ':encoding(UTF-8)';
+say(1);
+{
+    my %h = (a => 1, b => 2, c => 3, d => 4);
+    my %g = (%h, 'e', 5);
+    say((scalar(keys(%g)) . ':') . join(',', (map { ((('<' . $_) . '=') . (defined($g{$_}) ? $g{$_} : 'undef')) . '>' } ((sort keys(%g))))));
+}
+{
+    my %h = (a => 1, b => 2, c => 3, d => 4);
+    my %g = (%h, 'e');
+    say((scalar(keys(%g)) . ':') . join(',', (map { ((('<' . $_) . '=') . (defined($g{$_}) ? $g{$_} : 'undef')) . '>' } ((sort keys(%g))))));
+}
+say(2);

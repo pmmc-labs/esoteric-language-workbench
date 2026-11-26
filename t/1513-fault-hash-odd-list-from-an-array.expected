@@ -1,0 +1,4 @@
+1
+1:<1=2>
+fault: an odd number of values for a hash at t/1513-fault-hash-odd-list-from-an-array.pl line 13.
+exit: 1
