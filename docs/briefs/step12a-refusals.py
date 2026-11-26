@@ -75,15 +75,8 @@ r('element-and-an-assignment-of-the-hash', 'perl: 2. An assignment to the hash i
   H + 'sub clear() { %h = (); return 1 }\nmy @l = ($h{a}, clear());\nsay scalar(@l);', 'clear())', LATER('this list'))
 r('said-and-deleted', 'perl: 11.', H + 'say $h{a}, delete $h{a};', 'delete', LATER("say's list"))
 
-# ---- what waits for step 12b
-LIST = '%h in the list of a for, a map, a grep or a sort, other than by keys, is not in the language yet (step 12b): take the list into an array first'
-r('loop-over-values', 'perl: 4. The freeze is step 12b (D98).', H + 'for my $v (values %h) { say $v if $v > 3; }', '%h)', LIST)
-r('loop-over-a-hash', 'perl: a.', H + 'for (%h) { say $_ if $_ eq "a"; }', '%h)', LIST)
-r('map-over-a-hash', 'perl: 8.', H + 'my @l = map { $_ } %h;\nsay scalar(@l);', '%h;', LIST)
-r('sort-of-values', 'perl: 1 2 3 4.', H + 'my @l = sort values %h;\nsay "@l";', '%h;', LIST)
-r('loop-over-an-element', 'perl: 1.', H + 'for my $v ($h{a}) { say $v; }', '$h{a}', LIST)
-r('slice', 'perl: 1 2. Step 12b (D100).', H + 'my @v = @h{"a", "b"};\nsay "@v";', '{"a"', '@h{...} is a slice of a hash, which is not in the language yet (step 12b)')
-r('parameter', 'perl: 1. Step 12b.', 'sub f(%o) { return scalar(%o) }\nsay f(a => 1);', '%o', '%o as a parameter is not in the language yet (step 12b)')
+# (Seven tests of what waited for step 12b stood here until it was built:
+# a hash in a loop's list, a slice, a hash as a parameter.)
 
 # ---- a block that perl may take for a hash (T175, D102)
 r('fat-comma-in-a-map-block', 'perl guesses a block: 1,2,3. Refused for the comma (D102).', A + 'my %g = map { $_ => 1 } @a;\nsay join(",", sort keys %g);', '=> 1', 'a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...')

@@ -1,3 +1,3 @@
 1
-fault: an array was changed while a foreach is over it at t/1674-fault-hash-frozen-map-from-a-sub.pl line 7.
+fault: a hash was changed while a foreach is over it at t/1674-fault-hash-frozen-map-from-a-sub.pl line 7.
 exit: 1

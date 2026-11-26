@@ -1,0 +1,2 @@
+t/1743-hash-parameter-with-a-default.pl:4:10: a slurpy parameter has no default: perl refuses one
+exit: 1

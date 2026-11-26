@@ -734,7 +734,37 @@ test('what a hash may not be written as', () => {
     refused('my (-bar => 1);', 'in my (...), expected a variable, an array, a hash or undef, found \'-\'', 1, 5);
     refused('say(-bar => 1);', "'-' before the word bar, which is a string here: perl makes one string of the two; write it in quotes", 1, 5);
     refused('say(+bar => 1);', "'+' before the word bar, which is a string here: perl makes one string of the two; write it in quotes", 1, 5);
-    refused('sub f($x, %o) { }', '%o as a parameter is not in the language yet (step 12b)', 1, 11);
+    refused('sub f(%o, $x) { }', '%o takes every argument that is left, so it is the last parameter: perl refuses one after it', 1, 9);
+    refused('sub f(%o = 1) { }', 'a slurpy parameter has no default: perl refuses one', 1, 10);
+    refused('sub f(%, @r) { }', '% takes every argument that is left, so it is the last parameter: perl refuses one after it', 1, 8);
+    refused('say @h{};', 'a slice with no key: perl refuses it', 1, 7);
+    refused('say @h {"a", "b"};', "a blank between @h and '{': a slice of a hash is written @h{...}", 1, 8);
+    refused('say @h{"a", "b"}{c};', 'an element of an element: a hash of hashes or of arrays is not in the language yet', 1, 17);
+    refused('@h{"a", "b"} += 1;', "'+=' on a slice: a slice is assigned with =", 1, 14);
+    refused('@a[0, 1] .= 1;', "'.=' on a slice: a slice is assigned with =", 1, 10);
+    refused('say exists @h{"a", "b"};', "exists takes an element of a hash, found '@h': exists $h{...}", 1, 12);
+    refused('say delete @h{"a", "b"} + 1;', "delete @h{...} before '+': perl reads on for delete's argument, or does not compile it; write delete(...)", 1, 5);
     refused('my @r = map { $_ => 1 } @a;', 'a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...', 1, 18);
     refused('my @r = map { a => 1 } @a;', "a and a comma first in map's block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets", 1, 15);
+});
+
+// Step 12b: what stands on a hash.
+test('a slice of a hash, a slice on the left, and a hash as the last parameter', () => {
+    const body = parse(lex('my @v = @h{"a", $k};\n@h{"a", "b"} = (1, 2);\n@a[0, 1] = (3);\nmy @d = delete @h{"a", "b"};\ndelete(@h{"c", "d"});\nsub f($x, %o) { }\nsub g(%) { }\nsay "$h{a}$h{$k}";')).body;
+    const [read, hstore, astore, deleted, gone, f, g, said] = body;
+    assert.ok(read?.kind === 'do' && read.expr.kind === 'assign' && read.expr.value.kind === 'slice' && read.expr.value.hash === true);
+    assert.deepEqual([read.expr.value.name, read.expr.value.indexes.map(i => i.kind)], ['h', ['str', 'var']]);
+    assert.ok(hstore?.kind === 'do' && hstore.expr.kind === 'listassign' && hstore.expr.targets.length === 1);
+    const target = hstore.expr.targets[0]!;
+    assert.ok(target.kind === 'slice' && target.hash === true && target.bracketed === undefined && hstore.expr.value.kind === 'list');
+    assert.ok(astore?.kind === 'do' && astore.expr.kind === 'listassign' && astore.expr.targets[0]?.kind === 'slice' && astore.expr.targets[0].hash === undefined);
+    assert.ok(deleted?.kind === 'do' && deleted.expr.kind === 'assign' && deleted.expr.value.kind === 'hashop' && deleted.expr.value.op === 'delete');
+    assert.deepEqual([deleted.expr.value.name, deleted.expr.value.key, deleted.expr.value.keys?.length], ['h', undefined, 2]);
+    assert.ok(gone?.kind === 'do' && gone.expr.kind === 'hashop' && gone.expr.keys?.length === 2);
+    assert.ok(f?.kind === 'sub' && g?.kind === 'sub');
+    assert.deepEqual(f.params.map(p => [p.slurpy, p.hash, p.rest?.name, p.rest?.hash]), [[undefined, undefined, undefined, undefined], [true, true, 'o', true]]);
+    assert.deepEqual(g.params.map(p => [p.slurpy, p.hash, p.rest]), [[true, true, undefined]]);
+    assert.ok(said?.kind === 'call' && said.args[0]?.kind === 'interp');
+    const parts = said.args[0].parts;
+    assert.deepEqual(parts.map(p => p.kind === 'elem' && [p.name, p.hash, p.index.kind, p.index.kind === 'str' ? p.index.value : p.index.kind === 'var' && p.index.name]), [['h', true, 'str', 'a'], ['h', true, 'var', 'k']]);
 });

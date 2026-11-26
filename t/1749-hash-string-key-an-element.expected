@@ -1,0 +1,2 @@
+t/1749-hash-string-key-an-element.pl:6:11: in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
+exit: 1

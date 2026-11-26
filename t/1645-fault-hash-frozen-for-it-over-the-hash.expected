@@ -1,4 +1,4 @@
 1
 1
-fault: an array was changed while a foreach is over it at t/1645-fault-hash-frozen-for-it-over-the-hash.pl line 16.
+fault: a hash was changed while a foreach is over it at t/1645-fault-hash-frozen-for-it-over-the-hash.pl line 16.
 exit: 1

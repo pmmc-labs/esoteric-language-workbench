@@ -1,0 +1,2 @@
+t/1723-hash-slice-with-no-key.pl:5:7: a slice with no key: perl refuses it
+exit: 1

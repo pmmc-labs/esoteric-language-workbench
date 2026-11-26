@@ -1,0 +1,2 @@
+t/1604-hash-index-calls-what-changes-what-a-concatenation-reads.pl:7:4: the index changes $i, which the concatenation on the right reads: perl joins its pieces as it stores, after the index is worked out; take the string into a my first
+exit: 1

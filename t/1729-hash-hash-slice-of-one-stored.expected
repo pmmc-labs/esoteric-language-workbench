@@ -1,0 +1,2 @@
+t/1729-hash-hash-slice-of-one-stored.pl:5:1: @h{...} with one key: perl warns that it is better written $h{...}
+exit: 1

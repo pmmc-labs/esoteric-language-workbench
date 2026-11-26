@@ -1,2 +1,2 @@
-t/1382-interpolate-hash-slice.pl:5:8: '{' hard after @a in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write @{a}{ or @a\{
+t/1382-interpolate-hash-slice.pl:5:8: '{' hard after @a in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write @{a}{ or @a\{
 exit: 1

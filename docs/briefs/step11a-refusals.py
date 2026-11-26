@@ -46,17 +46,20 @@ r('braced-dereference', 'perl dies: not a SCALAR reference.', X + 'say "${$x}";'
 r('braced-array-dereference', 'perl dies: not an ARRAY reference.', X + 'say "@{$x}";', '@{$', REF('@{$'))
 # ---- what follows a shape (D92; T199, T203, T205)
 PKG = lambda sh, alt: f"'::' hard after {sh} in a string: perl reads a variable of another package; write {alt + ':: or ' if alt else ''}{sh}\\::"
-HASH = lambda sh, alt: f"'{{' hard after {sh} in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write {alt + '{ or ' if alt else ''}{sh}\\{{"
+# (Step 12b gave `"$x{a}"` its meaning, an element of %x; what is left is
+# a slice of a hash, which is not in a string, and an element of an element.)
+HSLICE = lambda sh, alt: f"'{{' hard after {sh} in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write {alt}{{ or {sh}\\{{"
+DEEPER = lambda sh: f"'{{' hard after {sh} in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write {sh}\\{{"
 AGAIN = lambda sh: f"'[' hard after {sh} in a string: another index, to perl; write {sh}\\["
 ARROW = lambda sh, c: f"'->{c}' hard after {sh} in a string: a dereference, to perl, and references are not in the language yet (step 13); write {sh}\\->{c}"
 r('package-after-a-name', 'perl reads $x::y, undef and a warning (T199).', X + 'say "$x::y";', '::', PKG('$x', '${x}'))
 r('package-after-an-array', 'perl reads @a::b, empty.', A + 'say "@a::b";', '::', PKG('@a', '@{a}'))
 r('package-after-a-last-index', 'perl prints -1, in silence: the last index of @a:: (T199).', A + 'say "$#a::";', '::', PKG('$#a', '$#{a}'))
 r('package-after-an-element', 'text to perl; refused all the same (D92).', A + 'say "$a[0]::x";', '::', PKG('$a[0]', ''))
-r('hash-element', 'perl does not compile it: %x is not declared (T203).', X + 'say "$x{a}";', '{a', HASH('$x', '${x}'))
-r('hash-slice', 'perl does not compile it: %a is not declared.', A + 'say "@a{0}";', '{0', HASH('@a', '@{a}'))
-r('hash-after-an-element', 'perl dies: not a HASH reference (T203).', A + 'say "$a[0]{a}";', '{a', HASH('$a[0]', ''))
-r('hash-after-a-last-index', 'perl does not compile it.', A + 'say "$#a{";', '{"', HASH('$#a', '$#{a}'))
+r('hash-element', 'perl does not compile it: %x is not declared (T203).', X + 'say "$x{a}";', '$x{a', '%x is not declared: my %x')
+r('hash-slice', 'perl does not compile it: %a is not declared.', A + 'say "@a{0}";', '{0', HSLICE('@a', '@{a}'))
+r('hash-after-an-element', 'perl dies: not a HASH reference (T203).', A + 'say "$a[0]{a}";', '{a', DEEPER('$a[0]'))
+r('hash-after-a-last-index', 'perl does not compile it.', A + 'say "$#a{";', '{"', DEEPER('$#a'))
 r('element-of-an-element', 'perl dies: not an ARRAY reference (T203).', A + 'say "$a[0][0]";', '[0]', AGAIN('$a[0]'), nth=2)
 r('index-after-a-slice', 'perl does not compile it (T203).', A + 'say "@a[0, 1][0]";', '[0]', AGAIN('@a[0, 1]'))
 r('index-after-a-last-index', 'perl does not compile it (T203).', A + 'say "$#a[0]";', '[0]', AGAIN('$#a'))

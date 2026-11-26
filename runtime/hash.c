@@ -228,3 +228,60 @@ void rt_hash_rest(rt_ctx *cx, rt_value hash, rt_value list, int64_t n) {
 void rt_hash_assign(rt_ctx *cx, rt_value hash, rt_value list) {
     rt_hash_rest(cx, hash, list, 0);
 }
+
+// ---- step 12b: what stands on a hash
+
+// An element in the list of a loop, a `map`, a `grep` or a `sort`: perl
+// would make a key that is not there (T216).
+rt_value rt_helem_strict(rt_ctx *cx, rt_value hash, rt_value key) {
+    scratch number;
+    rt_array *h = hash_of(cx, hash);
+    int64_t pair = hash_find(cx, h, to_str(cx, key, &number));
+    if (pair < 0) rt_fault(cx, "a key that is not there in a foreach, where perl would make it");
+    return h->items[2 * pair + 1];
+}
+
+// `@h{KEYS}`: the value at each key, undef for one that is not there;
+// and with `strict`, in such a list or among a call's arguments, the
+// fault for one.
+void rt_list_add_hslice(rt_ctx *cx, rt_value list, rt_value hash, rt_value keys, int strict) {
+    rt_array *to = array_of(cx, list);
+    rt_array *h = hash_of(cx, hash);
+    rt_array *ks = array_of(cx, keys);
+    for (uint64_t n = 0; n < ks->count; n++) {
+        scratch number;
+        int64_t pair = hash_find(cx, h, to_str(cx, ks->items[n], &number));
+        if (pair < 0 && strict) rt_fault(cx, "a slice with a key that is not there, where perl would make it");
+        append(cx, to, pair < 0 ? rt_undef() : h->items[2 * pair + 1]);
+    }
+}
+
+// `@h{KEYS} = LIST`: a value for each key in turn, and an undef for each
+// the list does not reach, which makes its key all the same (T228).
+void rt_hslice_store(rt_ctx *cx, rt_value hash, rt_value keys, rt_value list) {
+    rt_array *ks = array_of(cx, keys);
+    rt_array *from = array_of(cx, list);
+    for (uint64_t n = 0; n < ks->count; n++) {
+        rt_helem_store(cx, hash, ks->items[n], n < from->count ? from->items[n] : rt_undef());
+    }
+}
+
+// `delete @h{KEYS}`: what each key held, or undef, added to `list`.
+void rt_hash_delete_slice(rt_ctx *cx, rt_value list, rt_value hash, rt_value keys) {
+    rt_array *ks = array_of(cx, keys);
+    for (uint64_t n = 0; n < ks->count; n++) {
+        // (Nothing here allocates: a deleted value is in the list at once.)
+        rt_value was = rt_hash_delete(cx, hash, ks->items[n]);
+        append(cx, array_of(cx, list), was);
+    }
+}
+
+// A last parameter that is a hash, filled at its turn from the arguments
+// left, `from` on: keys and values by turns. (That there is an even
+// number of them was asked as the sub was entered, T226.)
+void rt_slurp_hash(rt_ctx *cx, rt_value hash, int64_t argc, rt_value **argv, rt_value *flat, int64_t from) {
+    for (int64_t n = from; n + 1 < argc; n += 2) {
+        int64_t pair = hash_make(cx, hash, flat != NULL ? flat[n] : *argv[n]);
+        hash_of(cx, hash)->items[2 * pair + 1] = scalar(cx, flat != NULL ? flat[n + 1] : *argv[n + 1]);
+    }
+}

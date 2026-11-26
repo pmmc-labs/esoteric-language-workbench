@@ -181,7 +181,7 @@ export const parse = (tokens: readonly Token[]): Program => {
     // The items of a list as far as `end`, the opening bracket read: each
     // may hold what binds tighter than a comma, and one comma may follow
     // the last.
-    const itemsTo = (end: ')' | ']'): Expr[] => {
+    const itemsTo = (end: ')' | ']' | '}'): Expr[] => {
         const outer = inList;
         inList = true;
         const items: Expr[] = [];
@@ -237,6 +237,17 @@ export const parse = (tokens: readonly Token[]): Program => {
         return { kind: 'elem', name: v.text.slice(1), index, hash: true, pos: v.pos };
     };
 
+    // A slice of a hash, `@name{keys}`, the array's token just read and the
+    // brace next (step 12b).
+    const hashSlice = (t: { name: string; pos: Pos }): Expr & { kind: 'slice' } => {
+        const open = next();
+        const keys = itemsTo('}');
+        // perl does not compile `@h{}`.
+        if (keys.length === 0) refuse('a slice with no key: perl refuses it', open.pos);
+        if (peek().kind === '{' || peek().kind === '[') refuse('an element of an element: a hash of hashes or of arrays is not in the language yet', peek().pos);
+        return { kind: 'slice', name: t.name, hash: true, indexes: keys, pos: t.pos };
+    };
+
     // The variable whose token was just read, or the element of an array
     // or a hash that it begins.
     const place = (v: Token): Var | Elem => {
@@ -275,8 +286,15 @@ export const parse = (tokens: readonly Token[]): Program => {
             made = { kind: 'hashop', op, name: what.name, pos: head.pos, at: what.pos };
             shown = `${head.text} %${what.name}`;
         } else {
-            // perl's take an element of an array too, and `delete` a slice.
             const brace = peek();
+            // `delete @h{...}`: each key's value, in a list (step 12b).
+            if (op === 'delete' && what.kind === 'array' && brace.kind === '{' && brace.subscript === true) {
+                const slice = hashSlice(what);
+                if (open) closing();
+                else bareOperand(head, `delete @${slice.name}{...}`);
+                return { kind: 'hashop', op, name: slice.name!, keys: slice.indexes, pos: head.pos, at: what.pos };
+            }
+            // perl's take an element of an array too.
             if (what.kind !== 'var' || brace.kind !== '{' || brace.subscript !== true) {
                 return refuse(`${head.text} takes an element of a hash, found ${show(what)}: ${head.text} $h{...}`, what.pos);
             }
@@ -499,6 +517,8 @@ export const parse = (tokens: readonly Token[]): Program => {
             const parts = t.pieces.map((p): Expr =>
                 p.kind === 'text' ? { kind: 'str', text: '', value: p.value, pos: t.pos }
                 : p.kind === 'elem' ? { kind: 'elem', name: p.name, index: index(p.index), pos: p.pos }
+                : p.kind === 'helem' ? { kind: 'elem', name: p.name, hash: true, pos: p.pos,
+                    index: p.key.kind === 'var' ? { kind: 'var', name: p.key.name, pos: p.key.pos } : { kind: 'str', text: p.key.text, value: p.key.text, pos: p.pos } }
                 : p.kind === 'slice' ? { kind: 'slice', name: p.name, indexes: p.indexes.map(index), pos: p.pos }
                 : { kind: p.kind, name: p.name, pos: p.pos });
             return { kind: 'interp', text: t.text, parts, pos: t.pos };
@@ -535,6 +555,9 @@ export const parse = (tokens: readonly Token[]): Program => {
             return { kind: 'slice', items, indexes, pos: open.pos };
         }
         if (t.kind === 'array') {
+            const brace = peek();
+            if (brace.kind === '{' && brace.subscript) return hashSlice(t);
+            if (brace.kind === '{') refuse(`a blank between @${t.name} and '{': a slice of a hash is written @${t.name}{...}`, brace.pos);
             if (peek().kind !== '[') return { kind: 'array', name: t.name, pos: t.pos };
             if (!touching(i - 1)) refuse(`a blank between @${t.name} and '[': a slice is written @${t.name}[...]`, peek().pos);
             const open = next();
@@ -633,8 +656,12 @@ export const parse = (tokens: readonly Token[]): Program => {
             if (infix.assign) {
                 // A list assignment: brackets on the left, round a list of
                 // targets or round one (`($x) = 5` is one to perl).
-                const single = left.kind === 'var' || left.kind === 'my' || left.kind === 'elem' || left.kind === 'array' || left.kind === 'myarray';
-                if (left.kind === 'list' || (single && left.bracketed)) {
+                // A slice on the left, of an array or of a hash, is a list
+                // assignment's one target (D100).
+                const slice = left.kind === 'slice' && left.name !== undefined;
+                if (slice && t.text !== '=') refuse(`'${t.text}' on a slice: a slice is assigned with =`, t.pos);
+                const single = slice || left.kind === 'var' || left.kind === 'my' || left.kind === 'elem' || left.kind === 'array' || left.kind === 'myarray';
+                if (left.kind === 'list' || slice || (single && left.bracketed)) {
                     if (t.text !== '=') refuse(`'${t.text}' with a list on its left: a list is assigned with =`, t.pos);
                     // (One target in brackets is that target, its brackets
                     // the list's.)
@@ -968,9 +995,16 @@ export const parse = (tokens: readonly Token[]): Program => {
                     params.push(v.name === '' ? { slurpy: true, pos: v.pos } : { slurpy: true, rest: { kind: 'myarray', name: v.name, pos: v.pos }, pos: v.pos });
                     continue;
                 }
-                // `%opts` is step 12b's; tree-sitter-perl takes `:$x`,
-                // and perl doesn't (T55).
-                if (v.kind === 'hash') return refuse(`${v.text} as a parameter is not in the language yet (step 12b)`, v.pos);
+                // A last parameter that is a hash, `%opts` or `%` alone
+                // (step 12b). tree-sitter-perl takes `:$x`, and perl
+                // doesn't (T55).
+                if (v.kind === 'hash') {
+                    const after = peek();
+                    if (after.kind === 'op' && (after.text === '=' || after.text === '//=' || after.text === '||=')) refuse('a slurpy parameter has no default: perl refuses one', after.pos);
+                    if (after.kind !== ')') refuse(`${v.text} takes every argument that is left, so it is the last parameter: perl refuses one after it`, after.pos);
+                    params.push(v.name === '' ? { slurpy: true, hash: true, pos: v.pos } : { slurpy: true, hash: true, rest: { kind: 'myarray', name: v.name, hash: true, pos: v.pos }, pos: v.pos });
+                    continue;
+                }
                 if (v.kind !== 'var') return refuse(`a parameter is $name or, last, @name, found ${show(v)}`, v.pos);
                 const assign = peek();
                 let param: Param = v.name === '' ? { pos: v.pos } : { my: { kind: 'my', name: own(v), pos: v.pos }, pos: v.pos };

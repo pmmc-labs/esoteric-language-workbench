@@ -1,0 +1,2 @@
+t/1732-hash-slice-among-targets.pl:5:2: a target of a list assignment is a variable, an element, undef, or, last, an array or a hash
+exit: 1

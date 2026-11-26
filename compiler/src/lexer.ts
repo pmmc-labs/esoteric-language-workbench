@@ -47,10 +47,13 @@ export type Piece =
     | { kind: 'text'; value: string }
     | { kind: 'var' | 'array' | 'lastindex'; name: string; pos: Pos }
     | { kind: 'elem'; name: string; index: Index; pos: Pos }
+    // `$name{key}` (step 12b; D99): the key a word or a scalar variable.
+    | { kind: 'helem'; name: string; key: { kind: 'word'; text: string } | { kind: 'var'; name: string; pos: Pos }; pos: Pos }
     | { kind: 'slice'; name: string; indexes: readonly Index[]; pos: Pos };
 
 const INDEX = 'in a string an index is a whole number or a scalar variable (D91): take the index into a my first';
 const INDEX_MAX = 9223372036854775807n;
+const KEY = 'in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first';
 
 const isDigit = (c: string) => c >= '0' && c <= '9';
 const isOctalDigit = (c: string) => c >= '0' && c <= '7';
@@ -348,14 +351,37 @@ export const lex = (src: string): Token[] => {
         tooLong(name);
         const braced = `${open}{${name}}`;
         let piece: Piece = { kind, name, pos: where };
-        if (at() === '[' && kind !== 'lastindex') {
+        if (at() === '{' && kind === 'var') {
+            // An element of a hash (D99). To perl what stands in the braces
+            // is code, as an index is: blanks, quotes, calls, arithmetic.
+            take();
+            const keyAt = pos();
+            let key: (Piece & { kind: 'helem' })['key'];
+            if (at() === '$') {
+                take();
+                if (!isWordStart(at())) refuse(KEY, keyAt);
+                key = { kind: 'var', name: run(isWord), pos: keyAt };
+            } else {
+                if (!isWordStart(at())) refuse(KEY, keyAt);
+                key = { kind: 'word', text: run(isWord) };
+            }
+            if (at() !== '}') refuse(KEY, i >= src.length || at() === '"' ? keyAt : pos());
+            take();
+            tooLong(key.kind === 'var' ? key.name : key.text);
+            piece = { kind: 'helem', name, key, pos: where };
+        } else if (at() === '[' && kind !== 'lastindex') {
             piece = kind === 'var' ? { kind: 'elem', name, index: indexes(false)[0]!, pos: where } : { kind: 'slice', name, indexes: indexes(true), pos: where };
         }
         const shown = src.slice(from, i);
-        const named = piece.kind !== 'elem' && piece.kind !== 'slice';
+        const named = piece.kind !== 'elem' && piece.kind !== 'slice' && piece.kind !== 'helem';
         const or = (after: string): string => (named ? `${braced}${after} or ` : '');
-        if (src.startsWith('::', i)) refuse(`'::' hard after ${shown} in a string: perl reads a variable of another package; write ${or('::')}${shown}\\::`, pos());
-        if (at() === '{') refuse(`'{' hard after ${shown} in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write ${or('{')}${shown}\\{`, pos());
+        // (After a hash's element `::` is text, to perl: T227.)
+        if (src.startsWith('::', i) && piece.kind !== 'helem') refuse(`'::' hard after ${shown} in a string: perl reads a variable of another package; write ${or('::')}${shown}\\::`, pos());
+        if (at() === '{') {
+            refuse(piece.kind === 'array'
+                ? `'{' hard after ${shown} in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write ${or('{')}${shown}\\{`
+                : `'{' hard after ${shown} in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write ${shown}\\{`, pos());
+        }
         if (at() === '[') refuse(`'[' hard after ${shown} in a string: another index, to perl; write ${shown}\\[`, pos());
         const then = src[i + 2] ?? '';
         if (src.startsWith('->', i) && then !== '' && '[{@$'.includes(then)) {
@@ -475,6 +501,11 @@ export const lex = (src: string): Token[] => {
             // A hash, `%name` (step 12). After a value the same character
             // is the modulus, as it is to perl.
             take();
+            // In a signature a `%` alone is a parameter with no name.
+            if (signature > 0 && !isWordStart(at()) && at() !== '$' && at() !== '{') {
+                push({ kind: 'hash', text: '%', name: '', pos: start });
+                continue;
+            }
             if (at() === '$' || at() === '{') refuse("'%' before a reference: references are not in the language yet (step 13)", start);
             if (!isWordStart(at())) refuse("after '%' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
@@ -613,7 +644,7 @@ export const lex = (src: string): Token[] => {
             // A brace hard after a variable opens a hash's key, `$h{...}`.
             // (perl takes a blank between the two, and the parser refuses
             // it: nothing else a brace could be stands after a variable.)
-            if (c === '{' && name?.kind === 'var' && lastEnd === i) {
+            if (c === '{' && (name?.kind === 'var' || name?.kind === 'array') && lastEnd === i) {
                 braces.push(true);
                 push({ kind: '{', text: take(), pos: start, subscript: true });
                 // One word alone in the braces is that string, whatever
@@ -637,7 +668,6 @@ export const lex = (src: string): Token[] => {
                 }
                 continue;
             }
-            if (c === '{' && name?.kind === 'array' && lastEnd === i) refuse(`${name.text}{...} is a slice of a hash, which is not in the language yet (step 12b)`, start);
             if (c === '{') braces.push(false);
             if (c === '}' && braces.pop() === true) {
                 push({ kind: '}', text: take(), pos: start, subscript: true });

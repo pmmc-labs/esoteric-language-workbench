@@ -29,7 +29,7 @@ const parts = (e: Expr): readonly Expr[] =>
     : e.kind === 'assign' ? [e.value, e.target]
     : e.kind === 'step' ? [e.target]
     : e.kind === 'elem' ? [e.index]
-    : e.kind === 'hashop' ? (e.key === undefined ? [] : [e.key])
+    : e.kind === 'hashop' ? (e.keys ?? (e.key === undefined ? [] : [e.key]))
     : e.kind === 'list' ? e.items
     : e.kind === 'slice' ? [...e.indexes, ...(e.items ?? [])]
     : e.kind === 'listassign' ? [e.value, ...e.targets]
@@ -124,7 +124,7 @@ const listy = (in_: Expr): boolean => {
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
         || (e.kind === 'listop' && e.op === 'reverse')
-        || (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values'))
+        || (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values' || e.keys !== undefined))
         || e.kind === 'binder' || e.kind === 'sort'
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
@@ -217,7 +217,8 @@ const checkOneValue = (w: World, e: Expr): void => {
     // perl's `reverse` there joins its arguments and reverses the
     // characters (T178, D84).
     if (e.kind === 'listop' && e.op === 'reverse') refuse('reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function', e.pos);
-    if (e.kind === 'slice' && (e.name !== undefined || e.indexes.length !== 1 || listy(e.indexes[0]!) || handsOn(e.indexes[0]!, gives(w)))) refuse('a slice where one value is wanted: perl gives its last element; write the element, $a[...]', e.pos);
+    if (e.kind === 'slice' && (e.name !== undefined || e.indexes.length !== 1 || listy(e.indexes[0]!) || handsOn(e.indexes[0]!, gives(w)))) refuse(`a slice where one value is wanted: perl gives its last element; write the element, ${e.hash ? '$h{...}' : '$a[...]'}`, e.pos);
+    if (e.kind === 'hashop' && e.keys !== undefined) refuse('delete of a slice where one value is wanted: perl gives the last value it deleted; delete the element, or assign the list to an array', e.pos);
     if (isRange(e)) refuse("a range where one value is wanted: '..' is another operator to perl there", e.pos);
     if (e.kind === 'binary' && isRepeat(e) && e.left.kind === 'list') refuse(`a list on the left of '${e.op}' where one value is wanted: perl repeats its last value`, e.left.pos);
     if (e.kind === 'arrayop' && e.op === 'splice') refuse('splice where one value is wanted: perl gives the last element it removed; assign it to an array', e.pos);
@@ -238,7 +239,7 @@ const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
     case 'assign': return [[e.value, e.target.kind === 'array' || e.target.kind === 'myarray' ? 'list' : 'scalar'], [e.target, 'list']];
     case 'step': return [[e.target, 'scalar']];
     case 'elem': return [[e.index, 'scalar']];
-    case 'hashop': return e.key === undefined ? [] : [[e.key, 'scalar']];
+    case 'hashop': return e.keys !== undefined ? all(e.keys, 'list') : e.key === undefined ? [] : [[e.key, 'scalar']];
     // A string's pieces: an array there is its values, not its count.
     case 'interp': return all(e.parts, 'list');
     case 'list': return all(e.items, 'list');
@@ -373,6 +374,17 @@ const tested = (in_: Expr): void => {
     }
 };
 
+// perl warns of a slice of one, by how the index is spelled: `Scalar value
+// @a[0] better written as $a[0]` (T167), and `@h{a}` so (T221). Refused a
+// little more widely.
+const checkSliceOfOne = (e: Expr): void => {
+    if (e.kind !== 'slice' || e.name === undefined || e.indexes.length !== 1) return;
+    const one = e.indexes[0]!;
+    if (listy(one) || one.kind === 'invoke' || one.bracketed) return;
+    refuse(e.hash ? `@${e.name}{...} with one key: perl warns that it is better written $${e.name}{...}`
+        : `@${e.name}[...] with one index: perl warns that it is better written $${e.name}[...]`, e.pos);
+};
+
 // Everything that is checked of an expression wherever it stands.
 // `my`: whether a `my` may stand here (D56, D21): at the head of a
 // statement, or in the test of an `if`, and in neither under an operand
@@ -393,11 +405,10 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     // `my` in a list is a list assignment's left side, which the parser
     // has made of it.
     if (e.kind === 'list' && e.my) return;
-    if (e.kind === 'slice' && e.name !== undefined && e.indexes.length === 1) {
-        // perl warns, by how the index is spelled: `Scalar value @a[0]
-        // better written as $a[0]` (T167). Refused a little more widely.
-        const one = e.indexes[0]!;
-        if (!listy(one) && one.kind !== 'invoke' && !one.bracketed) refuse(`@${e.name}[...] with one index: perl warns that it is better written $${e.name}[...]`, e.pos);
+    checkSliceOfOne(e);
+    if (e.kind === 'hashop' && e.keys !== undefined) {
+        checkSliceOfOne({ kind: 'slice', name: e.name, hash: true, indexes: e.keys, pos: e.at });
+        checkOrder(w, 'delete', e.keys, true);
     }
     // perl warns as it compiles of an index written as a string that is
     // no number, `$a["x"]`: `Argument "x" isn't numeric`. The shapes are
@@ -483,10 +494,16 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     }
     if (e.kind === 'listassign') {
         // The right side, then every target's index, then the stores.
-        const indexes = e.targets.flatMap(t => (t.kind === 'elem' ? [t.index] : []));
+        const indexes = e.targets.flatMap(t => (t.kind === 'elem' ? [t.index] : t.kind === 'slice' ? t.indexes : []));
         checkOrder(w, 'this assignment', [e.value, ...indexes], true);
         e.targets.forEach((t, n) => {
             const array = t.kind === 'array' || t.kind === 'myarray';
+            // A slice is the one target of its assignment (D100): beside
+            // others perl takes it, and it waits to be asked for.
+            if (t.kind === 'slice' && t.name !== undefined && e.targets.length === 1 && !e.my) {
+                checkSliceOfOne(t);
+                return;
+            }
             if (t.bracketed || !(t.kind === 'var' || t.kind === 'my' || t.kind === 'elem' || array || (t.kind === 'constant' && t.name === 'undef'))) {
                 refuse('a target of a list assignment is a variable, an element, undef, or, last, an array or a hash', t.pos);
             }
@@ -505,6 +522,7 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
         // operand.
         if (e.kind === 'listassign' && part !== e.value) {
             if (part.kind === 'elem') checkExpr(w, part.index, false);
+            if (part.kind === 'slice') part.indexes.forEach(x => checkExpr(w, x, false, 'list'));
             continue;
         }
         if (e.kind === 'assign' && part === e.target) {

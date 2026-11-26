@@ -1,0 +1,2 @@
+t/1722-hash-slice-of-two-words.pl:5:8: 'a' is not in the language; a call of a sub of the program's has brackets: a(...)
+exit: 1

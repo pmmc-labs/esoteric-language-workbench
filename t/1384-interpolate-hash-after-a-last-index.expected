@@ -1,2 +1,2 @@
-t/1384-interpolate-hash-after-a-last-index.pl:5:9: '{' hard after $#a in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write $#{a}{ or $#a\{
+t/1384-interpolate-hash-after-a-last-index.pl:5:9: '{' hard after $#a in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write $#a\{
 exit: 1

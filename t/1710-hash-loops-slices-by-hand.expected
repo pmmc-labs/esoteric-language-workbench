@@ -1,0 +1,21 @@
+total 22, none of: pear, most first: fig plum apple pear
+apple: 3 left
+fig: 12 left
+pear: 0 left
+plum: 7 left
+12/12 7% 3->x 3::y 3(z) [0] {12}
+%stock is text, and so is 3 %3
+30124
+7 3 12 0
+apple=0,date=undef,fig=12,kiwi=1,lime=2,pear=3,plum=7
+3:1,2,undef:apple,fig,pear,plum
+0,3,7
+apple=0,pear=3,plum=7
+0,b,0,d,0,5,6,undef
+x y z d
+[a][bb]<c>(ddd]
+1y,zapple,pear,plum,x,y,z
+44 6 8 105
+B=1,C=1,D=1,E=1,F=1,G=1,b=2,d=4,f=6,n1=1,n2=2,n3=3,n4=4,n5=5,n6=6,n7=7,n8=8,n9=9
+4-1842
+6-1842

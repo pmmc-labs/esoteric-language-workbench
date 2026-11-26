@@ -36,7 +36,7 @@ export const shaped = (in_: Expr, gives: Gives): boolean => {
     case 'slice': return e.name !== undefined || e.indexes.length !== 1 || shaped(e.indexes[0]!, gives) || handsOn(e.indexes[0]!, gives);
     case 'arrayop': return e.op === 'splice';
     case 'listop': return e.op === 'reverse';
-    case 'hashop': return e.op === 'keys' || e.op === 'values';
+    case 'hashop': return e.op === 'keys' || e.op === 'values' || e.keys !== undefined;
     case 'binder': return true;
     case 'sort': return true;
     case 'ternary': return shaped(e.then, gives) || shaped(e.else, gives);

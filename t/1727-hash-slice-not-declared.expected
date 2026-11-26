@@ -1,0 +1,2 @@
+t/1727-hash-slice-not-declared.pl:5:5: %nope is not declared: my %nope
+exit: 1

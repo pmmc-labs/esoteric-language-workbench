@@ -1,0 +1,2 @@
+t/1730-hash-slice-added-to.pl:5:10: '+=' on a slice: a slice is assigned with =
+exit: 1

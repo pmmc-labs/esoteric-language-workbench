@@ -97,14 +97,14 @@ export const resolve = (program: Program): Resolution => {
         const found = [...scopes].reverse().find(scope => scope.has('%' + name));
         if (found === undefined) return refuse(`%${name} is not declared: my %${name}`, at);
         of.set(e, found.get('%' + name)!);
-        // The freeze is step 12b's.
-        if (!quoted && !counted && naming.length > 0) {
-            refuse(`%${name} in the list of a for, a map, a grep or a sort, other than by keys, is not in the language yet (step 12b): take the list into an array first`, at);
-        }
+        // A hash named in the list of a loop, a map, a grep or a sort is
+        // frozen while it runs, as an array is (D17, T217): not by its
+        // `keys`, which are copies, and not in a string, which is one.
+        if (!quoted && !counted) naming.forEach(set => set.add(found.get('%' + name)!));
     };
     // The array a node names, looked up as it is met.
     const array = (e: Expr, name: string): void => {
-        if ((e.kind === 'array' || e.kind === 'elem') && e.hash) return hash(e, name);
+        if ((e.kind === 'array' || e.kind === 'elem' || e.kind === 'slice') && e.hash) return hash(e, name);
         const found = [...scopes].reverse().find(scope => scope.has('@' + name));
         if (found === undefined) {
             // In a string, what was read may not be what was meant.
@@ -220,6 +220,7 @@ export const resolve = (program: Program): Resolution => {
             return array(e, e.name);
         case 'hashop':
             if (e.key !== undefined) walk(e.key, declared);
+            e.keys?.forEach(x => walk(x, declared));
             return hash(e, e.name, e.op === 'keys' || e.op === 'count');
         case 'listop': return e.args.forEach(x => walk(x, declared));
         case 'sort': {
@@ -347,7 +348,7 @@ export const resolve = (program: Program): Resolution => {
             if (p.rest !== undefined) {
                 of.set(p.rest, names.length);
                 isArray.push(true);
-                isHash.push(false);
+                isHash.push(p.rest.hash === true);
                 names.push(p.rest.name);
                 declare(p.rest);
             }

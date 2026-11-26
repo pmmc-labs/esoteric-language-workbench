@@ -1,0 +1,2 @@
+t/1734-hash-slice-index-changes-what-the-right-names.pl:5:19: a later part of this assignment can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

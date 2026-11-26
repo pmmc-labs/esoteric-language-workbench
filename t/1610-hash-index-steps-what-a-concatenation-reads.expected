@@ -1,2 +1,0 @@
-t/1610-hash-index-steps-what-a-concatenation-reads.pl:6:6: the index changes $i, which the concatenation on the right reads: perl joins its pieces as it stores, after the index is worked out; take the string into a my first
-exit: 1

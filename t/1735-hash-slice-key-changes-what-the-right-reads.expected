@@ -1,0 +1,2 @@
+t/1735-hash-slice-key-changes-what-the-right-reads.pl:5:9: a later part of this assignment can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

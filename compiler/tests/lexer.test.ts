@@ -189,7 +189,28 @@ test('what a string may not hold of a variable, each at its character (D91, D92)
     at('"$a[0"', 'an index in a string that does not close: write \\[ for the character', 4);
     at('"$x::y"', "'::' hard after $x in a string: perl reads a variable of another package; write ${x}:: or $x\\::", 4);
     at('"$a[0]::y"', "'::' hard after $a[0] in a string: perl reads a variable of another package; write $a[0]\\::", 7);
-    at('"$x{a}"', "'{' hard after $x in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write ${x}{ or $x\\{", 4);
+    // An element of a hash (step 12b; D99): the key a word or a scalar,
+    // hard against its braces; and what may not follow it (T227).
+    const key = 'in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first';
+    const pieces = (src: string) => { const t = lex(src)[0]!; return t.kind === 'str' ? t.pieces : undefined; };
+    assert.deepEqual(pieces('"$h{a} $h{$k}::x->y(1)"'), [
+        { kind: 'helem', name: 'h', key: { kind: 'word', text: 'a' }, pos: { line: 1, col: 2 } }, { kind: 'text', value: ' ' },
+        { kind: 'helem', name: 'h', key: { kind: 'var', name: 'k', pos: { line: 1, col: 11 } }, pos: { line: 1, col: 8 } }, { kind: 'text', value: '::x->y(1)' }]);
+    assert.deepEqual(pieces('"${h}{a}"'), [{ kind: 'var', name: 'h', pos: { line: 1, col: 2 } }, { kind: 'text', value: '{a}' }]);
+    at('"$h{ a }"', key, 5);
+    at('"$h{a b}"', key, 6);
+    at('"$h{\'a\'}"', key, 5);
+    at('"$h{1}"', key, 5);
+    at('"$h{$k }"', key, 7);
+    at('"$h{$k[0]}"', key, 7);
+    at('"$h{}"', key, 5);
+    at('"$h{a"', key, 5);
+    at('"$h{-a}"', key, 5);
+    at('"$h{a}{b}"', "'{' hard after $h{a} in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write $h{a}\\{", 7);
+    at('"$h{a}[0]"', "'[' hard after $h{a} in a string: another index, to perl; write $h{a}\\[", 7);
+    at('"$h{a}->[0]"', "'->[' hard after $h{a} in a string: a dereference, to perl, and references are not in the language yet (step 13); write $h{a}\\->[", 7);
+    at('"@h{a}"', "'{' hard after @h in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write @{h}{ or @h\\{", 4);
+    at('"$a[0]{k}"', "'{' hard after $a[0] in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write $a[0]\\{", 7);
     at('"$a[0][1]"', "'[' hard after $a[0] in a string: another index, to perl; write $a[0]\\[", 7);
     at('"$#a[1]"', "'[' hard after $#a in a string: another index, to perl; write $#a\\[", 5);
     at('"$x->[0]"', "'->[' hard after $x in a string: a dereference, to perl, and references are not in the language yet (step 13); write $x\\->[", 4);
@@ -516,7 +537,10 @@ test('a word is a string on one line (T223, T224), and what a % may not begin', 
     refused('say %{$r};', "'%' before a reference: references are not in the language yet (step 13)", 1, 5);
     refused('say %h{"a"};', '%h{...} is a slice of keys and values, and not in the language', 1, 5);
     refused('say %a[0];', '%a[...] is a slice of indexes and values, and not in the language', 1, 5);
-    refused('say @h{"a", "b"};', '@h{...} is a slice of a hash, which is not in the language yet (step 12b)', 1, 7);
+    // A slice of a hash (step 12b): the array's token, and the braces a key's.
+    assert.deepEqual(lex('@h{"a", $k}').map(t => [t.kind, (t.kind === '{' || t.kind === '}') && t.subscript === true]),
+        [['array', false], ['{', true], ['str', false], [',', false], ['var', false], ['}', true], ['eof', false]]);
+    assert.deepEqual(lex('sub f($x, %) { }').map(t => `${t.kind} ${t.text}`).slice(4, 6), [', ,', 'hash %']);
     refused('say %;', "after '%' comes a name: a letter or '_', then letters, digits and '_'", 1, 5);
     refused(`my %${'h'.repeat(252)};`, 'a name of more than 251 characters: perl refuses it as too long', 1, 4);
     refused(`(${'w'.repeat(252)} => 1)`, 'a word of more than 251 characters: perl refuses it as too long', 1, 2);

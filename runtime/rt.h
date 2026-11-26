@@ -378,6 +378,18 @@ rt_value *rt_list_items(rt_ctx *cx, rt_value list);
 // a sub that gives no list gives a call that wants one.
 rt_value rt_only(rt_ctx *cx, rt_value list);
 void rt_slurp(rt_ctx *cx, rt_value array, int64_t argc, rt_value **argv, rt_value *flat, int64_t from);
+// Step 12b. A hash as a last parameter, filled from the arguments left;
+// an odd number of them is a fault as the sub is entered.
+void rt_slurp_hash(rt_ctx *cx, rt_value hash, int64_t argc, rt_value **argv, rt_value *flat, int64_t from);
+void rt_fault_odd_arguments(rt_ctx *cx, const char *name) __attribute__((noreturn));
+// An element and a slice of a hash in a list where perl would make a key
+// that is not there; a slice read, stored to and deleted; and an array's
+// slice stored to.
+rt_value rt_helem_strict(rt_ctx *cx, rt_value hash, rt_value key);
+void rt_list_add_hslice(rt_ctx *cx, rt_value list, rt_value hash, rt_value keys, int strict);
+void rt_hslice_store(rt_ctx *cx, rt_value hash, rt_value keys, rt_value list);
+void rt_hash_delete_slice(rt_ctx *cx, rt_value list, rt_value hash, rt_value keys);
+void rt_slice_store(rt_ctx *cx, rt_value array, rt_value indexes, rt_value list);
 // `sort` (step 10c; D82, D83; sort.c). The generated code drives a sort
 // with a block: `rt_sort_begin`, then `rt_sort_next` for as long as it
 // gives two values to compare, the block's value handed to

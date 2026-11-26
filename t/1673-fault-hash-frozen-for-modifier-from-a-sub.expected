@@ -3,5 +3,5 @@
 1
 1
 1
-fault: an array was changed while a foreach is over it at t/1673-fault-hash-frozen-for-modifier-from-a-sub.pl line 7.
+fault: a hash was changed while a foreach is over it at t/1673-fault-hash-frozen-for-modifier-from-a-sub.pl line 7.
 exit: 1

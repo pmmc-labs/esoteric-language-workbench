@@ -121,7 +121,7 @@ const listy = (in_: Expr): boolean => {
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
         || (e.kind === 'listop' && e.op === 'reverse')
-        || (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values'))
+        || (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values' || e.keys !== undefined))
         || e.kind === 'binder' || e.kind === 'sort'
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
@@ -149,6 +149,10 @@ const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
     if (e.kind === 'array') {
         // A hash where a list is wanted: its keys and values by turns.
         b.lines.push(`${e.hash ? 'rt_list_add_pairs' : 'rt_list_add_all'}(cx, ${list}, ${variable(b, e)});`);
+    } else if (e.kind === 'hashop' && e.keys !== undefined) {
+        // `delete @h{...}`: the keys, and then each one's value as it goes.
+        const keys = genList(e.keys, b);
+        b.lines.push(`rt_hash_delete_slice(cx, ${list}, ${variable(b, e)}, ${keys.c});`);
     } else if (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values')) {
         b.lines.push(`rt_list_add_${e.op}(cx, ${list}, ${variable(b, e)});`);
     } else if (e.kind === 'list') {
@@ -160,7 +164,9 @@ const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
     } else if (e.kind === 'slice') {
         // The indexes first, and then what they are indexes into (T163).
         const indexes = genList(e.indexes, b);
-        if (e.name !== undefined) {
+        if (e.name !== undefined && e.hash) {
+            b.lines.push(`rt_list_add_hslice(cx, ${list}, ${variable(b, e)}, ${indexes.c}, ${strict ? 1 : 0});`);
+        } else if (e.name !== undefined) {
             b.lines.push(`rt_list_add_slice(cx, ${list}, ${variable(b, e)}, ${indexes.c}, ${strict ? 2 : 0});`);
         } else {
             const from = genList(e.items!, b);
@@ -196,9 +202,8 @@ const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
         addItem(e.right, list, b, strict);
         b.lines.push('} else {', `rt_list_add(cx, ${list}, ${kept.c});`, '}');
     } else if (e.kind === 'elem' && strict === 2) {
-        if (e.hash) throw new Error("a hash's element in a loop's list is step 12b's");
         const at = genExpr(e.index, b);
-        const value = temp(b, `rt_elem_strict(cx, ${variable(b, e)}, ${at.c})`);
+        const value = temp(b, `${elem(e)}_strict(cx, ${variable(b, e)}, ${at.c})`);
         b.lines.push(`rt_list_add(cx, ${list}, ${value.c});`);
     } else {
         // One value, or none: a sub that returned nothing (D79).
@@ -381,6 +386,11 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     case 'array': return temp(b, `${e.hash ? 'rt_hash_count' : 'rt_count'}(cx, ${variable(b, e)})`);
     // `keys` and `values` where one value is wanted are that count too.
     case 'hashop': {
+        if (e.keys !== undefined) {
+            // As a statement: what it deleted is not wanted.
+            addItem(e, temp(b, 'rt_array_new(cx)').c, b, 0);
+            return { c: 'rt_undef()', place: false };
+        }
         if (e.key === undefined) return temp(b, `rt_hash_count(cx, ${variable(b, e)})`);
         const key = genExpr(e.key, b);
         return temp(b, `rt_hash_${e.op}(cx, ${variable(b, e)}, ${key.c})`);
@@ -440,10 +450,11 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         // variable is copied now, since a target before it may be that
         // variable (`($i, $a[$i]) = (1, 5)` stores at the old `$i`).
         const kept = (v: C): C => (v.place ? temp(b, v.c) : v);
-        const indexes = e.targets.map(t => (t.kind === 'elem' ? kept(genExpr(t.index, b)) : undefined));
+        const indexes = e.targets.map(t => (t.kind === 'elem' ? kept(genExpr(t.index, b)) : t.kind === 'slice' ? genList(t.indexes, b) : undefined));
         e.targets.forEach((t, n) => {
             if (t.kind === 'constant') return;
             if (t.kind === 'array' || t.kind === 'myarray') b.lines.push(`${t.hash ? 'rt_hash_rest' : 'rt_array_rest'}(cx, ${variable(b, t)}, ${values.c}, ${n});`);
+            else if (t.kind === 'slice') b.lines.push(`${t.hash ? 'rt_hslice_store' : 'rt_slice_store'}(cx, ${variable(b, t)}, ${indexes[n]!.c}, ${values.c});`);
             else if (t.kind === 'elem') b.lines.push(`${elem(t)}_store(cx, ${variable(b, t)}, ${indexes[n]!.c}, rt_list_item(cx, ${values.c}, ${n}));`);
             else b.lines.push(`${variable(b, t)} = rt_list_item(cx, ${values.c}, ${n});`);
         });
@@ -829,7 +840,8 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
             // Filled now, at its turn, from where the arguments are (T191).
             if (p.rest !== undefined) {
                 const rest = `f[${names.slots[names.of.get(p.rest)!]}]`;
-                lines.push(`${rest} = rt_array_new(cx); // @${p.rest.name}`, `rt_slurp(cx, ${rest}, argc, argv, flat, ${n});`);
+                lines.push(p.hash ? `${rest} = rt_hash_new(cx); // %${p.rest.name}` : `${rest} = rt_array_new(cx); // @${p.rest.name}`,
+                    `${p.hash ? 'rt_slurp_hash' : 'rt_slurp'}(cx, ${rest}, argc, argv, flat, ${n});`);
             }
         } else if (p.op === undefined) {
             lines.push(...copy);
@@ -867,6 +879,9 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
         // The count first, while the line is still the caller's.
         slurpy ? `    if (argc < ${least}) rt_fault_arguments(cx, ${name}, argc, ${least}, INT64_MAX);`
             : `    if (argc < ${least} || argc > ${s.params.length}) rt_fault_arguments(cx, ${name}, argc, ${least}, ${s.params.length});`,
+        // And for a last parameter that is a hash, an odd number left for
+        // it, before any default runs (T226).
+        ...(s.params.at(-1)?.hash ? [`    if (argc > ${s.params.length - 1} && (argc - ${s.params.length - 1}) % 2 != 0) rt_fault_odd_arguments(cx, ${name});`] : []),
         ...s.params.map((_, n) => `    rt_value *a${n} RT_UNUSED = argc > ${n} ? (flat != NULL ? &flat[${n}] : argv[${n}]) : NULL;`),
         `    rt_enter(cx, &frame, f, ${slots});`,
         ...indent(lines),

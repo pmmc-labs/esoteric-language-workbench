@@ -1,0 +1,2 @@
+t/1725-hash-slice-blank-before-the-brace.pl:5:8: a blank between @h and '{': a slice of a hash is written @h{...}
+exit: 1

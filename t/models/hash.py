@@ -352,9 +352,11 @@ lists.LISTY = lists.LISTY + ('%', 'keys', 'values', '=>', 'hslice', 'hdelete')
 _shaped = ret.shaped
 ret.shaped = lambda e: (isinstance(e, tuple) and e[0] in ('%', 'keys', 'values', 'hslice', 'hdelete')) or _shaped(e)
 
+HFROZEN = 'a hash was changed while a foreach is over it'
+
 def changing(h):
     if h.frozen:
-        raise Fault(lists.FROZEN)
+        raise Fault(HFROZEN)
     return h
 
 class Run(interp.Run):

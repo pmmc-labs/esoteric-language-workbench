@@ -55,7 +55,8 @@ export type Elem = { kind: 'elem'; name: string; index: Expr; hash?: true; pos: 
 // %name`; `exists $name{key}` and `delete $name{key}`; and `count`,
 // `scalar(%name)` and `scalar` of its keys or values. `pos` is the
 // word's, `at` the hash's.
-export type HashOp = { kind: 'hashop'; op: 'keys' | 'values' | 'exists' | 'delete' | 'count'; name: string; key?: Expr; pos: Pos; at: Pos; bracketed?: true };
+// `delete @name{keys}` has `keys`, and gives a list (step 12b).
+export type HashOp = { kind: 'hashop'; op: 'keys' | 'values' | 'exists' | 'delete' | 'count'; name: string; key?: Expr; keys?: readonly Expr[]; pos: Pos; at: Pos; bracketed?: true };
 export type LastIndex = { kind: 'lastindex'; name: string; pos: Pos; bracketed?: true };
 
 // A list in brackets: no items, or two and more, or one with a comma
@@ -65,7 +66,8 @@ export type List = { kind: 'list'; items: readonly Expr[]; my?: true; pos: Pos; 
 
 // A slice: `@name[indexes]`, of an array, or `(items)[indexes]`, of a
 // list. `pos` is the opening square bracket's.
-export type Slice = { kind: 'slice'; name?: string; items?: readonly Expr[]; indexes: readonly Expr[]; pos: Pos; bracketed?: true };
+// With `hash`, `@name{keys}`, of the hash `%name`, `indexes` its keys (step 12b).
+export type Slice = { kind: 'slice'; name?: string; items?: readonly Expr[]; indexes: readonly Expr[]; hash?: true; pos: Pos; bracketed?: true };
 
 // A builtin that names an array: `push @name, args`, `pop(@name)`,
 // `splice(@name, args)`, `scalar(@name)`. `pos` is the word's, `at` the
@@ -167,7 +169,8 @@ export type Jump = { kind: 'jump'; name: string; label?: Label; pos: Pos };
 // as a declaration, for the resolver. `pos` is the `$`'s.
 // A slurpy parameter, `@name` or `@` alone, the last: `slurpy`, and `rest`
 // its array as a declaration if it has a name.
-export type Param = { my?: My; op?: string; default?: Expr; slurpy?: true; rest?: MyArray; pos: Pos };
+// With `hash`, `%name` or `%` alone: what is left, as keys and values.
+export type Param = { my?: My; op?: string; default?: Expr; slurpy?: true; hash?: true; rest?: MyArray; pos: Pos };
 
 // `sub name(params) { body }`. `pos` is the word `sub`'s, `named` the
 // name's, and `end` the closing brace's.

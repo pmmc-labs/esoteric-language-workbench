@@ -1,2 +1,2 @@
-t/1381-interpolate-hash-element.pl:5:8: '{' hard after $x in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write ${x}{ or $x\{
+t/1381-interpolate-hash-element.pl:5:6: %x is not declared: my %x
 exit: 1

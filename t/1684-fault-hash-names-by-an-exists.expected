@@ -1,3 +1,3 @@
 1
-fault: an array was changed while a foreach is over it at t/1684-fault-hash-names-by-an-exists.pl line 14.
+fault: a hash was changed while a foreach is over it at t/1684-fault-hash-names-by-an-exists.pl line 14.
 exit: 1

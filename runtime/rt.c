@@ -1318,6 +1318,16 @@ void rt_list_add_slice(rt_ctx *cx, rt_value list, rt_value from, rt_value indexe
     }
 }
 
+// `@a[INDEXES] = LIST`: a value for each index in turn, and an undef for
+// each the list does not reach, which grows the array all the same (T228).
+void rt_slice_store(rt_ctx *cx, rt_value array, rt_value indexes, rt_value list) {
+    rt_array *ix = array_of(cx, indexes);
+    rt_array *from = array_of(cx, list);
+    for (uint64_t n = 0; n < ix->count; n++) {
+        rt_elem_store(cx, array, ix->items[n], n < from->count ? from->items[n] : rt_undef());
+    }
+}
+
 void rt_list_add_repeat(rt_ctx *cx, rt_value list, rt_value values, rt_value count) {
     rt_array *to = array_of(cx, list);
     rt_array *from = array_of(cx, values);
@@ -1587,6 +1597,14 @@ void rt_fault_arguments(rt_ctx *cx, const char *name, int64_t got, int64_t least
     int few = got < least;
     snprintf(what, sizeof what, "too %s arguments for %.300s: got %" PRId64 ", expected %s%" PRId64, few ? "few" : "many", name, got,
              least == most ? "" : few ? "at least " : "at most ", few ? least : most);
+    rt_fault(cx, what);
+}
+
+// An odd number of arguments left for a last parameter that is a hash:
+// perl dies as the sub is entered (T226).
+void rt_fault_odd_arguments(rt_ctx *cx, const char *name) {
+    char what[512];
+    snprintf(what, sizeof what, "an odd number of arguments for %.300s's hash", name);
     rt_fault(cx, what);
 }
 
