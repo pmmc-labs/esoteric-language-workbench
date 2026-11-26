@@ -1,2 +1,0 @@
-t/1759-hash-key-changes-what-a-string-with-an-element-reads.pl:6:7: the key changes $i, which the concatenation on the right reads: perl joins its pieces as it stores, after the key is worked out; take the string into a my first
-exit: 1

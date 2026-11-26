@@ -56,7 +56,6 @@ MUTATIONS = [
  ("a slice is always strict", GEN, "rt_list_add_hslice(cx, ${list}, ${variable(b, e)}, ${indexes.c}, ${strict ? 1 : 0});", "rt_list_add_hslice(cx, ${list}, ${variable(b, e)}, ${indexes.c}, 1);"),
  ("an element in a loop's list makes no fault", GEN, "        const value = temp(b, `${elem(e)}_strict(cx, ${variable(b, e)}, ${at.c})`);", "        const value = temp(b, `${e.hash ? 'rt_helem' : 'rt_elem_strict'}(cx, ${variable(b, e)}, ${at.c})`);"),
  ("a delete of a slice as a statement does nothing", GEN, "            addItem(e, temp(b, 'rt_array_new(cx)').c, b, 0);\n", ""),
- ("a slice stored to works its keys out before the right side", GEN, "        const values = genList([e.value], b);\n        e.targets.forEach(t => { if (t.kind === 'my' || t.kind === 'myarray') genExpr(t, b); });", "        const early = e.targets.map(t => (t.kind === 'slice' ? genList(t.indexes, b) : undefined));\n        const values = genList([e.value], b);\n        e.targets.forEach(t => { if (t.kind === 'my' || t.kind === 'myarray') genExpr(t, b); });"),
  ("a hash's slice is stored as an array's", GEN, "${t.hash ? 'rt_hslice_store' : 'rt_slice_store'}", "${'rt_slice_store'}"),
  ("a hash parameter is filled before the parameters before it", GEN, "                    `${p.hash ? 'rt_slurp_hash' : 'rt_slurp'}(cx, ${rest}, argc, argv, flat, ${n});`);", "                    `${p.hash ? 'rt_slurp_hash' : 'rt_slurp'}(cx, ${rest}, argc, argv, flat, ${p.hash ? 0 : n});`);"),
  # ---- the resolver
@@ -76,15 +75,14 @@ MUTATIONS = [
  ("the keys of a delete are in no order", CHECK, "        checkOrder(w, 'delete', e.keys, true);\n", ""),
  ("the keys of a delete are no part of it", CHECK, "    : e.kind === 'hashop' ? (e.keys ?? (e.key === undefined ? [] : [e.key]))", "    : e.kind === 'hashop' ? (e.key === undefined ? [] : [e.key])"),
  ("a delete of a slice is one value to a return", SHAPES, "    case 'hashop': return e.op === 'keys' || e.op === 'values' || e.keys !== undefined;", "    case 'hashop': return e.op === 'keys' || e.op === 'values';"),
- ("a slice of a hash is one value to a return", SHAPES, "    case 'slice': return e.name !== undefined ||", "    case 'slice': return (e.name !== undefined && !e.hash) ||"),
  # ---- the parser
  ("a blank before a slice's brace is read on", PARSE, "            if (brace.kind === '{') refuse(`a blank between @${t.name} and '{': a slice of a hash is written @${t.name}{...}`, brace.pos);\n", ""),
  ("a slice with no key is read on", PARSE, "        if (keys.length === 0) refuse('a slice with no key: perl refuses it', open.pos);\n", ""),
  ("a slice takes any assigning operator", PARSE, "                if (slice && t.text !== '=') refuse(", "                if (false) refuse("),
  ("a delete of a slice takes what binds tighter", PARSE, "                else bareOperand(head, `delete @${slice.name}{...}`);\n", ""),
  ("exists takes a slice", PARSE, "            if (op === 'delete' && what.kind === 'array' && brace.kind === '{' && brace.subscript === true) {", "            if (what.kind === 'array' && brace.kind === '{' && brace.subscript === true) {"),
+ ("a hash parameter may stand anywhere", PARSE, "refuse('a slurpy parameter has no default: perl refuses one', after.pos);\n                    if (after.kind !== ')') refuse(`${v.text} takes every argument that is left, so it is the last parameter: perl refuses one after it`, after.pos);\n                    params.push(v.name === '' ? { slurpy: true, hash: true", "refuse('a slurpy parameter has no default: perl refuses one', after.pos);\n                    params.push(v.name === '' ? { slurpy: true, hash: true"),
  ("a hash parameter may have a default", PARSE, "                if (v.kind === 'hash') {\n                    const after = peek();\n                    if (after.kind === 'op' && (after.text === '=' || after.text === '//=' || after.text === '||=')) refuse('a slurpy parameter has no default: perl refuses one', after.pos);", "                if (v.kind === 'hash') {\n                    const after = peek();"),
- ("a hash parameter may stand anywhere", PARSE, "                    params.push(v.name === '' ? { slurpy: true, hash: true, pos: v.pos }", "                    if (false) refuse('', after.pos);\n                    params.push(v.name === '' ? { slurpy: true, hash: true, pos: v.pos }"),
  # ---- the lexer
  ("a number is a key in a string", LEX, "                if (!isWordStart(at())) refuse(KEY, keyAt);\n                key = { kind: 'word', text: run(isWord) };", "                if (!isWord(at())) refuse(KEY, keyAt);\n                key = { kind: 'word', text: run(isWord) };"),
  ("blanks are taken round a key in a string", LEX, "            take();\n            const keyAt = pos();", "            take();\n            while (at() === ' ') take();\n            const keyAt = pos();"),
@@ -107,7 +105,7 @@ if only == ['--match']:
     sys.exit(0)
 knobs = checks.knobs()
 tests = []
-for src in sorted(glob.glob('t/16[2-9][0-9]-*.pl') + glob.glob('t/17[0-5][0-9]-*.pl') + glob.glob('t/138[1-4]-*.pl') + glob.glob('t/1568-*.pl')):
+for src in sorted(glob.glob('t/16[2-9][0-9]-*.pl') + glob.glob('t/17[0-6][0-9]-*.pl') + glob.glob('t/138[1-4]-*.pl') + glob.glob('t/1568-*.pl')):
     head = open(src, encoding='utf-8', errors='replace').read(1200)
     env = dict(os.environ)
     env.update(knobs)

@@ -1,0 +1,2 @@
+t/1745-hash-parameter-after-an-array.pl:4:9: @r takes every argument that is left, so it is the last parameter: perl refuses one after it
+exit: 1

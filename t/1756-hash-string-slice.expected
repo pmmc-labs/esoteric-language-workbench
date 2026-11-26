@@ -1,2 +1,0 @@
-t/1756-hash-string-slice.pl:5:8: '{' hard after @h in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write @{h}{ or @h\{
-exit: 1

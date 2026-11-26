@@ -1,0 +1,2 @@
+t/1747-hash-parameter-twice.pl:4:13: my %o again in one scope: perl warns that it masks the first
+exit: 1

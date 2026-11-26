@@ -40,12 +40,14 @@ r('delete-of-a-slice-before-a-plus', 'perl dies: delete argument is not a HASH o
 r('exists-of-a-slice', 'perl dies: exists argument is not a HASH or ARRAY element or a subroutine.', H + 'say exists @h{"a", "b"} ? 1 : 0;', '@h', "exists takes an element of a hash, found '@h': exists $h{...}")
 r('delete-of-a-slice-after-what-names-the-hash', 'perl: 1213.', H + 'my @l = (@h{"a", "b"}, delete @h{"a", "c"});\nsay @l;', 'delete', 'a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first')
 r('delete-of-a-slice-whose-keys-change', 'perl reads the first key after the second has changed it: b is deleted twice, and a stays.', H + 'my $i = "a";\nmy @d = delete @h{$i, ($i = "b")};\nsay "@d", scalar(%h);', '= "b"', 'a later part of delete can change $i, which an earlier part names: perl reads it after the change; take the value into a my first')
+r('change-in-the-keys-of-a-delete', 'perl reads the element after the store in the keys: y 1 2.', H + 'my %g = (x => 1, y => 2);\nmy @l = ($h{a}, delete @g{"x", ($h{a} = "y")});\nsay "@l";', 'delete', 'a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first')
 # ---- a hash as a parameter
 LAST = lambda p: f'{p} takes every argument that is left, so it is the last parameter: perl refuses one after it'
 r('parameter-not-last', 'perl does not compile it: Slurpy parameter not last.', 'sub f(%o, $x) { return 1 }', ', $x', LAST('%o'))
 r('parameter-after-an-array', 'perl does not compile it: Multiple slurpy parameters not allowed.', 'sub f(@r, %o) { return 1 }', ', %o', LAST('@r'))
 r('parameter-with-a-default', 'perl does not compile it: A slurpy parameter may not have a default value.', 'sub f(%o = (a => 1)) { return 1 }', '= (', 'a slurpy parameter has no default: perl refuses one')
 r('parameter-twice', 'perl warns: "my" variable %o masks earlier declaration in same scope.', 'sub f(%o) { my %o = (a => 1); return scalar(%o) }\nsay f();', 'my %o', 'my %o again in one scope: perl warns that it masks the first')
+r('parameter-changed-after-it-is-named', 'perl: 5.', 'sub f(%o) { my @l = (%o, delete $o{a}); return scalar(@l) }\nsay f(a => 1, b => 2);', 'delete', 'a later part of this list can change %o, which an earlier part names: perl reads it after the change; take the value into a my first')
 # ---- in a string (D99, T227)
 KEY = 'in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first'
 r('string-key-with-blanks', 'perl takes the blanks: 1.', H + 'say "$h{ a }";', ' a }', KEY)
