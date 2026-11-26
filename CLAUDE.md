@@ -307,7 +307,7 @@ review of the oracle check left open is listed in `docs/TRAPS.md`,
 clock; 16 and 19: quotes the reading rule can't pair). A test with a
 sort in it breaks its ties.
 
-**D1 to D102 are all Stevan's** (D102 defaults of the builder's on step 12's review, which he confirmed) (D95 defaults of the builder's at step 11a, which he confirmed) (D87 to D89 defaults of the builder's on step 10's review and its build, which he confirmed) (D81 defaults of the builder's at step 9, which he confirmed) (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
+**D1 to D103 are all Stevan's** (D103: `docs/DIFFERENCES.md` is kept, and `make test` holds it; its ratings are the builder's, his to move) (D102 defaults of the builder's on step 12's review, which he confirmed) (D95 defaults of the builder's at step 11a, which he confirmed) (D87 to D89 defaults of the builder's on step 10's review and its build, which he confirmed) (D81 defaults of the builder's at step 9, which he confirmed) (D73 and D74 defaults of the builder's at step 8, which he confirmed) (D57 a default of the builder's at
 step 5, which he confirmed; D58 to D62 his answers to step 6, D63 to
 D66 to step 7). The ones a builder meets first: the
 core rule (D2); a TypeScript compiler emitting C (D3); a fault can't
@@ -482,9 +482,10 @@ Not agreed: what the decisions leave to steps, listed at the end of
    confirmed; there are none yet.
 3. [`docs/SURFACE.md`](docs/SURFACE.md): Perl, construct by construct:
    in, a fault, later, or cut.
-   [`docs/DIFFERENCES.md`](docs/DIFFERENCES.md): the same ground for a
-   reader who knows Perl, by the idea behind each difference. A first
-   draft (2026-11-26); it decides nothing, and nothing checks it yet.
+   [`docs/DIFFERENCES.md`](docs/DIFFERENCES.md): where it differs from
+   Perl, for a reader who knows Perl: by how Perlish what is lost is,
+   how often it is met, and where (D103). It decides nothing, and
+   `make test` holds it.
 4. [`docs/PLAN.md`](docs/PLAN.md): the build order.
    [`docs/TRAPS.md`](docs/TRAPS.md): for the step in hand, the
    programs where the obvious implementation is WRONG.
@@ -541,6 +542,14 @@ in `pmmc-labs/esoteric-language-workbench`.
 - When a construct or builtin is added or changes, update
   `docs/LANGUAGE.md` (no tables there) and its row in
   `docs/SURFACE.md`.
+- **When what a Perl programmer would notice changes, move the rows
+  of `docs/DIFFERENCES.md`** (D103): a construct taken in loses its
+  row, one cut or faulted gains one, rated by Feel, Met and Where,
+  with a program in "Run for this file" when it is one a reader will
+  meet. Every new decision is cited there or listed as saying
+  nothing; `t/checks.py differences` fails until it is. A step's
+  proposal says how it moves the file, as it says how it moves the
+  census. The ratings are a judgement: say so when one is a guess.
 - When editing with scripts, assert that each replacement matched.
 - Test timing uses a virtual clock; real time is never used in tests.
 - Update the Status section above as steps land. It is the only
@@ -667,6 +676,8 @@ in `pmmc-labs/esoteric-language-workbench`.
   message` on stderr and no binary; 2 usage, the toolchain, or a file
   it can't read or write; a fault in the compiler itself is `curlyc:
   internal error: ...` with Node's stack, and 2.
+- `python3 t/checks.py differences`: `docs/DIFFERENCES.md` alone, its
+  programs run under perl and the compiler; part of `make checks`.
 - `make census`: every probe of `t/census/run/`, compiled, run and held to
   perl, and `t/census/census.json` written. About two minutes, and not
   part of `make test`, which checks the file. `python3 t/census.py --sort`

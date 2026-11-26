@@ -19,7 +19,7 @@ his, on seeing the build. D76 to D80 are his answers to step 9's
 proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
 confirmed. D96 and D97 are his, on the census; D98 to D101 his answers to
-step 12's, and D102 the builder's defaults on its review, which he
+step 12's, D103 his, on the file of differences, and D102 the builder's defaults on its review, which he
 confirmed. D104 is the builder's defaults from building step 12a,
 not yet confirmed.
 What a decision leaves for a step to settle is listed under Open
@@ -201,6 +201,37 @@ test Perl 5, not this language, and most will be refusals); waiting
 until the language is large (their lesson: a suite measures itself,
 and only programs nobody wrote for the implementation find its wrong
 answers).
+
+**D103. `DIFFERENCES.md` is kept: where the language and perl differ,
+by how Perlish what is lost is, how likely it is to be met, and
+where; and `make test` holds it.** *(User, 2026-11-26: "lets start
+writing a document to specifically list the parts where curly and
+perl differ", and then "Let's add the differences file to the process
+and organize it by perlish ness and likeliness to be hit and in what
+context." The ratings, their three scales and the check are the
+builder's defaults, and his to move.)* The log says why each thing
+was cut and `SURFACE.md` what is done with each construct; neither
+says what a Perl programmer will feel, or how the hundred small
+refusals add up, which is the question of how Perlish the language
+is. A row is what perl does, what the language does, and three
+ratings: **Feel** (an idiom, a habit, an accident), **Met** (often,
+sometimes, rarely) and **Where** (loops, subs, printing and nine
+more); † marks a row where the language is stricter than it has to
+be. `t/checks.py differences`, part of `make test`: every program in
+the file is run under perl and under the compiler and does what its
+row says; every rated row has ratings from the lists, a decision that
+exists, and stands in the section its ratings belong to; and **every
+decision in the log is cited in the file or listed there as saying
+nothing to a Perl programmer**, so a step that adds a decision says
+which before its tests pass. A step that takes a construct in, or
+cuts one, moves its rows. The ratings are a judgement and nothing
+checks them: the census's counts of what its probes are refused for
+are the only evidence for Met, and lean toward old Perl. It decides
+nothing: where it and an entry here disagree, the entry is right.
+Rejected: a list by decision, the first draft (it reads as a
+catalogue of edge cases and hides the four or five rows that change
+how the language feels); the document with no check (the first draft
+again: it would be wrong within a step).
 
 ## The core rule, worked out
 

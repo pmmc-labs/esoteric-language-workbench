@@ -70,7 +70,13 @@ JSON can be committed and diffed.
   citation of a decision a later one retired or changed, in a sentence
   that doesn't say so, has a wavy red underline, and the contents show
   how many a section has. The search filters sections; `D158` finds
-  those that cite it. slight's code is coloured: special forms, a
+  those that cite it. Where a document's tables have a column of words
+  from a short list (DIFFERENCES.md's Feel, Met and Where; SURFACE.md's
+  Chalk), the sidebar has the words, and choosing some shows the rows
+  that have them, and only the sections with such rows: any of those
+  chosen in one column, and all the columns at once. Each word's count is of the rows the other columns
+  leave. The page finds such columns by looking; a document says
+  nothing. slight's code is coloured: special forms, a
   `defun`'s name and parameters, builtins, strings, comments, numbers,
   keywords, and `$$`, `#true` and the like.
 - **Open.** The sections whose status is proposed, an idea, agreed but
