@@ -419,7 +419,12 @@ function cells(row) {
     // Split at the pipes outside code spans: `a | 0` is one cell.
     const out = [];
     let cur = '', code = false;
-    for (const c of row.trim().replace(/^\|/, '').replace(/\|$/, '')) {
+    // A pipe with a backslash before it is a pipe in the cell, in code too,
+    // as GitHub has it: `a \|\| b`.
+    const s = row.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '');
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (c === '\\' && s[i + 1] === '|') { cur += '|'; i++; continue; }
         if (c === '`') code = !code;
         if (c === '|' && !code) { out.push(cur.trim()); cur = ''; } else cur += c;
     }
