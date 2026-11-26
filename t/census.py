@@ -122,6 +122,7 @@ REASONS = [
     (r"\(step 12b\)", 'later', '12'),
     (r"^'(\\|->)' is not in the language yet", 'later', '13'),
     (r"in a string takes a reference", 'later', '13'),
+    (r"^'%' before a reference", 'later', '13'),
     (r"^'->.' hard after .* in a string", 'later', '13'),
     (r"^an element of an element", 'later', '13'),
     (r"^expected a value, found '(\[|\{|ref)'$", 'later', '13'),

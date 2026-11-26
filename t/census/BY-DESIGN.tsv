@@ -7,11 +7,14 @@ chalk/c3t3.pl	D17	'srand' is not in the language
 chalk/c3t4.pl	D17	'srand' is not in the language
 chalk/c3t5.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 chalk/fk2.pl	D19	'our' is not in the language
+chalk/hc1.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
 chalk/hc2.pl	D19	'our' is not in the language
 pvm/adjacency-01_literals-01.pl	D38	1. ends with a point: write 1.0
 pvm/adjacency-05_scoping-01.pl	D16	'use feature' is not in the language
 pvm/adjacency-06_control-01.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 pvm/adjacency-08_references-01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+pvm/adjacency-12_packages-01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+pvm/aggregate-operators-08.pl	D17	expected a value, found 'each'
 pvm/aggregates-in-context-03.pl	D80	a list where one value is wanted: perl gives its last value, and warns of the others
 pvm/argument-extent-01.pl	D17	@_ is not in the language: a sub has a signature (D17)
 pvm/argument-extent-04.pl	D19	'local' is not in the language
@@ -20,6 +23,7 @@ pvm/arithmetic-01.pl	D55	$a is not a name a program may declare: $a and $b are t
 pvm/arithmetic-02.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 pvm/arithmetic-03.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 pvm/arithmetic-04.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
+pvm/blocks-and-terminations-04.pl	D13	'eval' is not in the language
 pvm/code-references-01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 pvm/comparison-01.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 pvm/comparison-02.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
@@ -32,13 +36,17 @@ pvm/context-from-inside-01.pl	D13	expected a value, found 'wantarray'
 pvm/context-from-inside-02.pl	D13	expected a value, found 'caller'
 pvm/declarations-02.pl	D19	'::' hard after $main in a string: perl reads a variable of another package; write ${main}:: or $main\::
 pvm/declarations-03.pl	D16	'use feature' is not in the language
+pvm/eval-replacement-03.pl	D13	expected a value, found 'eval'
 pvm/formats-01.pl	D17	'format' is not in the language
+pvm/jumps-01.pl	D13	'redo' is not in the language
+pvm/jumps-02.pl	D13	'goto' is not in the language
 pvm/list-operators-in-context-01.pl	D80	reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function
 pvm/list-operators-in-context-02.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
 pvm/loading-01.pl	D16	'use strict' is not in the language
 pvm/loading-04.pl	D13	'require' is not in the language
 pvm/loading-05.pl	D13	'require' is not in the language
 pvm/loading-06.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+pvm/loops-08.pl	D13	'continue' is not in the language
 pvm/named-operators-07.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 pvm/numeric-point-03.pl	D38	1. ends with a point: write 1.0
 pvm/numeric-radix-04.pl	D38	0377 starts with a zero: perl reads that as octal, which the language writes 0o17
@@ -70,6 +78,7 @@ pvm/vstrings-01.pl	D38	65.66.67 is not a number in the language
 son-audit/a/aue1.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/aue3.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/a/aue4.pl	D17	'srand' is not in the language
+son-audit/a/aue5.pl	D17	expected a value, found 'each'
 son-audit/a/auk11.pl	D13	expected a value, found 'eval'
 son-audit/a/auk12.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/auk13.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
@@ -148,11 +157,14 @@ son-audit/a/aun146.pl	D17	sub noop needs a signature: sub noop(...) { ... }, wit
 son-audit/a/aun147.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/a/aun149.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/a/aun15.pl	D19	'our' is not in the language
+son-audit/a/aun154.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
 son-audit/a/aun16d.pl	D21	a sub may not be called DESTROY: perl has a meaning of its own for the word
 son-audit/a/aun16e.pl	D19	'package' is not in the language
 son-audit/a/aun16f.pl	D17	sub T needs a signature: sub T(...) { ... }, with () for no parameters
+son-audit/a/aun17.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/a/aun175.pl	D57	a later piece of a concatenation changes $s, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own
 son-audit/a/aun176.pl	D80	a list where one value is wanted: perl gives its last value, and warns of the others
+son-audit/a/aun177.pl	D17	expected a value, found 'each'
 son-audit/a/aun17a.pl	D19	'local' is not in the language
 son-audit/a/aun17b.pl	D17	sub inner needs a signature: sub inner(...) { ... }, with () for no parameters
 son-audit/a/aun17c.pl	D19	'our' is not in the language
@@ -163,6 +175,9 @@ son-audit/a/aun2.pl	D19	'our' is not in the language
 son-audit/a/aun23.pl	D19	'our' is not in the language
 son-audit/a/aun3.pl	D19	'our' is not in the language
 son-audit/a/aun30.pl	D19	'our' is not in the language
+son-audit/a/aun31.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
+son-audit/a/aun40.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/a/aun41.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/a/aun48.pl	D80	splice where one value is wanted: perl gives the last element it removed; assign it to an array
 son-audit/a/aun49.pl	D80	a list where one value is wanted: perl gives its last value, and warns of the others
 son-audit/a/aun5.pl	D19	'our' is not in the language
@@ -190,6 +205,7 @@ son-audit/a/aun9.pl	D19	'our' is not in the language
 son-audit/a/aun90.pl	D13	'eval' is not in the language
 son-audit/a/aun91.pl	D13	'eval' is not in the language
 son-audit/a/aun92.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
+son-audit/a/aun93.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/aun94.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/a/aun95.pl	D19	'our' is not in the language
 son-audit/a/aun96.pl	D19	'our' is not in the language
@@ -207,9 +223,11 @@ son-audit/al/c07.pl	D17	$_[ is an element of perl's own @_ or %_, which are not 
 son-audit/al/c08.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/al/c09.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/al/c10.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/al/c11.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/al/c12.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/al/c13.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/al/c14.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/al/c15.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/al/c16.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/al/d07.pl	D19	'our' is not in the language
 son-audit/al/d09.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -225,11 +243,14 @@ son-audit/al/e10.pl	D19	'our' is not in the language
 son-audit/al/g02.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/al/g03.pl	D19	'our' is not in the language
 son-audit/al/g04.pl	D13	'eval' is not in the language
+son-audit/al/g06.pl	D13	'eval' is not in the language
 son-audit/al/g07.pl	D13	'eval' is not in the language
 son-audit/al/g08.pl	D13	'eval' is not in the language
 son-audit/cpa/cpa05.pl	D19	'our' is not in the language
+son-audit/cpa/cpa10.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/cpa/cpa11.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/cpa/cpa12.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/cpa/cpa28.pl	D17	sub g needs a signature: sub g(...) { ... }, with () for no parameters
 son-audit/f/a01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/a02.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/a03.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -240,6 +261,7 @@ son-audit/f/a23.pl	D17	$_ is read-only: in perl, changing it changes the list's 
 son-audit/f/a24.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/a25.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/a26.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/a27.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/a30.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/a31.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/a32.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -251,8 +273,10 @@ son-audit/f/a41.pl	D19	'our' is not in the language
 son-audit/f/a42.pl	D17	sub g needs a signature: sub g(...) { ... }, with () for no parameters
 son-audit/f/a43.pl	D17	sub g needs a signature: sub g(...) { ... }, with () for no parameters
 son-audit/f/a44.pl	D17	sub g needs a signature: sub g(...) { ... }, with () for no parameters
+son-audit/f/a45.pl	D17	sub g needs a signature: sub g(...) { ... }, with () for no parameters
 son-audit/f/a48.pl	D80	a list where one value is wanted: perl gives its last value, and warns of the others
 son-audit/f/a49.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/f/a68.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/f/a69.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/a74.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/a75.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -260,10 +284,12 @@ son-audit/f/a77.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/f/b30.pl	D13	expected a value, found 'eval'
 son-audit/f/b31.pl	D13	expected a value, found 'eval'
 son-audit/f/b32.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/f/b33.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/b35.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/b39.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
 son-audit/f/b41.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/f/b42.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
+son-audit/f/b43.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
 son-audit/f/b45.pl	D56	my $y here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached
 son-audit/f/b46.pl	D56	my $x here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached
 son-audit/f/b53.pl	D19	'our' is not in the language
@@ -279,6 +305,7 @@ son-audit/f/b87.pl	D13	expected a value, found 'eval'
 son-audit/f/b88.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/b89.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/b90.pl	D13	'eval' is not in the language
+son-audit/f/b91.pl	D13	'eval' is not in the language
 son-audit/f/b92.pl	D13	'eval' is not in the language
 son-audit/f/b93.pl	D13	'eval' is not in the language
 son-audit/f/b94.pl	D13	expected a value, found 'eval'
@@ -286,6 +313,7 @@ son-audit/f/b95.pl	D13	expected a value, found 'eval'
 son-audit/f/c16.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/c26.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/f/c30.pl	D19	'our' is not in the language
+son-audit/f/c31.pl	D19	'our' is not in the language
 son-audit/f/c37.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/f/c46.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/c49.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -296,6 +324,7 @@ son-audit/f/d02.pl	D19	'our' is not in the language
 son-audit/f/d03.pl	D19	'our' is not in the language
 son-audit/f/d04.pl	D19	'our' is not in the language
 son-audit/f/d06.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
+son-audit/f/d07.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/f/d10.pl	D19	'our' is not in the language
 son-audit/f/d11.pl	D19	'our' is not in the language
 son-audit/f/d12.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -313,6 +342,7 @@ son-audit/f/d26.pl	D13	expected a value, found 'eval'
 son-audit/f/d27.pl	D13	expected a value, found 'eval'
 son-audit/f/d29.pl	D13	'eval' is not in the language
 son-audit/f/d30.pl	D13	'eval' is not in the language
+son-audit/f/d31.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/f/d33.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/f/d34.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/f/d35.pl	D13	'eval' is not in the language
@@ -324,6 +354,7 @@ son-audit/f/d40.pl	D16	'use feature' is not in the language
 son-audit/f/d41.pl	D16	'use feature' is not in the language
 son-audit/f/d42.pl	D13	'eval' is not in the language
 son-audit/f/d43.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
+son-audit/f/d44.pl	D17	sub d needs a signature: sub d(...) { ... }, with () for no parameters
 son-audit/f/d45.pl	D17	sub d needs a signature: sub d(...) { ... }, with () for no parameters
 son-audit/f/d46.pl	D17	sub d needs a signature: sub d(...) { ... }, with () for no parameters
 son-audit/f/d47.pl	D17	sub d needs a signature: sub d(...) { ... }, with () for no parameters
@@ -338,6 +369,7 @@ son-audit/f/d55.pl	D19	'our' is not in the language
 son-audit/f/d56.pl	D19	'our' is not in the language
 son-audit/f/d57.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/d58.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/d60.pl	D19	'our' is not in the language
 son-audit/f/d61.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/d62.pl	D19	'our' is not in the language
 son-audit/f/d63.pl	D19	'our' is not in the language
@@ -359,6 +391,7 @@ son-audit/f/e17.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for 
 son-audit/f/e18.pl	D13	'eval' is not in the language
 son-audit/f/e19.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/f/e20.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/f/e22.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/e23.pl	D13	'eval' is not in the language
 son-audit/f/e24.pl	D13	'eval' is not in the language
 son-audit/f/e25.pl	D13	'eval' is not in the language
@@ -372,11 +405,13 @@ son-audit/f/e34.pl	D92	'$' in a double-quoted string begins a variable, and no n
 son-audit/f/e38.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/f/e39.pl	D19	'our' is not in the language
 son-audit/f/e40.pl	D19	'our' is not in the language
+son-audit/f/e41.pl	D13	'eval' is not in the language
 son-audit/f/e43.pl	D13	'eval' is not in the language
 son-audit/f/e44.pl	D13	expected a value, found 'eval'
 son-audit/f/e45.pl	D13	expected a value, found 'eval'
 son-audit/f/e46.pl	D17	sub d needs a signature: sub d(...) { ... }, with () for no parameters
 son-audit/f/e47.pl	D19	'our' is not in the language
+son-audit/f/e48.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/e49.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/e51.pl	D13	expected a value, found 'eval'
 son-audit/f/e52.pl	D13	expected a value, found 'eval'
@@ -403,16 +438,21 @@ son-audit/f/g16.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for 
 son-audit/f/g18.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
 son-audit/f/g19.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
 son-audit/f/g20.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
+son-audit/f/g21.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
+son-audit/f/g22.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
+son-audit/f/g23.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
 son-audit/f/g24.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
 son-audit/f/g25.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
 son-audit/f/g26.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
 son-audit/f/g28.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
 son-audit/f/g29.pl	D17	sub w needs a signature: sub w(...) { ... }, with () for no parameters
+son-audit/f/g36.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/h01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/h02.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/h03.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/h04.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/h05.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/h06.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/h07.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/h08.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/h09.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -455,6 +495,7 @@ son-audit/f/j23.pl	D19	'our' is not in the language
 son-audit/f/j24.pl	D19	'our' is not in the language
 son-audit/f/j27.pl	D17	sub noop needs a signature: sub noop(...) { ... }, with () for no parameters
 son-audit/f/k06.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/k11.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k13.pl	D17	sub bump needs a signature: sub bump(...) { ... }, with () for no parameters
 son-audit/f/k14.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k15.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -467,7 +508,9 @@ son-audit/f/k24.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/k30.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k31.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k32.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/f/k33.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k34.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/k40.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k41.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k43.pl	D17	sub rd needs a signature: sub rd(...) { ... }, with () for no parameters
 son-audit/f/l01.pl	D19	'our' is not in the language
@@ -496,6 +539,7 @@ son-audit/f/l31.pl	D19	'our' is not in the language
 son-audit/f/l32.pl	D19	'our' is not in the language
 son-audit/f/l33.pl	D19	'our' is not in the language
 son-audit/f/l37.pl	D19	'our' is not in the language
+son-audit/f/l38.pl	D17	expected a value, found 'each'
 son-audit/f/l40.pl	D13	'continue' is not in the language
 son-audit/f/l42.pl	D17	for $x (...) borrows a variable from outside the loop: for my $x (...)
 son-audit/f/l43.pl	D19	'our' is not in the language
@@ -553,11 +597,16 @@ son-audit/f/n25.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/f/o01.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/o02.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/o03.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/f/o04.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/f/o08.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/o14.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/o16.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/f/o17.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/o19.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/f/o20.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/p01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/p02.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/p03.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/p04.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/p05.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/p06.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -565,22 +614,26 @@ son-audit/f/p07.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/f/p08.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/p09.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/p10.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/p11.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/p12.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/q23.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/s03.pl	D19	'our' is not in the language
 son-audit/f/s04.pl	D19	'our' is not in the language
+son-audit/f/s05.pl	D19	'our' is not in the language
 son-audit/f/s06.pl	D19	'our' is not in the language
 son-audit/f/s09.pl	D19	'our' is not in the language
 son-audit/f/s12.pl	D54	else after unless: write it as an if
 son-audit/f/s13.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/f/s20.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s22.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
+son-audit/f/s23.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s24.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s25.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s26.pl	D19	'our' is not in the language
 son-audit/f/s27.pl	D19	'our' is not in the language
 son-audit/f/s28.pl	D19	'our' is not in the language
 son-audit/f/s29.pl	D19	'our' is not in the language
+son-audit/f/s30.pl	D19	'our' is not in the language
 son-audit/f/s31.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s32.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s33.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
@@ -592,14 +645,17 @@ son-audit/f/s38.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for 
 son-audit/f/s39.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s40.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s41.pl	D17	sub take needs a signature: sub take(...) { ... }, with () for no parameters
+son-audit/f/s42.pl	D17	sub n needs a signature: sub n(...) { ... }, with () for no parameters
 son-audit/f/s51.pl	D19	'our' is not in the language
 son-audit/f/s52.pl	D19	'our' is not in the language
 son-audit/f/s53.pl	D19	'our' is not in the language
 son-audit/f/s54.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/s55.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/f/s56.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/s57.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/s58.pl	D19	'our' is not in the language
 son-audit/f/s59.pl	D19	'our' is not in the language
+son-audit/f/w03.pl	D17	sub cl needs a signature: sub cl(...) { ... }, with () for no parameters
 son-audit/f/w04.pl	D17	sub cl needs a signature: sub cl(...) { ... }, with () for no parameters
 son-audit/f/w05.pl	D19	'our' is not in the language
 son-audit/f/w06.pl	D19	'our' is not in the language
@@ -687,15 +743,18 @@ son-audit/p/ag2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/p/ag20.pl	D76	a later part of print's list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/p/ag21.pl	D76	a later part of this list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/p/ag22.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/ag23.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag24.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag25.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag26.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag27.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag28.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/ag29.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag31.pl	D19	'our' is not in the language
 son-audit/p/ag32.pl	D19	'our' is not in the language
 son-audit/p/ag33.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/p/ag35.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag36.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag38.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag4.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -709,6 +768,7 @@ son-audit/p/al16.pl	D17	$e is its loop's variable, and read-only: in perl, chang
 son-audit/p/al17.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/p/al19.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/al2.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/p/al20.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/al22.pl	D92	'[' hard after $a[0] in a string: another index, to perl; write $a[0]\[
 son-audit/p/al3.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/p/al30.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -723,10 +783,12 @@ son-audit/p/ar16.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/p/ar17.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ar18.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/p/ar19.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/ar2.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/p/ar20.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ar21.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ar22.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ar3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/ar4.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/p/ar6.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ar7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ar8.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -756,11 +818,15 @@ son-audit/p/ca9.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/p/cl23.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/cl7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/cr5.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/dyn1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/dyn2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ef30.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/ef6.pl	D17	expected a value, found 'each'
 son-audit/p/ev1.pl	D13	'eval' is not in the language
 son-audit/p/ev10.pl	D16	'use feature' is not in the language
 son-audit/p/ev11.pl	D13	expected a value, found 'eval'
 son-audit/p/ev12.pl	D19	'our' is not in the language
+son-audit/p/ev13.pl	D13	'eval' is not in the language
 son-audit/p/ev14.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/p/ev15.pl	D13	'eval' is not in the language
 son-audit/p/ev16.pl	D13	'eval' is not in the language
@@ -772,10 +838,14 @@ son-audit/p/ev5.pl	D13	'eval' is not in the language
 son-audit/p/ev7.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/p/ev8.pl	D13	expected a value, found 'eval'
 son-audit/p/ev9.pl	D13	expected a value, found 'eval'
+son-audit/p/ex3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/fl14.pl	D16	'use warnings' is not in the language
+son-audit/p/fl20.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/p/fl3.pl	D13	expected a value, found 'eval'
 son-audit/p/go1.pl	D13	'goto' is not in the language
 son-audit/p/go3.pl	D13	'goto' is not in the language
 son-audit/p/go4.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/p/hs3.pl	D19	'our' is not in the language
 son-audit/p/hs7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/hs8.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/p/hs9.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -832,6 +902,7 @@ son-audit/p/pg4.pl	D19	'our' is not in the language
 son-audit/p/pg5.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/pg7.pl	D19	'our' is not in the language
 son-audit/p/pg8.pl	D19	'our' is not in the language
+son-audit/p/pg9.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/pl1.pl	D17	sub bump needs a signature: sub bump(...) { ... }, with () for no parameters
 son-audit/p/pl10.pl	D19	'our' is not in the language
 son-audit/p/pl11.pl	D19	'our' is not in the language
@@ -847,6 +918,7 @@ son-audit/p/pl7.pl	D19	'our' is not in the language
 son-audit/p/rn1.pl	D17	'srand' is not in the language
 son-audit/p/rn2.pl	D17	'srand' is not in the language
 son-audit/p/st1.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
+son-audit/p/st10.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/p/st11.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/p/st3.pl	D19	'package' is not in the language
 son-audit/p/st7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -863,6 +935,7 @@ son-audit/p/tp7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/p/tp8.pl	D19	'our' is not in the language
 son-audit/p/tp9.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/w1lib5.pl	D19	'::' hard after $main in a string: perl reads a variable of another package; write ${main}:: or $main\::
+son-audit/p/wa24.pl	D19	'our' is not in the language
 son-audit/p/wa25.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/p/wa7.pl	D17	sub cnt needs a signature: sub cnt(...) { ... }, with () for no parameters
 son-audit/q/nv1.pl	D19	'our' is not in the language
@@ -872,6 +945,7 @@ son-audit/q/nv14.pl	D19	'our' is not in the language
 son-audit/q/nv2.pl	D19	'our' is not in the language
 son-audit/q/nv3.pl	D19	'our' is not in the language
 son-audit/q/nv4.pl	D19	'our' is not in the language
+son-audit/q/nv5.pl	D19	'our' is not in the language
 son-audit/q/nv7.pl	D19	'our' is not in the language
 son-audit/q/nv8.pl	D19	'our' is not in the language
 son-audit/q/nv9.pl	D19	'our' is not in the language
@@ -886,7 +960,10 @@ son-audit/q/rv4.pl	D76	a later part of print's list can change $x, which an earl
 son-audit/q/rv6.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/q/vp11.pl	D19	'our' is not in the language
 son-audit/q/vp15.pl	D55	$_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)
+son-audit/q/vp20.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/q/vp21.pl	D57	a later piece of a concatenation changes %h, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own
 son-audit/q/vp5.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/q/vp8.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/a01.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/r/a02.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/r/a03.pl	D19	'our' is not in the language
@@ -896,6 +973,7 @@ son-audit/r/a12.pl	D19	'our' is not in the language
 son-audit/r/a14.pl	D19	'our' is not in the language
 son-audit/r/a16.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/a17.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/r/a18.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/a19.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/r/a25.pl	D19	'our' is not in the language
 son-audit/r/a26.pl	D19	'our' is not in the language
@@ -903,6 +981,7 @@ son-audit/r/a27.pl	D17	$_ is read-only: in perl, changing it changes the list's 
 son-audit/r/a28.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/r/a30.pl	D19	'local' is not in the language
 son-audit/r/a31.pl	D19	'our' is not in the language
+son-audit/r/a32.pl	D19	'our' is not in the language
 son-audit/r/a36.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/r/a37.pl	D13	'continue' is not in the language
 son-audit/r/a39.pl	D19	'our' is not in the language
@@ -993,6 +1072,7 @@ son-audit/r/f09.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/r/f18.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/g01.pl	D19	'our' is not in the language
 son-audit/r/g02.pl	D19	'our' is not in the language
+son-audit/r/g03.pl	D19	'our' is not in the language
 son-audit/r/g04.pl	D19	'our' is not in the language
 son-audit/r/g05.pl	D19	'our' is not in the language
 son-audit/r/g06.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1043,17 +1123,26 @@ son-audit/r/j41.pl	D19	'our' is not in the language
 son-audit/r/j42.pl	D19	'our' is not in the language
 son-audit/r/j43.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/r/j44.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/r/j46.pl	D76	a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/r/j47.pl	D76	a later part of this list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/r/j48.pl	D76	a later part of this list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/r/k10.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/r/k20.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/r/l01.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/r/l17.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/r/m01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/r/m02.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/r/m05.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/m11.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/r/m12.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/r/m14.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/r/m15.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/r/n07.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/r/n10.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/n12.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/n13.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/r/n21.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/r/n35.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
 son-audit/r/o01.pl	D17	'srand' is not in the language
 son-audit/r/o03.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/r/o04.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
@@ -1088,6 +1177,7 @@ son-audit/r/q18.pl	D17	$_ is read-only: in perl, changing it changes the list's 
 son-audit/r/q22.pl	D76	a later part of this list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/r/q23.pl	D76	a later part of this list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/r/q24.pl	D57	a later piece of a concatenation changes $x, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own
+son-audit/r/q28.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/q36.pl	D19	'our' is not in the language
 son-audit/r/q37.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/q38.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1098,6 +1188,7 @@ son-audit/r/r02.pl	D16	'use feature' is not in the language
 son-audit/r/r03.pl	D16	'use feature' is not in the language
 son-audit/r/r06.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/w/c1.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/w/c2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/w/m3.pl	D19	'our' is not in the language
 son-audit/y/unverified/ya10.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/unverified/ya37.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1139,6 +1230,9 @@ son-audit/y/ya16.pl	D17	$_[ is an element of perl's own @_ or %_, which are not 
 son-audit/y/ya17.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya18.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya19.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/ya20.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/ya21.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/ya22.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya23.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya24.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya25.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1180,6 +1274,7 @@ son-audit/y/ya63.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya64.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/ya65.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya66.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/ya67.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya68.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya70.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya73.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1192,6 +1287,7 @@ son-audit/y/ya79.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya80.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ya81.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yb06.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
+son-audit/y/yb08.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/y/yb09.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/y/yb10.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yb11.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -1239,6 +1335,8 @@ son-audit/y/yc114.pl	D76	a later part of '+' can change @a, which an earlier par
 son-audit/y/yc116.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc118.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc120.pl	D76	a later part of this slice can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/y/yc122.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/y/yc128.pl	D76	a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc129.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc130.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc133.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
@@ -1248,8 +1346,10 @@ son-audit/y/yc136.pl	D17	expected a value, found 'chop'
 son-audit/y/yc138.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yc141.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc142.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/y/yc147.pl	D76	a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc148.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc149.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/y/yc150.pl	D76	a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc152.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc153.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc154.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
@@ -1267,6 +1367,7 @@ son-audit/y/yc169.pl	D19	'our' is not in the language
 son-audit/y/yc171.pl	D76	a later part of this list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc172.pl	D19	'our' is not in the language
 son-audit/y/yc173.pl	D19	'our' is not in the language
+son-audit/y/yc174.pl	D19	'our' is not in the language
 son-audit/y/yc175.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc176.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc20.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -1286,8 +1387,10 @@ son-audit/y/yc61.pl	D76	a later part of this list can change $x, which an earlie
 son-audit/y/yc62.pl	D76	a later part of this list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc63.pl	D76	a later part of print's list can change $x, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc66.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/y/yc67.pl	D57	a later piece of a concatenation changes %h, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own
 son-audit/y/yc68.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc69.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/y/yc70.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc71.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc72.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc73.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
@@ -1298,6 +1401,7 @@ son-audit/y/yc80.pl	D13	expected a value, found 'eval'
 son-audit/y/yc82.pl	D19	'our' is not in the language
 son-audit/y/yc83.pl	D19	'our' is not in the language
 son-audit/y/yc90.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/y/yc91.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc92.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc93.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yc95.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
@@ -1346,6 +1450,7 @@ son-audit/y/ye47.pl	D19	'our' is not in the language
 son-audit/y/ye48.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/ye50.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ye51.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/ye52.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ye54.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ye55.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/ye56.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1419,6 +1524,7 @@ son-audit/y/yh21.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for
 son-audit/y/yh22.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yh23.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yh24.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/y/yh25.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yh26.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yh27.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yh28.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
@@ -1437,6 +1543,7 @@ son-audit/y/yh46.pl	D78	an assignment of a list is a statement: perl gives the c
 son-audit/y/yh48.pl	D80	a list on the left of 'x' where one value is wanted: perl repeats its last value
 son-audit/y/yh56.pl	D21	print is a statement, and has no value
 son-audit/y/yh59.pl	D80	splice where one value is wanted: perl gives the last element it removed; assign it to an array
+son-audit/y/yh63.pl	D17	expected a value, found 'each'
 son-audit/y/yi01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yi02.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yi03.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1482,9 +1589,11 @@ son-audit/y/yi49.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yi50.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yi52.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yi54.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/yi55.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yi56.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yi57.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yi58.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/yj08.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yj09.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yj10.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yj13.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1527,12 +1636,18 @@ son-audit/y/yj64.pl	D13	'BEGIN' is not in the language
 son-audit/y/yj65.pl	D19	'our' is not in the language
 son-audit/y/yj67.pl	D13	'END' is not in the language
 son-audit/y/yj74.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/yj75.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/y/yk03.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yk12.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yk13.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yk14.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/yk15.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/y/yk18.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yk19.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yk20.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/yk21.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yk23.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/yk24.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/ym02.pl	D87	sort takes no brackets of its own: sort LIST, or sort { ... } LIST
 son-audit/y/ym04.pl	D17	sub by_num needs a signature: sub by_num(...) { ... }, with () for no parameters
 son-audit/y/ym14.pl	D91	in a string an index is a whole number or a scalar variable (D91): take the index into a my first
@@ -1580,6 +1695,8 @@ son-audit/y/yp110.pl	D76	a later part of this list can change @a, which an earli
 son-audit/y/yp111.pl	D76	a later part of print's list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yp112.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yp113.pl	D76	a later part of join can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/y/yp114.pl	D76	a later part of join can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/y/yp115.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yp116.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yp119.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yp12.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
@@ -1593,6 +1710,8 @@ son-audit/y/yp126.pl	D17	$_ is read-only: in perl, changing it changes the list'
 son-audit/y/yp127.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yp128.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yp129.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/y/yp13.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
+son-audit/y/yp14.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/y/yp144.pl	D19	'our' is not in the language
 son-audit/y/yp146.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yp147.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1602,6 +1721,7 @@ son-audit/y/yp150.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yp151.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yp152.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yp153.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/y/yp154.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yp155.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yp156.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yp157.pl	D19	'our' is not in the language
@@ -1660,6 +1780,7 @@ son-audit/y/yp69.pl	D17	$_[ is an element of perl's own @_ or %_, which are not 
 son-audit/y/yp70.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yp82.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yp83.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-audit/y/yp84.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yp86.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/y/yp87.pl	D19	'our' is not in the language
 son-audit/y/yp88.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
@@ -1692,6 +1813,7 @@ son-audit/z/cp23.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for
 son-audit/z/cp24.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/cp52.pl	D19	'our' is not in the language
 son-audit/z/cp53.pl	D19	'our' is not in the language
+son-audit/z/cp54.pl	D19	'our' is not in the language
 son-audit/z/cp62.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/cp63.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/cp64.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -1702,6 +1824,8 @@ son-audit/z/fl03.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/fl05.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/fl06.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/fl07.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/z/fl08.pl	D76	a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/z/fl23.pl	D76	a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/fl24.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/fl25.pl	D17	expected a value, found 'chop'
 son-audit/z/fl27.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1740,6 +1864,7 @@ son-audit/z/mi42.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for
 son-audit/z/mi49.pl	D54	else after unless: write it as an if
 son-audit/z/mi61.pl	D91	in a string an index is a whole number or a scalar variable (D91): take the index into a my first
 son-audit/z/mi64.pl	D16	'no warnings' goes at the top, after 'use v5.42;' and before anything else
+son-audit/z/mi72.pl	D102	a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...
 son-audit/z/mi81.pl	D17	sub fib needs a signature: sub fib(...) { ... }, with () for no parameters
 son-audit/z/mi83.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1756,6 +1881,7 @@ son-audit/z/pa14.pl	D57	a later piece of a concatenation changes $x, which an ea
 son-audit/z/pa15.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/pa16.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa17.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/z/pa19.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/z/pa20.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa21.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/z/pa22.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1770,9 +1896,11 @@ son-audit/z/pa30.pl	D17	$_[ is an element of perl's own @_ or %_, which are not 
 son-audit/z/pa32.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa33.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa34.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/z/pa35.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/pa36.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa37.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa38.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/z/pa39.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa40.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa41.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa42.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1780,6 +1908,7 @@ son-audit/z/pa46.pl	D17	$_ is read-only: in perl, changing it changes the list's
 son-audit/z/pa47.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/pa48.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/pa50.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/z/pa57.pl	D17	$k is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/pa58.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/pa59.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/pa62.pl	D17	$i is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -1807,6 +1936,7 @@ son-audit/z/pa86.pl	D17	$_[ is an element of perl's own @_ or %_, which are not 
 son-audit/z/pa87.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa88.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa89.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/z/pa90.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa91.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa92.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa93.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1863,6 +1993,7 @@ son-audit/z/qa05.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa06.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa07.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa08.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/z/qa09.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa10.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa11.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa12.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1873,14 +2004,17 @@ son-audit/z/qa16.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa17.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa18.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa19.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-audit/z/qa20.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa21.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa22.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa23.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qa24.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/z/qa25.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/qb01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/qb02.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/qb03.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/qb04.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/z/qb05.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/qb06.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/qb07.pl	D19	'our' is not in the language
 son-audit/z/qb08.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1892,6 +2026,7 @@ son-audit/z/qc03.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for
 son-audit/z/qc04.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/z/qc05.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/z/qc06.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
+son-audit/z/qc07.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/z/qc08.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/z/qc09.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
 son-audit/z/qc10.pl	D17	sub z needs a signature: sub z(...) { ... }, with () for no parameters
@@ -1913,6 +2048,7 @@ son-audit/z/qd23.pl	D17	$_[ is an element of perl's own @_ or %_, which are not 
 son-audit/z/qd24.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/qd25.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/qd27.pl	D19	'our' is not in the language
+son-audit/z/qd28.pl	D76	a later part of '+' can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/qd29.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/qd30.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/qd32.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
@@ -1932,6 +2068,7 @@ son-audit/z/qf04.pl	D17	$x is its loop's variable, and read-only: in perl, chang
 son-audit/z/qf05.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/qf07.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/qf08.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/z/qf09.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/qf10.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/qf11.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/qf12.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -1945,12 +2082,14 @@ son-audit/z/rc08.pl	D17	sub r needs a signature: sub r(...) { ... }, with () for
 son-audit/z/rc09.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/rc10.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/rc11.pl	D17	sub ev needs a signature: sub ev(...) { ... }, with () for no parameters
+son-audit/z/rc12.pl	D17	sub fb needs a signature: sub fb(...) { ... }, with () for no parameters
 son-audit/z/rc15.pl	D17	sub cnt needs a signature: sub cnt(...) { ... }, with () for no parameters
 son-audit/z/rf40.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/un02.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/z/un03.pl	D19	'our' is not in the language
 son-audit/z/un05.pl	D19	'our' is not in the language
 son-audit/z/un06.pl	D19	'our' is not in the language
+son-audit/z/un07.pl	D19	'our' is not in the language
 son-audit/z/un11.pl	D19	'our' is not in the language
 son-audit/z/un12.pl	D19	'our' is not in the language
 son-audit/z/un13.pl	D19	'our' is not in the language
@@ -1967,6 +2106,7 @@ son-audit/z/un27.pl	D13	'eval' is not in the language
 son-audit/z/un28.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-audit/z/un30.pl	D17	sub d needs a signature: sub d(...) { ... }, with () for no parameters
 son-audit/z/un31.pl	D13	'eval' is not in the language
+son-audit/z/un32.pl	D13	'eval' is not in the language
 son-audit/z/un40.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/z/un41.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/un42.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -2061,6 +2201,7 @@ son-corpus/bl-as1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not
 son-corpus/bl-as2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/bl-c085.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/bl-c089.pl	D17	sub c needs a signature: sub c(...) { ... }, with () for no parameters
+son-corpus/bl-c1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/bl-c254.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-corpus/bl-c255.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-corpus/bl-cp6.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -2069,12 +2210,17 @@ son-corpus/bl-dp1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not
 son-corpus/bl-dp2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/bl-ea3.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-corpus/bl-ea4.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
+son-corpus/bl-h152.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-corpus/bl-h152a.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/bl-h4.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-corpus/bl-rd1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/bl-sp1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/bl-sp2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/bl-sp3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/ch-p2.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/ch-r1.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/ch-r2.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-corpus/ev-c062.pl	D13	expected a value, found 'eval'
 son-corpus/ev-e1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/ev-e2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/ev-e3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -2138,6 +2284,7 @@ son-corpus/lp-l17.pl	D17	sub f needs a signature: sub f(...) { ... }, with () fo
 son-corpus/lp-l2.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/lp-l3.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/lp-l4.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-corpus/lr-adv.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/lr-an1.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/lr-an3.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/lr-an4.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -2145,14 +2292,21 @@ son-corpus/lr-an5.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/lr-c216.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/lr-dl.pl	D17	sub k needs a signature: sub k(...) { ... }, with () for no parameters
 son-corpus/lr-dl2.pl	D17	sub k needs a signature: sub k(...) { ... }, with () for no parameters
+son-corpus/lr-dl3.pl	D17	sub k needs a signature: sub k(...) { ... }, with () for no parameters
 son-corpus/lr-fa1.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/lr-fa2.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/lr-fr.pl	D17	sub fresh needs a signature: sub fresh(...) { ... }, with () for no parameters
 son-corpus/lr-fr3.pl	D17	sub two needs a signature: sub two(...) { ... }, with () for no parameters
 son-corpus/lr-fr4.pl	D17	sub two needs a signature: sub two(...) { ... }, with () for no parameters
 son-corpus/lr-ix1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/lr-km.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/lr-km2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/lr-km3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/lr-p75b.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-corpus/lr-rt1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/lr-rt2.pl	D17	sub vals needs a signature: sub vals(...) { ... }, with () for no parameters
 son-corpus/lr-s169c.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/lr-s175.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/lr-ua1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/lr-ua2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/lr-w216.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -2180,6 +2334,7 @@ son-corpus/pp-c400.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-c402.pl	D17	sub fallback needs a signature: sub fallback(...) { ... }, with () for no parameters
 son-corpus/pp-dr035.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-fg.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
+son-corpus/pp-fl1.pl	D87	sort takes no brackets of its own: sort LIST, or sort { ... } LIST
 son-corpus/pp-fl158.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-fl181.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-fl218.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -2189,19 +2344,23 @@ son-corpus/pp-la2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not
 son-corpus/pp-la3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-li033.pl	D17	sub bare needs a signature: sub bare(...) { ... }, with () for no parameters
 son-corpus/pp-li104.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-corpus/pp-li400.pl	D17	sub pair needs a signature: sub pair(...) { ... }, with () for no parameters
 son-corpus/pp-m146.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-m208.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/pp-m224.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-pm.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-r2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-r3.pl	D17	sub c needs a signature: sub c(...) { ... }, with () for no parameters
 son-corpus/pp-r5.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-rv.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/pp-sa066.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-sa131.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-sa132.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-sa183.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-so098.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-so222.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-w1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/pp-x149.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-z1.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-z2.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/push2-m2.pl	D17	sub mk needs a signature: sub mk(...) { ... }, with () for no parameters
@@ -2404,6 +2563,7 @@ son-corpus/review2-probes-cs-m7.pl	D17	sub g needs a signature: sub g(...) { ...
 son-corpus/review2-probes-cs-m8.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/review2-probes-cs-m9.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/review2-probes-cs-p1.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
+son-corpus/review2-probes-cs-p2.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/review2-probes-cs-r1.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/review2-probes-cs-r2.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/review2-probes-cs-r3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -2582,6 +2742,7 @@ son-corpus/sw-s15.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw-s16.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw-s17.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw-s18.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-corpus/sw-s19.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw-s2.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw-s20.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw-s3.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -2593,6 +2754,7 @@ son-corpus/sw-s8.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw-s9.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/sw-t3.pl	D17	sub f needs a signature: sub f(...) { ... }, with () for no parameters
 son-corpus/sw-t4.pl	D17	@_ is not in the language: a sub has a signature (D17)
+son-corpus/sw-t5.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw2-c1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/sw2-c2.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/sw2-c3.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -2600,6 +2762,7 @@ son-corpus/sw2-c4.pl	D17	$_[ is an element of perl's own @_ or %_, which are not
 son-corpus/sw2-c7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/sw2-u14.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/sw2-u15.pl	D19	'local' is not in the language
+son-corpus/sw2-u21.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/sw2-u4.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/sw2-u6.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/sw3-v15.pl	D17	@_ is not in the language: a sub has a signature (D17)

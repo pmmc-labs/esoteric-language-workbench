@@ -4019,7 +4019,8 @@ Stevan took the recommendation on each question, which are D98
 (Q1), D99 (Q2), D100 (Q3) and D101 (Q4). Its adversarial review
 found two ways to be WRONG: "What the review found", at the end,
 and D102, the builder's defaults on it, for him to confirm. The
-text is kept as it was proposed. Nothing is built.** D27 (a hash keeps the order its keys were first stored
+text is kept as it was proposed. 12a is built ("12a, as built", at
+the end); 12b is next.** D27 (a hash keeps the order its keys were first stored
 in) and D17 (what freezes) are decided already, and this stands on
 them.
 
@@ -4274,6 +4275,115 @@ which D102 records:
 - **What it did not cover**: keys past ASCII; large hashes; the
   freeze beyond T217; D36's and D48's faults for a key, beyond
   perl's warning.
+
+#### 12a, as built
+
+**Built** (2026-11-26, by Fable 5.2): the hash itself. Declaring one,
+`=>` and the word before it, elements, `exists`, `delete`, `keys`,
+`values`, the count, copying, D76 and the orders, and the runtime's
+table. 12b has what stands on it: the freeze in a loop's list,
+slices, `%opts`, an element in a string.
+
+- **The oracle check's reading rule first** (commit 690f9b5), as the
+  review asked, with five fixtures; and three more places a hash is
+  only counted, found writing the tests by hand: a hash tested by
+  `? :` or behind a `!`, the last target of a `my (...)`, and a
+  variable that is called `$values`.
+- **The model next, red before any code** (`t/models/hash.py`, commit
+  0f31d13), on `interp.py`: a hash is a Python dict. 1500 to 1502,
+  about 360 lines on which perl agreed under three seeds, and 21
+  programs that fault once each, 1510 to 1530. **1503 is the order
+  where perl has no answer**, a `new` test, the first there is: a
+  Python dict keeps the order of first storing, which is the
+  model's whole claim to know D27. perl agrees with it line for
+  line once each line's values are sorted.
+- **By hand**: 1540, perl's own answers for what the model does not
+  write (every kind of word as a key, numbers and booleans as keys,
+  an element hard against each operator, small programs); 1541,
+  keys past ASCII, which the review had not covered; 1542, the
+  order again, by hand; and 57 refusals, 1550 to 1606, from a table
+  of the program, the place and the message
+  (`briefs/step12a-refusals.py`), which asks the compiler nothing.
+- **In the runtime a hash is the block an array is**
+  (`runtime/hash.c`, which `rt.c` includes): its storage holds a
+  key and its value by turns in the order stored, so the collector
+  marks, frees and counts a hash exactly as it does an array, and a
+  hash where a list is wanted is its storage, copied. Over it is an
+  index by the key's bytes (FNV-1a, no seed, probed in a line). A
+  deleted pair is a hole that every reader steps over; the holes
+  are closed, and the index made again, when it fills or more than
+  half the pairs are holes. A key that was a number is made a
+  string as it is stored, the one allocation there is. **The cost:
+  an array's own block is three words longer**, 88 bytes empty
+  where it was 64 (D104).
+- **The lexer has the words**: `%name` where a value may begin and
+  the modulus after one; `=>` as a comma; a word before `=>`, and a
+  word alone in a key's braces, as a string, whatever the word, on
+  one line (T223, T224). It marks the braces of a key, so that the
+  brace that closes one ends a value: `$h{a} % 2`. **The tree keeps
+  an array's nodes**, with a flag: a hash, its `my` and its element
+  are what an array's are to every walk the checker has, which is
+  how D76 and D80's orders came with nothing written for them. One
+  node is new, for `exists`, `delete`, `keys`, `values` and the
+  count. The generated C calls `rt_helem` where it called
+  `rt_elem`.
+- **The compiler passed 23 of the model's 24 tests the first time it
+  ran them**; the last sorted `values %h`, which waits for 12b, and
+  the model takes that list into an array first. Of the 57
+  refusals, 50 matched the table the first time; seven were the
+  table's own places, and one the compiler's (a builtin's refusal
+  pointed at its word, not its hash).
+- **Broken on purpose** (`briefs/step12a-mutations.py`: the runtime's
+  table and every pass of the compiler): 79 of 84 caught the first time. Five were holes in the tests,
+  each closed: `exists $h{k} < N` without brackets; a literal the
+  language refuses in the key of `exists`; a change inside that key,
+  for D76; the value worked out before the key, which shows only
+  when the key has an effect of its own; and `&&=` on a key that is
+  not there. **And writing the fourth found a WRONG that is not
+  step 12's** (T230): `$a[$i = 2] = $i . "v";` stores `2v` under
+  perl, which joins a concatenation as it stores it, after the
+  index is worked out, and the compiler printed `0v`, for an
+  array's element since step 9 and an interpolated string since
+  11a. It is refused now, as D57 refuses its kin: the index or key
+  of an element that is stored to may not change a variable that a
+  concatenation on the right reads, itself or through a sub (1607
+  to 1611; three more breakages, of the refusal, all caught).
+- **The sanitizers found a leak the tests could not**: a hash's
+  index was not freed as the program ends. One line.
+- **The census**: of the 638 probes that waited for this step, **91 now
+  print what perl prints**, and none prints anything else: 809 SAME
+  (from 718), 67 LOUD, no WRONG. 181 wait for 12b (most for an
+  element in a string), 127 for references, 163 are refused by
+  design behind their hashes (118 for `@_`, D17) and were moved to
+  `by-design/`, 70 are open (40 of them a `$` or `%` with no name
+  after it, 7 `exists` or `delete` of an array's element). No probe
+  left SAME. `run/` has 2,784 probes now, and the refused are 1,367
+  for a later step and 541 open.
+- **What the build settled** (D104, the builder's defaults, for
+  Stevan to confirm): T230's refusal; until 12b a hash in the list of a `for`, a
+  `map`, a `grep` or a `sort`, other than by `keys`, is refused,
+  since the freeze belongs to such a list and has no fault test
+  yet; `$h {a}` with a blank is refused; `exists $h{k};` and `keys
+  %h;` alone are refused as statements that only have a value,
+  though perl is silent; `%h{...}` stays out, and the four builtins
+  are for a hash alone.
+- **What the build found**: `sort(keys %h)` is refused, by step
+  10c's rule that `sort` takes no brackets of its own, and it is
+  what a Perl programmer writes; nothing is changed, and it is one
+  for the review of the census's open refusals. perl is silent
+  about `exists $h{k};` as a statement, where the refusal's words
+  said it warns: the words are mended. The oracle check's reading
+  rule cannot see that a list of `keys` is only counted later, so
+  such a line sorts or goes in a `new` test (`TRAPS.md`, "The
+  checks themselves").
+- **The numbers**: 1,141 golden tests, 142 unit tests, 795
+  statements about perl, 52 tests of the oracle check itself;
+  green under gcc, clang, and UBSan with ASan, poison on and off.
+- **What 12a hands 12b**: the runtime already faults a change to a
+  frozen hash (`a hash was changed while a foreach is over it`,
+  tested from C, since nothing in the language can freeze one yet);
+  the resolver has one line to take out; `"$h{k}"` is refused in
+  the lexer with its step in the message.
 
 ### 13. References and nested data
 
