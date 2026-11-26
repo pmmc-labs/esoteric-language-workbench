@@ -17,7 +17,8 @@ to stay with). D73 and D74 were the builder's defaults, from the
 review of step 8 and from building it, which he confirmed; D75 is
 his, on seeing the build. D76 to D80 are his answers to step 9's
 proposal, as its review had amended it. D91 to D94 are his answers
-to step 11a's; D95 is the builder's defaults there.
+to step 11a's; D95 was the builder's defaults there, which he
+confirmed.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1746,9 +1747,10 @@ refusal tests whose shape is now in become tests of what they print.
 Rejected: rewriting the models to print through strings.
 
 **D95. An interpolated string is a value, made where it stands; and
-what step 11a's review and build settled.** *(Default: the builder's,
-from the proposal's "What has nothing to choose" and its review, for
-Stevan to confirm.)* perl compiles a string as one operation of its
+what step 11a's review and build settled.** *(User: defaults of the builder's,
+from the proposal's "What has nothing to choose", its review and the
+build, laid out for him one by one and confirmed, 2026-11-26: "D95 is
+confirmed".)* perl compiles a string as one operation of its
 own, which the row of dots round it does not take in (T196: `"$x-" .
 ($x = 5)` is `3-5`). So it is no piece of a row for D57 or D69,
 names nothing for D76, freezes no array in a loop's list and names
