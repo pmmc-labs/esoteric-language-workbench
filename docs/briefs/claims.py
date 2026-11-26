@@ -890,6 +890,16 @@ CLAIMS = [
     c('12b-parameter', 'LANGUAGE A hash as the last parameter', r"""sub box($text, %opt) { my %o = (left => "[", right => "]", %opt); return $o{left} . $text . $o{right}; } say box("a"), box("b", left => "<", right => ">");""", out='[a]<b>\n'),
     c('12b-string-keys', 'LANGUAGE A hash\'s element in a string', r"""my %h = (a => 1, "a b" => 2); my $i = 0; say "$h{'a b'}$h{ a }$h{a}::x $h{a}->x";""", out='211::x 1->x\n'),
     c('12b-string-slice', 'LANGUAGE A hash\'s element in a string', r"""my %h = (a => 1, b => 2); say "@h{'a','b'} %h";""", out='1 2 %h\n'),
+    # ---- D105: a sub or a method with no signature
+    c('D105-any', 'PLAN', 'sub f { return 7 } say f(1, 2, 3);', out='7\n'),
+    c('D105-none', 'PLAN', 'sub f() { return 7 } say f(1);', err='Too many arguments', exit=255),
+    c('D105-run', 'PLAN', 'my $n = 0; sub f { return 1 } f($n++, $n++); say $n;', out='2\n'),
+    c('D105-anon', 'PLAN', 'my $f = sub { 3 }; say $f->(1, 2);', out='3\n'),
+    c('D105-anon-none', 'PLAN', 'my $f = sub () { 3 }; say $f->(1);', err='Too many arguments', exit=255),
+    c('D105-method', 'PLAN', 'use experimental "class"; class P { method m { 5 } } say P->new->m(1, 2);', out='5\n'),
+    c('D105-method-none', 'PLAN', 'use experimental "class"; class P { method z () { 6 } } say P->new->z(1);', err='Too many arguments', exit=255),
+    c('D105-slice', 'PLAN', 'my @a = (1); sub f { 1 } f(@a[3, 4]); say scalar(@a);', out='5\n'),
+    c('D105-element', 'PLAN', 'my @a = (1); sub f { 1 } f($a[5]); say scalar(@a);', out='1\n'),
 ]
 
 def run(perl, prelude, code, flags):

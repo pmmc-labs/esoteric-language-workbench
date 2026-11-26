@@ -62,8 +62,9 @@ comparison: *in*, *out*, or *n/a*.
 | `state` | In | 14 | in | |
 | `our`, package variables, `$Pkg::x` | Cut | | in | D19 |
 | `local` | Cut | | in | D17; parked |
-| `sub name (signature) { }` | In | 8 | in | D72. A signature is required; at the top level of the file; not named for anything perl knows (D21, T28), nor `v` and digits (T136); called before or after it is written |
-| A sub without a signature, `@_`, `shift` on it | Cut | | out | D17 |
+| `sub name (signature) { }` | In | 8 | in | D72. At the top level of the file; not named for anything perl knows (D21, T28), nor `v` and digits (T136); called before or after it is written |
+| A sub with no signature, `sub name { }` | In | 8, 14, 17 | out | D105: any number of arguments, each worked out, none seen. Anonymous subs at 14, methods at 17 |
+| `@_`, `$_[N]`, `shift` or `pop` with no array | Cut | | out | D17: a sub names its arguments in a signature |
 | Defaults in a signature, slurpy `@rest`, `%opts` | In | 8, 10, 12 | in | Defaults are in (D72). `@rest`, or `@` alone, is the last parameter, with no default (T182), a copy, filled at its turn (T191, D87); `%opts` so, from step 12b |
 | Prototypes, `&` calls, `goto &sub` | Cut | | out | D21 |
 | `my sub`, anonymous `sub`, closures | In | 14 | in | |
@@ -322,7 +323,8 @@ that names it.
 | `$obj->m` and `Name->new` without brackets | In | 17 |
 | A method named for a builtin, `method keys` | In | 17 |
 | `$self->SUPER::m()` | In | 17 |
-| `method name { }` without a signature; a parent's field read in a subclass; `:isa` of a class the program doesn't define | Cut | |
+| `method name { }` with no signature | In | 17 | D105 |
+| A parent's field read in a subclass; `:isa` of a class the program doesn't define | Cut | |
 | `class Name VERSION`, `:param(name)`, `:reader(name)`, `sub` inside a class, `my method` | Later | 17 |
 | `__CLASS__`, `isa`, `ref($obj)` | In | 17 |
 | `DESTROY`, `AUTOLOAD`, `can` to fetch code, `bless`, `@ISA`, overloading | Cut | |

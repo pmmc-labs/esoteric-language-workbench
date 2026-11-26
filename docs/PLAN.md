@@ -4577,13 +4577,15 @@ code checked, a decision browser (`tools/decisions/` in the workbench).
 Waiting: **step 5**, written out above with its four questions. D1
 to D51 are agreed.
 
-### A sub or a method with no signature (proposed, open)
+### A sub or a method with no signature (agreed, D105; named subs built)
 
 *Proposed 2026-11-26, at Stevan's asking, after a look at his
 `stevan/grey-static`: 259 of the subs and methods in the parts of it
 he wants to run have no signature, 224 of them methods like `method
 size { scalar(@items) }`. It moves a row of `SURFACE.md` from Cut to
-In, so it is a proposal, with questions. Nothing is built.*
+In, so it is a proposal, with questions. **Answered the same day: Q1
+(a) and Q2 (a), which is D105. Named subs are built; anonymous subs
+are step 14's and methods step 17's.***
 
 **What is refused today.** `sub f { ... }` and, at step 17, `method m
 { ... }`: D17 has "`@_` is refused; a sub has a signature", D72 "a
@@ -4652,7 +4654,12 @@ often. **The census**: 650 of the 2,633 probes refused by design are
 refused first for a sub with no signature. 298 of them have nothing
 else in sight that is cut, and go back to `run/`, most to be refused
 there for a later step; the other 352 use `@_` or another cut, and
-stay, under another row. SAME can only rise. **Tests**: the refusal
+stay, under another row. SAME can only rise. *(As it went: all 650
+went back and the census's own sorting returned 162 of them to
+`by-design/`, the rest being refused first for something a later
+step brings. The same run took in step 12b, built that hour, so the
+two movements are one line of the file: 809 SAME before, 1,019
+after, no WRONG, and one probe UNJUDGED for a hash's order.)* **Tests**: the refusal
 test of a sub with no signature becomes a `same` test, and
 `t/models/sub.py` gains calls of such subs with none, one and
 several arguments, each with an effect, since the arguments run.
@@ -4667,6 +4674,79 @@ files, 13 of them for nothing else. *Stevan, 2026-11-26: revisit it
 with the class system.* Step 17's proposal takes it up; it is Cut
 in `SURFACE.md`, with no decision of its own.
 
+### The port of grey-static, less its concurrency (planned)
+
+*Stevan, 2026-11-26: "lets plan to port everything except the
+concurrency parts. We already have plans to add proper concurrency to
+the runtime, so we can hold off on this until later, and use
+grey-static for input during that step." And before it: the loader,
+`error`, `source`, `mop`, `logging` and `tty` are not wanted. Counted
+by pattern over the source, comments and POD taken out; an estimate,
+and no file of it has been compiled.*
+
+**What is to be ported**: 57 modules, about 2,300 lines of
+`stevan/grey-static`'s `lib/grey/static/`: `functional/` (7),
+`stream/` (30), `io/stream/` (5), `time/stream/` (4), `datatypes/`
+(11). `concurrency/`, 41 modules, is **input to step 29** and is not
+ported before it.
+
+**As the language is agreed today**, D105 counted in: 39 modules
+would run as written, 1 with small edits, 7 are held only by `use
+overload`, and 10 by something cut. All 57 are `class`es, so none
+runs before step 17.
+
+**What remains, in the order it is needed.**
+
+1. *Steps to build*, by how many of the 57 modules need each: 17,
+   classes (57: `field`, `:param` 45, `:reader` 22, `:isa` 35,
+   `ADJUST` 20, and `method` with no signature in 45); 16, `qw` (57,
+   for `use experimental qw[ class ]` alone, which wants a line in
+   D16's list of pragmas and nothing else of step 16; `sprintf` in
+   5); 12, hashes (32); 13, references (23); 14, closures and code
+   references (21); 18, `use` of the program's own modules (20); 15,
+   `die` and `try` (4); 19, regexes (1 file); 21, files and
+   directories (`io/stream`, 5); 22, the clock (`time/stream`, 4).
+2. *To decide, each at its step.*
+   - **Overloading** (17): 9 modules. Seven want only `""`, how an
+     object prints; `Tensor` and `Scalar` want arithmetic and
+     comparison. A proposal that took `""` alone would free seven.
+   - **`@$x`, `%$x`, `$$x`** (13): 116 uses in 6 modules. The surface
+     has them Later, with a note that step 13 proposes cutting them;
+     this is the evidence against, or 116 edits to `->@*`.
+   - **How a module is found** (18): grey-static is loaded by its
+     loader, which sets the paths; the port needs plain `use
+     Stream;` and a rule for where `Stream.pm` is.
+   - **`ref($x) eq 'CODE'`** and `blessed`, `refaddr` (13, 17): 23
+     and 32 uses. `ref`, `blessed` and `refaddr` are In; `use
+     Scalar::Util qw[ blessed ]`, in 5 modules, is a line to delete
+     or to accept as saying nothing, since `use v5.42` imports them.
+   - **POD and `__END__`**: 8 modules, 566 lines of it. Cut today,
+     "POD later" (16): a comment, when someone wants it. This port
+     wants it.
+3. *What the port has to change* (D8: examples bend).
+   - **The `Error` class**: 68 `Error->throw(...)` in 18 modules, of
+     the part that is not wanted. A small class of the port's own
+     with `throw`, or a plain `die`.
+   - `wantarray` in `Stream.pm`, once (`return wantarray ? @result :
+     $result[0]`): two methods, or always the list.
+   - `@_` in `List.pm`, twice; `->can(...)` in `FromIterator.pm`,
+     twice, as a test of what an object is, where `isa` says it.
+   - Implicit `$_` and `map EXPR,`: 11 uses in 6 modules. `... or
+     return`, `... and last`: 3 uses in 2.
+   - `Time::HiRes` in the four modules of `time/stream`, and
+     `Path::Tiny` in two of `io/stream`: whatever steps 21 and 22
+     give in their place.
+4. *Its tests.* `t/grey/static/` is `Test::More` scripts, 112 of
+   them; those for these modules wait for step 18's answer on
+   `Test::More` (the plan has PerlOnJava's suite waiting on the same
+   thing), or are ported as golden tests with perl's own output.
+
+**The order this suggests**: `functional/` first, 7 modules that are
+classes round a code reference and need nothing but steps 13, 14 and
+17; then the 27 of `stream/` that run as written; then `datatypes/`,
+on the overloading answer; `io/stream/` and `time/stream/` last, on
+steps 21 and 22.
+
 ## Example-port table
 
 | Example | From | Needs | Status |
@@ -4679,4 +4759,4 @@ in `SURFACE.md`, with no decision of its own.
 | `Chalk::Grammar::Symbol`, `Rule` | Chalk `lib/Chalk/Grammar/` | step 17 | waits |
 | About 25 small programs: subs, classes, references, `try` | Crayon `docs/superpowers/plans/2026-03-31-crayon-interpreter.md` | steps 8 to 17 | waits; their expected values were written by hand and some are wrong, so perl writes them (D7); four must bend (`show 42`, `:writer`, roles, a subclass reading a parent's field) |
 | The graded corpus, tier by tier | perl5-son `t/corpus/mdtest/pvm/` | step 11 | waits on D11 |
-| Streams, the functional classes, datatypes, concurrency: 98 modules, about 4,000 lines | `stevan/grey-static`, `lib/grey/static/` (`stream/`, `time/stream/`, `io/stream/`, `functional/`, `datatypes/`, `concurrency/`) | steps 12 to 17, 18, 22 | waits. Surveyed by pattern, 2026-11-26, a sub with no signature allowed: 59 modules as written, 4 with small edits, 13 held only by `use overload`, 22 by something cut (`@_` in 7, `Time::HiRes` in 5, `Scalar::Util` in 5, which `use v5.42` imports already). The loader, `error`, `source`, `mop`, `logging` and `tty` are not wanted (Stevan) |
+| Streams, the functional classes, datatypes, concurrency: 98 modules, about 4,000 lines | `stevan/grey-static`, `lib/grey/static/` (`stream/`, `time/stream/`, `io/stream/`, `functional/`, `datatypes/`, `concurrency/`) | steps 12 to 17, 18, 22 | waits; the plan of it is under Proposals. Surveyed by pattern, 2026-11-26, a sub with no signature allowed (D105): 59 modules as written, 4 with small edits, 13 held only by `use overload`, 22 by something cut (`@_` in 7, `Time::HiRes` in 5, `Scalar::Util` in 5, which `use v5.42` imports already). The loader, `error`, `source`, `mop`, `logging` and `tty` are not wanted (Stevan) |

@@ -1,2 +1,0 @@
-t/963-sub-without-a-signature.pl:4:7: sub f needs a signature: sub f(...) { ... }, with () for no parameters
-exit: 1

@@ -110,6 +110,7 @@ every one under both.
 | `for my $i (1 .. 5) { $i == 3 and last; say $i; }` | `1` `2` | Refused |
 | `sub add { my ($x, $y) = @_; return $x + $y; } say add(1, 2);` | `3` | Refused |
 | `sub hi($n) { return "hi $n"; } say hi "bob";` | `hi bob` | Refused |
+| `sub f { return 7 } say f(1, 2, 3);` | `7` | Same |
 | `sub a() { my @a = (42); return @a } my $x = a(); say $x;` | `1` | Fault: `a returned a list where one value is wanted` |
 | `sub f($x) { if ($x) { return "yes"; } } say f(0);` | `0` | Fault: `f has no value` |
 | `use strict; use warnings; say 1;` | `1` | Refused |
@@ -169,7 +170,7 @@ is where the feel changes.
 | `map EXPR, LIST` and `grep EXPR, LIST`: `map lc, @w` | A block always: `map { lc($_) } @w` | idiom | often | loops | D85 † |
 | A loop variable or `$_` is the element itself: `$_ *= 2 for @a;`, `for my $x (@a) { $x *= 2 }`, `chomp` or `s///` on one | Read-only (108 and 58 of the census's programs). `@a = map { $_ * 2 } @a;`, or `for my $i (0 .. $n) { $a[$i] *= 2 }` | idiom | often | loops | D17 |
 | `last` and `next` are expressions: `$done and last;`, `$ok or next;` | Statements: `last if $done;`, `next unless $ok;` | idiom | often | control | D62 † |
-| `my ($x, $y) = @_;`, `my $self = shift;`, `$_[0]` | A sub has a signature, always (about 1,300 of the census's programs: half of all it refuses by design) | idiom | often | subs, old code | D17 |
+| `my ($x, $y) = @_;`, `my $self = shift;`, `$_[0]` | A sub names its arguments in a signature. With none, `sub f { ... }`, it takes any arguments and sees none (about 900 of the census's programs use `@_`) | idiom | often | subs, old code | D17, D105 |
 | `eval { ... }; if ($@) { ... }` | Cut, for `try` and `catch` (step 15) | idiom | often | errors, old code | D20 |
 | `bless`, `@ISA`, `our`, package variables, `AUTOLOAD`, `can` to find code | One object system, `class`; `package` only names a file's subs (453 of the census's programs; step 17) | idiom | often | objects, old code | D19 |
 | A `return` is worked out in its caller's context: `return @list` is a count to `my $n = f();`; `wantarray` | A fault when a list-shaped `return` is reached by a call for one value; `wantarray` is refused. Return the count, or call it for a list | idiom | sometimes | subs | D18 |

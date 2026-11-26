@@ -19,7 +19,7 @@ his, on seeing the build. D76 to D80 are his answers to step 9's
 proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
 confirmed. D96 and D97 are his, on the census; D98 to D101 his answers to
-step 12's, D103 his, on the file of differences, and D102 the builder's defaults on its review, which he
+step 12's, D103 his, on the file of differences, D105 his answer on subs with no signature, and D102 the builder's defaults on its review, which he
 confirmed. D104 was the builder's defaults from building step 12a,
 which he confirmed.
 What a decision leaves for a step to settle is listed under Open
@@ -414,7 +414,8 @@ and, for a programmer, action at a distance. Raku's answer was
 read-only bindings, and it is this language's:
 
 - `@_` is refused; a sub has a signature, and its parameters are
-  copies (as perl's signatures already are).
+  copies (as perl's signatures already are). *(D105: or it has no
+  signature, and then takes any arguments and sees none.)*
 - A `foreach` variable, `$_`, and `sort`'s `$a` and `$b` are
   read-only: any use of one in a position that can change it is
   refused. That is every assignment, `++`, `s///`, `tr///`, `chomp`,
@@ -1370,7 +1371,7 @@ length is known only as it runs, now, for this one case.
 
 **D72. What a sub is.** *(User: seen with the proposal, 2026-11-25;
 step 8: nothing to choose.)* `sub NAME(PARAMETERS) { ... }` at the top
-level, before or after its calls; a signature always. A parameter is
+level, before or after its calls; a signature always *(or none: D105)*. A parameter is
 `$name`, `$name = EXPR`, `$name //= EXPR`, `$name ||= EXPR`, or a
 placeholder, required ones first; a copy (D17); a default is worked
 out at each call that needs it, left to right, and resolved before
@@ -1949,6 +1950,31 @@ sub-step, and perl's answer there is a freed value, D102); a
 separate block for a hash (a second copy of the collector's
 marking and sweeping, the cap's counting and the freeze, for 24
 bytes an array).
+
+**D105. A sub or a method with no signature takes any number of
+arguments, each worked out, and sees none of them.** *(User: picked
+the recommendation for both questions, 2026-11-26: "Q1 (a) and Q2
+(a), go with your recommendations". It amends D17's first point and
+D72's "a signature always".)* `sub f { ... }`, and when their steps
+come `sub { ... }` (14) and `method m { ... }` (17). To perl such a
+sub checks no count and has what it was handed in `@_`: `sub f {
+return 7 } say f(1, 2, 3);` prints `7`, and `f($n++, $n++)` leaves
+`$n` at 2. With `@_`, `$_[N]` and a `shift` or `pop` of no array
+refused, as D17 has them, the sub cannot see its arguments, so
+nothing it prints can differ from perl's: it is `sub f(@)`, a slurpy
+parameter with no name, and is built as one. `()` is still the way to
+say "takes none", with its fault. D17's reason for the rule was
+`@_`, and the rule had been written wider than its reason: a sub
+that ignores what it is handed is the callback everyone writes
+(`sub { $count++ }`, which with `()` dies under perl itself), and
+259 of the subs and methods in the parts of `stevan/grey-static` he
+wants to port have no signature. D80's fault for a slice past the
+end among a call's arguments holds whatever the sub is. Rejected:
+the same as `()`, any argument a fault (one meaning for two
+spellings, and a fault where perl runs on, at that callback);
+refusing a call with arguments where the compiler can see one and
+allowing it where it can't (two rules); deciding anonymous subs
+apart, at step 14.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
