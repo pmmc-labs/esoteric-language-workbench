@@ -6,9 +6,9 @@ be met, and where. It decides nothing. Where it and a decision
 disagree, [`DECISIONS.md`](DECISIONS.md) is right and this file has a
 mistake.
 
-**Built** means steps 0 to 11: numbers, strings, booleans, variables,
+**Built** means steps 0 to 12a: numbers, strings, booleans, variables,
 control, subs, arrays and lists, `map`, `grep`, `sort`,
-interpolation. What is decided and not built is at the end.
+interpolation, hashes. What is decided and not built is at the end.
 
 ## How this file is kept
 
@@ -145,6 +145,11 @@ every one under both.
 | `say "3 " + 1;` | `4` | Same |
 | `say 1e15 + 0;` | `1000000000000000` | Same |
 | `my @a = (3, 1, 2); my ($min) = sort { $a <=> $b } @a; say $min;` | `1` | Same |
+| `my @l = (1, 2); my %s = map { $_ => 1 } @l; say join(",", sort keys %s);` | `1,2` | Refused |
+| `my @l = (1, 2); my %s = map { ($_ => 1) } @l; say join(",", sort keys %s);` | `1,2` | Same |
+| `my %h = (1, 2, 3); say scalar(%h);` | `2`, and warns | Fault: `an odd number of values for a hash` |
+| `my %h = (if => 1, q => 2); say $h{if} + $h{q}, exists $h{x} ? "x" : "no x";` | `3no x` | Same |
+| `my %h = (a => 1); my @a = (0); say exists $a[0] ? "yes" : "no";` | `yes` | Refused |
 
 ## 1. Idioms you will miss
 
@@ -168,6 +173,7 @@ is where the feel changes.
 | `local $x`, and the variables it is for: `$/`, `$,`, `$\`, `$"`, `$;` | Cut. An array in a string is joined with one space | idiom | sometimes | printing, old code | D17, D22 |
 | `9**9**9` for "larger than anything"; `inf`, `nan` | A Num is finite: `float overflow`, `not a number` | idiom | sometimes | numbers | D37 |
 | `each %h`; `while (my ($k, $v) = each %h)` | Cut: `for my $k (sort keys %h)` | idiom | sometimes | data | D22, D101 |
+| A set or an index built by `map`: `my %seen = map { $_ => 1 } @list;` | Refused, for the comma in the block (perl has to guess whether the braces are a block or a hash): `map { ($_ => 1) } @list` | idiom | sometimes | data | D102 † |
 | `BEGIN`, `eval STRING`, a `require` at run time, `do FILE`, `__DATA__` | Cut: the compiler sees the whole program before any of it runs | idiom | sometimes | layout | D20 |
 
 ## 2. Habits that now stop
@@ -225,7 +231,8 @@ someone.
 | `for my $i (1 .. $n) { $n-- }`: perl fixes a range's ends as the loop starts | Refused: a loop may not change a scalar its list names | habit | rarely | loops | D77, D81 † |
 | A reference to an element, `\$a[0]`; a closure that keeps a loop variable's alias | Refused | idiom | rarely | data | D17 |
 | `$#a = N` to cut or grow an array | Refused | habit | rarely | data | D80 |
-| `%h{...}`, the slice of keys and values | Cut. `@h{...}` and `@a[...]` are in, on the left of `=` too (step 12) | idiom | rarely | data | D100 |
+| `%h{...}`, the slice of keys and values | Not in, and not proposed. `@a[...]` is in; `@h{...}` comes at step 12b, on the left of `=` too | idiom | rarely | data | D100, D104 |
+| `exists $a[0]`, `delete $a[0]`, `keys @a`: the hash builtins on an array | For a hash alone | habit | rarely | data | D104 |
 | `caller` | Cut: a sub can't see how it was called | idiom | rarely | subs | D18 |
 | `DESTROY` at a known moment; `weaken` | No reference counts: a cycle is just collected | idiom | rarely | objects | D26 |
 | Formats, `tie`, `reset`, `study`, `$[`, one-argument `select` | Gone for good | idiom | rarely | old code | D22 |
@@ -262,6 +269,10 @@ quiet has met few of them.
 | `{ }` alone is an anonymous hash; `while ()` loops for ever | Each refused | accident | rarely | control | D56, D62 |
 | `my $x = (4, 5, 6);`: the comma operator, and a warning | Refused: no comma operator, but in a `for`'s first and third parts | accident | rarely | variables | D60 |
 | A word before `=>` is quoted across a line end, but `true` and `v65` are not | A word is a string before `=>`, or alone in braces, only on one line with them | accident | rarely | data | D102 † |
+| `-bar => 1` and `$h{-bar}` are the string `-bar` | Refused: write `"-bar"` | accident | rarely | data | D102 |
+| A list with an odd number of values assigned to a hash warns, and the last key has no value; an undef as a key warns, and is the empty string | Each a fault | accident | rarely | data | D15, D48 |
+| `$h {a}`, a blank before the brace; `exists $h{k};` or `keys %h;` alone as a statement, in silence | Each refused | accident | rarely | data | D104 † |
+| `exists $h{a} + 1` dies as it runs; `keys %h + 1` does not compile | Refused, with the brackets that say what was meant: `exists($h{a}) + 1` | accident | rarely | data | D102 |
 | A row of dots is one operation that reads each piece late: `$x . "a" . ($x = 5)` is `5a5` | Refused when a later piece, or a sub it calls, changes a variable an earlier piece reads. It refuses `$x . ++$x` too, which is `44` either way | accident | rarely | strings | D57, D69, D74 † |
 | `$t .= ($u = $x . $z);` never assigns `$u`, in 5.42 | Refused. A fault of perl's, not a rule of it | accident | rarely | strings | D57 |
 | A list is the containers themselves: `$a[0] + ($a[0] = 10)` is 20; `my @b = ($x, bump());` has the `$x` that `bump` left | Refused when a later part can change what an earlier part names (81 of the census's programs, which hunt for this) | accident | rarely | data | D76 |
@@ -301,8 +312,8 @@ the same program under perl. None is on stdout but hash order.
   an uncaught `die` exits 255 always, where perl takes the status
   from `$!` when it is set (D12, D13).
 - **A hash keeps its keys in the order they were first stored**
-  (D27; step 12). perl's order changes with every run, so any order
-  agrees with it.
+  (D27). perl's order changes with every run, so any order agrees
+  with it; a program that is to print the same under both sorts.
 - **Nothing happens at 100 calls deep** (D67), where perl warns `Deep
   recursion`: the one run-time warning that is not a fault. `no
   warnings 'recursion';` changes nothing here and keeps perl as
@@ -346,8 +357,14 @@ took work, and was done.
 What the decisions already say of steps to come. Each is proposed in
 full when its step is, and its rows join the sections above then.
 
-- **Hashes** (step 12; D27, D98 to D102). In a string a key is a
-  word or a scalar variable (D99).
+- **The rest of hashes** (step 12b; D98 to D102). Until then a hash
+  in the list of a `for`, a `map`, a `grep` or a `sort`, other than
+  by its `keys`, is refused (`for my $v (values %h)`, `sort values
+  %h`), and so are a slice `@h{...}`, a `%opts` parameter and an
+  element in a string, `"$h{k}"`; none is a difference that stays
+  (D104). While a loop is over a hash's values the hash will be
+  frozen, as an array is (D17). In a string a key is a word or a
+  scalar variable (D99).
 - **References** (step 13). `\` on a variable, `[ ]`, `{ }`. A
   reference as a string, or under `<`, is a fault: its address is
   not part of the agreement (D14). Reading through an undef is a

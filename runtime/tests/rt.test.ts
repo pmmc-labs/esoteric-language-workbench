@@ -380,6 +380,7 @@ test("a hash's faults", () => {
     assert.deepEqual(run('hash', 'not-a-hash'), { status: 1, output: 'fault: not a hash at hash.pl line 1.\n' });
     assert.deepEqual(run('hash', 'not-an-array'), { status: 1, output: 'fault: not an array at hash.pl line 1.\n' });
     assert.deepEqual(run('hash', 'put-nowhere'), { status: 2, output: 'internal: a key that was made is not there at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'put-in-a-hole'), { status: 2, output: 'internal: a key that was made is not there at hash.pl line 1.\n' });
 });
 
 test('a frozen hash is read, and every change to it is a fault', () => {

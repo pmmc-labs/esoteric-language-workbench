@@ -1926,7 +1926,10 @@ refused**, as any statement that only has a value is, though perl is
 silent about them (its `keys` there sets `each`'s place back, and
 there is no `each`, D101). **`%h{...}` and `%a[...]`, perl's slices
 of keys and values, stay out**, with no step named: the proposal
-did not have them and nothing has asked. In the runtime **a hash is
+did not have them and nothing has asked. So do perl's `keys`
+and `values` of an array, beside `exists` and `delete` of an
+array's element, which the proposal left out: the four are for a
+hash alone. In the runtime **a hash is
 the block an array is**, with its keys and values by turns in the
 order stored and an index over them, so an array's own block is
 three words longer than it was (88 bytes empty, from 64). Rejected:

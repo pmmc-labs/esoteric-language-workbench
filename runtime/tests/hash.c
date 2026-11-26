@@ -225,6 +225,13 @@ static void body(rt_ctx *cx) {
         four(cx, slots);
         rt_helem_put(cx, slots[0], 4, rt_int(1));
     }
+    if (is("put-in-a-hole")) {
+        // A key made, and deleted before it was stored to.
+        four(cx, slots);
+        int64_t at = rt_helem_make(cx, slots[0], rt_string(&B));
+        rt_hash_delete(cx, slots[0], rt_string(&B));
+        rt_helem_put(cx, slots[0], at, rt_int(1));
+    }
     if (strncmp(which, "frozen-", 7) == 0) {
         // While a loop is over a hash (step 12b will be the first to ask):
         // it is read, and every change is a fault.

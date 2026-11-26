@@ -55,6 +55,9 @@ static int64_t hash_find(rt_ctx *cx, const rt_array *h, const rt_str *key) {
         const rt_value k = h->items[2 * (uint64_t)(pair - 1)];
         if (k.tag == RT_TAG_ABSENT) continue;
         if (k.tag != RT_TAG_STR) rt_internal(cx, "a hash's key is not a string");
+        // (A key is read as every string is: one that was collected,
+        // because its hash was in no slot, stops the program here.)
+        alive(cx, k.as.s);
         if (same_key(k.as.s, key)) return (int64_t)(pair - 1);
     }
 }
@@ -128,15 +131,21 @@ int64_t rt_helem_make(rt_ctx *cx, rt_value hash, rt_value key) {
     return hash_make(cx, hash, key);
 }
 
-rt_value rt_helem_get(rt_ctx *cx, rt_value hash, int64_t pair) {
+// The pair a key was made at: there still, or the generated code let a
+// key be added or deleted between making it and using it (D76).
+static rt_array *made(rt_ctx *cx, rt_value hash, int64_t pair) {
     rt_array *h = hash_of(cx, hash);
-    if (pair < 0 || (uint64_t)pair >= h->count / 2) rt_internal(cx, "a key that was made is not there");
+    if (pair < 0 || (uint64_t)pair >= h->count / 2 || h->items[2 * pair].tag != RT_TAG_STR) rt_internal(cx, "a key that was made is not there");
+    return h;
+}
+
+rt_value rt_helem_get(rt_ctx *cx, rt_value hash, int64_t pair) {
+    rt_array *h = made(cx, hash, pair);
     return h->items[2 * pair + 1];
 }
 
 rt_value rt_helem_put(rt_ctx *cx, rt_value hash, int64_t pair, rt_value v) {
-    rt_array *h = hash_of(cx, hash);
-    if (pair < 0 || (uint64_t)pair >= h->count / 2) rt_internal(cx, "a key that was made is not there");
+    rt_array *h = made(cx, hash, pair);
     h->items[2 * pair + 1] = scalar(cx, v);
     return v;
 }
