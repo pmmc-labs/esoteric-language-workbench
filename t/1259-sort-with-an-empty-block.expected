@@ -1,0 +1,2 @@
+t/1259-sort-with-an-empty-block.pl:5:16: an empty block after sort: an anonymous hash, to perl
+exit: 1

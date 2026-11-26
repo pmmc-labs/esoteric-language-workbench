@@ -96,7 +96,7 @@ my @m1 = (3, 1.5, '2', true, false, (-7), 0.25, '10', 1000.0);
     }
     say((scalar(@r1) . ':') . $dump_s);
 }
-@r1 = ((sort (8 .. 12)));
+@r1 = ((sort 0, (8 .. 12)));
 {
     my $dump_i = 0;
     my $dump_s = "";

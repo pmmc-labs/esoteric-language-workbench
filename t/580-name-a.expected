@@ -1,2 +1,2 @@
-t/580-name-a.pl:4:4: $a is not a name a variable may have
+t/580-name-a.pl:4:4: $a is not a name a program may declare: $a and $b are the two values a sort gives its block
 exit: 1

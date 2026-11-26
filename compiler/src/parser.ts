@@ -3,7 +3,7 @@
 // operator means comes from the table of names; the rules of the language
 // (which `use`, which integers) are the checker's.
 import { refuse } from './errors.ts';
-import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, NAME_MAX_LENGTH, OPERATORS, PERL_WORDS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, isVersionString, prefixOp, stepOp } from './names.ts';
+import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, NAME_MAX_LENGTH, OPERATORS, PERL_KEYWORDS, PERL_WORDS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, isVersionString, prefixOp, stepOp } from './names.ts';
 import type { Token } from './lexer.ts';
 import type { Arm, Elem, Expr, Label, Param, Program, Stmt, Var } from './ast.ts';
 
@@ -263,13 +263,42 @@ export const parse = (tokens: readonly Token[]): Program => {
     // The name of a variable that is being declared: not `$_`, which perl
     // does not let a program declare (`Can't use global $_ in "my"`).
     const own = (v: Token & { kind: 'var' }): string =>
-        (v.name === '_' ? refuse('$_ is not a name a program may declare: it is what a for, a map or a grep gives its block', v.pos) : v.name);
+        (v.name === '_' ? refuse('$_ is not a name a program may declare: it is what a for, a map or a grep gives its block', v.pos)
+        : v.name === 'a' || v.name === 'b' ? refuse(`$${v.name} is not a name a program may declare: $a and $b are the two values a sort gives its block`, v.pos)
+        : v.name);
 
     // `map { ... } LIST` and `grep { ... } LIST`, the word just read.
     const binder = (head: Token): Expr => {
         const open = next();
         if (open.kind === '(') refuse(`${head.text} takes no brackets of its own: ${head.text} { ... } LIST`, open.pos);
         if (open.kind !== '{') refuse(`${head.text} takes a block: ${head.text} { ... } LIST; with an expression and a comma it is not in the language (D85)`, open.pos);
+        const { body, items } = blockAndList(head, true);
+        return { kind: 'binder', op: head.text, var: { kind: 'my', name: '_', pos: head.pos }, body, items, pos: head.pos };
+    };
+
+    // `sort LIST` and `sort { ... } LIST`, the word just read (step 10c).
+    const sort = (head: Token): Expr => {
+        const first = peek();
+        if (first.kind === '(') refuse('sort takes no brackets of its own: sort LIST, or sort { ... } LIST', first.pos);
+        if (first.kind === '{') {
+            next();
+            const { body, items } = blockAndList(head, false);
+            return { kind: 'sort', a: { kind: 'my', name: 'a', pos: head.pos }, b: { kind: 'my', name: 'b', pos: head.pos }, body, items, pos: head.pos };
+        }
+        // perl takes a word first after `sort` for the name of a sub that
+        // compares, with its brackets too, and `true` there for a string
+        // (T189, T29); and a scalar for a sub to call (D21).
+        if (first.kind === 'word' && !PERL_KEYWORDS.includes(first.text)) {
+            refuse(`${first.text} first after sort: perl takes a word there for the name of a sub that compares, or for a string; put a + before it, or give sort a block`, first.pos);
+        }
+        if (first.kind === 'var') refuse(`${first.text} first after sort: perl takes a scalar there for a sub that compares; put a + before it, or give sort a block`, first.pos);
+        if (ends(first) || first.kind === ')' || first.kind === ']' || first.kind === ',' || first.kind === 'eof' || isModifier(first)) refuse('sort needs a list', first.pos);
+        return { kind: 'sort', items: list(), pos: head.pos };
+    };
+
+    // The block of a `map`, a `grep` or a `sort`, its `{` just read, and
+    // the list after it. `says`: the block may end in a `say`.
+    const blockAndList = (head: Token, says: boolean): { body: Stmt[]; items: Expr[] } => {
         // perl guesses whether this is a block or an anonymous hash from
         // what comes first in it (T175, T192, D21): refused where its
         // guess is the hash.
@@ -293,11 +322,11 @@ export const parse = (tokens: readonly Token[]): Program => {
         // The block's value is its last statement's (T176).
         const last = body.at(-1);
         // And `true` after a `say` or a `print`, as a sub's is (D70).
-        if (last?.kind !== 'do' && last?.kind !== 'call') refuse(`${head.text}'s block ends in an expression, which is its value`, (last ?? close).pos);
+        if (last?.kind !== 'do' && !(says && last?.kind === 'call')) refuse(`${head.text}'s block ends in an expression, which is its value`, (last ?? close).pos);
         const after = peek();
         if (after.kind === ',') refuse(`a comma after ${head.text}'s block: perl does not compile it`, after.pos);
         if (ends(after) || after.kind === ')' || after.kind === ']' || after.kind === 'eof' || isModifier(after)) refuse(`${head.text} needs a list after its block`, after.pos);
-        return { kind: 'binder', op: head.text, var: { kind: 'my', name: '_', pos: head.pos }, body, items: list(), pos: head.pos };
+        return { body, items: list() };
     };
 
     // `join` and `reverse`, the word just read: a list in brackets, or to
@@ -453,6 +482,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (name?.kind === 'arrayop') return arrayOp(t);
         if (name?.kind === 'listop') return listOp(t);
         if (name?.kind === 'binder') return binder(t);
+        if (name?.kind === 'sort') return sort(t);
         // perl takes `$done and last` and `$x ? last : next` (T120), and
         // `my $x = return 5;` (T139).
         if (name?.kind === 'jump' || name?.kind === 'return') {
@@ -642,7 +672,7 @@ export const parse = (tokens: readonly Token[]): Program => {
             if (!inSub) refuse("return outside a sub: perl dies there, when it gets to it", head.pos);
             // perl's `return` in a `map` block ends the sub, and in a
             // `sort` block the comparison (T174).
-            if (blocks > 0) refuse('return in the block of a map or a grep: a loop says it', head.pos);
+            if (blocks > 0) refuse('return in the block of a map, a grep or a sort: perl ends the sub from the first two and the comparison from the third', head.pos);
             if (ends(peek()) || isModifier(peek())) return { kind: 'return', pos: head.pos };
             const value = expression(AND_ROW);
             const after = peek();

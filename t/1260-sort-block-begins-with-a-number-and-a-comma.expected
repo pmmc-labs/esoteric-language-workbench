@@ -1,0 +1,2 @@
+t/1260-sort-block-begins-with-a-number-and-a-comma.pl:5:16: 1 and a comma first in sort's block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets
+exit: 1

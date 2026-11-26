@@ -84,7 +84,7 @@ comparison: *in*, *out*, or *n/a*.
 | `my $x = $x`: the right side sees the outer `$x` | In | 5 | | T58 |
 | `my` in a condition, `if ((my $n = f()) > 3)` | In | 5 | | |
 | `my (undef, $x) = ...`, `my ($x, $y);`, `my ($head, @rest) = ...` | In | 9 | | D80. An array is the last target; `my ($x, $x)` is refused (T168) |
-| `my $a`, `my $b`; `$a`, `$b` and `$_` as names | Cut | | | D55, T61: perl warns, and `sort` then misbehaves; and perl lets them by without a `my` |
+| `my $a`, `my $b`, `my $_`; `$a` and `$b` outside a `sort` block, `$_` outside a binder's | Cut | | | D55, T61, T194: perl warns, and `sort` then misbehaves; and perl lets them by without a `my` |
 | `\my $x`, `foreach \my %h (...)` | Cut | | | Not in the `use v5.42` bundle |
 | Attributes other than the class ones | Cut | | | `:lvalue` among them |
 
@@ -246,9 +246,12 @@ Opal's notation, `docs/BUILTINS.md`.
 | `push`, `pop`, `shift`, `unshift`, `splice`, `scalar`; `reverse`, `sort`, `map`, `grep`, `join` | In | 9; 10 | D80. `pop` and `shift` in brackets unless the array ends the expression, and never without an array (T152); `splice` in brackets, as a list or a statement |
 | A later part of an expression or a list that can change what an earlier part names: an element, a slice, an array, `$#a`, a variable that is an item of a list | Cut | | D76 (T149, T157): perl reads it after the change. By one walk over the whole program |
 | `say LIST`, `print LIST` | In | 9 | Each value, nothing between; every value is looked at before any is written |
-| `sort` with `$a` and `$b` | In | 10 |
+| `sort` with `$a` and `$b` (see the rows below) | In | 10 |
 | `any`, `all` (experimental in 5.42, and not in the bundle) | Later | 10 |
 | `map EXPR, LIST`, `grep EXPR, LIST` | Cut | | D85: a block always |
+| `sort LIST`, `sort { } LIST`, `reverse sort ...` | In | 10 | D82, D83, D87. By string with no block; with one, `$a` and `$b`, read-only and the block's alone. **perl's own merge, ported: every comparison is perl's, in perl's order** (T3, T173), and stable (T4). The block's value: a whole number, a fault outside 32 bits (T173). The list is copied, its arrays frozen, D77, T188's fault past the end. Refused where one value is wanted (D84); list-shaped after `return`. A lone value is looked at for the four blocks perl throws away (T190) |
+| `sort NAME LIST`, `sort NAME(...)`, `sort $f LIST`, a word or a scalar first after `sort`; `sort(...)` with brackets of its own | Cut | | T29, T189, T190, D21: perl takes the first for a sub to compare by |
+| `@a = sort { } @a` with an undef in `@a` | Fault | 10 | T187, D87: perl sorts in place and drops what was never stored |
 | `ceil`, `floor`, `trim`, `indexed` (imported by `use v5.42`), `fc` | Later | 16, 22 |
 | `abs`, `int`, `sqrt`, `sin`, `cos`, `atan2`, `exp`, `log`, `hex`, `oct` | In | 22 |
 | `rand`, `srand`, `time`, `localtime`, `gmtime`, `sleep` | Later | 22 |

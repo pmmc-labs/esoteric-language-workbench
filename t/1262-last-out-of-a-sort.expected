@@ -1,0 +1,2 @@
+t/1262-last-out-of-a-sort.pl:5:20: last out of the block of a sort: a loop says it
+exit: 1

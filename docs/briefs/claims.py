@@ -747,6 +747,7 @@ CLAIMS = [
     c('T194-crash', 'TRAPS; PLAN 10', 'my @a = (1, 2, 3); my @r = grep { shift(@a); $_ + 0 } @a; say scalar(@r);', out='', exit=-11),
     c('T194-declare', 'TRAPS; PLAN 10', 'my $_ = 5;', compiles=False, err='Can.t use global \\$_ in "my"'),
     c('T194-signature', 'TRAPS; PLAN 10', 'sub f($_) { return 1 }', compiles=False, err='Can.t use global \\$_ in subroutine signature'),
+    c('T195', 'TRAPS; PLAN 10', 'my $x = 3; my $y = 1; my @r = sort +$x, $y; say "@r"; my @a = (3, 1, 2); @r = sort(@a); say "@r"; @r = sort { $a[0] <=> $a[1] } 5, 4; say "@r"; my $n = 0; @r = sort { $n++; $a <=> $b } 1 .. 20; say $n; my @one = sort { say "run"; 0 } 7; say scalar(@one);', out='1 3\n1 2 3\n4 5\n19\n1\n'),
     c('T192-loop', 'TRAPS; PLAN 10', 'my @r = map { my $t = 0; for my $i (1, 2, 3) { next if $i == 2; last if $i == 3; $t += $i; } $t + $_ } (10, 20); say "@r"; my @w = sort { $a <=> $b or $a cmp $b } (2, 1); say "@w"; say scalar(@{[ map({ $_ * 2 } 1, 2) ]});', out='11 21\n1 2\n2\n'),
     c('T167', 'TRAPS; PLAN 9', 'my @a = (1,2,3); my $j = 1; my @s = @a[0]; @s = @a[$j];', out='', err='(?s)Scalar value @a\\[0\\] better written as \\$a\\[0\\].*Scalar value @a\\[\\.\\.\\.\\] better written'),
     c('T167-quiet', 'TRAPS; PLAN 9', 'my @a = (1,2,3); my @b = (1); my $j = 1; my @s = @a[0,]; @s = @a[(0)]; @s = @a[@b]; @s = @a[0 .. 0]; @s = (@a)[0]; say scalar(@s);', out='1\n'),

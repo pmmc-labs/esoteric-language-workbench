@@ -1,0 +1,2 @@
+t/1251-sort-block-assigns-a-value.pl:5:19: $b is read-only: in perl, changing it changes the list's own element; take the value into a my
+exit: 1

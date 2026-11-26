@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -292,7 +292,11 @@ test('a list added to a list, reversed, joined, and taken by a slurpy parameter'
 // begun and ended in the middle of every fifth comparison of a fourth of
 // them, which leaves the outer one where it was.
 test("the sort machine asks for perl's pairs, in perl's order", () => {
-    const cases = spawnSync('python3', [join(here, '..', '..', 't', 'models', 'merge.py'), '--cases'], { encoding: 'utf8', maxBuffer: 1 << 28 }).stdout;
+    // (The model is found from wherever this file is: a copy of the tree
+    // made to be broken has the runtime and not the models.)
+    let root = here;
+    while (!existsSync(join(root, 't', 'models', 'merge.py')) && dirname(root) !== root) root = dirname(root);
+    const cases = spawnSync('python3', [join(root, 't', 'models', 'merge.py'), '--cases'], { encoding: 'utf8', maxBuffer: 1 << 28 }).stdout;
     assert.equal(cases.split('\n').length, 4201);
     const perl = `use v5.42;
         while (my $line = <STDIN>) {

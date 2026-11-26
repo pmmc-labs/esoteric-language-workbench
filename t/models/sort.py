@@ -213,7 +213,7 @@ class Run(it.Run):
 def sort_text(e, top):
     if e[1] is None:
         first = e[3][0]
-        assert not isinstance(first, tuple) or first[0] in ('@', 'slice', 'map', 'grep', 'sort', 'reverse', 'join', '..'), 'perl would take a word or a bracket first after sort another way'
+        assert not isinstance(first, tuple) or first[0] in ('@', 'slice', 'map', 'grep', 'sort', 'reverse', 'join'), 'perl would take a word or a bracket first after sort another way'
         return f'(sort {items(e[3])})'
     return f'(sort {{ {it.inline(e[1])}{text(e[2])} }} ({items(e[3])}))'
 
@@ -255,7 +255,7 @@ def sort_cases():
         n, w, e, r = g('n'), g('w'), g('e'), g('r')
         s = [mya(n, 10, 9, 2, 33, 100, 1, 21, 2), mya(w, 'pear', 'Fig', 'apple', 'fig', '', 'Apple', 'b', 'a10', 'a9'), ('mya', e, None), ('mya', r, None),
              mya(g('m'), 3, 1.5, '2', TRUE, FALSE, -7, 0.25, '10', 1e3)]
-        for its in ([A(n)], [A(w)], [A(e)], [A(g('m'))], [A(n), A(w)], [7], [3, 1, 2], ['b', 'a'], [('slice', n, [0, 1, 2])], [('..', 8, 12)], [rev(A(n))]):
+        for its in ([A(n)], [A(w)], [A(e)], [A(g('m'))], [A(n), A(w)], [7], [3, 1, 2], ['b', 'a'], [('slice', n, [0, 1, 2])], [0, ('..', 8, 12)], [rev(A(n))]):
             s += [seta(r, srt(its)), dump(r)]
         for b in (NUM, DOWN, STR, ('cmp', VB, VA)):
             s += [seta(r, srt([A(n)], b)), dump(r), seta(r, srt([A(e)], b)), dump(r), seta(r, srt([42], b)), dump(r)]
@@ -327,7 +327,9 @@ def order_cases():
     made = [[5, 3, 8, 1, 9, 2, 7], [1, 2, 3, 4, 5, 6, 7], [7, 6, 5, 4, 3, 2, 1], [2, 1], [1, 2], [4, 4, 4, 4, 4], [3, 1, 2]]
     made += [[r_.randrange(50) for _ in range(n)] for n in (9, 17, 24, 33)]
     made += [list(range(20)) + [3, 2, 1], list(range(30, 8, -1)) + [50, 51], [1] * 9 + [0] * 9 + [1] * 5,
-             [r_.randrange(3) for _ in range(40)], list(range(18)) + list(range(18)), list(range(40, 0, -1))]
+             [r_.randrange(3) for _ in range(40)], list(range(18)) + list(range(18)), list(range(40, 0, -1)),
+             # a long run and one more: the one is picked up into the run
+             list(range(19)), list(range(21, 0, -1)), list(range(17)) + [5]]
     def logged(f, g, G):
         v, r, log, n = g('v'), g('r'), g('log'), g('n')
         note = do(set_(log, join(VA, ',', VB, ' '), '.='))

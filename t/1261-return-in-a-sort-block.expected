@@ -1,0 +1,2 @@
+t/1261-return-in-a-sort-block.pl:5:20: return in the block of a map, a grep or a sort: perl ends the sub from the first two and the comparison from the third
+exit: 1

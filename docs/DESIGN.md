@@ -262,7 +262,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D88 are decided (D87 and D88 the builder's defaults on step
+D1 to D89 are decided (D87 to D89 the builder's defaults on step
 10's review and its build, to be confirmed). What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
@@ -289,8 +289,11 @@ step, roughly in the order it will matter:
    and an element read in an expression that also removes it:
    settled, D77 and D76 (step 9). Each is a refusal, by one walk over
    the whole program.
-6. **`sort`'s comparator** (step 10): frozen so that an effect faults,
-   or perl's merge ported.
+6. **`sort`'s comparator**: settled, D82 and D83 (step 10). perl's
+   merge is ported, so that every comparison is perl's, and the
+   generated code drives it: the runtime calls no block. The licence
+   of the port, `runtime/sort.c`, is to be settled with the
+   repository's.
 7. **Reading through undef** (step 13): proposed as a fault. And
    **dereference without braces**, `@$x` and `$$x[0]`: proposed as
    cut, leaving `->@*` and `@{ }`, as Stevan's style guide has it.

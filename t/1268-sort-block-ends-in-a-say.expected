@@ -1,0 +1,2 @@
+t/1268-sort-block-ends-in-a-say.pl:5:16: sort's block ends in an expression, which is its value
+exit: 1

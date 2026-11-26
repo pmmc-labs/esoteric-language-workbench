@@ -33,7 +33,8 @@
 // (D28: nothing is global). After every call the caller's line is stored
 // again (D34).
 import { NAMES, PRAGMAS, infixOp, prefixOp, stepOp } from './names.ts';
-import type { ArrayOp, Binder, Expr, If, Invoke, Program, Stmt, Sub } from './ast.ts';
+import type { ArrayOp, Binder, Expr, If, Invoke, Program, Sort, Stmt, Sub } from './ast.ts';
+import { behind } from './shapes.ts';
 import type { Resolution } from './resolver.ts';
 import { handsOn, shaped } from './shapes.ts';
 import type { Gives } from './shapes.ts';
@@ -67,7 +68,8 @@ export const cString = (text: string): string => {
 // fault in it names.
 // `out` is what the statement is being generated into, for the block of
 // a `map` or a `grep`, whose statements are generated in the middle of it.
-type Code = { vars: string[]; decls: string[]; lines: string[]; temps: number; values: number; out: Out; strings: string[]; names: Resolution; frame: Frame; fn: number; line: number };
+// `inPlace` is a sort that perl would do in place (T187).
+type Code = { vars: string[]; decls: string[]; lines: string[]; temps: number; values: number; out: Out; inPlace?: Expr; strings: string[]; names: Resolution; frame: Frame; fn: number; line: number };
 
 // What the function being generated needs of its frame: the most
 // temporaries any one statement of it has.
@@ -119,7 +121,7 @@ const listy = (in_: Expr): boolean => {
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
         || (e.kind === 'listop' && e.op === 'reverse')
-        || e.kind === 'binder'
+        || e.kind === 'binder' || e.kind === 'sort'
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
 };
@@ -168,6 +170,8 @@ const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
         genSplice(e, b, list);
     } else if (e.kind === 'binder') {
         genBinder(e, b, list);
+    } else if (e.kind === 'sort') {
+        genSort(e, b, list);
     } else if (e.kind === 'listop' && e.op === 'reverse') {
         // perl's `reverse` makes no element that is not there (T177).
         const values = genList(e.args, b);
@@ -239,6 +243,61 @@ const genBinder = (e: Binder, b: Code, list: string): void => {
     b.lines.push('}', ...each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`), `cx->line = ${b.line};`);
 };
 
+// `sort` (step 10c; D82, D83). The list is built and held as a `map`'s
+// is, its arrays frozen; an element or a slice past the end in it is a
+// fault (T188). With no block the runtime sorts it, by string. With one,
+// **this code drives the sort**: the runtime's merge runs as far as its
+// next comparison and hands back the two values, which are `$a` and `$b`;
+// the block is generated here, where it stands, and its value handed
+// back; and so on until the merge has no more to ask. The runtime calls
+// nothing. The values, in order, are added to `list`.
+const genSort = (e: Sort, b: Code, list: string): void => {
+    const source = genList(e.items, b, 2);
+    if (e.body === undefined) {
+        b.lines.push(`rt_sort_strings(cx, ${source.c}, ${list});`);
+        return;
+    }
+    const each = b.names.each.get(e);
+    const last = e.body.at(-1);
+    if (each === undefined || last?.kind !== 'do') throw new Error('a sort was not resolved');
+    const slot = (decl: number): string => `${b.names.owner[decl] === b.fn ? 'f' : 'g'}[${b.names.slots[decl]}]`;
+    const held = slot(each.list);
+    const so = `so${++b.temps}`;
+    b.decls.push(`rt_sort *${so} RT_UNUSED;`);
+    b.lines.push(`${held} = ${source.c};`, ...each.arrays.map(a => `rt_freeze(cx, ${slot(a)});`));
+    if (b.inPlace === e) b.lines.push(`rt_sort_in_place(cx, ${held});`);
+    b.lines.push(`${so} = rt_sort_begin(cx, ${held}, ${thrownAway(e) ? 1 : 0});`,
+        `while (rt_sort_next(cx, ${so}, &${slot(b.names.of.get(e.a!)!)}, &${slot(b.names.of.get(e.b!)!)})) {`);
+    const base = b.out.base;
+    b.out.base = b.values;
+    const statements = e.body.slice(0, -1).flatMap(t => genStmt(t, b.out));
+    b.out.base = base;
+    b.lines.push(...statements, `cx->line = ${last.pos.line};`);
+    const answer = genExpr(last.expr, b);
+    b.lines.push(`rt_sort_answer(cx, ${so}, ${answer.c});`, '}', `rt_sort_end(cx, ${so}, ${list});`,
+        ...each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`), `cx->line = ${b.line};`);
+};
+
+// The four blocks perl compares without running (`$a <=> $b`, `$b <=> $a`,
+// `$a cmp $b`, `$b cmp $a`): for those it turns every value to a number or
+// a string before it sorts, and so looks at a lone one (T190).
+const thrownAway = (e: Sort): boolean => {
+    const only = e.body?.length === 1 ? e.body[0] : undefined;
+    const test = only?.kind === 'do' ? behind(only.expr) : undefined;
+    if (test?.kind !== 'binary' || (test.op !== '<=>' && test.op !== 'cmp')) return false;
+    const [left, right] = [behind(test.left), behind(test.right)];
+    return left.kind === 'var' && right.kind === 'var' && [left.name, right.name].sort().join('') === 'ab';
+};
+
+// `@a = sort { ... } @a`, through brackets on either side: perl sorts in
+// place, and drops what was never stored (T187).
+const sortedInPlace = (b: Code, target: Expr, value: Expr): Expr | undefined => {
+    const sort = behind(value);
+    if (target.kind !== 'array' || sort.kind !== 'sort' || sort.body === undefined || sort.items.length !== 1) return undefined;
+    const from = behind(sort.items[0]!);
+    return from.kind === 'array' && b.names.of.get(from) === b.names.of.get(target) ? sort : undefined;
+};
+
 // `splice(@a, OFFSET, LENGTH, LIST)`: the numbers, then the list, then
 // the splice, what it removed added to `removed`.
 const genSplice = (e: ArrayOp, b: Code, removed: string): void => {
@@ -300,6 +359,7 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     }
     // `(LIST)[N]`, where one value is wanted: that one, or undef.
     case 'slice': return temp(b, `rt_first(cx, ${genList([e], b).c})`);
+    case 'sort': throw new Error('sort where one value is wanted');
     // Where one value is wanted, how many values it gives (D84).
     case 'binder': {
         const values = temp(b, 'rt_array_new(cx)');
@@ -361,7 +421,10 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         const op = infixOp(e.op);
         // `@a = LIST`: the list, and then the array's values are its.
         if (e.target.kind === 'array' || e.target.kind === 'myarray') {
+            const before = b.inPlace;
+            b.inPlace = sortedInPlace(b, e.target, e.value);
             const values = genList([e.value], b);
+            b.inPlace = before;
             if (e.target.kind === 'myarray') genExpr(e.target, b);
             b.lines.push(`rt_array_assign(cx, ${variable(b, e.target)}, ${values.c});`);
             return { c: 'rt_undef()', place: false };

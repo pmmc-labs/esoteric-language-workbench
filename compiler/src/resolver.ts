@@ -22,7 +22,7 @@
 // declared before it, and no `last` or `next` in it reaches a loop
 // outside it (T60).
 import { refuse } from './errors.ts';
-import type { Binder, Expr, Foreach, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
+import type { Binder, Expr, Foreach, Sort, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
 import { listSubs } from './shapes.ts';
 
 // A declaration is a number, in the order the `my`s are met; `of` says
@@ -62,7 +62,7 @@ export type Resolution = {
     lists: readonly boolean[];
     loops: ReadonlyMap<Loop, number>;
     jumps: ReadonlyMap<Jump, number>;
-    each: ReadonlyMap<Foreach | Binder, Each>;
+    each: ReadonlyMap<Foreach | Binder | Sort, Each>;
     // The declarations that are a loop's variable or `$_`: read-only (D17).
     readonly: ReadonlySet<number>;
 };
@@ -95,7 +95,7 @@ export const resolve = (program: Program): Resolution => {
     // The arrays named while the list of a `foreach`, a `map` or a `grep`
     // is read: one set for each list that is being read.
     const naming: Set<number>[] = [];
-    const each = new Map<Foreach | Binder, Each>();
+    const each = new Map<Foreach | Binder | Sort, Each>();
     const readonly = new Set<number>();
     // The most slots in use since the statement in hand began: a `map`
     // in it has slots of its own while it runs.
@@ -152,6 +152,7 @@ export const resolve = (program: Program): Resolution => {
         switch (e.kind) {
         case 'var': {
             const found = [...scopes].reverse().find(s => s.has(e.name));
+            if (found === undefined && (e.name === 'a' || e.name === 'b')) return refuse(`$${e.name} outside the block of a sort: $a and $b are the two values a sort gives its block, and are seen there alone`, e.pos);
             if (found === undefined && e.name === '_') return refuse('$_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)', e.pos);
             if (found === undefined) return refuse(`$${e.name} is not declared: my $${e.name}`, e.pos);
             of.set(e, found.get(e.name)!);
@@ -180,6 +181,22 @@ export const resolve = (program: Program): Resolution => {
             e.args.forEach(x => walk(x, declared));
             return array(e, e.name);
         case 'listop': return e.args.forEach(x => walk(x, declared));
+        case 'sort': {
+            // As a `map`: the list where the sort stands, then the block,
+            // with `$a` and `$b` its own.
+            const arrays = new Set<number>();
+            naming.push(arrays);
+            e.items.forEach(x => walk(x, declared));
+            naming.pop();
+            if (e.body === undefined) return;
+            scopes.push(new Map());
+            bind(e, [e.a!, e.b!], arrays);
+            round.push({ wall: 'sort' });
+            inner(e.body);
+            round.pop();
+            close();
+            return;
+        }
         case 'binder': {
             // The list is read where the binder stands, so a `$_` in it is
             // the one outside; then the block, in a scope of its own.
@@ -188,7 +205,7 @@ export const resolve = (program: Program): Resolution => {
             e.items.forEach(x => walk(x, declared));
             naming.pop();
             scopes.push(new Map());
-            bind(e, e.var, arrays);
+            bind(e, [e.var], arrays);
             round.push({ wall: e.op });
             inner(e.body);
             round.pop();
@@ -253,15 +270,15 @@ export const resolve = (program: Program): Resolution => {
     // What a `foreach`, a `map` or a `grep` has in its scope: its list,
     // a declaration no program can name (no name has a blank in it), and
     // its variable.
-    const bind = (binder: Foreach | Binder, variable: My, arrays: ReadonlySet<number>): void => {
+    const bind = (binder: Foreach | Binder | Sort, variables: readonly My[], arrays: ReadonlySet<number>): void => {
         const list: MyArray = { kind: 'myarray', name: 'the list', pos: binder.pos };
-        for (const d of [list, variable]) {
+        for (const d of [list, ...variables]) {
             of.set(d, names.length);
             isArray.push(d.kind === 'myarray');
             names.push(d.name);
             declare(d);
         }
-        readonly.add(of.get(variable)!);
+        variables.forEach(v => readonly.add(of.get(v)!));
         each.set(binder, { list: of.get(list)!, arrays: [...arrays] });
     };
 
@@ -352,7 +369,7 @@ export const resolve = (program: Program): Resolution => {
             whole(...s.items);
             naming.pop();
             scopes.push(new Map());
-            bind(s, s.var, arrays);
+            bind(s, [s.var], arrays);
             round.push({ loop: s });
             inner(s.body);
             round.pop();

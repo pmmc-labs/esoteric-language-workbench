@@ -1,0 +1,6 @@
+1
+1
+2
+3
+fault: an array was changed while a foreach is over it at t/1236-fault-frozen-through-a-sort-in-a-loops-list.pl line 11.
+exit: 1

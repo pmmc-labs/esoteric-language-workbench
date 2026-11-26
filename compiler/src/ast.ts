@@ -30,7 +30,7 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
 export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
-    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder;
+    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder | Sort;
 
 // An array, `@name`, and `my @name`, which declares one (D80).
 export type ArrayVar = { kind: 'array'; name: string; pos: Pos; bracketed?: true };
@@ -62,6 +62,12 @@ export type ListOp = { kind: 'listop'; op: string; args: readonly Expr[]; pos: P
 // block's statements, the last an expression, which is the block's value;
 // `var` is `$_`, as a declaration, new for each value of the list.
 export type Binder = { kind: 'binder'; op: string; var: My; body: readonly Stmt[]; items: readonly Expr[]; pos: Pos; bracketed?: true };
+
+// `sort LIST` and `sort { ... } LIST` (step 10c). With a block: `a` and
+// `b` are `$a` and `$b`, as declarations, new for each comparison, and
+// `body` the block's statements, the last an expression, which says
+// which of the two comes first.
+export type Sort = { kind: 'sort'; a?: My; b?: My; body?: readonly Stmt[]; items: readonly Expr[]; pos: Pos; bracketed?: true };
 
 // A list assignment, `(targets) = value` and `my (targets) = value`: a
 // statement (D78). A target is a variable, an element, `undef`, or, last,

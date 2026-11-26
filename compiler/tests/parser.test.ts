@@ -666,3 +666,25 @@ test('for (LIST), the for modifier, map and grep', () => {
     refused('say 1 for 1 if 2;', "a second modifier after for's list: perl does not compile it", 1, 13);
     refused('my $_;', '$_ is not a name a program may declare: it is what a for, a map or a grep gives its block', 1, 4);
 });
+
+// Step 10c: sort, with a block and without.
+test('sort LIST and sort { } LIST', () => {
+    const [plain, block] = parse(lex('my @r = sort @a, 1;\nmy @s = (0, reverse sort { my $x = $a; $x <=> $b or 0 } @a, 9);')).body;
+    assert.ok(plain?.kind === 'do' && plain.expr.kind === 'assign' && plain.expr.value.kind === 'sort');
+    assert.deepEqual([plain.expr.value.body, plain.expr.value.items.map(i => i.kind)], [undefined, ['array', 'int']]);
+    assert.ok(block?.kind === 'do' && block.expr.kind === 'assign' && block.expr.value.kind === 'list');
+    const reverse = block.expr.value.items[1]!;
+    assert.ok(reverse.kind === 'listop' && reverse.args.length === 1);
+    const sort = reverse.args[0]!;
+    assert.ok(sort.kind === 'sort' && sort.body !== undefined);
+    const last = sort.body[1]!;
+    assert.ok(last.kind === 'do' && last.expr.kind === 'binary');
+    assert.deepEqual([sort.a?.name, sort.b?.name, sort.body.map(s => s.kind), last.expr.op, sort.items.map(i => i.kind)], ['a', 'b', ['do', 'do'], 'or', ['array', 'int']]);
+    refused('my @r = sort(@a);', 'sort takes no brackets of its own: sort LIST, or sort { ... } LIST', 1, 13);
+    refused('my @r = sort f(), 1;', 'f first after sort: perl takes a word there for the name of a sub that compares, or for a string; put a + before it, or give sort a block', 1, 14);
+    refused('my @r = sort $x, 1;', '$x first after sort: perl takes a scalar there for a sub that compares; put a + before it, or give sort a block', 1, 14);
+    refused('my @r = sort { say $a } @a;', "sort's block ends in an expression, which is its value", 1, 16);
+    refused('my $a;', '$a is not a name a program may declare: $a and $b are the two values a sort gives its block', 1, 4);
+    // perl's own words are themselves there.
+    assert.ok(parse(lex('my @r = sort map { $_ } @a;\nmy @s = sort reverse @a;\nmy @t = sort +f(), 1;')).body.length === 3);
+});

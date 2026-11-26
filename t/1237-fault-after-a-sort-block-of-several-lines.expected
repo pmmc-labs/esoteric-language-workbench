@@ -1,0 +1,4 @@
+1
+125
+fault: undef where a number is wanted at t/1237-fault-after-a-sort-block-of-several-lines.pl line 12.
+exit: 1

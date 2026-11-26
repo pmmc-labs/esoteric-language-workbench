@@ -6,7 +6,7 @@
 // a dot begins `.5` and `x` is a word (T90). D29 has the parser tell it;
 // the last token says as much, and will until `/` can begin a pattern.
 import { refuse } from './errors.ts';
-import { NAMES, NAME_MAX_LENGTH, OPERATORS, RESERVED, infixOp, isScalarValue, prefixOp, stepOp } from './names.ts';
+import { NAMES, NAME_MAX_LENGTH, OPERATORS, infixOp, isScalarValue, prefixOp, stepOp } from './names.ts';
 import type { Pos } from './ast.ts';
 
 export type Token =
@@ -335,7 +335,8 @@ export const lex = (src: string): Token[] => {
             // `$_` is what a `for`, a `map` or a `grep` gives its block
             // (step 10b); `$_[0]` is an element of `@_`, to perl.
             if (name === '_' && (at() === '[' || at() === '{')) refuse(`$_${at()} is an element of perl's own @_ or %_, which are not in the language`, start);
-            if (RESERVED.has(name) && name !== '_' && at() !== '[') refuse(`$${name} is not a name a variable may have`, start);
+            // (`$a` and `$b` are a `sort` block's, step 10c: the resolver
+            // refuses them anywhere else.)
             // perl stops the compile at a longer one: `Identifier too long`.
             if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
             // perl takes a variable that comes first after `say` or

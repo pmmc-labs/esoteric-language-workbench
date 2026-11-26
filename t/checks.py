@@ -98,6 +98,9 @@ def model_commands():
                     out.append((model, m.group(2).split(), m.group(3)))
     return out
 
+# The models that are a part of another, and write no file of their own.
+PARTS = {'t/models/merge.py'}
+
 def check_models(write=False):
     bad = []
     commands = model_commands()
@@ -115,7 +118,9 @@ def check_models(write=False):
             bad.append(f'{path}: not written; `make models`')
         elif open(path, 'rb').read() != r.stdout:
             bad.append(f'{path}: differs from what {model} writes; rerun it (`make models`), don\'t patch the file')
-    models_without = [m for m in sorted(glob.glob('t/models/*.py')) if not any(c[0] == m for c in commands)]
+    # (t/models/merge.py is perl's merge sort, which t/models/sort.py
+    # imports: it writes no test, and holds itself to perl when it is run.)
+    models_without = [m for m in sorted(glob.glob('t/models/*.py')) if m not in PARTS and not any(c[0] == m for c in commands)]
     bad += [f'{m}: lists no command that writes a file' for m in models_without]
     print(f'models: {len(commands)} files from {len(set(c[0] for c in commands))} models' + (' written' if write else ''))
     return bad

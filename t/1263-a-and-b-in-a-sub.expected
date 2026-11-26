@@ -1,0 +1,2 @@
+t/1263-a-and-b-in-a-sub.pl:5:12: $a outside the block of a sort: $a and $b are the two values a sort gives its block, and are seen there alone
+exit: 1

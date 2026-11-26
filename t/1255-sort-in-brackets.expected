@@ -1,0 +1,2 @@
+t/1255-sort-in-brackets.pl:5:13: sort takes no brackets of its own: sort LIST, or sort { ... } LIST
+exit: 1

@@ -1645,7 +1645,7 @@ included, and a list assignment is refused there (T192, D78).
 **T143's refusals end** where a list is wanted. **`map` and `grep`
 may be statements.**
 
-**D88. What building step 10 has settled so far (10a, 10b).**
+**D88. What building step 10 settled (10a, 10b).**
 *(User: defaults of the builder's, 2026-11-25, for Stevan to confirm
 or change.)* **A list after `return` is in brackets**, unless it is
 one thing that is a list (T193: perl returns `1, 2` whole). **D18's
@@ -1663,6 +1663,23 @@ though perl's `map` gives copies: the stricter, and one rule. **The
 fault's words are the `foreach`'s for every binder**: `an array was
 changed while a foreach is over it`. And `f returned a list where
 one value is wanted`; `joined string too long`.
+
+**D89. What building `sort` settled (10c).** *(User: defaults of the
+builder's, 2026-11-26, for Stevan to confirm or change.)* **`sort`
+takes no brackets of its own**, as D87 has it, though `sort(@a)`
+alone is silent in perl: one rule with `map` and `grep`. **A scalar
+first after `sort` is refused**, as a word is (D21: perl takes it for
+a sub to compare by); `sort +$x, $y` and a block are the ways round
+(T195). **A `sort`'s block ends in an expression**, and not in a
+`say`. **Its value is cut toward zero**, as perl cuts it, and is a
+fault outside 32 bits, both ends (`a sort block's value is outside
+32 bits, where perl wraps it`). **In place** is `@a = sort BLOCK @a`
+with brackets round either side or neither, and nothing else: `an
+undef in an array sorted in place: perl drops an element that was
+never stored`. **`$a` and `$b`** are refused outside a `sort`'s
+block and as declarations, by the resolver and the parser; the lexer
+takes them. **The port lives in `runtime/sort.c`**, included by
+rt.c, with its origin and perl's terms at its head (D82).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

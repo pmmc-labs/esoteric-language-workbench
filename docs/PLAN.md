@@ -2975,7 +2975,7 @@ to answer with Q1 and Q2.**
   the common one; for `push` and then `last`; for `pop` on the last
   time round.
 
-### 10. List operators, `$_`, list returns
+### 10. List operators, `$_`, list returns (done)
 
 Referee: perl. Size: large.
 
@@ -3075,6 +3075,62 @@ fault, slurpy parameters, `join` and `reverse`. 10b and 10c are not.
 - **The numbers**: 847 golden tests, 127 unit tests, 681
   statements about perl; green under gcc, clang, and UBSan with
   ASan, poison on and off.
+
+**10c is built** (2026-11-26, by Fable 5.2): `sort`. **Step 10 is
+done.**
+
+- **perl's merge twice, each held to perl before the language knew
+  of it** (D82). `t/models/merge.py` is `dynprep` and
+  `S_sortsv_flags_impl` of pp_sort.c as a Python generator, which
+  yields the two it wants compared; `runtime/sort.c` is the same as
+  a machine in C. For 4,200 lists (random, in order, reversed, runs
+  each way for the pass that looks for them, few keys for the one
+  that gallops) under four ways of comparing, one of them no order
+  at all, each asks for exactly the pairs perl's `sort` hands a
+  block, in perl's order. The Python agreed with perl the first time
+  it ran; the C differed on one list in the thousand, and the fault
+  was the test's (C's `%` is not perl's for a number below zero).
+  The model breaks itself eight ways, each caught.
+- **The generated code drives** (D83): `rt_sort_next` runs the merge
+  as far as its next comparison and returns the two values; the
+  block is generated where it stands, as a `map`'s is; its value
+  goes to `rt_sort_answer`; and `rt_sort_next` takes up where it
+  was. In C that is the merge with its variables in a struct and a
+  `switch` on which comparison it stopped at, each one a `case` in
+  the middle of the loops it is in. The runtime calls no generated
+  code, and no frame of its own is on the C stack while a block
+  runs. A sort in a sort's block is another machine; a fault in a
+  block gives the machines' memory back.
+- **The port is a file of its own**, `runtime/sort.c`, which says at
+  its head where it came from and under what terms, for the day the
+  repository has a licence (D82). rt.c includes it.
+- **The model first, red** (`t/models/sort.py`, commit 487284f):
+  1200, and 1201, which is the comparisons themselves, logged by the
+  block, over lists that take every path of the merge; perl agreed
+  with both the first time. 26 programs that fault once each, 1210
+  to 1235. The compiler passed 27 of the 28 the first time it
+  compiled them; the other was the model writing `sort (8 .. 12)`.
+- **What the review asked for is in**: a `sort` names what its list
+  names; an undef in an array sorted in place is a fault; D80's
+  fault past the end holds in a `sort`'s list; a word or a scalar
+  first after `sort` is refused; no brackets of its own; a lone
+  value is looked at for the four blocks perl throws away.
+- **Broken on purpose** (`briefs/step10c-mutations.py`): 40 of 40
+  caught, fifteen of them breakages of the merge itself; one, the
+  single value picked up into a long run, was caught only by the
+  runtime's own test of the machine, so 1201 has three lists that
+  take that path, and the golden tests catch it too.
+- **The numbers**: 898 golden tests, 129 unit tests, 682
+  statements about perl; green under gcc, clang, and UBSan with
+  ASan, poison on and off.
+- **What step 10 hands on**: `map EXPR, LIST` and the builtins that
+  mean `$_` are cut (D85), and can be proposed again; `reverse` and
+  `sort` where one value is wanted wait for the step that has
+  strings to propose (16); a slice on the left of `=`, `$#a = N`,
+  `exists` and `delete` of an element, `@a` in a string, are still
+  out; `keys`, `values` and a hash in a list come at 12, where the
+  freeze and D76's names meet hashes; and the licence of
+  `runtime/sort.c` is to be settled with the repository's.
 Everything here about perl was run under 5.42.0 and is in
 `briefs/claims.py` (46 rows, `T173` to `T184-global`). Traps: T3,
 T4, T6, T8, T10, T15 to T18, T20, T23, T29, T41, T54, T59, T61, and

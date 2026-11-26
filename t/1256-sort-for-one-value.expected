@@ -1,0 +1,2 @@
+t/1256-sort-for-one-value.pl:5:9: sort where one value is wanted: perl gives undef there, and warns
+exit: 1

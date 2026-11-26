@@ -662,8 +662,9 @@ A name is a letter or an underscore, then letters, digits and
 underscores, all ASCII, hard against its dollar: `$total`, `$x2`,
 `$_tmp`. It is 251 characters at most, as in perl. Three names are
 not a program's to declare, `$a`, `$b` and `$_`: perl keeps them for
-itself. (`$_` is what a `for`, a `map` or a `grep` gives its block:
-"Arrays and lists", below.) `${name}` and
+itself. (`$_` is what a `for`, a `map` or a `grep` gives its block,
+and `$a` and `$b` what a `sort` gives its: "Arrays and lists",
+below.) `${name}` and
 `$ name`, which perl takes, are refused too.
 
 A variable is visible from the statement after its `my` to the end of
@@ -1571,6 +1572,79 @@ For "what a list may not do", below: a block is part of its `map` or
 `grep`, so what the block changes, they change; and `grep` hands on
 the things it was given, so what its list names, it names. `map`
 gives copies.
+
+### sort
+
+`sort LIST` is the list in order, as strings are ordered (`cmp`):
+
+    my @words = ("pear", "fig", "apple");
+    say join " ", sort @words;                 # apple fig pear
+    say join " ", sort 10, 9, 100;             # 10 100 9: as strings
+
+Every value is made a string first, so an undef in the list is a
+fault.
+
+With a block, the block says the order. It is handed two of the
+values, as **`$a`** and **`$b`**, and gives a number: below zero if
+`$a` comes first, above if `$b` does, zero if neither.
+
+    say join " ", sort { $a <=> $b } 10, 9, 100;            # 9 10 100
+    say join " ", sort { $b <=> $a } 10, 9, 100;            # 100 10 9
+    say join " ", sort { length($a) <=> length($b) or $a cmp $b } @words;
+    my @top3 = (sort { $b <=> $a } @scores)[0 .. 2];
+
+The sort is **stable**: values the block calls equal stay in the
+order they were given. `reverse sort { ... } @a` is the other way
+round.
+
+`$a` and `$b` are like `$_`: copies, read-only, seen in the block
+alone (not in a sub it calls: hand them over), never declared. A
+`sort` inside a `sort`'s block has its own. `$a[0]` is still an
+element of an array called `@a`.
+
+The block is a block as `map`'s is: statements, and then an
+expression, which is its value. No `return`, no `last` or `next` to a
+loop outside it. Its value is a whole number, by the rule an index
+has: a fraction is cut toward zero (so 0.5 is "equal", as in perl),
+an undef or a string that is no number is a fault, and so is a number
+outside 32 bits, which perl would wrap.
+
+**The comparisons are perl's, pair for pair and in perl's order.** A
+block that counts or prints, and one whose answers are no consistent
+order, give here exactly what they give in perl: the runtime's sort
+is perl's own merge. `sort { $n++; $a <=> $b } 5, 3, 8, 1, 9, 2, 7`
+leaves 14 in `$n`, there and here.
+
+Like `map` and `grep`, `sort` works its list out once and copies it,
+freezes every array named in it while it runs, faults for an element
+or a slice past the end of its array there, and is refused when its
+block can change a variable its list names. It is written with no
+brackets of its own, and takes everything to the end of the list it
+stands in. Unlike them it is a list only: **where one value is
+wanted, `sort` is refused** (perl gives undef there). After `return`
+it is a list like any other.
+
+Three things perl reads another way:
+
+- **What comes first after `sort`** may not be a word that is not
+  one of perl's own, nor a scalar: `sort by_num @a`, `sort
+  f(@a)`, `sort $x, $y`. perl takes the word, with its brackets too,
+  for the name of a sub to compare by, and `true` there for the
+  string `true`. A `+` before it says a value is meant, and so does a
+  block: `sort +f(@a)`, `sort { $a cmp $b } $x, $y`.
+- **`@a = sort { ... } @a;`**, an array sorted into itself with a
+  block, faults if the array holds an undef. perl sorts that in
+  place, and in doing so drops any element that was never stored to,
+  which is a difference between two undefs that the language does not
+  keep. `my @s = sort { ... } @a; @a = @s;` says it.
+- A list of one value does not run the block; but for the four blocks
+  perl never runs at all, `$a <=> $b`, `$b <=> $a`, `$a cmp $b` and
+  `$b cmp $a`, the one value is still looked at, as a comparison
+  would look at it, since perl turns it to a number or a string
+  anyway.
+
+For "what a list may not do", below: `sort` hands on the things it
+was given, so what its list names, it names.
 
 ### Arrays and subs
 

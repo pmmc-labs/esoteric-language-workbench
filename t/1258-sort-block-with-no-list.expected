@@ -1,0 +1,2 @@
+t/1258-sort-block-with-no-list.pl:4:27: sort needs a list after its block
+exit: 1

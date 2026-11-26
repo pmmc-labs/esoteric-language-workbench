@@ -35,6 +35,7 @@ const parts = (e: Expr): readonly Expr[] =>
     // A block is part of its `map` or `grep`: what it changes, they
     // change, and what it reads, they read (D76 goes through a block).
     : e.kind === 'binder' ? [...e.items, ...within(e.body)]
+    : e.kind === 'sort' ? [...e.items, ...within(e.body ?? [])]
     : [];
 
 // Every expression the statements of a block hold.
@@ -119,7 +120,7 @@ const listy = (in_: Expr): boolean => {
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
         || (e.kind === 'listop' && e.op === 'reverse')
-        || e.kind === 'binder'
+        || e.kind === 'binder' || e.kind === 'sort'
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
 };
@@ -170,6 +171,7 @@ const named = (w: World, in_: Expr, scalars: boolean, into = new Set<number>()):
     // So does `grep`: what it keeps are the things it was given. `map`
     // copies what its block gives.
     else if (e.kind === 'binder' && e.op === 'grep') e.items.forEach(x => named(w, x, true, into));
+    else if (e.kind === 'sort') e.items.forEach(x => named(w, x, true, into));
     return into;
 };
 
@@ -196,6 +198,8 @@ const checkOneValue = (w: World, e: Expr): void => {
     if (e.kind === 'list') refuse(e.my ? 'my (...) where one value is wanted' : 'a list where one value is wanted: perl gives its last value, and warns of the others', e.pos);
     if (e.kind === 'myarray') refuse(`my @${e.name} where one value is wanted`, e.pos);
     // `(LIST)[N]`, one index that is one value, is an element there.
+    // perl's `sort` there is undef, with a warning (T178, D84).
+    if (e.kind === 'sort') refuse('sort where one value is wanted: perl gives undef there, and warns', e.pos);
     // perl's `reverse` there joins its arguments and reverses the
     // characters (T178, D84).
     if (e.kind === 'listop' && e.op === 'reverse') refuse('reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function', e.pos);
@@ -226,6 +230,7 @@ const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
     // `join`'s separator is one value (T182).
     // A block's statements are checked as statements, by `checkExpr`.
     case 'binder': return [];
+    case 'sort': return [];
     case 'listop': return e.op === 'join' ? [...all(e.args.slice(0, 1), 'scalar'), ...all(e.args.slice(1), 'list')] : all(e.args, 'list');
     case 'listassign': return [[e.value, 'list'], ...all(e.targets, 'list')];
     default: return [];
@@ -392,6 +397,18 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     // `join`'s separator is read when `join` runs, so it is the first
     // item of its list (T186, D87).
     if (e.kind === 'listop') checkOrder(w, e.op, e.args, true);
+    if (e.kind === 'sort' && e.body === undefined) {
+        checkOrder(w, "sort's list", e.items, true);
+        e.items.forEach(x => checkExpr(w, x, false, 'list'));
+    }
+    if (e.kind === 'sort' && e.body !== undefined) {
+        bound(w, "sort's list", 'the sort', e.items, e.body);
+        const last = e.body.at(-1);
+        if (last?.kind !== 'do') throw new Error('a sort block with no value');
+        e.body.slice(0, -1).forEach(s => checkStmt(w, s));
+        // One value, which says which of the two comes first.
+        checkExpr(w, last.expr, true, 'scalar');
+    }
     if (e.kind === 'binder') {
         bound(w, `${e.op}'s list`, `the ${e.op}`, e.items, e.body);
         const last = e.body.at(-1);
@@ -651,7 +668,7 @@ const checkReadOnly = (program: Program, names: Resolution): void => {
     const w: World = { names, changed: [], defaults: [] };
     const guard = (e: Expr): void => {
         for (const id of changesItself(w, e)) {
-            if (variables.has(id)) refuse(names.names[id] === '_' ? "$_ is read-only: in perl, changing it changes the list's own element; take the value into a my"
+            if (variables.has(id)) refuse(['_', 'a', 'b'].includes(names.names[id]!) ? `$${names.names[id]} is read-only: in perl, changing it changes the list's own element; take the value into a my`
                 : `$${names.names[id]} is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my`, e.pos);
         }
         parts(e).forEach(guard);

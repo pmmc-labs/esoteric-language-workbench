@@ -49,6 +49,8 @@ export type Name =
     // `map` and `grep` (step 10b): a block and a list, and no brackets of
     // their own (D85, D87).
     | { kind: 'binder' }
+    // `sort` (step 10c): a list, or a block and a list.
+    | { kind: 'sort' }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -90,6 +92,7 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['join', { kind: 'listop', rt: 'rt_join' }],
     ['map', { kind: 'binder' }],
     ['grep', { kind: 'binder' }],
+    ['sort', { kind: 'sort' }],
     ['reverse', { kind: 'listop', rt: 'rt_list_add_reversed' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],

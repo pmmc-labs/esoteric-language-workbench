@@ -302,10 +302,11 @@ test('a variable is a dollar and a name, hard against it (D55)', () => {
     refused('say $1;', message, 1, 5);
     refused('say $$;', message, 1, 5);
     refused('say $', message, 1, 5);
-    // perl's own: the sort's two. `$_` is a token since step 10b, and
-    // an element of perl's `@_` is not.
-    refused('my $a = 1;', '$a is not a name a variable may have', 1, 4);
-    refused('say $b;', '$b is not a name a variable may have', 1, 5);
+    // perl's own. `$_` is a token since step 10b, and an element of
+    // perl's `@_` is not.
+    // `$a` and `$b` are tokens since step 10c: a `sort` block's. That
+    // they are nowhere else is the parser's and the resolver's to say.
+    assert.deepEqual(lex('my $a = $b;').map(t => t.text), ['my', '$a', '=', '$b', ';', '']);
     assert.deepEqual(lex('say $_;').map(t => t.text), ['say', '$_', ';', '']);
     refused('say $_[0];', "$_[ is an element of perl's own @_ or %_, which are not in the language", 1, 5);
     assert.deepEqual(lex('$ab $_1 $A').map(t => t.text), ['$ab', '$_1', '$A', '']);

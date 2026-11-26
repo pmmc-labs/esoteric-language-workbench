@@ -1,0 +1,2 @@
+t/1252-sort-of-a-word.pl:4:14: true first after sort: perl takes a word there for the name of a sub that compares, or for a string; put a + before it, or give sort a block
+exit: 1

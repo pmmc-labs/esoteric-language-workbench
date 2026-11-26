@@ -1,0 +1,2 @@
+t/1264-a-after-the-sort.pl:6:5: $a outside the block of a sort: $a and $b are the two values a sort gives its block, and are seen there alone
+exit: 1

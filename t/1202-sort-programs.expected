@@ -1,0 +1,27 @@
+1,10,100,2,33,9
+1,2,9,10,33,100
+100,33,10,9,2,1
+100,33,10,9
+18,2,20,200,4,66
+2,4,18,20,66,200
+0,1,10,100,2,33,5,9
+1,2,3
+a,b,c
+-1,-2,10
+-2,-1,10
+100,33,10
+1
+100
+Fig fig date kiwi pear apple
+apple pear kiwi date fig Fig
+apple date Fig fig kiwi pear
+Fig fig pear kiwi date apple
+apple date kiwi pear fig Fig
+apple date Fig fig kiwi pear
+14 1,2,3,5,7,8,9
+19
+19
+1,2,3
+10,100,1,2,33,9
+0,1,2,9,10,33,100
+1,2,3,4,5

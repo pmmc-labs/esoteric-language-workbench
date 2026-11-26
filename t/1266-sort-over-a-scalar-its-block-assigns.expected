@@ -1,0 +1,2 @@
+t/1266-sort-over-a-scalar-its-block-assigns.pl:6:19: this can change $p, which the list of the sort it is in names: perl's sort walks the variable itself; take the value into a my before the sort
+exit: 1
