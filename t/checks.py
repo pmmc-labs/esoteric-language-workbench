@@ -338,6 +338,51 @@ def word_before(code, i):
         return '', j
     return code[j:i], j
 
+# What a block between a `sort` and its `keys` may not do, and a `sort`'s
+# own block: anything but work a value out. A block that prints, stores or
+# counts shows the order its values came in (step 12's review, C1).
+EFFECT = re.compile(r'\b(?:say|print|printf|push|unshift|pop|shift|splice|delete|die|warn)\b|\+\+|--|(?<![=!<>])=(?![=~>])')
+COMPARES = re.compile(r'\$[ab]\b.*(?:<=>|\bcmp\b).*\$[ab]\b', re.S)
+
+def block_before(code, i):
+    """The text of the block that ends just before position i, behind
+    blanks and one opening bracket as `word_before` reads them; None if
+    there is none."""
+    brackets = 0
+    while i > 0 and (code[i - 1] in ' \t\n' or (code[i - 1] == '(' and brackets == 0)):
+        brackets += code[i - 1] == '('
+        i -= 1
+    if i == 0 or code[i - 1] != '}':
+        return None
+    end, depth = i, 0
+    while i > 0:
+        i -= 1
+        depth += {'}': 1, '{': -1}.get(code[i], 0)
+        if depth == 0:
+            break
+    return code[i + 1:end - 1]
+
+def counted(code, m):
+    """Whether the hash, or the `keys` or `values`, at match m stands where
+    only how many there are is asked, or where it is copied or declared:
+    no order shows (step 12's review, C2)."""
+    before, rest = code[:m.start()], code[m.start():]
+    name = r'%[\w]+' if m.group(0)[0] == '%' else r'(?:keys|values)\s*\(?\s*%\w+\s*\)?'
+    # The whole test of an if, an unless, a while or an until.
+    if re.search(r'\b(?:if|unless|while|until)\s*\(\s*!?\s*$', before) and re.match(name + r'\s*\)', rest):
+        return True
+    # Assigned to a scalar, as its count; or to another hash, as a copy.
+    target = r'\$\w+' if m.group(0)[0] != '%' else r'[$%]\w+'
+    if re.search(r'(?:^|[;{}\s])(?:my\s+)?' + target + r'\s*=\s*$', before) and re.match(name + r'\s*;', rest):
+        return True
+    # Compared with a number.
+    if re.match(name + r'\s*(?:==|!=|<=|>=|<(?!=>)|>)\s*\d+\s*[;)]', rest) and not re.search(r'\bsort\b[^;]*$', before):
+        return True
+    # A parameter of a sub.
+    if m.group(0)[0] == '%' and re.search(r'\bsub\s+\w+\s*\([^()]*$', before):
+        return True
+    return False
+
 def hash_order_shown(path):
     """Where a test shows a hash's order, by the reading rule: a list of
     `line N: what`."""
@@ -347,21 +392,37 @@ def hash_order_shown(path):
     for m in ORDERED.finditer(code):
         what = m.group(0)
         whole = what[0] in '%-'
+        line = code.count('\n', 0, m.start()) + 1
         if what[0] == '%' and m.start() > 0 and code[m.start() - 1] == '\\':
             # `\%h` is a reference: the order shows where it is used.
+            continue
+        if counted(code, m):
             continue
         word, at = word_before(code, m.start())
         if word == 'scalar' and what != 'each':
             continue
+        # `(keys %h)[0]`: one of them, picked before any sort.
+        if re.match(r'(?:keys|values)?\s*\(?\s*%?\w*\s*\)?\s*\)\s*\[', code[m.start():]) and re.search(r'\(\s*$', code[:m.start()]):
+            found.append(f'line {line}: {what} sliced before any sort, without sort')
+            continue
+        block = block_before(code, m.start())
         while word in THROUGH:
+            if block is not None and EFFECT.search(block):
+                found.append(f'line {line}: a {word} block that does more than work a value out, between {what} and any sort: without sort')
+                word = ''
+                break
+            block = block_before(code, at)
             word, at = word_before(code, at)
         if word == 'sort':
+            if block is not None and (EFFECT.search(block) or not COMPARES.search(block)):
+                found.append(f'line {line}: a sort whose block does not only compare $a with $b shows the order it was given: without sort')
+            continue
+        if word == '' and found and found[-1].startswith(f'line {line}: a ') and 'block that does more' in found[-1]:
             continue
         if whole and word in OWNERS:
             continue
         if what[0] == '%' and re.match(r'%[\w$]+\s*=(?![=~>])', code[m.start():]):
             continue
-        line = code.count('\n', 0, m.start()) + 1
         found.append(f'line {line}: {"a whole hash" if whole else what} without sort')
     return found
 

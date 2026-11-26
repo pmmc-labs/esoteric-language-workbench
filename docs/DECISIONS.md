@@ -19,7 +19,8 @@ his, on seeing the build. D76 to D80 are his answers to step 9's
 proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
 confirmed. D96 and D97 are his, on the census; D98 to D101 his answers to
-step 12's, and D102 the builder's defaults on its review.
+step 12's, and D102 the builder's defaults on its review, which he
+confirmed.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1854,8 +1855,8 @@ variables is a second shape of `foreach` in every pass. It can be
 proposed when a program wants it. Rejected: the loop of two
 variables now.
 
-**D102. What step 12's review settled.** *(Default: the builder's,
-on the review's findings, for Stevan to confirm.)* **A word alone in
+**D102. What step 12's review settled.** *(User: defaults of the builder's
+on the review's findings, confirmed 2026-11-26: "D102 is confirmed".)* **A word alone in
 a hash's braces, and a word before `=>`, is a string only on one
 line**: the word and its braces, or the word and its `=>`, with
 nothing but blanks between; anything else is refused. perl reads

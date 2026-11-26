@@ -40,6 +40,11 @@ test is tested apart, on `t/000-say.pl`.)
 | `same-hash-in-list` | A whole hash in a list |
 | `same-short-seeds` | Passes under every short seed, `PERL_HASH_SEED=1` to `300`; only seeds of the full width move its keys |
 | `same-tie` | A real sort with a tie in it, which no reading can see |
+| `same-hash-counted` | A hash counted, copied, compared for its size and taken as a parameter: no order shows, and the reading rule passes it (step 12) |
+| `same-sort-compares-nothing` | `sort { 0 } keys %h`: the sort gives back the hash's order |
+| `same-sort-logs` | A comparator that prints the pairs it is given |
+| `same-grep-prints` | A block that prints, between a sort and its `keys` |
+| `same-keys-sliced` | `(keys %h)[0]`, one key picked before the sort |
 | `same-hash-in-string` | A hash inside a string that runs code |
 | `same-scalar-each` | `scalar(each %h)`, which is a key and not a count |
 | `same-scalar-reverse` | `scalar reverse keys %h` |
