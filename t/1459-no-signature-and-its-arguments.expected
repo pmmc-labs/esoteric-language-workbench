@@ -1,0 +1,2 @@
+t/1459-no-signature-and-its-arguments.pl:5:18: $_[ is an element of perl's own @_ or %_, which are not in the language
+exit: 1

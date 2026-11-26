@@ -1108,9 +1108,12 @@ after. It is not written inside a block, a loop or another sub: perl
 ties a sub written there to the first time round, and warns of one in
 a sub.
 
-A sub always has a **signature**, the brackets after its name, with
-`()` for no parameters. A sub without one is Perl's older kind, with
-its arguments in `@_`, and is not in the language.
+A sub's **signature** is the brackets after its name, with `()` for
+no parameters. A sub may be written with none, `sub f { ... }`: it
+then takes any number of arguments, each of them worked out, and
+sees none of them. To perl they are in `@_`, which is not in the
+language; a sub that wants its arguments names them in a signature.
+`sub f() { ... }` takes no arguments, and one is a fault.
 
 A sub's name is letters, digits and `_`, at most 251 characters. It
 may not be a word perl has a meaning for, whether the language has

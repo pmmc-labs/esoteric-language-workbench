@@ -69,7 +69,6 @@ OURS_LIMIT = 60
 N = r"'[^']*'"
 REASONS = [
     # ---- by design
-    (r'^sub \w+ needs a signature', 'design', 'D17'),
     (r'^@_ is not in the language', 'design', 'D17'),
     (r"is an element of perl's own @_ or %_", 'design', 'D17'),
     (r'is read-only: in perl, changing it changes', 'design', 'D17'),
@@ -358,7 +357,6 @@ def self_test():
         if got != want:
             failed.append(f'judge, case {n}: {got}, not {want}')
     for message, want in (
-        ('sub f needs a signature: sub f(...) { ... }, with () for no parameters', 'design D17'),
         ('@_ is not in the language: a sub has a signature (D17)', 'design D17'),
         ('%o as a parameter is not in the language yet (step 12b)', 'later 12'),
         ("a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...", 'design D102'),

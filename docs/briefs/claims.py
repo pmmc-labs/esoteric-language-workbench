@@ -878,6 +878,16 @@ CLAIMS = [
     c('12a-defined', 'LANGUAGE Hashes', r"""my %h = (a => 1); say defined(%h) ? 1 : 0;""", exit='nonzero', err="Can't use 'defined\\(%hash\\)'"),
     c('12a-map-block', 'LANGUAGE Hashes', r"""my @a = (1, 2); my %g = map { ($_ => 1) } @a; say join(",", sort keys %g);""", out='1,2\n'),
     c('12a-delete-said', 'LANGUAGE Hashes', r"""my %h = (a => 1, b => 2); say $h{a}, delete $h{a};""", out='11\n'),
+    # ---- D105: a sub or a method with no signature
+    c('D105-any', 'PLAN', 'sub f { return 7 } say f(1, 2, 3);', out='7\n'),
+    c('D105-none', 'PLAN', 'sub f() { return 7 } say f(1);', err='Too many arguments', exit=255),
+    c('D105-run', 'PLAN', 'my $n = 0; sub f { return 1 } f($n++, $n++); say $n;', out='2\n'),
+    c('D105-anon', 'PLAN', 'my $f = sub { 3 }; say $f->(1, 2);', out='3\n'),
+    c('D105-anon-none', 'PLAN', 'my $f = sub () { 3 }; say $f->(1);', err='Too many arguments', exit=255),
+    c('D105-method', 'PLAN', 'use experimental "class"; class P { method m { 5 } } say P->new->m(1, 2);', out='5\n'),
+    c('D105-method-none', 'PLAN', 'use experimental "class"; class P { method z () { 6 } } say P->new->z(1);', err='Too many arguments', exit=255),
+    c('D105-slice', 'PLAN', 'my @a = (1); sub f { 1 } f(@a[3, 4]); say scalar(@a);', out='5\n'),
+    c('D105-element', 'PLAN', 'my @a = (1); sub f { 1 } f($a[5]); say scalar(@a);', out='1\n'),
 ]
 
 def run(perl, prelude, code, flags):

@@ -981,10 +981,14 @@ export const parse = (tokens: readonly Token[]): Program => {
                 refuse(`a sub may not be called ${named.text}: perl reads v and digits as a version, where it has not yet seen the sub`, named.pos);
             }
             if (named.text.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, named.pos);
-            const open = next();
-            if (open.kind !== '(') return refuse(`sub ${named.text} needs a signature: sub ${named.text}(...) { ... }, with () for no parameters`, open.pos);
-            const params: Param[] = [];
-            while (peek().kind !== ')') {
+            // A sub with no signature takes any number of arguments and
+            // sees none (D105): to perl they are in @_, which is not in the
+            // language. That is `sub f(@)`, a slurpy parameter with no name.
+            const bare = peek().kind === '{';
+            const open = bare ? peek() : next();
+            if (!bare && open.kind !== '(') return refuse(`after sub ${named.text} comes its signature, sub ${named.text}(...) { ... }, or its block, found ${show(open)}`, open.pos);
+            const params: Param[] = bare ? [{ slurpy: true, pos: open.pos }] : [];
+            while (!bare && peek().kind !== ')') {
                 const v = next();
                 // A slurpy parameter, `@rest` or `@`: the last, and with
                 // no default; perl compiles neither otherwise (T182).
@@ -1031,7 +1035,7 @@ export const parse = (tokens: readonly Token[]): Program => {
                     unexpected(after, "',' or ')'");
                 }
             }
-            next();
+            if (!bare) next();
             inSub = true;
             const body = block();
             inSub = false;

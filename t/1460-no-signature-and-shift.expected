@@ -1,0 +1,2 @@
+t/1460-no-signature-and-shift.pl:4:25: shift names an array, found ';': shift(@a)
+exit: 1
