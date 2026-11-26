@@ -262,7 +262,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D95 are decided. What is left is what the decisions hand to a
+D1 to D97 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it

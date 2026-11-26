@@ -1,0 +1,2 @@
+use v5.42;
+print defined $ENV{PATH} ? "path" : "none", exists $ENV{NO_SUCH_VAR_Y} ? "y" : "n", "\n";

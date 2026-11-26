@@ -1,0 +1,2 @@
+use v5.42;
+eval { my $c; $c->(); }; print $@ =~ /Can't use an undefined value as a subroutine reference/ ? "undef" : "other"; eval { my $c = "nosuch"; no strict; &$c(); }; print $@ =~ /Undefined subroutine &main::nosuch called/ ? "nosub" : "other", "\n";

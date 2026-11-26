@@ -1,0 +1,10 @@
+use v5.42;
+my $a = $ARGV[0] // "aa";
+my $b = $ARGV[1] // "bb";
+print "seq [", ($a eq $b), "]\n";
+print "sne [", ($a ne $b), "]\n";
+print "slt [", ($a lt $b), "]\n";
+print "sgt [", ($a gt $b), "]\n";
+print "sle [", ($a le $b), "]\n";
+print "sge [", ($a ge $b), "]\n";
+print "scmp [", ($a cmp $b), "]\n";

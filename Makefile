@@ -7,6 +7,7 @@
 # make golden   the golden tests alone; JOBS=n runs n at once
 # make checks   the mechanical checks alone
 # make oracle   write every same and dies test's .expected from perl
+# make census   run every probe of t/census/run/ and write t/census/census.json
 #               (never by hand, and never from the compiler)
 # make models   rerun every model and write its files (never patch them)
 # make doctor   each tool's version; fails on a perl that isn't 5.42 with
@@ -59,6 +60,11 @@ checks:
 oracle:
 	@python3 t/checks.py oracle --write
 
+# Every probe of t/census/run/, compiled, run and held to perl; writes
+# t/census/census.json, which make test checks and does not rewrite.
+census:
+	@python3 t/census.py
+
 models:
 	@python3 t/checks.py models --write
 
@@ -104,4 +110,4 @@ decisions:
 clean:
 	rm -rf build
 
-.PHONY: test unit golden golden-clang sanitize checks oracle models doctor commits hooks check decisions clean
+.PHONY: test unit golden golden-clang sanitize checks oracle census models doctor commits hooks check decisions clean

@@ -1,0 +1,2 @@
+use v5.42;
+my @a=(1,2); sub f { my ($p,@r)=@_; $a[1]=9; "$p@r" } print f(@a), "\n";

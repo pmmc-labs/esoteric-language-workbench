@@ -1,0 +1,11 @@
+use v5.42;
+my $a = $ARGV[0] // 12;
+my $b = $ARGV[1] // 5;
+my $sum = $a + $b;
+my $diff = $a - $b;
+my $prod = $a * $b;
+my $quot = $a / $b;
+my $rem = $a % $b;
+my $powr = $a ** $b;
+my $neg = -$a;
+print "$sum $diff $prod $quot $rem $powr $neg\n";
