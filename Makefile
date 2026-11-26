@@ -88,7 +88,7 @@ A64 ?= ../a64-slight
 DEC = tools/decisions
 # The project's other documents: every .md beside the log, these first
 # and in this order, then the rest by name.
-FIRST = LANGUAGE DESIGN SURFACE PLAN TRAPS BACKGROUND
+FIRST = LANGUAGE DESIGN SURFACE DIFFERENCES PLAN TRAPS BACKGROUND
 # The workbench's own, copied into a project: a D12 in one is not this log's.
 OTHER = PROCESS MODELS REPORT
 DOCS = $(foreach f,$(FIRST),$(if $(wildcard $(1)/$(f).md),--doc $(1)/$(f).md)) \

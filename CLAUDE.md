@@ -482,6 +482,9 @@ Not agreed: what the decisions leave to steps, listed at the end of
    confirmed; there are none yet.
 3. [`docs/SURFACE.md`](docs/SURFACE.md): Perl, construct by construct:
    in, a fault, later, or cut.
+   [`docs/DIFFERENCES.md`](docs/DIFFERENCES.md): the same ground for a
+   reader who knows Perl, by the idea behind each difference. A first
+   draft (2026-11-26); it decides nothing, and nothing checks it yet.
 4. [`docs/PLAN.md`](docs/PLAN.md): the build order.
    [`docs/TRAPS.md`](docs/TRAPS.md): for the step in hand, the
    programs where the obvious implementation is WRONG.
