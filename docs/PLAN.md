@@ -3845,24 +3845,127 @@ of `claims.py`). The amendments:
 
 Referee: perl. Size: medium.
 
-**After 11a (D90).** For the proposal, from the discussion of
-2026-11-26: a verdict for each probe, kept in a file, and not counts
-alone (no probe may become WRONG, and none may leave SAME without a
-decision); a fifth verdict for a probe perl warns on and the
-language prints the same for (D15 makes that no SAME); `make census`
-apart from `make test`, which checks the file; the eight-seed rule
-and T131's caps for probes that can not be judged; a note of where
-the probes came from, for the repository's licence, as
-`runtime/sort.c` has. **The session that builds it needs
-`stevan/perl5-son`, `stevan/chalk` and `stevan/pvm` attached**: the
-probes are there.
+**Proposed 2026-11-26, by Fable 5.2. Not agreed: Q1 to Q4 are
+Stevan's. What he has said already is under "Decided".** After 11a
+(D90). D11; perigrin has agreed.
 
-D11; perigrin has agreed. Import the probes and the graded corpus into
-`t/census/`, each with perl 5.42's output regenerated here; `make
-census` gives each a verdict and writes the counts; `t/checks.py`
-holds WRONG to 0 and SAME from falling. From here every step's report
-says how the census moved. Every WRONG found is fixed before the next
-step, and turned into a golden test.
+#### What was measured first
+
+Every probe was run once beside perl 5.42 by a throwaway script,
+`use v5.42;` put in front of each that lacked it (all but 21).
+
+- **The probes**: perl5-son's `t/corpus/probes` (1,053) and its
+  audit's (4,557), Chalk's `t/data/audit-probes` (3,179, all but 18
+  of them copies of the audit's), and pvm's `conformance/mdtest`
+  (270 programs, 267 with perl's output): **5,786 distinct
+  programs**, 820 KB.
+- **Under perl, with the line in front**: 5,493 run clean, 87 warn,
+  69 die, 137 do not compile (most for `use strict`).
+- **Here**: 4,990 refused, 718 the same as perl, 67 a fault where
+  perl prints on, and **11 WRONG**, which is why the census exists.
+  The eleven were one trap of step 9's (T213), fixed the same day
+  and before this was written.
+- **What refuses them**, by the first refusal met: about 2,200 an
+  operator or a word that comes with a later step; 1,240 `@_` or
+  `$_[0]`; 700 a sub with no signature; 340 a variable of perl's
+  own; 340 `$_` or a loop's variable changed. So a large share is
+  refused by design (D17, D18, D21) and always will be.
+- **Not probes**: PerlOnJava's unit tests in pvm (986 files, each a
+  `Test::More` script: step 18, when a module can load, and then a
+  second measure of another kind); pvm's parser fragments, which
+  print nothing.
+
+#### Decided
+
+- **`use v5.42;` is put in front** of a probe that lacks it (Stevan,
+  2026-11-26). The language has no other first line, and perl's
+  output is regenerated here from the file as imported.
+- **The probes are imported into `t/census/`**, pvm's mdtest
+  programs with them, perl's output regenerated (Stevan).
+- **A probe refused by design is kept and not run**; if the
+  language takes back what refuses it, the probe moves to where it
+  is run (Stevan).
+- **`make census` writes a JSON file of the results, kept in git**:
+  the WRONG ones can be found and put in order, and the file's
+  history is the progress (Stevan).
+
+#### The proposal
+
+- **`t/census/run/`**: the probes that are compiled and run.
+  **`t/census/by-design/`**: the ones the language refuses for good,
+  each beside the decision that refuses it. **`t/census/not-perl/`**:
+  the 206 perl itself stops at with the line in front (does not
+  compile, or dies), kept for the record and never run. One file a
+  program, named for where it came from; a program that came from
+  two places is one file, and `t/census/SOURCES.tsv` lists every
+  place, with each repository's revision and licence.
+- **`t/census/census.json`**, written by `make census` and by
+  nothing else: for each probe in `run/`, its verdict, and for a
+  refusal its message, for a fault its message and line; sorted by
+  name, one probe a line, so that a diff reads; and the counts.
+- **The verdicts** are D11's four, and two more: **WARNS**, perl
+  warns and the language prints the same (D15 says that is no
+  agreement, and it is no WRONG either: a place to look); and
+  **REFUSED** carries a reason, *later* with the step that will take
+  it or *open* when nobody has said.
+- **`make test` checks the file, and runs no probe**: it is the
+  compiler's own record, so the check is that it is there, that it
+  lists exactly the files of `run/`, and the ratchet: no WRONG, and
+  no probe that was SAME in the last commit is anything else now.
+  `make census` is apart, and takes some minutes.
+- **The oracle's rules hold for probes**: eight seeds, and a probe
+  whose output moves with the seed is judged on none of them (its
+  verdict says so); T131's cap on what a program prints, and a
+  limit on its time; perl run plain.
+- **Every WRONG becomes a golden test and a row of `TRAPS.md`** when
+  it is fixed, as T213 has.
+
+#### The questions
+
+**Q1. How is "refused by design" told from "refused for now"?**
+(a) **Recommended: a table in the census's script, from a refusal's
+message to its reason**: a decision's number (by design), a step's
+number (later), and anything the table does not know is *open*, and
+`make census` lists those to be read. The compiler's messages do not
+change, and the table is a hundred lines that says what the language
+has decided about Perl. A probe is moved to `by-design/` by `make
+census --sort`, never by hand.
+(b) Each refusal in the compiler carries its reason, a field on the
+diagnostic. Exact, and it touches every `refuse` there is (about
+600).
+(c) By hand, a probe at a time.
+
+**Q2. May a WRONG stand in the committed file?** D11 says WRONG is 0
+and each is fixed before the next step.
+(a) **Recommended: yes, while it is being worked on, and never at
+the end of a step.** `make census` writes what it finds; a WRONG in
+the file fails `make test`, loudly, with the probe's name; so the
+commit that finds one is red and the one that fixes it is green, and
+the history has both. A list to put in order is the file itself,
+filtered.
+(b) No: `make census` refuses to write a file with a WRONG in it.
+Then the finding is in nobody's history.
+(c) Yes, with a field that says a WRONG is known and when it is due,
+which `make test` allows. That is the door D11 shut.
+
+**Q3. A probe that is only the first refusal deep.** A program with
+`@_` on line 1 and a hash on line 3 is refused for `@_`, and that
+is by design; the same program with the lines the other way round is
+refused "for now". The census sees one refusal a program.
+(a) **Recommended: live with it, and say so.** A probe's reason is
+its first refusal's; as steps land, probes move from *later* to the
+next thing that stops them, and some arrive at `by-design/` late.
+The counts are honest about what the compiler said.
+(b) Make the compiler go on after a refusal, to collect them all.
+Machinery, and a second refusal after a first is often nonsense.
+
+**Q4. One step, and what it leaves.**
+(a) **Recommended: one.** The import and `SOURCES.tsv`; the script
+and its own tests (a probe of each verdict, written for it, and the
+ratchet broken on purpose); the first `census.json`; the check in
+`t/checks.py`; `docs/` and the Status. PerlOnJava's suite is named
+at step 18.
+(b) Two: the import first.
 
 ### 12. Hashes
 
