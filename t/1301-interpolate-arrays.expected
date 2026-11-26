@@ -1,0 +1,224 @@
+0 1 -7 41 9007199254740992 -9223372036854775808 0.5 3 0 1.5e+300 1e+21 0.1 0.333333333333333 999999999999999  0 ab  3  00 3.0 1e3 12abc a b it's x[1] p::q 5 -5 +5 1 
+[0 1 -7 41 9007199254740992 -9223372036854775808 0.5 3 0 1.5e+300 1e+21 0.1 0.333333333333333 999999999999999  0 ab  3  00 3.0 1e3 12abc a b it's x[1] p::q 5 -5 +5 1 ]
+0 1 -7 41 9007199254740992 -9223372036854775808 0.5 3 0 1.5e+300 1e+21 0.1 0.333333333333333 999999999999999  0 ab  3  00 3.0 1e3 12abc a b it's x[1] p::q 5 -5 +5 1 s
+p q r s tonly
+p q r s t only
+[]
+
+only
+p q r s t's
+p q r s t:
+p q r s t->
+p q r s t [0]
+p q r s t[0]
+p q r s t::x
+me@p q r s t.com
+p q r s t.p q r s t
+4
+4x
+4/p q r s t
+-1
+4->
+4[0]
+4:
+n=4: p q r s t (p..t)
+p
+<p>
+pp
+ps
+p->
+p [0]
+p:
+p'
+p-1
+q
+<q>
+qp
+qs
+q->
+q [0]
+q:
+q'
+q-1
+t
+<t>
+tp
+ts
+t->
+t [0]
+t:
+t'
+t-1
+t
+<t>
+tp
+ts
+t->
+t [0]
+t:
+t'
+t-1
+p
+<p>
+pp
+ps
+p->
+p [0]
+p:
+p'
+p-1
+q
+<q>
+qp
+qs
+q->
+q [0]
+q:
+q'
+q-1
+s
+<s>
+sp
+ss
+s->
+s [0]
+s:
+s'
+s-1
+0|0
+1|1
+-7|-7
+41|41
+9007199254740992|9007199254740992
+-9223372036854775808|-9223372036854775808
+0.5|0.5
+3|3
+0|0
+1.5e+300|1.5e+300
+1e+21|1e+21
+0.1|0.1
+0.333333333333333|0.333333333333333
+999999999999999|999999999999999
+|
+0|0
+ab|ab
+ 3 | 3 
+00|00
+3.0|3.0
+1e3|1e3
+12abc|12abc
+a b|a b
+it's|it's
+x[1]|x[1]
+p::q|p::q
+5|5
+-5|-5
++5|+5
+1|1
+|
+p q
+[p q]
+p qs
+p q->
+p q [0]
+t p
+[t p]
+t ps
+t p->
+t p [0]
+q s
+[q s]
+q ss
+q s->
+q s [0]
+p q
+[p q]
+p qs
+p q->
+p q [0]
+q r s
+[q r s]
+q r ss
+q r s->
+q r s [0]
+p r s
+[p r s]
+p r ss
+p r s->
+p r s [0]
+
+[]
+s
+->
+ [0]
+p p p
+[p p p]
+p p ps
+p p p->
+p p p [0]
+s t
+[s t]
+s ts
+s t->
+s t [0]
+q
+[q]
+qs
+q->
+q [0]
+p q r s t
+[p q r s t]
+p q r s ts
+p q r s t->
+p q r s t [0]
+s q r t
+[s q r t]
+s q r ts
+s q r t->
+s q r t [0]
+t s r q p
+[t s r q p]
+t s r q ps
+t s r q p->
+t s r q p [0]
+p
+p p
+p|
+t
+t p
+p q r s t|
+t
+t p
+|
+q
+q p
+p q|
+t
+t p
+|
+p
+p p
+p|
+r
+r p
+q
+q p
+t
+t p
+q
+q p
+p q|
+p
+p p
+p|
+[p q r s t]
+9
+onlyonly
+p q r s tp q r s t
+1
+5
+42
+2:<p q r s t><p q r s t>
+2:<p q r s t p q r s t><p q r s t>
+3:<p q r s t p q r s t><p q r s t><p q r s t p q r s t p q r s t>
+1:<p q r s t>

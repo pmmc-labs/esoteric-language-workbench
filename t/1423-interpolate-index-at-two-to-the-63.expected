@@ -1,0 +1,2 @@
+t/1423-interpolate-index-at-two-to-the-63.pl:5:9: an index of 9223372036854775808 or more in a string: perl wraps it round to the other end of the array
+exit: 1

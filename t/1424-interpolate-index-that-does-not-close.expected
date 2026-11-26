@@ -1,0 +1,2 @@
+t/1424-interpolate-index-that-does-not-close.pl:5:8: an index in a string that does not close: write \[ for the character
+exit: 1

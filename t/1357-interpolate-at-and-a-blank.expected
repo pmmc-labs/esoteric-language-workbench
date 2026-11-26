@@ -1,0 +1,2 @@
+t/1357-interpolate-at-and-a-blank.pl:4:8: '@' in a double-quoted string begins an array, and no name is hard against it: write \@ for the character
+exit: 1

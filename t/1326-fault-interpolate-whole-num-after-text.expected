@@ -1,0 +1,4 @@
+1
+n=9.00719925474099e+15.
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/1326-fault-interpolate-whole-num-after-text.pl line 12.
+exit: 1

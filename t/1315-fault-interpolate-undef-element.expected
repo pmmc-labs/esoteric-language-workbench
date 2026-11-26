@@ -1,0 +1,4 @@
+1
+2
+fault: undef where a string is wanted at t/1315-fault-interpolate-undef-element.pl line 12.
+exit: 1

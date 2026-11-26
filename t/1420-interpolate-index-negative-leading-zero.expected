@@ -1,0 +1,2 @@
+t/1420-interpolate-index-negative-leading-zero.pl:5:10: 010 in an index in a string: a leading zero makes it octal, to perl; write the number without it
+exit: 1

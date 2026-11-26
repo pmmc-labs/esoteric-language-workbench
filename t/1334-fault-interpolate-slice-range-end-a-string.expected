@@ -1,0 +1,4 @@
+1
+1 2 3
+fault: a string as the end of a range at t/1334-fault-interpolate-slice-range-end-a-string.pl line 14.
+exit: 1

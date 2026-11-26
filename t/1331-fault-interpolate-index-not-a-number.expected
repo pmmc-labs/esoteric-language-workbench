@@ -1,0 +1,4 @@
+1
+2
+fault: not a numeric string at t/1331-fault-interpolate-index-not-a-number.pl line 14.
+exit: 1

@@ -1,0 +1,2 @@
+t/1386-interpolate-index-after-a-slice.pl:5:14: '[' hard after @a[0, 1] in a string: another index, to perl; write @a[0, 1]\[
+exit: 1

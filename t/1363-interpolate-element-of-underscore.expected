@@ -1,0 +1,2 @@
+t/1363-interpolate-element-of-underscore.pl:5:17: $_[ is an element of perl's own @_ or %_, which are not in the language
+exit: 1

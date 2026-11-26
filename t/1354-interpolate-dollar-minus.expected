@@ -1,0 +1,2 @@
+t/1354-interpolate-dollar-minus.pl:4:7: '$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
+exit: 1

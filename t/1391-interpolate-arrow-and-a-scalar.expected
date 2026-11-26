@@ -1,0 +1,2 @@
+t/1391-interpolate-arrow-and-a-scalar.pl:5:8: '->$' hard after $x in a string: a dereference, to perl, and references are not in the language yet (step 13); write $x\->$
+exit: 1

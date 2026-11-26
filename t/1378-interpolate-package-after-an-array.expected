@@ -1,0 +1,2 @@
+t/1378-interpolate-package-after-an-array.pl:5:8: '::' hard after @a in a string: perl reads a variable of another package; write @{a}:: or @a\::
+exit: 1

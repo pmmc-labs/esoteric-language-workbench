@@ -1,0 +1,2 @@
+t/1356-interpolate-dollar-backslash.pl:5:6: '$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
+exit: 1

@@ -1,0 +1,2 @@
+t/1442-interpolate-lost-assignment-of-an-array-and-text.pl:7:11: '.=' of an assignment of an interpolated string: perl makes one operation of them and never assigns $u; make the assignment a statement of its own
+exit: 1

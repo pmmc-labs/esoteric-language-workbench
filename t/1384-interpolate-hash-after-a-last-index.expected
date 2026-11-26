@@ -1,0 +1,2 @@
+t/1384-interpolate-hash-after-a-last-index.pl:5:9: '{' hard after $#a in a string: a hash's, to perl, and hashes are not in the language yet (step 12); write $#{a}{ or $#a\{
+exit: 1

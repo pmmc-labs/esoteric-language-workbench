@@ -1,0 +1,4 @@
+1
+<3>
+fault: undef where a string is wanted at t/1321-fault-interpolate-element-by-a-scalar-past-the-end.pl line 14.
+exit: 1

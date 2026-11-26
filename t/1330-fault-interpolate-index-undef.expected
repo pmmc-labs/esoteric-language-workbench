@@ -1,0 +1,4 @@
+1
+1
+fault: undef where a number is wanted at t/1330-fault-interpolate-index-undef.pl line 14.
+exit: 1

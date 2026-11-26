@@ -1,0 +1,6 @@
+1
+<1>
+<2>
+<1>
+fault: undef where a string is wanted at t/1340-fault-interpolate-undef-under-a-for-modifier.pl line 12.
+exit: 1

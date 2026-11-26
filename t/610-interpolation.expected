@@ -1,2 +1,1 @@
-t/610-interpolation.pl:5:11: '$' in a double-quoted string is a variable to perl: write \$ (interpolation is not in the language yet)
-exit: 1
+x is 1

@@ -1,0 +1,4 @@
+1
+999999999999999
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/1325-fault-interpolate-whole-num.pl line 12.
+exit: 1

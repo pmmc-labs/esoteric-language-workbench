@@ -1,0 +1,4 @@
+1
+3
+fault: undef where a string is wanted at t/1337-fault-interpolate-element-past-the-end-in-a-loop-list.pl line 14.
+exit: 1

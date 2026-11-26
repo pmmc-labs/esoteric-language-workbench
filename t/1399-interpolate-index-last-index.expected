@@ -1,0 +1,2 @@
+t/1399-interpolate-index-last-index.pl:5:9: in a string an index is a whole number or a scalar variable (D91): take the index into a my first
+exit: 1

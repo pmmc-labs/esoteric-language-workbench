@@ -1,0 +1,2 @@
+t/1380-interpolate-package-after-an-element.pl:5:11: '::' hard after $a[0] in a string: perl reads a variable of another package; write $a[0]\::
+exit: 1

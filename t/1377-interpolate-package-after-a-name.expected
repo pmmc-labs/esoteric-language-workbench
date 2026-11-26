@@ -1,0 +1,2 @@
+t/1377-interpolate-package-after-a-name.pl:5:8: '::' hard after $x in a string: perl reads a variable of another package; write ${x}:: or $x\::
+exit: 1

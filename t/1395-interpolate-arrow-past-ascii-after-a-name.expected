@@ -1,0 +1,2 @@
+t/1395-interpolate-arrow-past-ascii-after-a-name.pl:7:8: a character past ASCII (U+2192) hard after $x in a string: perl takes a letter, a digit or a mark there into the name; write ${x}
+exit: 1

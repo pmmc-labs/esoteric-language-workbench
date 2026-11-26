@@ -1,0 +1,2 @@
+t/1383-interpolate-hash-after-an-element.pl:5:11: '{' hard after $a[0] in a string: a hash's, to perl, and hashes are not in the language yet (step 12); write $a[0]\{
+exit: 1

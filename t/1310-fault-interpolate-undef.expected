@@ -1,0 +1,4 @@
+1
+
+fault: undef where a string is wanted at t/1310-fault-interpolate-undef.pl line 12.
+exit: 1

@@ -1,0 +1,2 @@
+t/1364-interpolate-last-index-of-nothing.pl:4:6: after '$#' in a string comes an array's name, or one in braces: write \$ for the character
+exit: 1

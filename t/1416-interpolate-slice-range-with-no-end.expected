@@ -1,0 +1,2 @@
+t/1416-interpolate-slice-range-with-no-end.pl:5:14: in a string an index is a whole number or a scalar variable (D91): take the index into a my first
+exit: 1
