@@ -251,6 +251,87 @@ static void body(rt_ctx *cx) {
         rt_helem_store(cx, slots[0], rt_string(&K), rt_int(9));
         rt_say(cx, rt_hash_count(cx, slots[0]));
     }
+    if (strncmp(which, "on-", 3) == 0) {
+        // What stands on a hash (step 12b). Slot 1 is a list of keys, a,
+        // k and d, of which k is not there; slot 2 a list of two values.
+        four(cx, slots);
+        slots[1] = rt_array_new(cx);
+        rt_list_add(cx, slots[1], rt_string(&A));
+        rt_list_add(cx, slots[1], rt_string(&K));
+        rt_list_add(cx, slots[1], rt_string(&D));
+        slots[2] = rt_array_new(cx);
+        rt_list_add(cx, slots[2], rt_int(10));
+        rt_list_add(cx, slots[2], rt_int(20));
+        slots[3] = rt_array_new(cx);
+        if (is("on-strict")) {
+            rt_say(cx, rt_helem_strict(cx, slots[0], rt_string(&D)));
+            rt_helem_strict(cx, slots[0], rt_string(&K));
+        }
+        if (is("on-slice") || is("on-slice-strict")) {
+            // The value at each key, in the order asked; undef, and no key
+            // made, for one that is not there.
+            rt_list_add_hslice(cx, slots[3], slots[0], slots[1], 0);
+            rt_say(cx, rt_count(cx, slots[3]));
+            rt_say(cx, rt_list_item(cx, slots[3], 0));
+            rt_say(cx, rt_defined(cx, rt_list_item(cx, slots[3], 1)));
+            rt_say(cx, rt_list_item(cx, slots[3], 2));
+            rt_say(cx, rt_hash_count(cx, slots[0]));
+            if (is("on-slice-strict")) rt_list_add_hslice(cx, slots[3], slots[0], slots[1], 1);
+        }
+        if (is("on-store") || is("on-store-frozen")) {
+            // A value for each key in turn, and an undef for the third,
+            // which the list does not reach: its key is made all the same.
+            if (is("on-store-frozen")) rt_freeze(cx, slots[0]);
+            rt_hslice_store(cx, slots[0], slots[1], slots[2]);
+            rt_say(cx, rt_hash_count(cx, slots[0]));
+            rt_say(cx, rt_helem(cx, slots[0], rt_string(&A)));
+            rt_say(cx, rt_helem(cx, slots[0], rt_string(&K)));
+            rt_say(cx, rt_defined(cx, rt_helem(cx, slots[0], rt_string(&D))));
+            rt_say(cx, rt_hash_exists(cx, slots[0], rt_string(&D)));
+            slots[3] = rt_array_new(cx);
+            rt_list_add_keys(cx, slots[3], slots[0]);
+            rt_say(cx, rt_join(cx, rt_string(&COMMA), slots[3]));
+        }
+        if (is("on-delete") || is("on-delete-frozen")) {
+            if (is("on-delete-frozen")) rt_freeze(cx, slots[0]);
+            rt_hash_delete_slice(cx, slots[3], slots[0], slots[1]);
+            rt_say(cx, rt_count(cx, slots[3]));
+            rt_say(cx, rt_list_item(cx, slots[3], 0));
+            rt_say(cx, rt_defined(cx, rt_list_item(cx, slots[3], 1)));
+            rt_say(cx, rt_list_item(cx, slots[3], 2));
+            show(cx, slots);
+        }
+        if (is("on-parameter")) {
+            // The arguments left for a hash, from the second on: from
+            // where they are, and from a list of them.
+            rt_value given[5] = { rt_int(7), rt_string(&K), rt_int(1), rt_string(&A), rt_int(2) };
+            rt_value *where[5] = { &given[0], &given[1], &given[2], &given[3], &given[4] };
+            slots[3] = rt_hash_new(cx);
+            rt_slurp_hash(cx, slots[3], 5, where, NULL, 1);
+            slots[0] = slots[3];
+            show(cx, slots);
+            slots[0] = rt_hash_new(cx);
+            rt_slurp_hash(cx, slots[0], 5, NULL, given, 3);
+            rt_slurp_hash(cx, slots[0], 5, NULL, given, 5);
+            show(cx, slots);
+            rt_fault_odd_arguments(cx, "f");
+        }
+        if (is("on-array") || is("on-array-before")) {
+            // An array's slice stored to: the indexes 0 and 4 of an array
+            // of three, and one value.
+            slots[0] = rt_array_new(cx);
+            for (int k = 1; k <= 3; k++) rt_list_add(cx, slots[0], rt_int(k));
+            slots[1] = rt_array_new(cx);
+            rt_list_add(cx, slots[1], rt_int(0));
+            rt_list_add(cx, slots[1], rt_int(is("on-array-before") ? -4 : 4));
+            slots[2] = rt_array_new(cx);
+            rt_list_add(cx, slots[2], rt_int(9));
+            rt_slice_store(cx, slots[0], slots[1], slots[2]);
+            rt_say(cx, rt_count(cx, slots[0]));
+            rt_say(cx, rt_elem(cx, slots[0], rt_int(0)));
+            rt_say(cx, rt_defined(cx, rt_elem(cx, slots[0], rt_int(4))));
+        }
+    }
     rt_leave(cx, &frame);
 }
 

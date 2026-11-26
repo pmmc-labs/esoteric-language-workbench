@@ -1,0 +1,2 @@
+t/1754-hash-string-index-of-an-element.pl:5:11: '[' hard after $h{a} in a string: another index, to perl; write $h{a}\[
+exit: 1

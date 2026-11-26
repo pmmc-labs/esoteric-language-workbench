@@ -1,2 +1,0 @@
-t/1756-hash-string-key-not-declared.pl:5:9: $k is not declared: my $k; in a string, \$ is the character, and ${name} ends a name sooner
-exit: 1

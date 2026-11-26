@@ -32,12 +32,14 @@ r('slice-among-targets', 'perl takes it: 7 8 3. One target, here (D100).', A + '
 r('slice-assignment-as-a-value', 'perl gives the count of the right side: 3 (D78).', A + 'my $n = (@a[0, 1] = (5, 6, 7));\nsay $n;', '= (5', 'an assignment of a list is a statement: perl gives the count of its right side as its value (D78)')
 r('slice-index-changes-what-the-right-names', 'perl reads the element after the index has stored to it: 9 9 7.', A + '@a[0, ($a[1] = 9) - 7] = ($a[1], 7);\nsay "@a";', '- 7', 'a later part of this assignment can change @a, which an earlier part names: perl reads it after the change; take the value into a my first')
 r('slice-key-changes-what-the-right-reads', 'perl: 5.', H + '@h{"x", delete($h{a})} = ($h{a}, 2);\nsay scalar(%h);', 'delete', 'a later part of this assignment can change %h, which an earlier part names: perl reads it after the change; take the value into a my first')
+r('slice-stored-with-a-leading-zero', 'octal, to perl: the index 8, and an array of nine.', A + '@a[010, 1] = (1, 2);\nsay scalar(@a);', '010', '010 starts with a zero: perl reads that as octal, which the language writes 0o17')
 # ---- delete of a slice
 r('delete-of-a-slice-for-one-value', 'perl gives the last value it deleted: 2.', H + 'my $x = delete @h{"a", "b"};\nsay $x;', 'delete', 'delete of a slice where one value is wanted: perl gives the last value it deleted; delete the element, or assign the list to an array')
 r('delete-of-a-slice-of-one', 'perl warns: Scalar value @h{"a"} better written as $h{"a"}.', H + 'delete @h{"a"};', '@h', ONE('@h{...}', '$h{...}'))
 r('delete-of-a-slice-before-a-plus', 'perl dies: delete argument is not a HASH or ARRAY element or slice.', H + 'my @d = (delete @h{"a", "b"} + 1);', 'delete', "delete @h{...} before '+': perl reads on for delete's argument, or does not compile it; write delete(...)")
 r('exists-of-a-slice', 'perl dies: exists argument is not a HASH or ARRAY element or a subroutine.', H + 'say exists @h{"a", "b"} ? 1 : 0;', '@h', "exists takes an element of a hash, found '@h': exists $h{...}")
 r('delete-of-a-slice-after-what-names-the-hash', 'perl: 1213.', H + 'my @l = (@h{"a", "b"}, delete @h{"a", "c"});\nsay @l;', 'delete', 'a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first')
+r('delete-of-a-slice-whose-keys-change', 'perl reads the first key after the second has changed it: b is deleted twice, and a stays.', H + 'my $i = "a";\nmy @d = delete @h{$i, ($i = "b")};\nsay "@d", scalar(%h);', '= "b"', 'a later part of delete can change $i, which an earlier part names: perl reads it after the change; take the value into a my first')
 # ---- a hash as a parameter
 LAST = lambda p: f'{p} takes every argument that is left, so it is the last parameter: perl refuses one after it'
 r('parameter-not-last', 'perl does not compile it: Slurpy parameter not last.', 'sub f(%o, $x) { return 1 }', ', $x', LAST('%o'))

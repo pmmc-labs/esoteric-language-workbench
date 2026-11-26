@@ -76,6 +76,11 @@ for my $key (sort keys %f) { delete $f{$key} if $f{$key} % 2; $f{uc($key)} = 1; 
 for my $i (1 .. scalar(keys %f)) { $f{"n$i"} = $i; }
 say join(",", map { $_ . "=" . $f{$_} } sort keys %f);
 
+# A string is a copy: a hash's element in one, in a loop's list, freezes
+# nothing.
+for my $s ("$f{b}-$f{d}", "x") { $f{b}++; $f{new} = $s; }
+say $f{b}, $f{new};
+
 # Reading a frozen hash is no change: elements, exists, a count, a slice.
 for my $v (@f{"b", "d"}) {
     say $v + $f{b}, exists $f{zz} ? "zz" : "-", scalar(%f), join("", @f{"d", "b"});

@@ -390,3 +390,24 @@ test('a frozen hash is read, and every change to it is a fault', () => {
     }
     assert.deepEqual(run('hash', 'frozen-none'), { status: 0, output: read + '5\n' });
 });
+
+// Step 12b: what stands on a hash. The hash is a, b, c, d with 1 to 4; the
+// keys asked for are a, k and d, and k is not there.
+test('an element and a slice of a hash where perl would make a key (T216)', () => {
+    assert.deepEqual(run('hash', 'on-strict'), { status: 1, output: '4\nfault: a key that is not there in a foreach, where perl would make it at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'on-slice'), { status: 0, output: '3\n1\n\n4\n4\n' });
+    assert.deepEqual(run('hash', 'on-slice-strict'), { status: 1, output: '3\n1\n\n4\n4\nfault: a slice with a key that is not there, where perl would make it at hash.pl line 1.\n' });
+});
+
+test('a slice of a hash stored to and deleted, and of an array stored to (T228)', () => {
+    assert.deepEqual(run('hash', 'on-store'), { status: 0, output: '5\n10\n20\n\n1\na,b,c,d,k\n' });
+    assert.deepEqual(run('hash', 'on-store-frozen'), { status: 1, output: 'fault: a hash was changed while a foreach is over it at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'on-delete'), { status: 0, output: '3\n1\n\n4\nb,c|2,3|2\n' });
+    assert.deepEqual(run('hash', 'on-delete-frozen'), { status: 1, output: 'fault: a hash was changed while a foreach is over it at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'on-array'), { status: 0, output: '5\n9\n\n' });
+    assert.deepEqual(run('hash', 'on-array-before'), { status: 1, output: 'fault: an element before the start of the array at hash.pl line 1.\n' });
+});
+
+test('a hash as a last parameter is filled from the arguments left, and an odd number is a fault (T226)', () => {
+    assert.deepEqual(run('hash', 'on-parameter'), { status: 1, output: "k,a|1,2|2\na|2|1\nfault: an odd number of arguments for f's hash at hash.pl line 1.\n" });
+});

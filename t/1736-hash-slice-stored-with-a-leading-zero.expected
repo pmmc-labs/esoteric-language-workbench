@@ -1,0 +1,2 @@
+t/1736-hash-slice-stored-with-a-leading-zero.pl:5:4: 010 starts with a zero: perl reads that as octal, which the language writes 0o17
+exit: 1

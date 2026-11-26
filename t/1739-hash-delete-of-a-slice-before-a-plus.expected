@@ -1,0 +1,2 @@
+t/1739-hash-delete-of-a-slice-before-a-plus.pl:5:10: delete @h{...} before '+': perl reads on for delete's argument, or does not compile it; write delete(...)
+exit: 1

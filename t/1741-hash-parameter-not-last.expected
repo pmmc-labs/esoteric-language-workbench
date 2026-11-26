@@ -1,2 +1,0 @@
-t/1741-hash-parameter-not-last.pl:4:9: %o takes every argument that is left, so it is the last parameter: perl refuses one after it
-exit: 1
