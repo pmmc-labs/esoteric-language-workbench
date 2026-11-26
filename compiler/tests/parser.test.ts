@@ -692,15 +692,14 @@ test('sort LIST and sort { } LIST', () => {
 // Step 12a: hashes.
 test('a hash, its element, and the builtins that name one', () => {
     const exprs = parse(lex('my %h = (a => 1);\n$h{a} += $h{$k . "x"};\n%h = ();\nmy ($x, %g) = (1, %h);\nsay exists $h{a} == 1, delete($h{b}) . "x", keys %h, scalar(values(%h)), scalar(%h);')).body
-        .map(s => (s.kind === 'do' ? s.expr : s.kind === 'call' ? s.args : assert.fail()));
-    const [declared, added, emptied, both, said] = exprs;
-    assert.ok(!Array.isArray(declared) && declared?.kind === 'assign' && declared.target.kind === 'myarray' && declared.target.hash === true);
+        .map(s => (s.kind === 'do' ? [s.expr] : s.kind === 'call' ? [...s.args] : assert.fail()));
+    const [[declared], [added], [emptied], [both], said] = exprs as [Expr[], Expr[], Expr[], Expr[], Expr[]];
+    assert.ok(declared?.kind === 'assign' && declared.target.kind === 'myarray' && declared.target.hash === true);
     assert.ok(declared.value.kind === 'list' && declared.value.items[0]?.kind === 'str' && declared.value.items[0].value === 'a');
-    assert.ok(!Array.isArray(added) && added?.kind === 'assign' && added.target.kind === 'elem' && added.target.hash === true && added.target.index.kind === 'str');
+    assert.ok(added?.kind === 'assign' && added.target.kind === 'elem' && added.target.hash === true && added.target.index.kind === 'str');
     assert.ok(added.value.kind === 'elem' && added.value.hash === true && added.value.index.kind === 'binary');
-    assert.ok(!Array.isArray(emptied) && emptied?.kind === 'assign' && emptied.target.kind === 'array' && emptied.target.hash === true);
-    assert.ok(!Array.isArray(both) && both?.kind === 'listassign' && both.targets[1]?.kind === 'myarray' && both.targets[1].hash === true);
-    assert.ok(Array.isArray(said));
+    assert.ok(emptied?.kind === 'assign' && emptied.target.kind === 'array' && emptied.target.hash === true);
+    assert.ok(both?.kind === 'listassign' && both.targets[1]?.kind === 'myarray' && both.targets[1].hash === true);
     // `exists` binds tighter than `==`, and brackets end `delete`'s argument.
     const [first, second, third, fourth, fifth] = said;
     assert.ok(first?.kind === 'binary' && first.op === '==' && first.left.kind === 'hashop' && first.left.op === 'exists' && first.left.key?.kind === 'str');
