@@ -391,6 +391,17 @@ def counted(code, m):
     operator = r'(?:[-+*/]|(?<!\.)\.(?!\.)|==|!=|<=|>=)'
     if re.search(operator + r'\s*\(*\s*$', before) or re.match(name + r'\s*\)*\s*' + operator, rest):
         return True
+    # Copied whole into an array of its own, `my @v = values %h;`, that is
+    # only ever sorted or counted: every other place the array stands has
+    # `sort` or `scalar` for the word before it, and no element of it is
+    # read. (Until step 12b a hash may not stand in a sort's own list.)
+    into = re.search(r'\bmy\s+@(\w+)\s*=\s*\(?\s*$', before)
+    if into and re.match(name + r'\s*\)?\s*;', rest):
+        array = into.group(1)
+        uses = [u for u in re.finditer(r'@' + array + r'\b', code) if u.start() != into.start(1) - 1]
+        if uses and not re.search(r'\$' + array + r'\s*\[|\$#' + array + r'\b', code) \
+                and all(word_before(code, u.start())[0] in ('sort', 'scalar') for u in uses):
+            return True
     # Tested, by `? :` or behind a `!`: whether it has any.
     if re.match(name + r'\s*\?', rest) or re.search(r'!\s*$', before):
         return True

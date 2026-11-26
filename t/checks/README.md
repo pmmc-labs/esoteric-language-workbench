@@ -45,6 +45,9 @@ test is tested apart, on `t/000-say.pl`.)
 | `same-sort-logs` | A comparator that prints the pairs it is given |
 | `same-grep-prints` | A block that prints, between a sort and its `keys` |
 | `same-keys-sliced` | `(keys %h)[0]`, one key picked before the sort |
+| `same-hash-into-an-array` | A hash's values, and the hash, copied into an array that is only sorted or counted (step 12a) |
+| `same-hash-into-an-array-shown` | The same, and the array printed once as it is |
+| `same-hash-into-an-array-element` | The same, and one element of the copy read |
 | `same-hash-in-string` | A hash inside a string that runs code |
 | `same-scalar-each` | `scalar(each %h)`, which is a key and not a count |
 | `same-scalar-reverse` | `scalar reverse keys %h` |
