@@ -16,7 +16,8 @@ to step 8's (D68's number is the builder's default, which he said
 to stay with). D73 and D74 were the builder's defaults, from the
 review of step 8 and from building it, which he confirmed; D75 is
 his, on seeing the build. D76 to D80 are his answers to step 9's
-proposal, as its review had amended it.
+proposal, as its review had amended it. D91 to D94 are his answers
+to step 11a's; D95 is the builder's defaults there.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1697,6 +1698,73 @@ proposal to say. Step 16 keeps the rest: `q`, `qq`, `qw`, heredocs,
 builtins. Rejected: the census first (it would mostly count
 refusals); all of step 16 forward (large, and most of it is not what
 the probes are refused for).
+
+**D91. In a string, an index is a whole number or a scalar
+variable.** *(User: picked the recommendation, 2026-11-26; step 11a,
+Q1, as its review amended it.)* `"$a[0]"`, `"$a[-1]"`, `"$a[$i]"`;
+in a slice, two or more of those with commas between, or a range
+between two of them. The number is the language's own whole-number
+literal: no leading zero, which is octal to perl in silence (T211),
+and no more than 2^63 - 1, past which perl's index wraps. To perl an
+index in a string is any expression, read as code, and the pieces of
+the string are read late (T197), so an index that changed a variable
+would show in the pieces before it; with this rule nothing in a
+string can change anything, and D57 and D76 have nothing to check
+inside one. It is what 178 of the 184 elements in the census's
+probes' strings are. Anything else is refused, with a message that
+says to take the index into a `my` first. Rejected: an expression
+that changes nothing (the lexer reading code inside a string, for
+six of the probes' elements); whatever perl takes (calls in an
+index, and D57's and D76's walks through a string).
+
+**D92. A `$` or an `@` in double quotes begins a shape of the
+language's, or is refused.** *(User: picked the recommendation,
+2026-11-26; step 11a, Q2.)* The shapes: `$name`, `${name}`, `@name`,
+`@{name}`, `$name[I]`, `@name[I, J]`, `$#name`, `$#{name}`, each
+hard against its `$` or `@` (T200). What follows a shape is text, as
+perl has it (`"$x's"`, `"$x: "`, `"$x->y"`), except what perl would
+take into the variable, which is refused: `::` (T199), `{`, a second
+`[`, `->` before `[`, `{`, `@` or `$` (T203), and a character past
+ASCII (T205); after a name in braces nothing is. T34's refusal
+stands for every other `$` and `@`: `"a @ b"` is text to perl, but
+which `@` is text is a table of perl's (`"@-"`, `"@_"` and `"@1"`
+are arrays, empty and silent: T204), and "an `@` in double quotes is
+an array's or has its backslash" is one line. Rejected: text
+wherever perl is silent; refusing `->`, `:` and `'` after a name
+too, which would refuse what everyone writes.
+
+**D93. `"$#a"` interpolates.** *(User: picked the recommendation,
+2026-11-26; step 11a, Q3.)* And `"$#{a}"`. perl has one reading of
+them. `::`, `[` and `{` hard after `$#a` are refused: `"$#a::"` is
+`-1` to perl, in silence. Rejected: refusing it.
+
+**D94. The tests written round interpolation's absence stay as they
+are.** *(User: picked the recommendation, 2026-11-26; step 11a, Q4.)*
+They test what they were written to test, and their models are
+records of their steps. New tests use interpolation, and T34's
+refusal tests whose shape is now in become tests of what they print.
+Rejected: rewriting the models to print through strings.
+
+**D95. An interpolated string is a value, made where it stands; and
+what step 11a's review and build settled.** *(Default: the builder's,
+from the proposal's "What has nothing to choose" and its review, for
+Stevan to confirm.)* perl compiles a string as one operation of its
+own, which the row of dots round it does not take in (T196: `"$x-" .
+($x = 5)` is `3-5`). So it is no piece of a row for D57 or D69,
+names nothing for D76, freezes no array in a loop's list and names
+no scalar for D77 (T209); it is a Str whatever it holds, each piece
+made a string as `.` makes one, an array as `join(" ", @a)` does
+(`$"` is not in the language); an undef anywhere in it is D48's
+fault. **Added to D57**: the right side of `.=` may not be an
+assignment of an interpolated string, which perl never makes (T198),
+unless the string is one variable, one array, one element, one slice
+or one `$#a` and nothing else; however many pieces it has, and
+through what D57's refusal looks through (T212). A character past
+ASCII hard after a name is refused, perl's rule being Unicode's
+tables (T205). From the review's open ends: a blank after an index's
+minus is refused; a comma may follow a slice's last index; `...` is
+refused. `${\ ...}`, `@{[ ... ]}`, `$$x` and `@$x` wait for step 13,
+`"$x{...}"` for step 12.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
