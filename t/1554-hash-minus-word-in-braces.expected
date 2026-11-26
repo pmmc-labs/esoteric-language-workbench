@@ -1,0 +1,2 @@
+t/1554-hash-minus-word-in-braces.pl:5:16: -bar alone in a hash's braces is the string -bar, to perl: write it in quotes
+exit: 1

@@ -1,0 +1,17 @@
+one,two,three,four
+1,2,3,4
+one,1,two,2,three,3,four,4
+one1two2three3four4
+one,two,three,four,five|1,22,3,4,5
+two,three,four,five
+two,three,four,five,one|22,3,4,5,11
+a,3,b,5,c,4
+two,four,five,one,six|two,three,four,five,one
+zero,two,three,four,five,one,last
+10,9,100,1
+10 9 100 1|a b c d|10 9
+0[]
+z,y,x,w
+a b c d 1|b c d|2 3 4 9
+k991,k992,k993,k994,k995,k996,k997,k998,k999,k1000,k5|11
+9960

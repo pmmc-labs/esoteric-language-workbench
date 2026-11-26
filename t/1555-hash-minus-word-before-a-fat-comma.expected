@@ -1,0 +1,2 @@
+t/1555-hash-minus-word-before-a-fat-comma.pl:4:10: '-' before the word bar, which is a string here: perl makes one string of the two; write it in quotes
+exit: 1

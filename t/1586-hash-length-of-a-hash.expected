@@ -1,0 +1,2 @@
+t/1586-hash-length-of-a-hash.pl:5:5: length of a hash: perl warns, and means the length of its count; scalar(%h) is how many it holds
+exit: 1

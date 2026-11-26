@@ -1,0 +1,2 @@
+t/1575-hash-delete-of-an-array-element.pl:5:12: delete takes an element of a hash, found '$a': delete $h{...}
+exit: 1

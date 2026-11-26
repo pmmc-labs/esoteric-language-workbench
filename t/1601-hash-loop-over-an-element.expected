@@ -1,0 +1,2 @@
+t/1601-hash-loop-over-an-element.pl:5:12: %h in the list of a for, a map, a grep or a sort, other than by keys, is not in the language yet (step 12b): take the list into an array first
+exit: 1

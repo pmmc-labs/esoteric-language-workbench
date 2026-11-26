@@ -5,7 +5,7 @@
 import { refuse } from './errors.ts';
 import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, NAME_MAX_LENGTH, OPERATORS, PERL_KEYWORDS, PERL_WORDS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, isVersionString, prefixOp, stepOp } from './names.ts';
 import type { Index, Token } from './lexer.ts';
-import type { Arm, Elem, Expr, Label, Param, Program, Stmt, Var } from './ast.ts';
+import type { Arm, Elem, Expr, HashOp, Label, Param, Pos, Program, Stmt, Var } from './ast.ts';
 
 // A token as a diagnostic names it. A string is shown if it is short.
 const show = (t: Token): string =>
@@ -218,6 +218,81 @@ export const parse = (tokens: readonly Token[]): Program => {
         return { kind: 'elem', name: v.text.slice(1), index, pos: v.pos };
     };
 
+    // An element of a hash, `$name{key}`, the variable's token just read
+    // and the brace next (step 12a). The key is one expression: a word
+    // alone is a string already, by the lexer. perl joins `$h{1, 2}` into
+    // one key.
+    const hashElement = (v: Token): Elem => {
+        const open = next();
+        if (peek().kind === '}') refuse(`$${v.text.slice(1)}{} has no key: perl does not compile it`, open.pos);
+        const outer = inList;
+        inList = false;
+        const index = expression(Infinity);
+        inList = outer;
+        const close = next();
+        if (close.kind === ',') refuse("a comma in a hash's key: perl joins the values into one key", close.pos);
+        if (close.kind !== '}') unexpected(close, "'}'");
+        // A hash holds no hash and no array (step 13).
+        if (peek().kind === '{' || peek().kind === '[') refuse('an element of an element: a hash of hashes or of arrays is not in the language yet', peek().pos);
+        return { kind: 'elem', name: v.text.slice(1), index, hash: true, pos: v.pos };
+    };
+
+    // The variable whose token was just read, or the element of an array
+    // or a hash that it begins.
+    const place = (v: Token): Var | Elem => {
+        const after = peek();
+        if (after.kind === '[') return element(v);
+        if (after.kind === '{' && after.subscript) return hashElement(v);
+        if (after.kind === '{') refuse(`a blank between ${v.text} and '{': an element of a hash is written ${v.text}{...}`, after.pos);
+        return { kind: 'var', name: v.text.slice(1), pos: v.pos };
+    };
+
+    // What may follow an operator that takes one thing and was written
+    // without brackets: perl reads on for the argument through anything
+    // that binds tighter than a named unary operator, or does not compile
+    // it (T152, T220, T225).
+    const bareOperand = (head: Token, shown: string): void => {
+        const after = peek();
+        if (after.kind === '[' || (after.kind === 'op' && (infixOp(after.text)?.row ?? Infinity) < NAMED_UNARY_ROW)) {
+            refuse(`${shown} before ${show(after)}: perl reads on for ${head.text}'s argument, or does not compile it; write ${head.text}(...)`, head.pos);
+        }
+    };
+
+    // A builtin that names a hash, its word just read (step 12a).
+    const hashOp = (head: Token): HashOp => {
+        const name = NAMES.get(head.text)!;
+        if (name.kind !== 'hashop') throw new Error('not a hash builtin');
+        const op = head.text as 'keys' | 'values' | 'exists' | 'delete';
+        const open = peek().kind === '(';
+        if (open) next();
+        const what = next();
+        let made: HashOp;
+        let shown: string;
+        if (name.shape === 'hash') {
+            // perl's `keys` and `values` take an array too, and give its
+            // indexes.
+            if (what.kind !== 'hash') return refuse(`${head.text} names a hash, found ${show(what)}: ${head.text} %h`, what.pos);
+            made = { kind: 'hashop', op, name: what.name, pos: head.pos, at: what.pos };
+            shown = `${head.text} %${what.name}`;
+        } else {
+            // perl's take an element of an array too, and `delete` a slice.
+            const brace = peek();
+            if (what.kind !== 'var' || brace.kind !== '{' || brace.subscript !== true) {
+                return refuse(`${head.text} takes an element of a hash, found ${show(what)}: ${head.text} $h{...}`, what.pos);
+            }
+            const element = hashElement(what);
+            made = { kind: 'hashop', op, name: element.name, key: element.index, pos: head.pos, at: what.pos };
+            shown = `${head.text} $${element.name}{...}`;
+        }
+        if (open) {
+            closing();
+            if (peek().kind === '[') refuse(`'[' after ${head.text}(...): perl does not compile it; bracket the whole, (${head.text}(...))[...]`, peek().pos);
+        } else {
+            bareOperand(head, shown);
+        }
+        return made;
+    };
+
     // A builtin that names an array, its word just read (D80).
     const arrayOp = (head: Token): Expr => {
         const name = NAMES.get(head.text)!;
@@ -225,6 +300,14 @@ export const parse = (tokens: readonly Token[]): Program => {
         const open = peek().kind === '(';
         if (!open && (name.shape === 'splice' || name.shape === 'scalar')) refuse(`${head.text} needs brackets: ${head.text}(@a${name.shape === 'splice' ? ', ...' : ''})`, head.pos);
         if (open) next();
+        // `scalar(%h)`, `scalar(keys %h)` and `scalar(values %h)`: how
+        // many keys the hash has (T219).
+        if (name.shape === 'scalar' && (peek().kind === 'hash' || (peek().kind === 'word' && (peek().text === 'keys' || peek().text === 'values')))) {
+            const first = next();
+            const of: { name: string; at: Pos } = first.kind === 'hash' ? { name: first.name, at: first.pos } : hashOp(first);
+            closing();
+            return { kind: 'hashop', op: 'count', name: of.name, pos: head.pos, at: of.at };
+        }
         const array = next();
         // perl's `shift` alone shifts the program's arguments, or a sub's
         // (T152); its `scalar` takes any expression.
@@ -420,7 +503,16 @@ export const parse = (tokens: readonly Token[]): Program => {
                 : { kind: p.kind, name: p.name, pos: p.pos });
             return { kind: 'interp', text: t.text, parts, pos: t.pos };
         }
-        if (t.kind === 'str') return { kind: 'str', text: t.text, value: t.value, pos: t.pos };
+        if (t.kind === 'str') {
+            // `-word` before `=>` or alone in a hash's braces is the
+            // string `-word`, to perl.
+            const sign = tokens[i - 2];
+            if (t.bare && sign?.kind === 'op' && prefixOp(sign.text)?.sign) {
+                refuse(`'${sign.text}' before the word ${t.text}, which is a string here: perl makes one string of the two; write it in quotes`, sign.pos);
+            }
+            return { kind: 'str', text: t.text, value: t.value, pos: t.pos };
+        }
+        if (t.kind === 'hash') return { kind: 'array', name: t.name, hash: true, pos: t.pos };
         if (t.kind === '(') {
             // A list, if a comma stands in the brackets or nothing does;
             // otherwise an expression, grouped. And either may be sliced.
@@ -456,7 +548,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         // A variable, and `++` or `--` hard after it or not: they bind
         // tighter than anything else there is.
         if (t.kind === 'var') {
-            const target: Var | Elem = peek().kind === '[' ? element(t) : { kind: 'var', name: t.name, pos: t.pos };
+            const target = place(t);
             const after = peek();
             if (after.kind !== 'op' || !stepOp(after.text)) return target;
             next();
@@ -465,24 +557,25 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (t.kind === 'op' && stepOp(t.text)) {
             const v = next();
             if (v.kind !== 'var') return refuse(`'${t.text}' is for a variable: ${t.text}$x`, t.pos);
-            const target: Var | Elem = peek().kind === '[' ? element(v) : { kind: 'var', name: v.name, pos: v.pos };
-            return { kind: 'step', op: t.text, before: true, target, pos: t.pos };
+            return { kind: 'step', op: t.text, before: true, target: place(v), pos: t.pos };
         }
         const prefix = t.kind === 'op' ? prefixOp(t.text) : undefined;
         if (prefix) return prefixed(t, prefix.row);
         if (t.kind === 'word' && NAMES.get(t.text)?.kind === 'my') {
             const v = next();
             if (v.kind === 'array') return { kind: 'myarray', name: v.name, pos: t.pos };
+            if (v.kind === 'hash') return { kind: 'myarray', name: v.name, hash: true, pos: t.pos };
             // `my ($x, undef, @rest)`: each a declaration, or a value to
             // skip.
             if (v.kind === '(') {
                 const items: Expr[] = [];
                 while (peek().kind !== ')') {
                     const d = next();
-                    if (d.kind === 'var' && peek().kind !== '[') items.push({ kind: 'my', name: own(d), pos: d.pos });
+                    if (d.kind === 'var' && peek().kind !== '[' && peek().kind !== '{') items.push({ kind: 'my', name: own(d), pos: d.pos });
                     else if (d.kind === 'array') items.push({ kind: 'myarray', name: d.name, pos: d.pos });
+                    else if (d.kind === 'hash') items.push({ kind: 'myarray', name: d.name, hash: true, pos: d.pos });
                     else if (d.kind === 'word' && d.text === 'undef') items.push({ kind: 'constant', name: 'undef', pos: d.pos });
-                    else return refuse(`in my (...), expected a variable, an array or undef, found ${show(d)}`, d.pos);
+                    else return refuse(`in my (...), expected a variable, an array, a hash or undef, found ${show(d)}`, d.pos);
                     if (peek().kind === ',') next();
                     else if (peek().kind !== ')') unexpected(peek(), "',' or ')'");
                 }
@@ -496,6 +589,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         const name = t.kind === 'word' ? NAMES.get(t.text) : undefined;
         if (name?.kind === 'constant' || name?.kind === 'unary' || name?.kind === 'function' || name?.kind === 'statement') return apply(t);
         if (name?.kind === 'arrayop') return arrayOp(t);
+        if (name?.kind === 'hashop') return hashOp(t);
         if (name?.kind === 'listop') return listOp(t);
         if (name?.kind === 'binder') return binder(t);
         if (name?.kind === 'sort') return sort(t);
@@ -552,12 +646,12 @@ export const parse = (tokens: readonly Token[]): Program => {
                 }
                 if (left.kind === 'array' || left.kind === 'myarray') {
                     // perl does not compile `@a += 1`.
-                    if (t.text !== '=') refuse(`'${t.text}' on an array: an array is assigned with =`, t.pos);
+                    if (t.text !== '=') refuse(`'${t.text}' on ${left.hash ? 'a hash: a hash' : 'an array: an array'} is assigned with =`, t.pos);
                     left = { kind: 'assign', op: t.text, target: left, value: expression(infix.row + 1), pos: t.pos };
                     continue;
                 }
                 if (left.kind !== 'var' && left.kind !== 'my' && left.kind !== 'elem') {
-                    return refuse(`the left side of '${t.text}' is a variable, an element, an array, or a list of them in brackets`, t.pos);
+                    return refuse(`the left side of '${t.text}' is a variable, an element, an array, a hash, or a list of them in brackets`, t.pos);
                 }
                 left = { kind: 'assign', op: t.text, target: left, value: expression(infix.row + 1), pos: t.pos };
                 continue;
@@ -646,6 +740,9 @@ export const parse = (tokens: readonly Token[]): Program => {
         // `my @a = 1, 2, 3;` is `(my @a = 1), 2, 3` to perl: one element,
         // and a warning for each of the rest (T168).
         if (after.kind === ',') {
+            // `map { $_ => 1 } @l`: a hash and no block, to perl, by a
+            // guess (T175).
+            if (blocks > 0) refuse("a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...", after.pos);
             refuse("a comma after an assignment's right side: perl takes the assignment for the first item of a list; put the list in brackets", after.pos);
         }
     };
@@ -871,8 +968,9 @@ export const parse = (tokens: readonly Token[]): Program => {
                     params.push(v.name === '' ? { slurpy: true, pos: v.pos } : { slurpy: true, rest: { kind: 'myarray', name: v.name, pos: v.pos }, pos: v.pos });
                     continue;
                 }
-                // perl has `%opts`, which is step 12's; tree-sitter-perl
-                // takes `:$x`, and perl doesn't (T55).
+                // `%opts` is step 12b's; tree-sitter-perl takes `:$x`,
+                // and perl doesn't (T55).
+                if (v.kind === 'hash') return refuse(`${v.text} as a parameter is not in the language yet (step 12b)`, v.pos);
                 if (v.kind !== 'var') return refuse(`a parameter is $name or, last, @name, found ${show(v)}`, v.pos);
                 const assign = peek();
                 let param: Param = v.name === '' ? { pos: v.pos } : { my: { kind: 'my', name: own(v), pos: v.pos }, pos: v.pos };

@@ -1,0 +1,2 @@
+t/1552-hash-fat-comma-on-the-next-line.pl:4:10: v65 and its '=>' are on one line: across the end of a line perl does not make a string of every word; write the word in quotes
+exit: 1

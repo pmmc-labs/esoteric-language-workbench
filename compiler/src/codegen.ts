@@ -121,6 +121,7 @@ const listy = (in_: Expr): boolean => {
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
         || (e.kind === 'listop' && e.op === 'reverse')
+        || (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values'))
         || e.kind === 'binder' || e.kind === 'sort'
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
@@ -146,7 +147,10 @@ const genList = (items: readonly Expr[], b: Code, strict: Strict = 0): C => {
 const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
     const e = through(in_);
     if (e.kind === 'array') {
-        b.lines.push(`rt_list_add_all(cx, ${list}, ${variable(b, e)});`);
+        // A hash where a list is wanted: its keys and values by turns.
+        b.lines.push(`${e.hash ? 'rt_list_add_pairs' : 'rt_list_add_all'}(cx, ${list}, ${variable(b, e)});`);
+    } else if (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values')) {
+        b.lines.push(`rt_list_add_${e.op}(cx, ${list}, ${variable(b, e)});`);
     } else if (e.kind === 'list') {
         e.items.forEach(item => addItem(item, list, b, strict));
     } else if (e.kind === 'binary' && isRange(e)) {
@@ -192,6 +196,7 @@ const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
         addItem(e.right, list, b, strict);
         b.lines.push('} else {', `rt_list_add(cx, ${list}, ${kept.c});`, '}');
     } else if (e.kind === 'elem' && strict === 2) {
+        if (e.hash) throw new Error("a hash's element in a loop's list is step 12b's");
         const at = genExpr(e.index, b);
         const value = temp(b, `rt_elem_strict(cx, ${variable(b, e)}, ${at.c})`);
         b.lines.push(`rt_list_add(cx, ${list}, ${value.c});`);
@@ -293,7 +298,7 @@ const thrownAway = (e: Sort): boolean => {
 // place, and drops what was never stored (T187).
 const sortedInPlace = (b: Code, target: Expr, value: Expr): Expr | undefined => {
     const sort = behind(value);
-    if (target.kind !== 'array' || sort.kind !== 'sort' || sort.body === undefined || sort.items.length !== 1) return undefined;
+    if (target.kind !== 'array' || target.hash || sort.kind !== 'sort' || sort.body === undefined || sort.items.length !== 1) return undefined;
     const from = behind(sort.items[0]!);
     return from.kind === 'array' && b.names.of.get(from) === b.names.of.get(target) ? sort : undefined;
 };
@@ -311,9 +316,14 @@ const index = (b: Code, e: Expr): string => {
     if (e.kind !== 'elem') throw new Error('not an element');
     const at = `i${++b.temps}`;
     b.decls.push(`int64_t ${at} RT_UNUSED;`);
-    b.lines.push(`${at} = rt_elem_make(cx, ${variable(b, e)}, ${genExpr(e.index, b).c});`);
+    b.lines.push(`${at} = ${elem(e)}_make(cx, ${variable(b, e)}, ${genExpr(e.index, b).c});`);
     return at;
 };
+
+// The runtime's functions for an element begin `rt_elem` for an array's
+// and `rt_helem` for a hash's, and are otherwise the same: the element
+// read, made, got, put and stored (T218).
+const elem = (e: Expr): string => (e.kind === 'elem' && e.hash ? 'rt_helem' : 'rt_elem');
 
 // The C for an expression's value, once the statements appended to `b`
 // have run. Operands are generated left before right, so that is the
@@ -364,15 +374,22 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     // `my @a`: a new array each time the `my` is reached; the file's are
     // made as the program starts (T156).
     case 'myarray':
-        if (!isFile(b, e)) b.vars.push(`${variable(b, e)} = rt_array_new(cx); // my @${e.name}`);
+        if (!isFile(b, e)) b.vars.push(`${variable(b, e)} = ${e.hash ? `rt_hash_new(cx); // my %${e.name}` : `rt_array_new(cx); // my @${e.name}`}`);
         return { c: variable(b, e), place: true };
-    // Where one value is wanted, an array is its count, at once (T21).
-    case 'array': return temp(b, `rt_count(cx, ${variable(b, e)})`);
+    // Where one value is wanted, an array is its count, at once (T21),
+    // and a hash how many keys it has (T219).
+    case 'array': return temp(b, `${e.hash ? 'rt_hash_count' : 'rt_count'}(cx, ${variable(b, e)})`);
+    // `keys` and `values` where one value is wanted are that count too.
+    case 'hashop': {
+        if (e.key === undefined) return temp(b, `rt_hash_count(cx, ${variable(b, e)})`);
+        const key = genExpr(e.key, b);
+        return temp(b, `rt_hash_${e.op}(cx, ${variable(b, e)}, ${key.c})`);
+    }
     case 'lastindex': return temp(b, `rt_last_index(cx, ${variable(b, e)})`);
     // An element is read where it stands (D76).
     case 'elem': {
         const at = genExpr(e.index, b);
-        return temp(b, `rt_elem(cx, ${variable(b, e)}, ${at.c})`);
+        return temp(b, `${elem(e)}(cx, ${variable(b, e)}, ${at.c})`);
     }
     // `(LIST)[N]`, where one value is wanted: that one, or undef.
     case 'slice': return temp(b, `rt_first(cx, ${genList([e], b).c})`);
@@ -426,8 +443,8 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         const indexes = e.targets.map(t => (t.kind === 'elem' ? kept(genExpr(t.index, b)) : undefined));
         e.targets.forEach((t, n) => {
             if (t.kind === 'constant') return;
-            if (t.kind === 'array' || t.kind === 'myarray') b.lines.push(`rt_array_rest(cx, ${variable(b, t)}, ${values.c}, ${n});`);
-            else if (t.kind === 'elem') b.lines.push(`rt_elem_store(cx, ${variable(b, t)}, ${indexes[n]!.c}, rt_list_item(cx, ${values.c}, ${n}));`);
+            if (t.kind === 'array' || t.kind === 'myarray') b.lines.push(`${t.hash ? 'rt_hash_rest' : 'rt_array_rest'}(cx, ${variable(b, t)}, ${values.c}, ${n});`);
+            else if (t.kind === 'elem') b.lines.push(`${elem(t)}_store(cx, ${variable(b, t)}, ${indexes[n]!.c}, rt_list_item(cx, ${values.c}, ${n}));`);
             else b.lines.push(`${variable(b, t)} = rt_list_item(cx, ${values.c}, ${n});`);
         });
         return { c: 'rt_undef()', place: false };
@@ -443,7 +460,7 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
             const values = genList([e.value], b);
             b.inPlace = before;
             if (e.target.kind === 'myarray') genExpr(e.target, b);
-            b.lines.push(`rt_array_assign(cx, ${variable(b, e.target)}, ${values.c});`);
+            b.lines.push(`${e.target.hash ? 'rt_hash_assign' : 'rt_array_assign'}(cx, ${variable(b, e.target)}, ${values.c});`);
             return { c: 'rt_undef()', place: false };
         }
         if (e.target.kind === 'elem') {
@@ -453,21 +470,21 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
             if (op?.rt === undefined && op?.when === undefined) {
                 const value = genExpr(e.value, b);
                 const at = genExpr(e.target.index, b);
-                return temp(b, `rt_elem_store(cx, ${array}, ${at.c}, ${value.c})`);
+                return temp(b, `${elem(e.target)}_store(cx, ${array}, ${at.c}, ${value.c})`);
             }
             // The others: the index, the target made, then the right
             // side, then the element read, worked on and stored (T159).
             const at = index(b, e.target);
             if (op.when !== undefined) {
-                const was = temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+                const was = temp(b, `${elem(e.target)}_get(cx, ${array}, ${at})`);
                 b.lines.push(`if (${op.when}(cx, ${was.c})) {`);
-                b.lines.push(`rt_elem_put(cx, ${array}, ${at}, ${genExpr(e.value, b).c});`, '}');
-                return temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+                b.lines.push(`${elem(e.target)}_put(cx, ${array}, ${at}, ${genExpr(e.value, b).c});`, '}');
+                return temp(b, `${elem(e.target)}_get(cx, ${array}, ${at})`);
             }
             const value = genExpr(e.value, b);
-            const was = temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+            const was = temp(b, `${elem(e.target)}_get(cx, ${array}, ${at})`);
             const now = temp(b, `${op.rt}(cx, ${was.c}, ${value.c})`);
-            b.lines.push(`rt_elem_put(cx, ${array}, ${at}, ${now.c});`);
+            b.lines.push(`${elem(e.target)}_put(cx, ${array}, ${at}, ${now.c});`);
             return now;
         }
         if (e.target.kind === 'my') genExpr(e.target, b);
@@ -488,10 +505,10 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         if (e.target.kind === 'elem') {
             const array = variable(b, e.target);
             const at = index(b, e.target);
-            const held = temp(b, `rt_elem_get(cx, ${array}, ${at})`);
+            const held = temp(b, `${elem(e.target)}_get(cx, ${array}, ${at})`);
             const was = e.before || op.before === undefined ? held : temp(b, `${op.before}(cx, ${held.c})`);
             const now = temp(b, `${op.rt}(cx, ${held.c})`);
-            b.lines.push(`rt_elem_put(cx, ${array}, ${at}, ${now.c});`);
+            b.lines.push(`${elem(e.target)}_put(cx, ${array}, ${at}, ${now.c});`);
             return e.before ? now : was;
         }
         const v = variable(b, e.target);
@@ -891,7 +908,7 @@ export const generate = (program: Program, names: Resolution, file: string): str
         // The file's variables: undef before anything runs, a sub
         // included, and reached by the subs through the context (T134).
         ...names.names.flatMap((_, id) => (names.owner[id] === 0 && names.slots[id]! < names.file && isFileSlot(names, id)
-            ? [`    f[${names.slots[id]}] = ${names.isArray[id] ? 'rt_array_new(cx)' : 'rt_undef()'};`] : [])),
+            ? [`    f[${names.slots[id]}] = ${names.isHash[id] ? 'rt_hash_new(cx)' : names.isArray[id] ? 'rt_array_new(cx)' : 'rt_undef()'};`] : [])),
         '    cx->shared = f;',
         ...indent(body),
         '    rt_leave(cx, &frame);',

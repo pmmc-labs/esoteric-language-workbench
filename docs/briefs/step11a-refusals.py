@@ -46,7 +46,7 @@ r('braced-dereference', 'perl dies: not a SCALAR reference.', X + 'say "${$x}";'
 r('braced-array-dereference', 'perl dies: not an ARRAY reference.', X + 'say "@{$x}";', '@{$', REF('@{$'))
 # ---- what follows a shape (D92; T199, T203, T205)
 PKG = lambda sh, alt: f"'::' hard after {sh} in a string: perl reads a variable of another package; write {alt + ':: or ' if alt else ''}{sh}\\::"
-HASH = lambda sh, alt: f"'{{' hard after {sh} in a string: a hash's, to perl, and hashes are not in the language yet (step 12); write {alt + '{ or ' if alt else ''}{sh}\\{{"
+HASH = lambda sh, alt: f"'{{' hard after {sh} in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write {alt + '{ or ' if alt else ''}{sh}\\{{"
 AGAIN = lambda sh: f"'[' hard after {sh} in a string: another index, to perl; write {sh}\\["
 ARROW = lambda sh, c: f"'->{c}' hard after {sh} in a string: a dereference, to perl, and references are not in the language yet (step 13); write {sh}\\->{c}"
 r('package-after-a-name', 'perl reads $x::y, undef and a warning (T199).', X + 'say "$x::y";', '::', PKG('$x', '${x}'))
@@ -142,7 +142,7 @@ r('blank-before-a-brace', 'perl takes the blank: 3 (T200).', X + 'say "${x }";',
 
 BY_HAND = {
     'string-as-a-statement': ('"a', 'this statement only has a value, and nothing is done with it: perl warns that it is useless'),
-    'assignment-to-a-string': ('= 5', "the left side of '=' is a variable, an element, an array, or a list of them in brackets"),
+    'assignment-to-a-string': ('= 5', "the left side of '=' is a variable, an element, an array, a hash, or a list of them in brackets"),
 }
 
 def write(first):

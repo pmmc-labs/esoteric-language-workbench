@@ -51,6 +51,9 @@ export type Resolution = {
     of: ReadonlyMap<Expr, number>;
     names: readonly string[];
     isArray: readonly boolean[];
+    // A hash is a declaration as an array is, `%x` a third name beside
+    // `@x` and `$x` (step 12): `isArray` is true of it, and `isHash` too.
+    isHash: readonly boolean[];
     slots: readonly number[];
     owner: readonly number[];
     frames: readonly number[];
@@ -83,10 +86,25 @@ export const resolve = (program: Program): Resolution => {
     const of = new Map<Expr, number>();
     const names: string[] = [];
     const isArray: boolean[] = [];
+    const isHash: boolean[] = [];
     // An array's name in a scope: with its sigil, so that it is its own.
-    const key = (d: My | MyArray): string => (d.kind === 'myarray' ? '@' : '') + d.name;
+    const key = (d: My | MyArray): string => (d.kind === 'myarray' ? (d.hash ? '%' : '@') : '') + d.name;
+    // The hash a node names, looked up as it is met. `counted`: by `keys`,
+    // which names nothing (T218): its list is copies.
+    const hash = (e: Expr, name: string, counted = false): void => {
+        // (A builtin's hash is at its own place, after the word.)
+        const at = e.kind === 'hashop' ? e.at : e.pos;
+        const found = [...scopes].reverse().find(scope => scope.has('%' + name));
+        if (found === undefined) return refuse(`%${name} is not declared: my %${name}`, at);
+        of.set(e, found.get('%' + name)!);
+        // The freeze is step 12b's.
+        if (!quoted && !counted && naming.length > 0) {
+            refuse(`%${name} in the list of a for, a map, a grep or a sort, other than by keys, is not in the language yet (step 12b): take the list into an array first`, at);
+        }
+    };
     // The array a node names, looked up as it is met.
     const array = (e: Expr, name: string): void => {
+        if ((e.kind === 'array' || e.kind === 'elem') && e.hash) return hash(e, name);
         const found = [...scopes].reverse().find(scope => scope.has('@' + name));
         if (found === undefined) {
             // In a string, what was read may not be what was meant.
@@ -181,6 +199,7 @@ export const resolve = (program: Program): Resolution => {
         case 'myarray':
             of.set(e, names.length);
             isArray.push(e.kind === 'myarray');
+            isHash.push(e.kind === 'myarray' && e.hash === true);
             names.push(e.name);
             declared.push(e);
             return;
@@ -199,6 +218,9 @@ export const resolve = (program: Program): Resolution => {
         case 'arrayop':
             e.args.forEach(x => walk(x, declared));
             return array(e, e.name);
+        case 'hashop':
+            if (e.key !== undefined) walk(e.key, declared);
+            return hash(e, e.name, e.op === 'keys' || e.op === 'count');
         case 'listop': return e.args.forEach(x => walk(x, declared));
         case 'sort': {
             // As a `map`: the list where the sort stands, then the block,
@@ -281,7 +303,7 @@ export const resolve = (program: Program): Resolution => {
         declared.sort((a, b) => a.pos.line - b.pos.line || a.pos.col - b.pos.col);
         for (const d of declared) {
             const scope = scopes.at(-1)!;
-            if (scope.has(key(d))) refuse(`my ${d.kind === 'myarray' ? '@' : '$'}${d.name} again in one scope: perl warns that it masks the first`, d.pos);
+            if (scope.has(key(d))) refuse(`my ${d.kind === 'myarray' ? (d.hash ? '%' : '@') : '$'}${d.name} again in one scope: perl warns that it masks the first`, d.pos);
             declare(d);
         }
     };
@@ -294,6 +316,7 @@ export const resolve = (program: Program): Resolution => {
         for (const d of [list, ...variables]) {
             of.set(d, names.length);
             isArray.push(d.kind === 'myarray');
+            isHash.push(false);
             names.push(d.name);
             declare(d);
         }
@@ -324,6 +347,7 @@ export const resolve = (program: Program): Resolution => {
             if (p.rest !== undefined) {
                 of.set(p.rest, names.length);
                 isArray.push(true);
+                isHash.push(false);
                 names.push(p.rest.name);
                 declare(p.rest);
             }
@@ -331,6 +355,7 @@ export const resolve = (program: Program): Resolution => {
             if (scopes.at(-1)!.has(p.my.name)) refuse(`two parameters called $${p.my.name}: perl warns that the second masks the first`, p.my.pos);
             of.set(p.my, names.length);
             isArray.push(false);
+            isHash.push(false);
             names.push(p.my.name);
             declare(p.my);
         }
@@ -442,5 +467,5 @@ export const resolve = (program: Program): Resolution => {
         if (owner[id] === 0 && !fileSlots.has(id)) slots[id]! += file;
     }
     frames[0] = file + variables;
-    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, lists: listSubs(subs, calls), loops, jumps, each, readonly };
+    return { of, names, isArray, isHash, slots, owner, frames, file, fileIds: fileSlots, subs, calls, lists: listSubs(subs, calls), loops, jumps, each, readonly };
 };

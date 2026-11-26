@@ -1,0 +1,2 @@
+t/1582-hash-plus-assigned.pl:5:4: '+=' on a hash: a hash is assigned with =
+exit: 1

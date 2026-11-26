@@ -422,7 +422,8 @@ message that says how to write it:
 
 - **`::`** after a name: `"$x::y"` is a variable of another package to
   perl. Write `"${x}::y"` or `"$x\::y"`.
-- **`{`**: `"$x{a}"` is an element of a hash, and hashes come later.
+- **`{`**: `"$x{a}"` is an element of a hash, which comes to strings
+  at step 12b.
   Write `"${x}{a}"` or `"$x\{a}"`.
 - **`[`** after a scalar is always the element, `"$x[1]"` of `@x`,
   whether or not there is a `$x`. For the scalar and a bracket, write
@@ -445,7 +446,7 @@ or it has a backslash. A variable in a string is declared like any
 other: `"user@example.com"` is refused for want of an `@example`.
 
 Not in the language yet: an expression in a string (`"@{[ ... ]}"`,
-`"${\ ... }"`), which waits for references; an element of a hash;
+`"${\ ... }"`), which waits for references; an element of a hash (step 12b);
 the case escapes, `\U` and its kin.
 
 ### Joining and repeating
@@ -1137,7 +1138,7 @@ A parameter is a variable of the sub's, given its value by the call:
 
 The required ones come first. A last parameter may be `@rest`, which
 takes every argument that is left ("Arrays and subs", below);
-`%opts` comes with hashes.
+`%opts` comes at step 12b.
 
     sub greet($name, $greeting = "hello") {
         return $greeting . ", " . $name;
@@ -1853,6 +1854,122 @@ which value is meant:
 
 `$a[0] + $a[1]`, `($x, $y) = ($y, $x)`, `@a = (@a, 1)` and `push @a,
 @a` change nothing they name after naming it, and are as they look.
+
+## Hashes
+
+A hash is values with names: each value is stored under a **key**,
+which is a string.
+
+    my %age = (ann => 31, bob => 27, cy => 44, dee => 19);
+    say $age{bob};                 # 27
+    $age{eve} = 52;                # a new key
+    say scalar(%age);              # 5, how many keys
+
+`%age` is the hash, and `$age{bob}` one **element** of it. A hash's
+name is its own: `%x`, `@x` and `$x` are three variables, `$x{k}` is
+an element of `%x` and `$x[0]` one of `@x`.
+
+`my %h;` makes an empty one, and a `my` in a block, a loop or a sub a
+new hash each time it is reached. `my %h = LIST;` and `%h = LIST;`
+fill it from a list of keys and values by turns. **A key given twice
+keeps its last value. A list with an odd number of values is a
+fault**: perl warns, and gives the last key no value.
+
+### `=>`, and a word that is a string
+
+`=>` is a comma that makes a string of the word before it. `(ann =>
+31)` is `("ann", 31)`. Any word will do, one of perl's own or the name
+of one of the program's subs: `(if => 1, print => 2, total => 3)` has
+the keys `if`, `print` and `total`, and calls nothing.
+
+**The word and its `=>` are on one line.** Across the end of a line
+perl still makes a string of most words, and of `v65` it makes the
+character `A`; that is refused. A minus before the word is refused
+too: `-bar => 1` is the key `-bar` to perl, so write `"-bar"`.
+
+What stands before `=>` and is no word is an expression like any
+other: `(1 => "one", $k => 2, "two words" => 3)`.
+
+### Elements
+
+Between the braces is the key. **One word alone there is that
+string**: `$age{bob}`, `$h{if}`, `$h{ name }`, on one line with its
+braces. Anything else is an expression, worked out and **made a string
+as `.` makes one**: `$h{$k}`, `$h{"two words"}`, `$h{$i + 1}`. So the
+keys `1`, `1.0` and `"1"` are one key, and `true` in brackets,
+`$h{(true)}`, is the key `1`. An undef for a key is a fault, where
+perl warns and uses the empty string; so is a whole Num from 10^15 up,
+which prints two ways.
+
+**Reading a key that is not there gives undef**, and makes nothing.
+**Storing makes the key.** Every operator that works on a variable
+works on an element, and makes its key first: `$count{$word}++`,
+`$h{k} += 2`, `$h{k} .= "x"`, `$h{k} //= 0`. (`$h{k} &&= 1` makes the
+key and stores nothing, as in perl.)
+
+The braces are hard against the name, `$h{k}`: perl takes a blank
+there. `$h{a}{b}` and `$h{a}[0]` are for step 13, and a comma in the
+braces is refused.
+
+### exists and delete
+
+`exists $h{k}` is true if the key is there, whatever its value: a key
+may hold undef, and `exists` is how to tell that from no key.
+
+`delete $h{k}` takes the key away, and gives the value it had, or
+undef if there was none.
+
+Both take brackets or go without. Without them, an operator that
+binds tighter than a comparison may not follow, since perl would read
+it into the argument: `exists $h{a} + 1` is refused, `exists($h{a}) +
+1` is 1 or 2, and `exists $h{a} && exists $h{b}` reads as it looks.
+Both are for a hash's element alone: perl's `exists` and `delete` of
+an array's are not in the language.
+
+### keys, values and how many
+
+`keys %h` is the hash's keys, in a list, and `values %h` its values.
+`%h` itself, where a list is wanted, is its keys and values by turns:
+`my %copy = %h;`, `my @flat = %h;`, `total(%h)`.
+
+Where one value is wanted, each of the three is **how many keys there
+are**: `my $n = %h;`, `if (%h) { ... }`, `keys(%h) + 0`,
+`scalar(%h)`. An empty hash is false.
+
+`keys` and `values` take brackets or go without, by the rule `exists`
+has.
+
+**A hash keeps its keys in the order they were first stored** (D27).
+A key stored again keeps its place; a key deleted and stored again is
+last. `keys`, `values` and the hash in a list all go in that order.
+**This is the one place a program may print what perl does not**:
+perl's order is its own, and another every run. A program that is to
+print the same under perl sorts:
+
+    for my $name (sort keys %age) {
+        say $name, " is ", $age{$name};
+    }
+
+### What a hash may not do yet
+
+A hash in the list of a `for`, a `map`, a `grep` or a `sort`, other
+than by its `keys`, waits for step 12b (take the list into an array
+first: `my @v = values %h;`), and so do a slice, `@h{"a", "b"}`, a
+hash as a sub's last parameter, `sub f($x, %opts)`, and an element in
+a string, `"$h{k}"`.
+
+`map { $_ => 1 } @list` is refused, for the comma in the block (perl
+has to guess whether those braces are a block or a hash): put the pair
+in brackets, `map { ($_ => 1) } @list`.
+
+Not in the language: `each`; `%h{...}`, a slice of keys and values;
+`keys %h = N`; `length(%h)` and `defined(%h)`.
+
+**A later part of an expression or a list may not change a hash that
+an earlier part names**, as with an array: an element, `values` and
+the hash itself name it, `keys` does not, and a store, a `delete` and
+an assignment to the hash are changes. `say $h{a}, delete $h{a};` is
+refused: take the value into a `my` first.
 
 ## Memory
 

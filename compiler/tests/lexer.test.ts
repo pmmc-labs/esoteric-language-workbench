@@ -189,7 +189,7 @@ test('what a string may not hold of a variable, each at its character (D91, D92)
     at('"$a[0"', 'an index in a string that does not close: write \\[ for the character', 4);
     at('"$x::y"', "'::' hard after $x in a string: perl reads a variable of another package; write ${x}:: or $x\\::", 4);
     at('"$a[0]::y"', "'::' hard after $a[0] in a string: perl reads a variable of another package; write $a[0]\\::", 7);
-    at('"$x{a}"', "'{' hard after $x in a string: a hash's, to perl, and hashes are not in the language yet (step 12); write ${x}{ or $x\\{", 4);
+    at('"$x{a}"', "'{' hard after $x in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write ${x}{ or $x\\{", 4);
     at('"$a[0][1]"', "'[' hard after $a[0] in a string: another index, to perl; write $a[0]\\[", 7);
     at('"$#a[1]"', "'[' hard after $#a in a string: another index, to perl; write $#a\\[", 5);
     at('"$x->[0]"', "'->[' hard after $x in a string: a dereference, to perl, and references are not in the language yet (step 13); write $x\\->[", 4);
@@ -346,7 +346,6 @@ test("the longest of perl's operators is the token, in the language or not (T27)
     refused('say 7 |= 2;', "'|=' is not in the language yet", 1, 7);
     refused('say 1 ... 5;', "'...' is not in the language yet", 1, 7);
     refused('say 1 & 2;', "'&' is not in the language yet", 1, 7);
-    refused('say 1 => 2;', "'=>' is not in the language yet", 1, 7);
     // With a blank between them they are two, as they are to perl.
     assert.deepEqual(lex('- - + +').map(t => t.text), ['-', '-', '+', '+', '']);
 });
@@ -475,4 +474,50 @@ test("a line that starts '#!', the first or any other (T72)", () => {
     // After a token on its line, or after another `#`, it is a comment.
     assert.equal(lex('use v5.42; #!perl -n').length, 4);
     assert.equal(lex('# !perl -n\n# #!perl -n\n##!').length, 1);
+});
+
+// Step 12a: hashes.
+test('a hash, the fat comma, and a word that is a string (T214, T215)', () => {
+    const kinds = (src: string) => lex(src).map(t => `${t.kind} ${t.text}`.trim());
+    // `%` is a hash where a value may begin, and the modulus after one.
+    assert.deepEqual(kinds('%h = (%g, 5 % 2, $x %2, $h{a} % 3);').filter(k => k.startsWith('hash') || k.startsWith('op %')), ['hash %h', 'hash %g', 'op %', 'op %', 'op %']);
+    assert.deepEqual(kinds('$h{a}++ % 2')[5], 'op %');
+    assert.deepEqual(kinds('$a[0]++ % 2')[5], 'op %');
+    // `=>` is a comma, and the word before it a string, whatever the word.
+    assert.deepEqual(kinds('(if => 1, q => 2, v66 => 3, $x => 4, 5 => 6, "s" => 7)'),
+        ['( (', 'str if', ', =>', 'int 1', ', ,', 'str q', ', =>', 'int 2', ', ,', 'str v66', ', =>', 'int 3', ', ,', 'var $x', ', =>', 'int 4', ', ,',
+            'int 5', ', =>', 'int 6', ', ,', 'str "s"', ', =>', 'int 7', ') )', 'eof']);
+    const word = lex('(print	=> 1)')[1]!;
+    assert.deepEqual([word.kind, word.kind === 'str' && word.value, word.kind === 'str' && word.bare, word.pos], ['str', 'print', true, { line: 1, col: 2 }]);
+    // One word alone in a key's braces is a string; anything else is not.
+    assert.deepEqual(kinds('$h{if} $h{ x } $h{x + 1} $h{f()} $h{$k}'),
+        ['var $h', '{ {', 'str if', '} }', 'var $h', '{ {', 'str x', '} }', 'var $h', '{ {', 'word x', 'op +', 'int 1', '} }',
+            'var $h', '{ {', 'word f', '( (', ') )', '} }', 'var $h', '{ {', 'var $k', '} }', 'eof']);
+    const braces = lex('if ($h{a}) { $h{b}{c} }').filter(t => t.kind === '{' || t.kind === '}').map(t => (t.kind === '{' || t.kind === '}') && t.subscript === true);
+    assert.deepEqual(braces, [true, true, false, true, true, false, false, false]);
+    // A blank before the brace: the brace is a block's, and the parser's to refuse.
+    assert.deepEqual(kinds('$h {a}'), ['var $h', '{ {', 'word a', '} }', 'eof']);
+});
+
+test('a word is a string on one line (T223, T224), and what a % may not begin', () => {
+    const braces = "a word alone in a hash's braces is on one line with them: across the end of a line perl does not make a string of every word; write the word in quotes";
+    refused('$h{\n true }', braces, 1, 3);
+    refused('$h{true\n}', braces, 1, 3);
+    refused('$h{ true # it\n}', braces, 1, 3);
+    const fat = (w: string) => `${w} and its '=>' are on one line: across the end of a line perl does not make a string of every word; write the word in quotes`;
+    refused('(v65\n=> 1)', fat('v65'), 1, 2);
+    refused('(a,\n b # c\n => 1)', fat('b'), 2, 2);
+    refused('$h{-bar}', "-bar alone in a hash's braces is the string -bar, to perl: write it in quotes", 1, 4);
+    refused('$h{ -bar }', "-bar alone in a hash's braces is the string -bar, to perl: write it in quotes", 1, 5);
+    // (A minus before anything else is a minus.)
+    assert.equal(lex('$h{-1} $h{-$x} $h{-bar + 1}').length, 18);
+    refused('say %_;', "%_ is perl's own, and not in the language", 1, 5);
+    refused('say %$r;', "'%' before a reference: references are not in the language yet (step 13)", 1, 5);
+    refused('say %{$r};', "'%' before a reference: references are not in the language yet (step 13)", 1, 5);
+    refused('say %h{"a"};', '%h{...} is a slice of keys and values, and not in the language', 1, 5);
+    refused('say %a[0];', '%a[...] is a slice of indexes and values, and not in the language', 1, 5);
+    refused('say @h{"a", "b"};', '@h{...} is a slice of a hash, which is not in the language yet (step 12b)', 1, 7);
+    refused('say %;', "after '%' comes a name: a letter or '_', then letters, digits and '_'", 1, 5);
+    refused(`my %${'h'.repeat(252)};`, 'a name of more than 251 characters: perl refuses it as too long', 1, 4);
+    refused(`(${'w'.repeat(252)} => 1)`, 'a word of more than 251 characters: perl refuses it as too long', 1, 2);
 });

@@ -20,7 +20,8 @@ proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
 confirmed. D96 and D97 are his, on the census; D98 to D101 his answers to
 step 12's, and D102 the builder's defaults on its review, which he
-confirmed.
+confirmed. D104 is the builder's defaults from building step 12a,
+not yet confirmed.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1878,6 +1879,32 @@ before the step's tests are written: it learns where a hash is
 counted, copied or handed on, and rejects a `sort` block that does
 not only compare `$a` with `$b`, a block that prints between a
 `sort` and its `keys`, and a slice of `keys`.
+
+**D104. What building step 12a settled.** *(Builder's defaults,
+2026-11-26, for Stevan to confirm.)* **Until step 12b, a hash named
+in the list of a `for`, a `map`, a `grep` or a `sort`, other than
+by `keys`, is refused**: `for my $v (values %h)`, `sort values %h`,
+`map { ... } %h`, an element there. The freeze belongs to such a
+list (D17, T217), and D98 put the freeze in 12b; taking the list
+before its fault exists would be a feature with no fault test.
+`for my $k (sort keys %h)` is in, since `keys` are copies and name
+nothing (T218). **A blank between a variable and its key's brace,
+`$h {a}`, is refused**, as `$a [0]` is: perl takes it. **`exists
+$h{k};`, `keys %h;` and `values %h;` alone as statements are
+refused**, as any statement that only has a value is, though perl is
+silent about them (its `keys` there sets `each`'s place back, and
+there is no `each`, D101). **`%h{...}` and `%a[...]`, perl's slices
+of keys and values, stay out**, with no step named: the proposal
+did not have them and nothing has asked. In the runtime **a hash is
+the block an array is**, with its keys and values by turns in the
+order stored and an index over them, so an array's own block is
+three words longer than it was (88 bytes empty, from 64). Rejected:
+building the lists without the freeze and adding the fault at 12b
+(a program could change a hash under its own loop for one
+sub-step, and perl's answer there is a freed value, D102); a
+separate block for a hash (a second copy of the collector's
+marking and sweeping, the cap's counting and the freeze, for 24
+bytes an array).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

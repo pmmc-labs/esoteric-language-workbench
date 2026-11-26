@@ -1,0 +1,2 @@
+t/1605-hash-word-and-fat-comma-in-a-map-block.pl:5:15: a and a comma first in map's block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets
+exit: 1

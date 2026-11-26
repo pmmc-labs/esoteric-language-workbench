@@ -1,0 +1,2 @@
+t/1585-hash-where-one-value-is-declared.pl:4:9: my %g where one value is wanted
+exit: 1

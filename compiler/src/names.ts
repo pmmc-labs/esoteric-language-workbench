@@ -51,6 +51,11 @@ export type Name =
     | { kind: 'binder' }
     // `sort` (step 10c): a list, or a block and a list.
     | { kind: 'sort' }
+    // The builtins that name a hash (step 12a): `keys` and `values` take
+    // the hash, `exists` and `delete` an element of one; with brackets or
+    // without, and without them nothing that binds tighter than a named
+    // unary operator may follow (T220, T225).
+    | { kind: 'hashop'; shape: 'hash' | 'elem' }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -94,6 +99,10 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['grep', { kind: 'binder' }],
     ['sort', { kind: 'sort' }],
     ['reverse', { kind: 'listop', rt: 'rt_list_add_reversed' }],
+    ['keys', { kind: 'hashop', shape: 'hash' }],
+    ['values', { kind: 'hashop', shape: 'hash' }],
+    ['exists', { kind: 'hashop', shape: 'elem' }],
+    ['delete', { kind: 'hashop', shape: 'elem' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);

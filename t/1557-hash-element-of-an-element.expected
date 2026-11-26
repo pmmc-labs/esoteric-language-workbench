@@ -1,0 +1,2 @@
+t/1557-hash-element-of-an-element.pl:5:10: an element of an element: a hash of hashes or of arrays is not in the language yet
+exit: 1

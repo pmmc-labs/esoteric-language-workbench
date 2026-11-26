@@ -50,6 +50,8 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/hash.py 1501 > t/1501-hash-elements.expected
     python3 t/models/hash.py --program 1502 > t/1502-hash-exists-delete-counts.pl
     python3 t/models/hash.py 1502 > t/1502-hash-exists-delete-counts.expected
+    python3 t/models/hash.py --program 1503 > t/1503-hash-order-by-the-model.pl
+    python3 t/models/hash.py 1503 > t/1503-hash-order-by-the-model.expected
     python3 t/models/hash.py --program 1510 > t/1510-fault-hash-odd-list.pl
     python3 t/models/hash.py 1510 > t/1510-fault-hash-odd-list.expected
     python3 t/models/hash.py --program 1511 > t/1511-fault-hash-odd-list-assigned.pl
@@ -437,7 +439,10 @@ def whole_cases():
                 say_(('+', ('keys', h), ('values', h))), say_(('==', ('keys', h), 4)), say_(('.', 'n', ('keys', h))),
                 do(('delete', h, W('a'))), ('my', g('after'), H(h)), say_(G('after')),
                 do(sethel(h, 'a', 9)), do(sethel(h, 'a', 10)), ('my', g('again'), H(h)), say_(G('again')),
-                say_(jn(',', srt([('keys', h)]))), say_(jn(',', srt([('values', h)], NUM))), say_(jn(',', srt([H(h)]))),
+                # (A hash in the list of a sort, other than by its keys, is
+                # step 12b's, with the freeze: so through an array.)
+                ('mya', g('vs'), [('values', h)]), ('mya', g('all'), [H(h)]),
+                say_(jn(',', srt([('keys', h)]))), say_(jn(',', srt([A(g('vs'))], NUM))), say_(jn(',', srt([A(g('all'))]))),
                 say_(jn(',', rev(srt([('keys', h)])))), say_(jn(',', mp([srt([('keys', h)])], ('x', IT, 2))))]
     c.case(counts)
     def copies(f, g, G):
@@ -445,8 +450,8 @@ def whole_cases():
         return [myh(h, pair('a', 1), pair('b', 2), pair('c', 3), pair('d', 4)), myh(o, H(h)), do(sethel(o, 'a', 9)), do(sethel(o, 'z', 0)),
                 do(('delete', o, W('b'))), dumph(h), dumph(o), seth(o, H(h)), dumph(o), seth(h, H(h)), dumph(h),
                 seth(h, H(h), pair('e', 5)), dumph(h), seth(h, pair('first', 0), H(h)), dumph(h),
-                ('mya', a, [srt([H(h)])]), say_(('scalar', a)), ('mya', g('k'), [srt([('keys', h)])]), dump(g('k')),
-                ('mya', g('v'), [srt([('values', h)], NUM)]), dump(g('v')),
+                ('mya', g('flat'), [H(h)]), ('mya', a, [srt([A(g('flat'))])]), say_(('scalar', a)), ('mya', g('k'), [srt([('keys', h)])]), dump(g('k')),
+                ('mya', g('vv'), [('values', h)]), ('mya', g('v'), [srt([A(g('vv'))], NUM)]), dump(g('v')),
                 sub(f('size'), [req('n')], returns(('*', D('n'), 2))), say_(ucall(f('size'), ('+', ('keys', h), 0))), say_(ucall(f('size'), ('+', H(h), 0))),
                 sub(f('made'), [], myh('t', pair('p', 1), pair('q', 2)), returns(H('t'))), myh(g('r'), ucall(f('made'))), dumph(g('r')),
                 sub(f('twice'), [], myh('t', pair('p', 1)), do(sethel('t', 'q', 2)), returns(('keys', 't'))),
@@ -458,7 +463,49 @@ def whole_cases():
 
 D = lambda n: ('$', n)
 
+def rawh(name):
+    """A statement that prints a hash as it stands: its keys, its values,
+    and the hash in a list, each in the hash's own order (D27)."""
+    return say_(join(jn(',', ('keys', name)), '|', jn(',', ('values', name)), '|', jn(',', H(name))))
+
+def order_cases():
+    """D27, where perl has no answer: the order is the order of first
+    storing. A Python dict keeps that order, which is the model's whole
+    claim to know it."""
+    c = Cases(0)
+    def stored(f, g, G):
+        h, o, i = g('h'), g('o'), g('i')
+        return [myh(h, pair('one', 1), pair('two', 2), pair('three', 3), pair('four', 4)), rawh(h),
+                do(sethel(h, 'five', 5)), do(sethel(h, 'two', 22)), rawh(h),
+                do(sethel(h, 'three', 1, '+=')), do(stephel(h, 'one')), do(sethel(h, 'six', 6, '//=')), do(sethel(h, 'four', 0, '&&=')), rawh(h),
+                do(('delete', h, W('one'))), rawh(h), do(sethel(h, 'one', 11)), rawh(h),
+                do(('delete', h, W('six'))), do(('delete', h, W('two'))), do(sethel(h, 'two', 2)), do(sethel(h, 'six', 6)), rawh(h),
+                # A key given twice keeps its first place and its last value.
+                myh(o, pair('a', 1), pair('b', 2), pair('a', 3), pair('c', 4), pair('b', 5), pair('d', 6)), rawh(o),
+                seth(o, pair('z', 0), H(h), pair('last', 9), pair('two', 'again')), rawh(o),
+                seth(o, H(o), pair('z', 1)), rawh(o), seth(h, H(h)), rawh(h), seth(h), rawh(h),
+                # Numbers as keys are in the order stored, not their own.
+                seth(h, 10, 'a', 9, 'b', 100, 'c', 1, 'd', 9.0, 'e'), rawh(h),
+                # A key read, or asked after, is not made, and has no place.
+                say_(('call', 'defined', [hel(h, 'nope')])), say_(('exists', h, W('none'))), do(sethel(h, 'nope', 1)), rawh(h)]
+    c.case(stored)
+    def grown(f, g, G):
+        h, i, a = g('h'), g('i'), g('a')
+        return [('myh', h, None), ('my', i, 0),
+                ('while', None, ('<', G('i'), 40), [do(sethel(h, ('.', 'k', G('i')), G('i'))), do(step(i))]), rawh(h),
+                # The holes a delete leaves are closed, and the order holds.
+                do(set_(i, 0)), ('while', None, ('<', G('i'), 40), [('if', [(('&&', ('!=', G('i'), 3), ('&&', ('!=', G('i'), 17), ('!=', G('i'), 31))), [do(('delete', h, ('.', 'k', G('i'))))])], None), do(step(i))]), rawh(h),
+                do(sethel(h, 'k5', 5)), do(sethel(h, 'k10', 'ten')), do(sethel(h, 'k4', 4)), rawh(h),
+                do(set_(i, 0)), ('while', None, ('<', G('i'), 12), [do(sethel(h, ('.', 'n', G('i')), G('i'))), do(('delete', h, ('.', 'n', ('-', G('i'), 1)))), do(step(i))]), rawh(h),
+                ('mya', a, [('keys', h)]), dump(a), ('mya', g('v'), [('values', h)]), dump(g('v')), ('mya', g('p'), [H(h)]), dump(g('p')),
+                sub(f('made'), [], myh('t', pair('y', 1), pair('x', 2), pair('w', 3)), do(sethel('t', 'a', 0)), returns(H('t'))),
+                myh(g('r'), ucall(f('made'))), rawh(g('r')), ('mya', g('l'), [ucall(f('made')), ('keys', g('r'))]), dump(g('l'))]
+    c.case(grown)
+    return c.out
+
 SAME = {'1500': ('hash-literals-and-keys', literal_cases), '1501': ('hash-elements', element_cases), '1502': ('hash-exists-delete-counts', whole_cases)}
+# What perl is not asked: the order (D27).
+NEW = {'1503': ('hash-order-by-the-model', order_cases)}
 
 def faults():
     out = {}
@@ -502,7 +549,7 @@ FAULTS = faults()
 def commands():
     return ''.join(f'    python3 t/models/hash.py --program {n} > t/{n}-{name}.pl\n'
                    f'    python3 t/models/hash.py {n} > t/{n}-{name}.expected\n'
-                   for n, name in sorted([(n, SAME[n][0]) for n in SAME] + [(n, FAULTS[n][0]) for n in FAULTS]))
+                   for n, name in sorted([(n, SAME[n][0]) for n in SAME] + [(n, NEW[n][0]) for n in NEW] + [(n, FAULTS[n][0]) for n in FAULTS]))
 
 def program(statements, header):
     text_lines = [line for s in statements for line in source(s)]
@@ -517,8 +564,10 @@ def main(argv):
     number = argv[-1]
     out = sys.stdout.buffer
     model = ['model: t/models/hash.py']
-    if number in SAME:
-        cases = SAME[number][1]()
+    if number in NEW:
+        model = ['kind: new', "D27: a hash keeps its keys in the order they were first stored. perl's order is its own, so perl is not asked."] + model
+    if number in SAME or number in NEW:
+        cases = (SAME.get(number) or NEW[number])[1]()
         for c in cases:
             assert output(c)[1] is None, (number, output(c)[1], output(c)[0][-200:])
         statements = [s for c in cases for s in c]

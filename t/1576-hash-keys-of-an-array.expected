@@ -1,0 +1,2 @@
+t/1576-hash-keys-of-an-array.pl:5:17: keys names a hash, found '@a': keys %h
+exit: 1

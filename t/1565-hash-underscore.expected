@@ -1,0 +1,2 @@
+t/1565-hash-underscore.pl:4:4: %_ is perl's own, and not in the language
+exit: 1

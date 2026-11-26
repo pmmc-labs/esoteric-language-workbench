@@ -860,6 +860,22 @@ CLAIMS = [
     c('T227-arrow', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say "$h{a}->{b}";""", out='', exit=255, err='as a HASH ref'),
     c('T228', 'TRAPS; PLAN 12', r"""my %h; @h{"a", "b"} = (1); say exists $h{b} ? "made" : "not"; my @a = (9); @a[1, 2] = (5); say scalar(@a); my @b; @b[2, 1] = (); say scalar(@b); my (%g, $x) = (p => 1, q => 2); say join(",", sort keys %g), defined $x ? "set" : "undef";""", out='made\n3\n3\np,qundef\n'),
     c('T229', 'TRAPS; PLAN 12', r"""my %h = (a => 1, b => 2); sub n() { return %h } my $c = n(); say $c;""", out='2\n'),
+    # ---- step 12a, as built (D104; LANGUAGE "Hashes")
+    c('D104-blank', 'DECISIONS D104', r"""my %h = (a => 1); say $h {a};""", out='1\n'),
+    c('D104-void-exists', 'DECISIONS D104', r"""my %h = (a => 1); exists $h{a}; keys %h; say "quiet";""", out='quiet\n'),
+    c('D104-kv-slice', 'DECISIONS D104', r"""my %h = (a => 1, b => 2, c => 3); my %g = %h{"a", "b"}; say scalar(%g);""", out='2\n'),
+    c('12a-minus-word', 'LANGUAGE Hashes', r"""my %g = (-bar => 1, x => 2); say join(",", sort keys %g); say defined($g{-bar}) ? 1 : 0;""", out='-bar,x\n1\n'),
+    c('12a-word-is-no-call', 'LANGUAGE Hashes', r"""sub total() { return "called" } my %g = (if => 1, print => 2, total => 3); say join(",", sort keys %g), $g{total}, $g{ if };""", out='if,print,total31\n'),
+    c('12a-one-key', 'LANGUAGE Hashes', r"""my %n = (1 => "a", 1.0 => "b", "1" => "c"); say scalar(%n), $n{1}, $n{(true)};""", out='1cc\n'),
+    c('12a-undef-key', 'LANGUAGE Hashes', r"""my %h; my $u; $h{$u} = 1; say exists $h{""} ? "empty" : "none";""", out='empty\n', err='uninitialized'),
+    c('12a-and-assign', 'LANGUAGE Hashes', r"""my %h; $h{k} &&= 1; say exists $h{k} ? "made" : "not", defined $h{k} ? "set" : "undef";""", out='madeundef\n'),
+    c('12a-read-makes-nothing', 'LANGUAGE Hashes', r"""my %h; my $v = $h{k}; say exists $h{k} ? "made" : "not";""", out='not\n'),
+    c('12a-odd', 'LANGUAGE Hashes', r"""my %h = (1, 2, 3); say exists $h{3} ? "key" : "none", defined $h{3} ? "set" : "undef";""", out='keyundef\n', err='Odd number of elements'),
+    c('12a-count', 'LANGUAGE Hashes', r"""my %h = (a => 1, b => 2); my $n = %h; my %e; say $n, keys(%h) + 0, scalar(%h), %e ? "some" : "none";""", out='222none\n'),
+    c('12a-length', 'LANGUAGE Hashes', r"""my %h = (a => 1); say length(%h);""", out='1\n', err='length\\(\\) used on %h'),
+    c('12a-defined', 'LANGUAGE Hashes', r"""my %h = (a => 1); say defined(%h) ? 1 : 0;""", exit='nonzero', err="Can't use 'defined\\(%hash\\)'"),
+    c('12a-map-block', 'LANGUAGE Hashes', r"""my @a = (1, 2); my %g = map { ($_ => 1) } @a; say join(",", sort keys %g);""", out='1,2\n'),
+    c('12a-delete-said', 'LANGUAGE Hashes', r"""my %h = (a => 1, b => 2); say $h{a}, delete $h{a};""", out='11\n'),
 ]
 
 def run(perl, prelude, code, flags):

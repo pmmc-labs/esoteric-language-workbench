@@ -29,6 +29,7 @@ const parts = (e: Expr): readonly Expr[] =>
     : e.kind === 'assign' ? [e.value, e.target]
     : e.kind === 'step' ? [e.target]
     : e.kind === 'elem' ? [e.index]
+    : e.kind === 'hashop' ? (e.key === undefined ? [] : [e.key])
     : e.kind === 'list' ? e.items
     : e.kind === 'slice' ? [...e.indexes, ...(e.items ?? [])]
     : e.kind === 'listassign' ? [e.value, ...e.targets]
@@ -86,7 +87,7 @@ const plain = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === u
 const folds = (e: Expr): boolean =>
     e.kind === 'var' || e.kind === 'my' || e.kind === 'assign' || e.kind === 'step' || e.kind === 'invoke' || e.kind === 'interp' ? false
     // (An array, an element, and what works on one are no constants.)
-    : e.kind === 'array' || e.kind === 'myarray' || e.kind === 'elem' || e.kind === 'lastindex' || e.kind === 'arrayop' || e.kind === 'listassign' ? false
+    : e.kind === 'array' || e.kind === 'myarray' || e.kind === 'elem' || e.kind === 'lastindex' || e.kind === 'arrayop' || e.kind === 'hashop' || e.kind === 'listassign' ? false
     : e.kind === 'slice' && e.name !== undefined ? false
     : e.kind === 'ternary' ? folds(e.test)
     : e.kind === 'binary' && infixOp(e.op)?.when ? folds(e.left)
@@ -123,6 +124,7 @@ const listy = (in_: Expr): boolean => {
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
         || (e.kind === 'listop' && e.op === 'reverse')
+        || (e.kind === 'hashop' && (e.op === 'keys' || e.op === 'values'))
         || e.kind === 'binder' || e.kind === 'sort'
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
@@ -137,6 +139,9 @@ const changesItself = (w: World, e: Expr): number[] => {
     const id = (x: Expr): number => w.names.of.get(x)!;
     if (e.kind === 'assign' || e.kind === 'step') return [id(e.target)];
     if (e.kind === 'arrayop' && e.op !== 'scalar') return [id(e)];
+    // A `delete` changes its hash: perl reads freed values where one
+    // follows a part that names the hash (D102).
+    if (e.kind === 'hashop' && e.op === 'delete') return [id(e)];
     if (e.kind === 'listassign') return e.targets.filter(t => t.kind !== 'constant').map(id);
     return [];
 };
@@ -161,6 +166,8 @@ const named = (w: World, in_: Expr, scalars: boolean, into = new Set<number>()):
     const id = (x: Expr): void => { into.add(w.names.of.get(x)!); };
     if (e.kind === 'elem' || e.kind === 'array' || e.kind === 'lastindex') id(e);
     else if (e.kind === 'slice' && e.name !== undefined) id(e);
+    // `values` are the hash's own, and `keys` are copies (T217, T218).
+    else if (e.kind === 'hashop' && e.op === 'values') id(e);
     else if (e.kind === 'slice') e.items!.forEach(x => named(w, x, true, into));
     else if (e.kind === 'list') e.items.forEach(x => named(w, x, true, into));
     else if (e.kind === 'var' && scalars) id(e);
@@ -182,7 +189,7 @@ const named = (w: World, in_: Expr, scalars: boolean, into = new Set<number>()):
     return into;
 };
 
-const sigil = (w: World, id: number): string => (w.names.isArray[id] ? '@' : '$') + w.names.names[id];
+const sigil = (w: World, id: number): string => (w.names.isHash[id] ? '%' : w.names.isArray[id] ? '@' : '$') + w.names.names[id];
 
 // D76: of parts worked out in this order, a later one may not change what
 // an earlier one names. `also` is what else runs after them all (a sub's
@@ -203,7 +210,7 @@ const checkOrder = (w: World, what: string, sequence: readonly Expr[], scalars: 
 // Where one value is wanted: what may not stand there (T151, T68, T168).
 const checkOneValue = (w: World, e: Expr): void => {
     if (e.kind === 'list') refuse(e.my ? 'my (...) where one value is wanted' : 'a list where one value is wanted: perl gives its last value, and warns of the others', e.pos);
-    if (e.kind === 'myarray') refuse(`my @${e.name} where one value is wanted`, e.pos);
+    if (e.kind === 'myarray') refuse(`my ${e.hash ? '%' : '@'}${e.name} where one value is wanted`, e.pos);
     // `(LIST)[N]`, one index that is one value, is an element there.
     // perl's `sort` there is undef, with a warning (T178, D84).
     if (e.kind === 'sort') refuse('sort where one value is wanted: perl gives undef there, and warns', e.pos);
@@ -231,6 +238,7 @@ const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
     case 'assign': return [[e.value, e.target.kind === 'array' || e.target.kind === 'myarray' ? 'list' : 'scalar'], [e.target, 'list']];
     case 'step': return [[e.target, 'scalar']];
     case 'elem': return [[e.index, 'scalar']];
+    case 'hashop': return e.key === undefined ? [] : [[e.key, 'scalar']];
     // A string's pieces: an array there is its values, not its count.
     case 'interp': return all(e.parts, 'list');
     case 'list': return all(e.items, 'list');
@@ -376,7 +384,7 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     checkConcat(w, e);
     if (ctx === 'scalar') checkOneValue(w, e);
     if ((e.kind === 'my' || e.kind === 'myarray' || (e.kind === 'list' && e.my)) && !my) {
-        refuse(`${e.kind === 'my' ? `my $${e.name}` : e.kind === 'myarray' ? `my @${e.name}` : 'my (...)'} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`, e.pos);
+        refuse(`${e.kind === 'my' ? `my $${e.name}` : e.kind === 'myarray' ? `my ${e.hash ? '%' : '@'}${e.name}` : 'my (...)'} here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached`, e.pos);
     }
     if ((e.kind === 'listassign' || (e.kind === 'assign' && (e.target.kind === 'array' || e.target.kind === 'myarray'))) && !root) {
         refuse('an assignment of a list is a statement: perl gives the count of its right side as its value (D78)', e.pos);
@@ -394,14 +402,15 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     // perl warns as it compiles of an index written as a string that is
     // no number, `$a["x"]`: `Argument "x" isn't numeric`. The shapes are
     // D40's, which the runtime has for a string met as the program runs.
-    if (e.kind === 'elem') {
+    if (e.kind === 'elem' && !e.hash) {
         const index = plain(e.index);
         if (index.kind === 'str' && !NUMERIC_STRING.test(index.value)) {
             refuse(`${index.text} as an index is not a number: perl warns of it as it compiles`, index.pos);
         }
     }
-    if (e.kind === 'apply' && (e.name === 'length' || e.name === 'defined') && plain(e.args[0]!).kind === 'array') {
-        refuse(`${e.name} of an array: perl ${e.name === 'length' ? 'warns, and means the length of its count' : 'refuses it'}; scalar(@a) is how many it holds`, e.pos);
+    const of = e.kind === 'apply' ? plain(e.args[0]!) : undefined;
+    if (e.kind === 'apply' && (e.name === 'length' || e.name === 'defined') && of?.kind === 'array') {
+        refuse(`${e.name} of ${of.hash ? 'a hash' : 'an array'}: perl ${e.name === 'length' ? 'warns, and means the length of its count' : 'refuses it'}; scalar(${of.hash ? '%h' : '@a'}) is how many it holds`, e.pos);
     }
     // D76, for what this node works out in order.
     if (e.kind === 'binary' && !infixOp(e.op)?.when) checkOrder(w, `'${e.op}'`, [e.left, e.right], ctx === 'list' && isRepeat(e));
@@ -457,9 +466,9 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
         e.targets.forEach((t, n) => {
             const array = t.kind === 'array' || t.kind === 'myarray';
             if (t.bracketed || !(t.kind === 'var' || t.kind === 'my' || t.kind === 'elem' || array || (t.kind === 'constant' && t.name === 'undef'))) {
-                refuse('a target of a list assignment is a variable, an element, undef, or, last, an array', t.pos);
+                refuse('a target of a list assignment is a variable, an element, undef, or, last, an array or a hash', t.pos);
             }
-            if (array && n !== e.targets.length - 1) refuse('an array among the targets takes every value that is left: it is the last target', t.pos);
+            if (array && n !== e.targets.length - 1) refuse(`${t.hash ? 'a hash' : 'an array'} among the targets takes every value that is left: it is the last target`, t.pos);
         });
     }
     if (e.kind === 'ternary') tested(e.test);
@@ -533,7 +542,7 @@ const checkPragma = (p: Pragma): void => {
 // what could be a statement, and a `my` in the first part only (D60).
 const checkPart = (w: World, e: Expr, first: boolean): void => {
     // A call is something done, as it is where it is a statement (D72).
-    if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my' && e.kind !== 'invoke' && !(e.kind === 'arrayop' && e.op !== 'scalar' && e.op !== 'splice')) {
+    if (e.kind !== 'assign' && e.kind !== 'step' && e.kind !== 'my' && e.kind !== 'invoke' && !(e.kind === 'arrayop' && e.op !== 'scalar' && e.op !== 'splice') && !(e.kind === 'hashop' && e.op === 'delete')) {
         refuse('this part of the for only has a value, and nothing is done with it: perl warns that it is useless', e.pos);
     }
     const my = e.kind === 'my' ? e : e.kind === 'assign' && e.target.kind === 'my' ? e.target : undefined;
@@ -588,9 +597,13 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
         const does = s.expr.kind === 'assign' || s.expr.kind === 'step' || s.expr.kind === 'my' || s.expr.kind === 'invoke'
             || s.expr.kind === 'myarray' || s.expr.kind === 'listassign' || (s.expr.kind === 'list' && s.expr.my === true)
             || (s.expr.kind === 'arrayop' && s.expr.op !== 'scalar')
+            || (s.expr.kind === 'hashop' && s.expr.op === 'delete')
             // A `map` or a `grep` may be one, for what its block does: perl
             // does not warn of it (D87).
             || s.expr.kind === 'binder';
+        // (perl is silent about `exists $h{k};` and `keys %h;`, which
+        // sets `each`'s place back: nothing, here.)
+        if (!does && !last && s.expr.kind === 'hashop') refuse('this statement only has a value, and nothing is done with it', s.pos);
         if (!does && !last) {
             refuse('this statement only has a value, and nothing is done with it: perl warns that it is useless', s.pos);
         }

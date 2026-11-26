@@ -1,0 +1,2 @@
+t/1579-hash-keys-as-a-statement.pl:5:1: this statement only has a value, and nothing is done with it
+exit: 1

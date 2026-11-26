@@ -1,0 +1,2 @@
+t/1606-hash-two-fat-commas.pl:4:18: a comma with no value before it: perl leaves it out, in silence, where it doesn't refuse it
+exit: 1

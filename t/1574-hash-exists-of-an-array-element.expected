@@ -1,0 +1,2 @@
+t/1574-hash-exists-of-an-array-element.pl:5:12: exists takes an element of a hash, found '$a': exists $h{...}
+exit: 1

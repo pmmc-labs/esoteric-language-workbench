@@ -1,0 +1,2 @@
+t/1571-hash-keys-before-a-plus.pl:5:5: keys %h before '+': perl reads on for keys's argument, or does not compile it; write keys(...)
+exit: 1

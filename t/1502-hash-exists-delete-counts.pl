@@ -71,9 +71,11 @@ $h2{a} = 9;
 $h2{a} = 10;
 my $again2 = %h2;
 say($again2);
+my @vs2 = (values(%h2));
+my @all2 = (%h2);
 say(join(',', (sort keys(%h2))));
-say(join(',', (sort { $a <=> $b } (values(%h2)))));
-say(join(',', (sort %h2)));
+say(join(',', (sort { $a <=> $b } (@vs2))));
+say(join(',', (sort @all2)));
 say(join(',', reverse((sort keys(%h2)))));
 say(join(',', (map { $_ x 2 } ((sort keys(%h2))))));
 my %h3 = (a => 1, b => 2, c => 3, d => 4);
@@ -91,7 +93,8 @@ say((scalar(keys(%h3)) . ':') . join(',', (map { ((('<' . $_) . '=') . (defined(
 say((scalar(keys(%h3)) . ':') . join(',', (map { ((('<' . $_) . '=') . (defined($h3{$_}) ? $h3{$_} : 'undef')) . '>' } ((sort keys(%h3))))));
 %h3 = (first => 0, %h3);
 say((scalar(keys(%h3)) . ':') . join(',', (map { ((('<' . $_) . '=') . (defined($h3{$_}) ? $h3{$_} : 'undef')) . '>' } ((sort keys(%h3))))));
-my @a3 = ((sort %h3));
+my @flat3 = (%h3);
+my @a3 = ((sort @flat3));
 say(scalar(@a3));
 my @k3 = ((sort keys(%h3)));
 {
@@ -103,7 +106,8 @@ my @k3 = ((sort keys(%h3)));
     }
     say((scalar(@k3) . ':') . $dump_s);
 }
-my @v3 = ((sort { $a <=> $b } (values(%h3))));
+my @vv3 = (values(%h3));
+my @v3 = ((sort { $a <=> $b } (@vv3)));
 {
     my $dump_i = 0;
     my $dump_s = "";

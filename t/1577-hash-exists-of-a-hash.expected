@@ -1,0 +1,2 @@
+t/1577-hash-exists-of-a-hash.pl:5:12: exists takes an element of a hash, found '%h': exists $h{...}
+exit: 1

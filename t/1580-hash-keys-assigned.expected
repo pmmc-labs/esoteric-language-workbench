@@ -1,0 +1,2 @@
+t/1580-hash-keys-assigned.pl:5:10: the left side of '=' is a variable, an element, an array, a hash, or a list of them in brackets
+exit: 1

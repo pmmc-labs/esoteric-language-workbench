@@ -1,0 +1,2 @@
+t/1596-hash-said-and-deleted.pl:5:12: a later part of say's list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

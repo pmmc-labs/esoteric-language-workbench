@@ -612,6 +612,16 @@ programs under perl 5.42, and 250 by hand.
   once in 128. Tests break their ties; steps 10 and 12 write tests
   that sort, so they are where this bites first, and a ninth seed is
   cheap if one in 128 turns out to be too many (D10 says eight).
+- **The reading rule was mended at step 12a**, before any test of a
+  hash was written, for what step 12's review found: it let an
+  order through a `sort` whose block compares nothing or logs, a
+  `map` or `grep` that prints between a `sort` and its `keys`, and
+  `(keys %h)[0]`; and it rejected what shows no order (a hash
+  counted, tested, copied, declared in a `my (...)`, handed to a
+  parameter). Each has a fixture in `t/checks/`. It is still by
+  pattern and errs toward rejecting: a list of `keys` that is only
+  counted later (`my @k = (keys %h, 1); say scalar(@k);`) is
+  rejected, and such a line goes in a `new` test or sorts.
 - A program more than 100 calls deep makes perl warn, so it can't be
   a `same` test as D10 stands. Step 8.
 - Plain `perl FILE` prints `é` as the single byte E9, in silence;
@@ -651,8 +661,12 @@ programs under perl 5.42, and 250 by hand.
     Steps 21 and 22: one environment for both, and `TZ` pinned.
   - `-CSDA` is not `perl FILE` for a character past ASCII: closed at
     step 3 (D39).
-  - A `new` test is not checked at all. Step 27, where the first one
-    is.
+  - A `new` test is not checked at all. The first two are step 12a's,
+    for D27's order: 1503, from the model (a Python dict keeps the
+    order of first storing), and 1542, by hand. perl agrees with 1503
+    line for line once each line's values are sorted, which was looked
+    at once and is checked by nothing. Step 27 brings the next, and
+    should bring a check.
   - The reading rule pairs quotes by counting them, so an apostrophe
     in a heredoc, a `q{"}`, a `tr/'//` or a `#` in a pattern hides
     what follows; and it doesn't know `% h` with a space, `%::h`, or a

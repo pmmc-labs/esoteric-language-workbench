@@ -48,7 +48,7 @@ typedef struct rt_block {
 // An array's values are storage of its own, which grows; it is counted
 // with the block against the cap.
 static uint64_t storage(const rt_array *a) {
-    return a->room * sizeof(rt_value);
+    return a->room * sizeof(rt_value) + a->slots * sizeof(uint32_t);
 }
 
 // With no knob set, the first collection comes after this many bytes, and
@@ -106,7 +106,7 @@ void rt_leave(rt_ctx *cx, rt_frame *frame) {
 }
 
 static void mark_string(rt_ctx *cx, rt_value v) {
-    if (v.tag == RT_TAG_ARRAY) rt_internal(cx, "an array holds an array");
+    if (v.tag == RT_TAG_ARRAY || v.tag == RT_TAG_HASH) rt_internal(cx, "an array holds an array");
     if (v.tag != RT_TAG_STR) return;
     if (v.as.s->where == RT_STR_DEAD) rt_internal(cx, "a slot holds a string that was collected");
     if (v.as.s->where == RT_STR_HEAP) ((rt_block *)v.as.s - 1)->marked |= REACHED;
@@ -120,7 +120,7 @@ void rt_collect(rt_ctx *cx) {
     for (rt_frame *frame = cx->frames; frame; frame = frame->prev) {
         for (uint64_t k = 0; k < frame->count; k++) {
             rt_value v = frame->slots[k];
-            if (v.tag == RT_TAG_ARRAY) {
+            if (v.tag == RT_TAG_ARRAY || v.tag == RT_TAG_HASH) {
                 rt_array *a = v.as.a;
                 if (a->dead) rt_internal(cx, "a slot holds an array that was collected");
                 ((rt_block *)a - 1)->marked |= REACHED;
@@ -151,8 +151,10 @@ void rt_collect(rt_ctx *cx) {
             cx->held -= storage(a);
             block->size -= storage(a);
             free(a->items);
+            free(a->index);
             a->items = NULL;
-            a->count = a->room = 0;
+            a->index = NULL;
+            a->count = a->room = a->slots = 0;
             a->dead = 1;
         } else {
             rt_str *s = (rt_str *)(block + 1);
@@ -1181,12 +1183,18 @@ static rt_array *changing(rt_ctx *cx, rt_value v) {
     return a;
 }
 
+// (A hash is frozen as an array is: step 12b's loops will ask.)
+static rt_array *container_of(rt_ctx *cx, rt_value v) {
+    if (v.tag == RT_TAG_HASH && !v.as.a->dead) return v.as.a;
+    return array_of(cx, v);
+}
+
 void rt_freeze(rt_ctx *cx, rt_value array) {
-    array_of(cx, array)->frozen += 1;
+    container_of(cx, array)->frozen += 1;
 }
 
 void rt_thaw(rt_ctx *cx, rt_value array) {
-    rt_array *a = array_of(cx, array);
+    rt_array *a = container_of(cx, array);
     if (a->frozen == 0) rt_internal(cx, "an array that no foreach is over was given back");
     a->frozen -= 1;
 }
@@ -1201,8 +1209,9 @@ rt_value rt_array_new(rt_ctx *cx) {
     rt_block *block = block_new(cx, sizeof(rt_block) + sizeof(rt_array));
     block->marked = IS_ARRAY;
     rt_array *a = (rt_array *)(block + 1);
-    a->count = a->room = 0;
+    a->count = a->room = a->slots = a->gone = 0;
     a->items = NULL;
+    a->index = NULL;
     a->dead = 0;
     a->frozen = 0;
     rt_value v;
@@ -1593,3 +1602,4 @@ void rt_internal(rt_ctx *cx, const char *what) {
 
 // perl's merge sort, ported: a file of its own, for its origin (D82).
 #include "sort.c"
+#include "hash.c"

@@ -14,7 +14,7 @@
 // integer fits whole; both C compilers pass the pair in registers. The
 // union gains a member per kind of value. No tag is 0: memory that was
 // never made a value then faults at the first operator that checks it.
-enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_BOOL = 5, RT_TAG_ARRAY = 6, RT_TAG_ABSENT = 7 };
+enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_BOOL = 5, RT_TAG_ARRAY = 6, RT_TAG_ABSENT = 7, RT_TAG_HASH = 8 };
 
 // An array (D80): a row of values that grows and shrinks in place, the
 // collector's as a heap string is, with storage of its own. It is what an
@@ -28,6 +28,11 @@ typedef struct rt_array {
     struct rt_value_ *items;
     uint64_t dead;
     uint64_t frozen;        // how many `foreach` loops are over it (D80)
+    // A hash is this block too (step 12, runtime/hash.c): `items` holds a
+    // key and its value by turns, and `index` finds a key's pair.
+    uint32_t *index;
+    uint64_t slots;
+    uint64_t gone;          // how many of its pairs are holes, deleted
 } rt_array;
 
 // A Str (D24): Unicode characters, held as UTF-8, and never changed once
@@ -288,6 +293,26 @@ void rt_fault_sub(rt_ctx *cx, const char *name, const char *what) __attribute__(
 // of the adding can start a collection: only `rt_array_new` allocates
 // from the heap, and what it makes is in a slot before anything else is.
 rt_value rt_array_new(rt_ctx *cx);
+// A hash (step 12; D27): its keys in the order they were first stored. A
+// key is made a string as `.` makes one. An element is read, made and
+// stored as an array's is, a made one by the number of its pair, which
+// holds until a key is deleted or the hash assigned.
+rt_value rt_hash_new(rt_ctx *cx);
+rt_value rt_helem(rt_ctx *cx, rt_value hash, rt_value key);
+rt_value rt_helem_store(rt_ctx *cx, rt_value hash, rt_value key, rt_value v);
+int64_t rt_helem_make(rt_ctx *cx, rt_value hash, rt_value key);
+rt_value rt_helem_get(rt_ctx *cx, rt_value hash, int64_t pair);
+rt_value rt_helem_put(rt_ctx *cx, rt_value hash, int64_t pair, rt_value v);
+rt_value rt_hash_exists(rt_ctx *cx, rt_value hash, rt_value key);
+rt_value rt_hash_delete(rt_ctx *cx, rt_value hash, rt_value key);
+rt_value rt_hash_count(rt_ctx *cx, rt_value hash);
+void rt_list_add_pairs(rt_ctx *cx, rt_value list, rt_value hash);
+void rt_list_add_keys(rt_ctx *cx, rt_value list, rt_value hash);
+void rt_list_add_values(rt_ctx *cx, rt_value list, rt_value hash);
+// `%h = LIST`, and a hash as the last target of a list assignment, from
+// the list's value `n` on; an odd number of values is a fault.
+void rt_hash_assign(rt_ctx *cx, rt_value hash, rt_value list);
+void rt_hash_rest(rt_ctx *cx, rt_value hash, rt_value list, int64_t n);
 void rt_list_add(rt_ctx *cx, rt_value list, rt_value v);
 void rt_list_add_all(rt_ctx *cx, rt_value list, rt_value array);
 void rt_list_add_range(rt_ctx *cx, rt_value list, rt_value from, rt_value to);

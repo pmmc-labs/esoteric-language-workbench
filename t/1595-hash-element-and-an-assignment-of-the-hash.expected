@@ -1,0 +1,2 @@
+t/1595-hash-element-and-an-assignment-of-the-hash.pl:6:17: a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

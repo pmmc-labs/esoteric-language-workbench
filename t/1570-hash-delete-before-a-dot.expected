@@ -1,0 +1,2 @@
+t/1570-hash-delete-before-a-dot.pl:5:5: delete $h{...} before '.': perl reads on for delete's argument, or does not compile it; write delete(...)
+exit: 1

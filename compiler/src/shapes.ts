@@ -26,7 +26,7 @@ export const handsOn = (in_: Expr, gives: Gives): boolean => {
 // than its one value, in perl (T183). An array, a list of two or more, or
 // of one that is itself list-shaped, a range, a slice, `(LIST) x N`,
 // `splice`, `reverse`, `map`, `grep`, `sort`, and `? :` or `|| && //` with such an arm, whichever
-// arm is taken. `(LIST)[N]` with one index that is one value is that
+// arm is taken; a hash, and `keys` and `values` (T229). `(LIST)[N]` with one index that is one value is that
 // element; `()` is nothing, as `return;` is.
 export const shaped = (in_: Expr, gives: Gives): boolean => {
     const e = behind(in_);
@@ -36,6 +36,7 @@ export const shaped = (in_: Expr, gives: Gives): boolean => {
     case 'slice': return e.name !== undefined || e.indexes.length !== 1 || shaped(e.indexes[0]!, gives) || handsOn(e.indexes[0]!, gives);
     case 'arrayop': return e.op === 'splice';
     case 'listop': return e.op === 'reverse';
+    case 'hashop': return e.op === 'keys' || e.op === 'values';
     case 'binder': return true;
     case 'sort': return true;
     case 'ternary': return shaped(e.then, gives) || shaped(e.else, gives);

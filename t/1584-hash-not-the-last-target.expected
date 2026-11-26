@@ -1,0 +1,2 @@
+t/1584-hash-not-the-last-target.pl:5:5: a hash among the targets takes every value that is left: it is the last target
+exit: 1

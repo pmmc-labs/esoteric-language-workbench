@@ -19,3 +19,8 @@ my %back = pairs();
 say scalar(keys(%back));
 my %words = (keys => 1, values => 2, each => 3, other => 4);
 say $words{keys}, $words{ values }, exists $words{each} ? "each" : "none";
+my $values = values %h;
+my @keys = (1, 2);
+say $values, scalar(@keys), %h ? "some" : "none", !%h ? "none" : "some";
+my ($first, %rest) = ("head", p => 1, q => 2, r => 3, s => 4);
+say $first, scalar(%rest);

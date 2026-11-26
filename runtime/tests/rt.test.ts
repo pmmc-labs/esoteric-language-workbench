@@ -213,20 +213,21 @@ test('a program given a stack of less than 8 MB does not start (D68)', () => {
 });
 
 // Arrays under the collector (step 9; D80). The numbers by hand: a block's
-// header is 24 bytes and an array 40 after it, so an empty array holds 64;
+// header is 24 bytes and an array 64 after it (40 until step 12, when it
+// gained the three words a hash's index needs), so an empty array holds 88;
 // its first storage is for 8 values, 128 bytes; the string `ab1` is 24 of
 // header, 32 of rt_str, 3 bytes and a NUL, 60.
 test('an array in a slot keeps what it holds, and one a slot lets go is freed with its storage', () => {
     assert.deepEqual(run('arrays', 'kept-through'), { status: 0, output: [
-        'made: 3 on the heap, 3 made, 0 collections, 312 bytes held',
-        'collected: 2 on the heap, 3 made, 1 collections, 252 bytes held',
+        'made: 3 on the heap, 3 made, 0 collections, 336 bytes held',
+        'collected: 2 on the heap, 3 made, 1 collections, 276 bytes held',
         'ab1',
         'and again: 0 on the heap, 3 made, 2 collections, 0 bytes held', ''].join('\n') });
 });
 
 test('an array in no slot is collected, and one used after that is an internal error', () => {
     assert.deepEqual(run('arrays', 'dropped', { CURLY_GC_POISON: '1' }), { status: 2, output:
-        'collected: 0 on the heap, 1 made, 1 collections, 64 bytes held\ninternal: an array was used after it was collected at arrays.pl line 1.\n' });
+        'collected: 0 on the heap, 1 made, 1 collections, 88 bytes held\ninternal: an array was used after it was collected at arrays.pl line 1.\n' });
 });
 
 test("an array's values count against the cap, and an array holds no array", () => {
@@ -322,4 +323,69 @@ test("the sort machine asks for perl's pairs, in perl's order", () => {
     // A fault in the middle of a sort stops the program as any does.
     const stopped = spawnSync(join(build, 'sortm'), ['stop'], { input: 'n 3 1 2 5 4 9 8 7\n', encoding: 'utf8' });
     assert.deepEqual([stopped.status, stopped.stderr], [1, 'fault: undef where a number is wanted at sortm.pl line 1.\n']);
+});
+
+// Hashes (step 12a; D27). The numbers by hand: an empty hash is the 88
+// bytes an empty array is; its first storage is for 8 values, 128 bytes,
+// and its first index 8 slots of 4 bytes, 32; `ab1` is 60, as above.
+test('a hash in a slot keeps its keys and values, and one a slot lets go is freed with its storage and its index', () => {
+    assert.deepEqual(run('hash', 'kept-through'), { status: 0, output: [
+        'made: 4 on the heap, 4 made, 0 collections, 428 bytes held',
+        'collected: 3 on the heap, 4 made, 1 collections, 368 bytes held',
+        'ab2',
+        'and again: 0 on the heap, 4 made, 2 collections, 0 bytes held', ''].join('\n') });
+    assert.deepEqual(run('hash', 'dropped', { CURLY_GC_POISON: '1' }), { status: 2, output:
+        'collected: 0 on the heap, 1 made, 1 collections, 88 bytes held\ninternal: a hash was used after it was collected at hash.pl line 1.\n' });
+});
+
+test('a key is a string, however it was given, and is made one once, as it is stored', () => {
+    assert.deepEqual(run('hash', 'number-key'), { status: 0, output: '2 made\nab\nab\n5 made\n3\n4\n\n1\n7,1,,1.5|2,3,4,5|4\n' });
+});
+
+test("a hash keeps the order its keys were first stored in (D27)", () => {
+    assert.deepEqual(run('hash', 'order'), { status: 0, output: [
+        'a,b,c,d|1,2,3,4|4',
+        '', 'a,b,c,d|1,22,3,4|4',
+        '22', '', 'a,c,d|1,3,4|3',
+        'a,c,d,b|1,3,4,5|4',
+        '', 'a,c,d,b,k|1,3,4,5,6|5',
+        '12', 'a,c,d,b,k|9,3,4,5,6|5',
+        'c,d,b,k,a|3,4,5,6,9|5',
+        '||0', ''].join('\n') });
+});
+
+test('ten thousand keys are each found, the deleted ones alone are gone, and the order holds', () => {
+    const output = '10000\n50005000\n5000\n5000 found, 5000 missing\nk9991,k9995,k9997,k9999,a,k9993|9991,9995,9997,9999,0,1|6\n';
+    assert.deepEqual(run('hash', 'grow'), { status: 0, output });
+    // And with a collection at every allocation, nothing it needs is lost.
+    assert.deepEqual(run('hash', 'grow', { CURLY_GC_STRESS: '1', CURLY_GC_POISON: '1' }), { status: 0, output });
+});
+
+// 5,000 keys: storage for 16,384 values, 262,144 bytes; an index of 16,384
+// slots, 65,536; the hash, 88; and the keys, 56 bytes and their digits and
+// a NUL each, 303,890: 631,658 in all.
+test("a hash's pairs and its index count against the cap", () => {
+    assert.deepEqual(run('hash', 'storage', { CURLY_HEAP_CAP: '631657' }), { status: 1, output: 'storing\nfault: out of memory at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'storage', { CURLY_HEAP_CAP: '631658' }), { status: 0, output: 'storing\nstored\n' });
+    // Without the index it would fit in 566,122.
+    assert.deepEqual(run('hash', 'storage', { CURLY_HEAP_CAP: '600000' }), { status: 1, output: 'storing\nfault: out of memory at hash.pl line 1.\n' });
+});
+
+test("a hash's faults", () => {
+    assert.deepEqual(run('hash', 'odd'), { status: 1, output: '1|2|1\nfault: an odd number of values for a hash at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'undef-key'), { status: 1, output: 'fault: undef where a string is wanted at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'whole-num-key'), { status: 1, output: 'fault: a whole float this size prints two ways in perl (add 0 to print the integer) at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'no-array-in-a-hash'), { status: 1, output: 'fault: not a value at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'no-hash-in-an-array'), { status: 1, output: 'fault: not a value at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'not-a-hash'), { status: 1, output: 'fault: not a hash at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'not-an-array'), { status: 1, output: 'fault: not an array at hash.pl line 1.\n' });
+    assert.deepEqual(run('hash', 'put-nowhere'), { status: 2, output: 'internal: a key that was made is not there at hash.pl line 1.\n' });
+});
+
+test('a frozen hash is read, and every change to it is a fault', () => {
+    const read = '1\n\n\na,b,c,d|1,2,3,4|4\n';
+    for (const way of ['store', 'new', 'make', 'delete', 'assign']) {
+        assert.deepEqual(run('hash', `frozen-${way}`), { status: 1, output: read + 'fault: a hash was changed while a foreach is over it at hash.pl line 1.\n' }, way);
+    }
+    assert.deepEqual(run('hash', 'frozen-none'), { status: 0, output: read + '5\n' });
 });

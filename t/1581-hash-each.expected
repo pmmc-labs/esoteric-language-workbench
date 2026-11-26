@@ -1,0 +1,2 @@
+t/1581-hash-each.pl:5:22: expected a value, found 'each'
+exit: 1

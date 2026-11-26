@@ -38,14 +38,24 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
 export type Expr = Int | Num | Str | Interp | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
-    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder | Sort;
+    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder | Sort | HashOp;
 
 // An array, `@name`, and `my @name`, which declares one (D80).
-export type ArrayVar = { kind: 'array'; name: string; pos: Pos; bracketed?: true };
-export type MyArray = { kind: 'myarray'; name: string; pos: Pos; bracketed?: true };
+// With `hash`, a hash, `%name` and `my %name` (step 12): the same nodes,
+// because every rule about what an expression names, what is a list and
+// the order things are worked out in is an array's (T218).
+export type ArrayVar = { kind: 'array'; name: string; hash?: true; pos: Pos; bracketed?: true };
+export type MyArray = { kind: 'myarray'; name: string; hash?: true; pos: Pos; bracketed?: true };
 
 // An element, `$name[index]`, of the array `@name`; and `$#name`.
-export type Elem = { kind: 'elem'; name: string; index: Expr; pos: Pos; bracketed?: true };
+// With `hash`, `$name{key}`, of the hash `%name`, `index` its key.
+export type Elem = { kind: 'elem'; name: string; index: Expr; hash?: true; pos: Pos; bracketed?: true };
+
+// A builtin that names a hash (step 12a): `keys %name` and `values
+// %name`; `exists $name{key}` and `delete $name{key}`; and `count`,
+// `scalar(%name)` and `scalar` of its keys or values. `pos` is the
+// word's, `at` the hash's.
+export type HashOp = { kind: 'hashop'; op: 'keys' | 'values' | 'exists' | 'delete' | 'count'; name: string; key?: Expr; pos: Pos; at: Pos; bracketed?: true };
 export type LastIndex = { kind: 'lastindex'; name: string; pos: Pos; bracketed?: true };
 
 // A list in brackets: no items, or two and more, or one with a comma

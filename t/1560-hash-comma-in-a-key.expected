@@ -1,0 +1,2 @@
+t/1560-hash-comma-in-a-key.pl:5:17: a comma in a hash's key: perl joins the values into one key
+exit: 1

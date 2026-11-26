@@ -18,13 +18,19 @@ export type Token =
     // `text` is the literal as written, quotes and all; `value` is the
     // string it stands for. `pieces`: it has a variable in it (step 11a),
     // and is these from left to right; `value` is then nothing.
-    | { kind: 'str'; text: string; value: string; pos: Pos; pieces?: readonly Piece[] }
+    // `bare`: a word that perl makes a string of, alone in a hash's
+    // braces or before `=>` (step 12; T214, T215).
+    | { kind: 'str'; text: string; value: string; pos: Pos; pieces?: readonly Piece[]; bare?: true }
     | { kind: 'version'; text: string; pos: Pos }
     // A variable: `text` is `$name`.
     | { kind: 'var'; text: string; name: string; pos: Pos }
     // An array, `@name`, and its last index, `$#name`.
     | { kind: 'array' | 'lastindex'; text: string; name: string; pos: Pos }
-    | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}' | '[' | ']'; text: string; pos: Pos }
+    // A hash, `%name` (step 12).
+    | { kind: 'hash'; text: string; name: string; pos: Pos }
+    // `subscript`: the brace opens or closes the key of a hash's element,
+    // `$h{...}`. A `,` whose text is `=>` is the fat comma.
+    | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}' | '[' | ']'; text: string; pos: Pos; subscript?: true }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
@@ -77,6 +83,8 @@ export const lex = (src: string): Token[] => {
     // How many brackets of a sub's signature are open: there, and nowhere
     // else, a `$` may stand alone, a parameter with no name (D72).
     let signature = 0;
+    // For each brace that is open, whether it opened a hash's key.
+    const braces: boolean[] = [];
     const at = (): string => src[i] ?? '';
     const pos = (): Pos => ({ line, col });
     const push = (t: Token): void => {
@@ -347,7 +355,7 @@ export const lex = (src: string): Token[] => {
         const named = piece.kind !== 'elem' && piece.kind !== 'slice';
         const or = (after: string): string => (named ? `${braced}${after} or ` : '');
         if (src.startsWith('::', i)) refuse(`'::' hard after ${shown} in a string: perl reads a variable of another package; write ${or('::')}${shown}\\::`, pos());
-        if (at() === '{') refuse(`'{' hard after ${shown} in a string: a hash's, to perl, and hashes are not in the language yet (step 12); write ${or('{')}${shown}\\{`, pos());
+        if (at() === '{') refuse(`'{' hard after ${shown} in a string: a hash's, to perl, and a hash in a string is not in the language yet (step 12b); write ${or('{')}${shown}\\{`, pos());
         if (at() === '[') refuse(`'[' hard after ${shown} in a string: another index, to perl; write ${shown}\\[`, pos());
         const then = src[i + 2] ?? '';
         if (src.startsWith('->', i) && then !== '' && '[{@$'.includes(then)) {
@@ -397,10 +405,37 @@ export const lex = (src: string): Token[] => {
     // that came after a variable.
     const afterValue = (): boolean => {
         const last = tokens.at(-1);
-        if (last?.kind === 'op' && stepOp(last.text)) return tokens.at(-2)?.kind === 'var';
+        if (last?.kind === 'op' && stepOp(last.text)) {
+            const target = tokens.at(-2);
+            return target?.kind === 'var' || target?.kind === ']' || (target?.kind === '}' && target.subscript === true);
+        }
         return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === ')' || last?.kind === 'var'
-            || last?.kind === ']' || last?.kind === 'array' || last?.kind === 'lastindex'
+            || last?.kind === ']' || last?.kind === 'array' || last?.kind === 'lastindex' || last?.kind === 'hash'
+            || (last?.kind === '}' && last.subscript === true)
             || (last?.kind === 'word' && NAMES.get(last.text)?.kind === 'constant');
+    };
+
+    // Where the blanks from `k` on end: spaces and tabs, and with `lines`
+    // the ends of lines and comments too.
+    const past = (k: number, lines: boolean): number => {
+        for (;;) {
+            const ch = src[k] ?? '';
+            if (ch === ' ' || ch === '\t' || (lines && ch === '\n')) k += 1;
+            else if (lines && ch === '#') k = src.indexOf('\n', k) < 0 ? src.length : src.indexOf('\n', k);
+            else return k;
+        }
+    };
+    // Where the word that starts at `k` ends.
+    const wordEnd = (k: number): number => {
+        while (k < src.length && isWord(src[k]!)) k += 1;
+        return k;
+    };
+    // A word that is a string: the next characters, taken.
+    const bare = (): void => {
+        const start = pos();
+        const text = run(isWord);
+        if (text.length > NAME_MAX_LENGTH) refuse(`a word of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
+        push({ kind: 'str', text, value: text, pos: start, bare: true });
     };
 
     while (i < src.length) {
@@ -423,6 +458,31 @@ export const lex = (src: string): Token[] => {
             push(string(start));
         } else if (isDigit(c) || (c === '.' && isDigit(src[i + 1] ?? '') && !afterValue())) {
             push(number(start));
+        } else if (isWordStart(c) && !afterValue() && src.startsWith('=>', past(wordEnd(i), true))) {
+            // A word before `=>` is a string, whatever the word (T214):
+            // on one line. Across the end of a line perl makes a string
+            // of every word but a `v` and digits, which is a version
+            // string there, the character of that number (T224).
+            if (!src.startsWith('=>', past(wordEnd(i), false))) {
+                refuse(`${src.slice(i, wordEnd(i))} and its '=>' are on one line: across the end of a line perl does not make a string of every word; write the word in quotes`, start);
+            }
+            bare();
+        } else if (c === '=' && src[i + 1] === '>') {
+            // The fat comma: a comma, the word before it a string already.
+            take(); take();
+            push({ kind: ',', text: '=>', pos: start });
+        } else if (c === '%' && !afterValue()) {
+            // A hash, `%name` (step 12). After a value the same character
+            // is the modulus, as it is to perl.
+            take();
+            if (at() === '$' || at() === '{') refuse("'%' before a reference: references are not in the language yet (step 13)", start);
+            if (!isWordStart(at())) refuse("after '%' comes a name: a letter or '_', then letters, digits and '_'", start);
+            const name = run(isWord);
+            if (name === '_') refuse("%_ is perl's own, and not in the language", start);
+            if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
+            if (at() === '{') refuse(`%${name}{...} is a slice of keys and values, and not in the language`, start);
+            if (at() === '[') refuse(`%${name}[...] is a slice of indexes and values, and not in the language`, start);
+            push({ kind: 'hash', text: '%' + name, name, pos: start });
         } else if (isWordStart(c)) {
             const operator = afterValue();
             let text = run(isWord);
@@ -550,6 +610,39 @@ export const lex = (src: string): Token[] => {
             const [word, name] = [tokens.at(-2), tokens.at(-1)];
             if (c === '(' && (signature > 0 || (word?.kind === 'word' && NAMES.get(word.text)?.kind === 'sub' && name?.kind === 'word'))) signature += 1;
             if (c === ')' && signature > 0) signature -= 1;
+            // A brace hard after a variable opens a hash's key, `$h{...}`.
+            // (perl takes a blank between the two, and the parser refuses
+            // it: nothing else a brace could be stands after a variable.)
+            if (c === '{' && name?.kind === 'var' && lastEnd === i) {
+                braces.push(true);
+                push({ kind: '{', text: take(), pos: start, subscript: true });
+                // One word alone in the braces is that string, whatever
+                // the word (T215): on one line with its braces. Across the
+                // end of a line `true` is the key 1 to perl, and `v65` is
+                // `A`, in silence (T223).
+                // And `-word` alone there is the string `-word`.
+                const sign = past(i, false);
+                if (src[sign] === '-' && isWordStart(src[sign + 1] ?? '') && src[past(wordEnd(sign + 1), false)] === '}') {
+                    const text = src.slice(sign, wordEnd(sign + 1));
+                    refuse(`${text} alone in a hash's braces is the string ${text}, to perl: write it in quotes`, { line, col: col + sign - i });
+                }
+                const from = past(i, true);
+                if (isWordStart(src[from] ?? '') && src[past(wordEnd(from), true)] === '}') {
+                    const near = past(i, false);
+                    if (near !== from || src[past(wordEnd(near), false)] !== '}') {
+                        refuse(`a word alone in a hash's braces is on one line with them: across the end of a line perl does not make a string of every word; write the word in quotes`, start);
+                    }
+                    run(ch => ch === ' ' || ch === '\t');
+                    bare();
+                }
+                continue;
+            }
+            if (c === '{' && name?.kind === 'array' && lastEnd === i) refuse(`${name.text}{...} is a slice of a hash, which is not in the language yet (step 12b)`, start);
+            if (c === '{') braces.push(false);
+            if (c === '}' && braces.pop() === true) {
+                push({ kind: '}', text: take(), pos: start, subscript: true });
+                continue;
+            }
             push({ kind: c, text: take(), pos: start });
             // `use utf8;` is in force from the next line (T73). Whether it
             // may stand where it does is the checker's to say.

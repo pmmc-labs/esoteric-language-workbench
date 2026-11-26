@@ -1,0 +1,2 @@
+t/1551-hash-word-in-braces-before-a-comment.pl:5:7: a word alone in a hash's braces is on one line with them: across the end of a line perl does not make a string of every word; write the word in quotes
+exit: 1

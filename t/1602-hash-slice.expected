@@ -1,0 +1,2 @@
+t/1602-hash-slice.pl:5:11: @h{...} is a slice of a hash, which is not in the language yet (step 12b)
+exit: 1

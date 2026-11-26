@@ -1,0 +1,2 @@
+t/1556-hash-no-key.pl:5:7: $h{} has no key: perl does not compile it
+exit: 1

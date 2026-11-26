@@ -385,6 +385,12 @@ def counted(code, m):
     operator = r'(?:[-+*/]|(?<!\.)\.(?!\.)|==|!=|<=|>=)'
     if re.search(operator + r'\s*\(*\s*$', before) or re.match(name + r'\s*\)*\s*' + operator, rest):
         return True
+    # Tested, by `? :` or behind a `!`: whether it has any.
+    if re.match(name + r'\s*\?', rest) or re.search(r'!\s*$', before):
+        return True
+    # The last target of a `my (...)`: declared, and filled.
+    if m.group(0)[0] == '%' and re.search(r'\bmy\s*\([^()]*$', before) and re.match(name + r'\s*\)\s*=', rest):
+        return True
     # What a sub gives back: the order shows where the call stands, if it
     # does, and the seeds are left to see it.
     if re.search(r'\breturn\s+$', before):
@@ -411,6 +417,9 @@ def hash_order_shown(path):
         if what[0] not in '%-' and (re.match(r'\s*=>', code[m.end():]) or (re.match(r'[ \t]*\}', code[m.end():]) and re.search(r'\{[ \t]*$', code[:m.start()]))):
             continue
         if counted(code, m):
+            continue
+        # A variable called `$keys` or `@values` is a name.
+        if what[0] != '%' and m.start() > 0 and code[m.start() - 1] in '$@':
             continue
         word, at = word_before(code, m.start())
         if word == 'scalar' and what != 'each':

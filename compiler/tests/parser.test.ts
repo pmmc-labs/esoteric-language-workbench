@@ -186,7 +186,7 @@ test('a step is for a variable, and is not stepped again', () => {
     refused('my 5;', "after 'my', expected a variable, found 5", 1, 4);
     refused('my ();', 'my () declares nothing', 1, 4);
     refused('my ($x + 1);', "expected ',' or ')', found '+'", 1, 8);
-    refused('my (5);', 'in my (...), expected a variable, an array or undef, found 5', 1, 5);
+    refused('my (5);', 'in my (...), expected a variable, an array, a hash or undef, found 5', 1, 5);
 });
 
 test('assignment is right to left, below ? : and above the word operators', () => {
@@ -205,7 +205,7 @@ test('assignment is right to left, below ? : and above the word operators', () =
 });
 
 test('the left side of an assignment is a variable, bare', () => {
-    const message = (op: string) => `the left side of '${op}' is a variable, an element, an array, or a list of them in brackets`;
+    const message = (op: string) => `the left side of '${op}' is a variable, an element, an array, a hash, or a list of them in brackets`;
     refused('say 2 **= 3;', message('**='), 1, 7);
     refused('say 1 = 2;', message('='), 1, 7);
     // (`($x) = 5;` and `(my $x) = 7;` are list assignments, from step 9.)
@@ -463,8 +463,8 @@ test('where an operand is wanted', () => {
     // perl has a glob `*3` and a hash `%2` here.
     refused('say 2 * *3;', wanted("'*'"), 1, 9);
     refused('say * 2;', wanted("'*'"), 1, 5);
-    refused('say % 2;', wanted("'%'"), 1, 5);
-    refused('say 1 % % 2;', wanted("'%'"), 1, 9);
+    refused('say % 2;', "after '%' comes a name: a letter or '_', then letters, digits and '_'", 1, 5);
+    refused('say 1 % % 2;', "after '%' comes a name: a letter or '_', then letters, digits and '_'", 1, 9);
 });
 
 test('where an operator or an end is wanted', () => {
@@ -687,4 +687,55 @@ test('sort LIST and sort { } LIST', () => {
     refused('my $a;', '$a is not a name a program may declare: $a and $b are the two values a sort gives its block', 1, 4);
     // perl's own words are themselves there.
     assert.ok(parse(lex('my @r = sort map { $_ } @a;\nmy @s = sort reverse @a;\nmy @t = sort +f(), 1;')).body.length === 3);
+});
+
+// Step 12a: hashes.
+test('a hash, its element, and the builtins that name one', () => {
+    const exprs = parse(lex('my %h = (a => 1);\n$h{a} += $h{$k . "x"};\n%h = ();\nmy ($x, %g) = (1, %h);\nsay exists $h{a} == 1, delete($h{b}) . "x", keys %h, scalar(values(%h)), scalar(%h);')).body
+        .map(s => (s.kind === 'do' ? s.expr : s.kind === 'call' ? s.args : assert.fail()));
+    const [declared, added, emptied, both, said] = exprs;
+    assert.ok(!Array.isArray(declared) && declared?.kind === 'assign' && declared.target.kind === 'myarray' && declared.target.hash === true);
+    assert.ok(declared.value.kind === 'list' && declared.value.items[0]?.kind === 'str' && declared.value.items[0].value === 'a');
+    assert.ok(!Array.isArray(added) && added?.kind === 'assign' && added.target.kind === 'elem' && added.target.hash === true && added.target.index.kind === 'str');
+    assert.ok(added.value.kind === 'elem' && added.value.hash === true && added.value.index.kind === 'binary');
+    assert.ok(!Array.isArray(emptied) && emptied?.kind === 'assign' && emptied.target.kind === 'array' && emptied.target.hash === true);
+    assert.ok(!Array.isArray(both) && both?.kind === 'listassign' && both.targets[1]?.kind === 'myarray' && both.targets[1].hash === true);
+    assert.ok(Array.isArray(said));
+    // `exists` binds tighter than `==`, and brackets end `delete`'s argument.
+    const [first, second, third, fourth, fifth] = said;
+    assert.ok(first?.kind === 'binary' && first.op === '==' && first.left.kind === 'hashop' && first.left.op === 'exists' && first.left.key?.kind === 'str');
+    assert.ok(second?.kind === 'binary' && second.op === '.' && second.left.kind === 'hashop' && second.left.op === 'delete');
+    assert.deepEqual([third, fourth, fifth].map(e => e?.kind === 'hashop' && [e.op, e.name, e.at]), [['keys', 'h', { line: 5, col: 50 }], ['count', 'h', { line: 5, col: 68 }], ['count', 'h', { line: 5, col: 81 }]]);
+});
+
+test('what a hash may not be written as', () => {
+    const on = (shown: string, op: string, word: string) => `${shown} before '${op}': perl reads on for ${word}'s argument, or does not compile it; write ${word}(...)`;
+    refused('say exists $h{a} + 1;', on('exists $h{...}', '+', 'exists'), 1, 5);
+    refused('say delete $h{a} x 2;', on('delete $h{...}', 'x', 'delete'), 1, 5);
+    refused('say keys %h * 2;', on('keys %h', '*', 'keys'), 1, 5);
+    refused('say values %h . "";', on('values %h', '.', 'values'), 1, 5);
+    refused('say keys %h [0];', "keys %h before '[': perl reads on for keys's argument, or does not compile it; write keys(...)", 1, 5);
+    refused('say keys(%h)[0];', "'[' after keys(...): perl does not compile it; bracket the whole, (keys(...))[...]", 1, 13);
+    // What binds no tighter than a named unary operator may follow.
+    assert.equal(parse(lex('say exists $h{a} < 1, keys %h == 2, values %h ? 1 : 0, delete $h{a} // 0, exists $h{a} && 1, keys %h lt "a";')).body.length, 1);
+    refused('say exists $a[0];', "exists takes an element of a hash, found '$a': exists $h{...}", 1, 12);
+    refused('say delete $x;', "delete takes an element of a hash, found '$x': delete $h{...}", 1, 12);
+    refused('say exists(%h);', "exists takes an element of a hash, found '%h': exists $h{...}", 1, 12);
+    refused('say keys @a;', "keys names a hash, found '@a': keys %h", 1, 10);
+    refused('say values($h{a});', "values names a hash, found '$h': values %h", 1, 12);
+    refused('say $h{};', '$h{} has no key: perl does not compile it', 1, 7);
+    refused('say $h{1, 2};', "a comma in a hash's key: perl joins the values into one key", 1, 9);
+    refused('say $h{a => 1};', "a comma in a hash's key: perl joins the values into one key", 1, 10);
+    refused('say $h{a}{b};', 'an element of an element: a hash of hashes or of arrays is not in the language yet', 1, 10);
+    refused('say $h{a}[0];', 'an element of an element: a hash of hashes or of arrays is not in the language yet', 1, 10);
+    refused('say $h {a};', "a blank between $h and '{': an element of a hash is written $h{...}", 1, 8);
+    refused('++$h {a};', "a blank between $h and '{': an element of a hash is written $h{...}", 1, 6);
+    refused('%h += 1;', "'+=' on a hash: a hash is assigned with =", 1, 4);
+    refused('my %g .= 1;', "'.=' on a hash: a hash is assigned with =", 1, 7);
+    refused('my (-bar => 1);', 'in my (...), expected a variable, an array, a hash or undef, found \'-\'', 1, 5);
+    refused('say(-bar => 1);', "'-' before the word bar, which is a string here: perl makes one string of the two; write it in quotes", 1, 5);
+    refused('say(+bar => 1);', "'+' before the word bar, which is a string here: perl makes one string of the two; write it in quotes", 1, 5);
+    refused('sub f($x, %o) { }', '%o as a parameter is not in the language yet (step 12b)', 1, 11);
+    refused('my @r = map { $_ => 1 } @a;', 'a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...', 1, 18);
+    refused('my @r = map { a => 1 } @a;', "a and a comma first in map's block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets", 1, 15);
 });
