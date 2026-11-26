@@ -4014,8 +4014,10 @@ at step 18.
 
 Referee: perl. Size: medium.
 
-**Proposed 2026-11-26, by Fable 5.2. Not agreed: Q1 to Q4 are
-Stevan's.** D27 (a hash keeps the order its keys were first stored
+**Proposed 2026-11-26, by Fable 5.2, and agreed the same day:
+Stevan took the recommendation on each question, which are D98
+(Q1), D99 (Q2), D100 (Q3) and D101 (Q4). Its adversarial review was
+still running when he answered; nothing is built.** D27 (a hash keeps the order its keys were first stored
 in) and D17 (what freezes) are decided already, and this stands on
 them.
 

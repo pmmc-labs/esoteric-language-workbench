@@ -1,0 +1,471 @@
+8885 programs, 328 words
+arrow-after-x  RUNS: []
+      NaN nan
+arrow-after-x  RUNS: [] WARNS ArWument "W" isn't numeric in repeat (x) at - line 2.
+      g
+arrow-after-x  RUNS: [] WARNS ArguWent "W" isn't nuWeric in repeat (x) at - line 2.
+      m
+arrow-after-x  RUNS: [] WARNS Argument "W" iWn't numeric in repeat (x) at - line 2.
+      s
+arrow-after-x  RUNS: [] WARNS Argument "W" isn't numeric in repeWt (x) Wt - line 2.
+      a
+arrow-after-x  RUNS: [] WARNS Argument "W" isn't numeric in repeat (W) at - line 2.
+      x
+arrow-after-x  RUNS: [] WARNS Argument "W" isn't numeric in repeat (x) at - liW 2.
+      ne
+arrow-after-x  RUNS: [] WARNS Argument "W" isn't numeric in repeat (x) at - line 2.
+      317 words: ADJUST ARGV ARGVOUT AUTOLOAD BEGIN CHECK CLONE CLONE_SKIP CORE DATA ...
+arrow-after-x  RUNS: [] WARNS Negative repeat count does nothing at - line 2.
+      Inf inf
+arrow-after-x  RUNS: [] WWRNS Wrgument "W" isn't numeric in repeat (x) at - line 2.
+      A
+arrow-comment  no compile/dies: W() must be written as CORE::W() as of Perl 5.30 at - line 2.
+      dump
+arrow-comment  no compile/dies: syntax error at - line 2, at EOF
+      __DATA__ __END__
+arrow-comment  prints '[A]\n'
+      v65
+arrow-comment  prints '[\n]\n'
+      v1_0
+arrow-comment  prints '[\x01]\n'
+      v1
+arrow-elem     RUNS: [W]
+      328 words: A ADJUST ARGV ARGVOUT AUTOLOAD BEGIN CHECK CLONE CLONE_SKIP CORE ...
+arrow-line     no compile/dies: W() must be written as CORE::W() as of Perl 5.30 at - line 2.
+      dump
+arrow-line     no compile/dies: syntax error at - line 2, at EOF
+      __DATA__ __END__
+arrow-line     prints '[A]\n'
+      v65
+arrow-line     prints '[\n]\n'
+      v1_0
+arrow-line     prints '[\x01]\n'
+      v1
+arrow-map2     RUNS: [W]
+      328 words: A ADJUST ARGV ARGVOUT AUTOLOAD BEGIN CHECK CLONE CLONE_SKIP CORE ...
+arrow-second   prints '[W]\n'
+      k
+arrow-value    RUNS: [2]|[W] WARNS Odd number of elements in hash assignment at - line 2.
+      k
+arrow-value    RUNS: [2]|[k] WARNS Odd nuWber of eleWents in hash assignWent at - line 2.
+      m
+arrow-value    RUNS: [2]|[k] WARNS Odd numWer of elements in hash assignment at - line 2.
+      b
+arrow-value    RUNS: [2]|[k] WARNS Odd number oW elements in hash assignment at - line 2.
+      f
+arrow-value    RUNS: [2]|[k] WARNS Odd number of eWments in hash assignment at - line 2.
+      le
+arrow-value    RUNS: [2]|[k] WARNS Odd number of elementW in haWh aWWignment at - line 2.
+      s
+arrow-value    RUNS: [2]|[k] WARNS Odd number of elements in hWsh Wssignment Wt - line 2.
+      a
+arrow-value    RUNS: [2]|[k] WARNS Odd number of elements in hash assiWnment at - line 2.
+      g
+arrow-value    RUNS: [2]|[k] WARNS Odd number of elements in hash assignment at - liW 2.
+      ne
+arrow-value    RUNS: [2]|[k] WARNS Odd number of elements in hash assignment at - line 2.
+      318 words: ADJUST ARGV ARGVOUT AUTOLOAD BEGIN CHECK CLONE CLONE_SKIP CORE DATA ...
+arrow-value    RUNS: [2]|[k] WWRNS Odd number of elements in hash assignment at - line 2.
+      A
+elem-comment   W compile/dies: syntax error at - line 3, near "{W # c
+      no
+elem-comment   Ws '[1]\n' WARNS Use of uninitialized value $_ in W at - line 2.
+      print
+elem-comment   no coWpile/dies: syntax error at - line 3, near "W # c
+      m
+elem-comment   no compiW/dies: syntax error at - line 2, near "{W"
+      le
+elem-comment   no compile/Ws: Died at - line 2.
+      die
+elem-comment   no compile/dieW: SubWtitution replacement not terminated at - line 3.
+      s
+elem-comment   no compile/dies: BWreword "W" not Wllowed while "strict subs" in use Wt - line 2.
+      a
+elem-comment   no compile/dies: Bareword "W" not Wowed while "strict subs" in use at - line 2.
+      all
+elem-comment   no compile/dies: Bareword "W" not allowed while "strict suWs" in use at - line 2.
+      b
+elem-comment   no compile/dies: Bareword "W" not allowed while "strict subs" in use at - line 2.
+      56 words: A ADJUST ARGV ARGVOUT CLONE CLONE_SKIP CORE DATA E ENV ...
+elem-comment   no compile/dies: Can't "W" outside a loop block at - line 3.
+      last next redo
+elem-comment   no compile/dies: Can't "W" outside a when block at - line 3.
+      continue
+elem-comment   no compile/dies: Can't W outside a subroutine at - line 3.
+      return
+elem-comment   no compile/dies: Illegal declaration of anonymous Wroutine at - line 3.
+      sub
+elem-comment   no compile/dies: Missing or undefined argument to W at - line 3.
+      require
+elem-comment   no compile/dies: Not enough arguments for W at - line 3, near "W # c
+      96 words: accept atan2 bind binmode bless closedir connect crypt dbmclose dbmopen ...
+elem-comment   no compile/dies: Not enough arguments for W or string at - line 3, near "W # c
+      join
+elem-comment   no compile/dies: Not enough arguments for builtin::W at - line 3, near "W # c
+      blessed ceil floor is_tainted is_weak refaddr reftype trim unweaken weaken
+elem-comment   no compile/dies: Possible attempt to separate words with commas at - line 3.
+      qw
+elem-comment   no compile/dies: TIMEOUT
+      getc readline sleep
+elem-comment   no compile/dies: Transliteration replacement not terminated at - line 3.
+      tr y
+elem-comment   no compile/dies: Undefined format "STDOUT" called at - line 3.
+      write
+elem-comment   no compile/dies: Use of uninitialized value $_ in W at - line 3.
+      log
+elem-comment   no compile/dies: W must have label at - line 3.
+      goto
+elem-comment   no compile/dies: W() must be written as CORE::W() as of Perl 5.30 at - line 2.
+      dump
+elem-comment   no compile/dies: syntax errW at - line 2, near "{W"
+      or
+elem-comment   no compile/dies: syntax error at - liW 2, War "{W"
+      ne
+elem-comment   no compile/dies: syntax error at - line 2, at EOF
+      __DATA__ __END__
+elem-comment   no compile/dies: syntax error at - line 2, near "{W"
+      and catch cmp else elsif eq ge gt if isa lt try unless until while xor
+elem-comment   no compile/dies: syntax error at - line 3, near "W # c
+      do local my not our q qq qr qx state
+elem-comment   no compile/dies: syntax error at - line 3, near "{W # c
+      AUTOLOAD BEGIN CHECK DESTROY END INIT UNITCHECK for foreach format package use
+elem-comment   no compile/dies: try/catch/W is experimental at - line 2.
+      finally
+elem-comment   prWs '[0]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      int
+elem-comment   prints ''
+      exit
+elem-comment   prints '' WARNS say() on Wd filehandle STDOUT at - line 3.
+      close
+elem-comment   prints '[-1]\n'
+      tell wait
+elem-comment   prints '[-1]\n' WARNS Can't exec "": No such file or directory at - line 2.
+      system
+elem-comment   prints '[/tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review12/10231-p.pl]\n'
+      __FILE__
+elem-comment   prints '[0.678081015897082]\n'
+      rand
+elem-comment   prints '[0]\n'
+      chmod chown kill times utime
+elem-comment   prints '[0]\n' WARNS Can't W "": No such file or directory at - line 2.
+      exec
+elem-comment   prints '[0]\n' WARNS Use of uninitialized value $_ in W at - line 2.
+      mkdir split unlink
+elem-comment   prints '[0]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      abs alarm chroot hex oct ord rmdir sin sqrt
+elem-comment   prints '[0]\n' WARNS Use of uninitialized value $_ in scalar W at - line 3.
+      chomp
+elem-comment   prints '[0]\n' WARNS Useless use of builtin::W in scalar context at - line 2.
+      indexed
+elem-comment   prints '[10231]\n'
+      getpgrp getppid
+elem-comment   prints '[13282]\n[0]\n'
+      fork
+elem-comment   prints '[1795703225]\n'
+      time
+elem-comment   prints '[18]\n'
+      umask
+elem-comment   prints '[1]\n'
+      chdir endgrent endhostent endnetent endprotoent endpwent endservent eof reset setgrent setpgrp setpwent true
+elem-comment   prints '[1]\n' WARNS Use of uninitialized value $_ in W at - line 2.
+      printf
+elem-comment   prints '[1]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      cos exp
+elem-comment   prints '[1]\n' WARNS Warning: something's wrong at - line 2.
+      warn
+elem-comment   prints '[2]\n'
+      __LINE__
+elem-comment   prints '[3561408453]\n'
+      srand
+elem-comment   prints '[A]\n'
+      v65
+elem-comment   prints '[Thu Nov 26 14:25:56 2026]\n'
+      gmtime
+elem-comment   prints '[Thu Nov 26 14:25:58 2026]\n'
+      localtime
+elem-comment   prints '[\n]\n'
+      v1_0
+elem-comment   prints '[\x00]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      chr
+elem-comment   prints '[\x01]\n'
+      v1
+elem-comment   prints '[]\n'
+      defined false ref
+elem-comment   prints '[]\n' WARNS Use of uninitialized value $_ in W "string" at - line 3.
+Use of uninitialized value in 
+      eval
+elem-comment   prints '[]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      fc lc lcfirst lstat quotemeta stat study uc ucfirst
+elem-comment   prints '[]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+Use of uninitialized value in hash 
+      readlink
+elem-comment   prints '[]\n' WARNS Use of uninitialized value $_ in eval "string" at - line 3.
+Use of uninitialized value in 
+      evalbytes
+elem-comment   prints '[]\n' WARNS Use of uninitialized value $_ in quoted execution (``, qx) at - line 3.
+      readpipe
+elem-comment   prints '[]\n' WARNS Use of uninitialized value $_ in scalar W at - line 3.
+      chop
+elem-comment   prints '[]\n' WARNS Use of uninitialized value $_ in subroutine W at - line 3.
+Use of uninitialized va
+      prototype
+elem-comment   prints '[]\n' WARNS Use of uninitialized value W($_) in hash element at - line 3.
+      length
+elem-comment   prints '[]\n' WARNS Use of uninitialized value W(@ARGV) in hash element at - line 3.
+      pop shift
+elem-comment   prints '[]\n' WARNS Use of uninitialized value in W at - line 2.
+      reverse
+elem-comment   prints '[]\n' WARNS Use of uninitialized value in hash element at - line 2.
+      __SUB__ glob
+elem-comment   prints '[]\n' WARNS Use of uninitialized value in hash element at - line 3.
+      caller getlogin pos undef wantarray
+elem-comment   prints '[ip]\n'
+      getprotoent
+elem-comment   prints '[link-local]\n'
+      getnetent
+elem-comment   prints '[localhost]\n'
+      gethostent
+elem-comment   prints '[main::STDOUT]\n'
+      select
+elem-comment   prints '[main]\n'
+      __PACKAGE__
+elem-comment   prints '[root]\n'
+      getgrent getpwent
+elem-comment   prints '[tcpmux]\n'
+      getservent
+elem-comment   prints '\n[1]\n' WARNS Use of uninitialized value $_ in W at - line 2.
+      say
+elem-lines     W compile/dies: syntax error at - line 4, near "W
+      no
+elem-lines     Ws '[1]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      print
+elem-lines     no coWpile/dies: syntax error at - line 4, near "W
+      m
+elem-lines     no compiW/dies: syntax error at - line 3, near "W"
+      le
+elem-lines     no compile/Ws: Died at - line 3.
+      die
+elem-lines     no compile/dieW: SubWtitution replacement not terminated at - line 4.
+      s
+elem-lines     no compile/dies: BWreword "W" not Wllowed while "strict subs" in use Wt - line 3.
+      a
+elem-lines     no compile/dies: Bareword "W" not Wowed while "strict subs" in use at - line 3.
+      all
+elem-lines     no compile/dies: Bareword "W" not allowed while "strict suWs" in use at - line 3.
+      b
+elem-lines     no compile/dies: Bareword "W" not allowed while "strict subs" in use at - line 3.
+      56 words: A ADJUST ARGV ARGVOUT CLONE CLONE_SKIP CORE DATA E ENV ...
+elem-lines     no compile/dies: Can't "W" outside a loop block at - line 4.
+      last next redo
+elem-lines     no compile/dies: Can't "W" outside a when block at - line 4.
+      continue
+elem-lines     no compile/dies: Can't W outside a subroutine at - line 4.
+      return
+elem-lines     no compile/dies: Illegal declaration of anonymous Wroutine at - line 4.
+      sub
+elem-lines     no compile/dies: Missing or undefined argument to W at - line 4.
+      require
+elem-lines     no compile/dies: Not enough arguments for W at - line 4, near "W
+      96 words: accept atan2 bind binmode bless closedir connect crypt dbmclose dbmopen ...
+elem-lines     no compile/dies: Not enough arguments for W or string at - line 4, near "W
+      join
+elem-lines     no compile/dies: Not enough arguments for builtin::W at - line 4, near "W
+      blessed ceil floor is_tainted is_weak refaddr reftype trim unweaken weaken
+elem-lines     no compile/dies: Possible attempt to separate words with commas at - line 4.
+      qw
+elem-lines     no compile/dies: TIMEOUT
+      getc readline sleep
+elem-lines     no compile/dies: Transliteration replacement not terminated at - line 4.
+      tr y
+elem-lines     no compile/dies: Undefined format "STDOUT" called at - line 4.
+      write
+elem-lines     no compile/dies: Use of uninitialized value $_ in W at - line 4.
+      log
+elem-lines     no compile/dies: W must have label at - line 4.
+      goto
+elem-lines     no compile/dies: W() must be written as CORE::W() as of Perl 5.30 at - line 3.
+      dump
+elem-lines     no compile/dies: syntax errW at - line 3, near "W"
+      or
+elem-lines     no compile/dies: syntax error at - liW 3, War "W"
+      ne
+elem-lines     no compile/dies: syntax error at - line 3, at EOF
+      __DATA__ __END__
+elem-lines     no compile/dies: syntax error at - line 3, near "W"
+      and catch cmp else elsif eq ge gt if isa lt try unless until while xor
+elem-lines     no compile/dies: syntax error at - line 4, near "W
+      AUTOLOAD BEGIN CHECK DESTROY END INIT UNITCHECK do for foreach format local my not our package q qq qr qx state use
+elem-lines     no compile/dies: try/catch/W is experimental at - line 3.
+      finally
+elem-lines     prWs '[0]\n' WARNS Use of uninitialized value $_ in W at - line 4.
+      int
+elem-lines     prints ''
+      exit
+elem-lines     prints '' WARNS say() on Wd filehandle STDOUT at - line 4.
+      close
+elem-lines     prints '[-1]\n'
+      tell wait
+elem-lines     prints '[-1]\n' WARNS Can't exec "": No such file or directory at - line 3.
+      system
+elem-lines     prints '[/tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review12/10231-p.pl]\n'
+      __FILE__
+elem-lines     prints '[0.252112653878616]\n'
+      rand
+elem-lines     prints '[0]\n'
+      chmod chown kill times utime
+elem-lines     prints '[0]\n' WARNS Can't W "": No such file or directory at - line 3.
+      exec
+elem-lines     prints '[0]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      mkdir split unlink
+elem-lines     prints '[0]\n' WARNS Use of uninitialized value $_ in W at - line 4.
+      abs alarm chroot hex oct ord rmdir sin sqrt
+elem-lines     prints '[0]\n' WARNS Use of uninitialized value $_ in scalar W at - line 4.
+      chomp
+elem-lines     prints '[0]\n' WARNS Useless use of builtin::W in scalar context at - line 3.
+      indexed
+elem-lines     prints '[10231]\n'
+      getpgrp getppid
+elem-lines     prints '[1122336459]\n'
+      srand
+elem-lines     prints '[13280]\n[0]\n'
+      fork
+elem-lines     prints '[1795703225]\n'
+      time
+elem-lines     prints '[18]\n'
+      umask
+elem-lines     prints '[1]\n'
+      chdir endgrent endhostent endnetent endprotoent endpwent endservent eof reset setgrent setpgrp setpwent true
+elem-lines     prints '[1]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      printf
+elem-lines     prints '[1]\n' WARNS Use of uninitialized value $_ in W at - line 4.
+      cos exp
+elem-lines     prints '[1]\n' WARNS Warning: something's wrong at - line 3.
+      warn
+elem-lines     prints '[3]\n'
+      __LINE__
+elem-lines     prints '[A]\n'
+      v65
+elem-lines     prints '[Thu Nov 26 14:25:56 2026]\n'
+      gmtime
+elem-lines     prints '[Thu Nov 26 14:25:58 2026]\n'
+      localtime
+elem-lines     prints '[\n]\n'
+      v1_0
+elem-lines     prints '[\x00]\n' WARNS Use of uninitialized value $_ in W at - line 4.
+      chr
+elem-lines     prints '[\x01]\n'
+      v1
+elem-lines     prints '[]\n'
+      defined false ref
+elem-lines     prints '[]\n' WARNS Use of uninitialized value $_ in W "string" at - line 4.
+Use of uninitialized value in 
+      eval
+elem-lines     prints '[]\n' WARNS Use of uninitialized value $_ in W at - line 4.
+      fc lc lcfirst lstat quotemeta stat study uc ucfirst
+elem-lines     prints '[]\n' WARNS Use of uninitialized value $_ in W at - line 4.
+Use of uninitialized value in hash 
+      readlink
+elem-lines     prints '[]\n' WARNS Use of uninitialized value $_ in eval "string" at - line 4.
+Use of uninitialized value in 
+      evalbytes
+elem-lines     prints '[]\n' WARNS Use of uninitialized value $_ in quoted execution (``, qx) at - line 4.
+      readpipe
+elem-lines     prints '[]\n' WARNS Use of uninitialized value $_ in scalar W at - line 4.
+      chop
+elem-lines     prints '[]\n' WARNS Use of uninitialized value $_ in subroutine W at - line 4.
+Use of uninitialized va
+      prototype
+elem-lines     prints '[]\n' WARNS Use of uninitialized value W($_) in hash element at - line 4.
+      length
+elem-lines     prints '[]\n' WARNS Use of uninitialized value W(@ARGV) in hash element at - line 4.
+      pop shift
+elem-lines     prints '[]\n' WARNS Use of uninitialized value in W at - line 3.
+      reverse
+elem-lines     prints '[]\n' WARNS Use of uninitialized value in hash element at - line 3.
+      __SUB__ glob
+elem-lines     prints '[]\n' WARNS Use of uninitialized value in hash element at - line 4.
+      caller getlogin pos undef wantarray
+elem-lines     prints '[ip]\n'
+      getprotoent
+elem-lines     prints '[link-local]\n'
+      getnetent
+elem-lines     prints '[localhost]\n'
+      gethostent
+elem-lines     prints '[main::STDOUT]\n'
+      select
+elem-lines     prints '[main]\n'
+      __PACKAGE__
+elem-lines     prints '[root]\n'
+      getgrent getpwent
+elem-lines     prints '[tcpmux]\n'
+      getservent
+elem-lines     prints '\n[1]\n' WARNS Use of uninitialized value $_ in W at - line 3.
+      say
+slice-word     RUNS: 
+      exit
+slice-word     RUNS:  WARNS say() on Wd filehandle STDOUT at - line 2.
+      close
+slice-word     RUNS: 2
+      caller glob indexed reverse
+slice-word     RUNS: 2
+2 WARNS Use of uninitialized value in say at - line 2.
+Use of uninitialized va
+      fork
+slice-word     RUNS: 2 WARNS Can't W "": No such file or directory at - line 2.
+Use of uninitial
+      exec
+slice-word     RUNS: 2 WARNS Can't exec "": No such file or directory at - line 2.
+Use of uninitial
+      system
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W "string" at - line 2.
+      eval
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+      lstat split stat
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uniniti
+      quotemeta
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uninitia
+      readlink
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uninitial
+      lcfirst ucfirst
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uninitiali
+      chroot printf unlink
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uninitializ
+      alarm mkdir print rmdir study
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uninitialize
+      sqrt
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uninitialized
+      abs chr cos exp hex int oct ord say sin
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in W at - line 2.
+Use of uninitialized 
+      fc lc uc
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in eval "string" at - line 2.
+      evalbytes
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in quoted execution (``, qx) at - line 2
+      readpipe
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in scalar W at - line 2.
+Use of unin
+      chomp
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in scalar W at - line 2.
+Use of unini
+      chop
+slice-word     RUNS: 2 WARNS Use of uninitialized value $_ in subroutine W at - line 2.
+Use
+      prototype
+slice-word     RUNS: 2 WARNS Use of uninitialized value in hash slice at - line 2.
+Use of uninitial
+      __SUB__ getlogin length pop pos shift undef wantarray
+slice-word     RUNS: 2 WARNS Use of uninitialized value in say at - line 2.
+      35 words: __FILE__ __LINE__ __PACKAGE__ chdir chmod chown defined endgrent endhostent endnetent ...
+slice-word     RUNS: 2 WARNS Use of uninitialized value in say at - line 2.
+Use of uninitialized va
+      getgrent gethostent getnetent getprotoent getpwent getservent gmtime localtime times
+slice-word     RUNS: 2 WARNS Warning: something's wrong at - line 2.
+Use of uninitialized value in 
+      warn

@@ -18,7 +18,8 @@ review of step 8 and from building it, which he confirmed; D75 is
 his, on seeing the build. D76 to D80 are his answers to step 9's
 proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
-confirmed. D96 and D97 are his, on the census.
+confirmed. D96 and D97 are his, on the census; D98 to D101 his answers to
+step 12's.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1818,6 +1819,40 @@ a reason on every refusal in the compiler (212 of them); a file
 that may not hold a WRONG (the finding is then in nobody's
 history); a WRONG marked as known and allowed (the door D11 shut);
 one step for the import and another for the rest.
+
+**D98. Hashes are two sub-steps.** *(User: picked the recommendation,
+2026-11-26; step 12, Q1.)* 12a is the hash itself: declaring, the
+literal and `=>`, elements, `exists`, `delete`, `keys`, `values`,
+the count, copying, D76 and the orders, and the runtime's table. 12b
+is what stands on it: the freeze in loops and binders, slices,
+`%opts`, an element in a string. Rejected: one step.
+
+**D99. In a string, a hash's key is a word or a scalar variable.**
+*(User: picked the recommendation, 2026-11-26; step 12, Q2.)*
+`"$h{name}"` and `"$h{$k}"`, and nothing else: D91 for a key. To
+perl what stands in the braces is code. A slice of a hash in a
+string is refused, since its keys would have to be quoted there. It
+is what 304 of the 317 keys the census's probes write in strings
+are. Rejected: a whole number and a string in single quotes too
+(thirteen more keys, and `"$h{01}"` is the key `1` to perl);
+whatever perl takes.
+
+**D100. A slice may stand on the left of a list assignment, an
+array's and a hash's.** *(User: picked the recommendation,
+2026-11-26; step 12, Q3.)* `@a[0, 1] = ...` and `@h{"a", "b"} =
+...`, as targets, by D80's order: the right side, every index or
+key, then the stores. Step 9 had left the array's out. `%h{...}`,
+the slice that gives keys and values, is cut: perl warns of it
+where one value is wanted. Rejected: reading only.
+
+**D101. No `each`, and no loop of two variables, at step 12.**
+*(User: picked the recommendation, 2026-11-26; step 12, Q4.)* `each`
+was cut already, its iterator being hidden state in the hash.
+`foreach my ($k, $v) (%h)` is not taken up: `for my $k (sort keys
+%h)` says it, a test has to sort in any case, and a loop of two
+variables is a second shape of `foreach` in every pass. It can be
+proposed when a program wants it. Rejected: the loop of two
+variables now.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
