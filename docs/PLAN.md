@@ -3932,7 +3932,7 @@ has decided about Perl. A probe is moved to `by-design/` by `make
 census --sort`, never by hand.
 (b) Each refusal in the compiler carries its reason, a field on the
 diagnostic. Exact, and it touches every `refuse` there is (about
-600).
+210).
 (c) By hand, a probe at a time.
 
 **Q2. May a WRONG stand in the committed file?** D11 says WRONG is 0
