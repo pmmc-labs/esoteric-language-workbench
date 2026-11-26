@@ -90,6 +90,7 @@ $x @b \3 \$x
 a string
 over two lines, with 3 and 7 8 9
 in it
+a $x and @b and $b[0] in single quotes
 234567 89
 234567 89
 ée

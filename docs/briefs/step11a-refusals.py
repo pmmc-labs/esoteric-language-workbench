@@ -137,6 +137,8 @@ r('map-block-begins-with-a-string-and-a-comma', 'perl does not compile it: a has
 r('repeat-hard-against-a-number', 'perl prints a3a3; refused as of any string (T57).', X + 'say "a$x" x2;', 'x2', 'x2: the repetition operator is a word of its own: write x 2')
 r('string-as-a-statement', 'perl warns: Useless use of string in void context.', X + '"a$x";', '"a', None)
 r('assignment-to-a-string', "perl does not compile it: Can't modify string in scalar assignment.", X + '"$x" = 5;', '= 5', None)
+r('blank-after-a-brace', 'perl takes the blank: 3 (T200).', X + 'say "${ x}";', '${ x', BR('${name}'))
+r('blank-before-a-brace', 'perl takes the blank: 3 (T200).', X + 'say "${x }";', '${x', BR('${name}'))
 
 BY_HAND = {
     'string-as-a-statement': ('"a', 'this statement only has a value, and nothing is done with it: perl warns that it is useless'),

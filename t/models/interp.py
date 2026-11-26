@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""t/1300 to t/1345: a variable in a double-quoted string (step 11a; D91 to D95).
+"""t/1300 to t/1346: a variable in a double-quoted string (step 11a; D91 to D95).
 
 The definition, which is all this file knows of the language beyond
 t/models/sort.py.
@@ -117,8 +117,10 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/interp.py 1343 > t/1343-fault-interpolate-left-of-two-an-index-after.expected
     python3 t/models/interp.py --program 1344 > t/1344-fault-interpolate-left-of-two-a-slice-first.pl
     python3 t/models/interp.py 1344 > t/1344-fault-interpolate-left-of-two-a-slice-first.expected
-    python3 t/models/interp.py --program 1345 > t/1345-fault-interpolate-undef-returned.pl
-    python3 t/models/interp.py 1345 > t/1345-fault-interpolate-undef-returned.expected
+    python3 t/models/interp.py --program 1345 > t/1345-fault-interpolate-array-after-a-string-in-a-loop-list.pl
+    python3 t/models/interp.py 1345 > t/1345-fault-interpolate-array-after-a-string-in-a-loop-list.expected
+    python3 t/models/interp.py --program 1346 > t/1346-fault-interpolate-undef-returned.pl
+    python3 t/models/interp.py 1346 > t/1346-fault-interpolate-undef-returned.expected
 """
 
 import os
@@ -433,6 +435,10 @@ def faults():
     fault('left-of-two-an-array-after', *both(lambda: qq(D('u'), ('@', 'a')), [('my', 'u', ''), mya('a', 1)], [('my', 'u', None), mya('a', 1e15)]))
     fault('left-of-two-an-index-after', *both(lambda: qq(D('n'), ('elem', 'a', D('i'))), [('my', 'n', 1e16), a3(), ('my', 'i', 0)], [('my', 'n', 1e15), a3(), ('my', 'i', 'x')]))
     fault('left-of-two-a-slice-first', *both(lambda: qq(('slice', 'a', [0, 1]), D('u')), [mya('a', 1, 2), ('my', 'u', 0)], [mya('a', 1, 1e15), ('my', 'u', None)]))
+    # A string in a loop's list freezes nothing, and the array after it
+    # is frozen all the same.
+    fault('array-after-a-string-in-a-loop-list', block(a3(), mya('b', 7), over('v', [qq(('@', 'a')), A('b')], do(('push', 'a', [4])), say_(D('v')))),
+          block(a3(), mya('b', 7), over('v', [qq(('@', 'a')), A('b')], do(('push', 'b', [4])), ('last', None))))
     fault('undef-returned', say_(ucall('f', 1)), say_(ucall('f', UNDEF)), [sub('f', [req('s')], returns(qq('<', D('s'), '>')))])
     return out
 

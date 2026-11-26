@@ -1,0 +1,3 @@
+3
+fault: undef where a string is wanted at t/1349-fault-interpolate-largest-index.pl line 7.
+exit: 1

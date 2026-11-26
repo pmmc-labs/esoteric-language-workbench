@@ -9,7 +9,7 @@ gained nothing at 11a: a string is `.` and `join`.)
 
 Nothing in the tree is written: a broken compiler is a copy of bin/,
 compiler/src/ and runtime/ under build/mut/tree/. A breakage is caught if
-a golden test goes red: every test of step 11a, t/1300*.pl to t/1448*.pl,
+a golden test goes red: every test of step 11a, t/1300*.pl to t/1450*.pl,
 and 200, 201 and 610, the refused ones too, each compiled by the copy and
 run with the knobs of t/knobs.sh and its own `# env:`, as t/run.sh runs
 them.
@@ -136,7 +136,7 @@ if only == ['--match']:
     sys.exit(0)
 knobs = checks.knobs()
 tests = []
-for src in sorted(glob.glob('t/13[0-9][0-9]-*.pl') + glob.glob('t/14[0-4][0-9]-*.pl') + glob.glob('t/200-*.pl') + glob.glob('t/201-*.pl') + glob.glob('t/610-*.pl')):
+for src in sorted(glob.glob('t/13[0-9][0-9]-*.pl') + glob.glob('t/14[0-5][0-9]-*.pl') + glob.glob('t/200-*.pl') + glob.glob('t/201-*.pl') + glob.glob('t/610-*.pl')):
     head = open(src, encoding='utf-8', errors='replace').read(1200)
     env = dict(os.environ)
     env.update(knobs)

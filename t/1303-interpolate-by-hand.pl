@@ -177,6 +177,9 @@ say "a string
 over two lines, with $x and @b
 in it";
 
+# In single quotes nothing is a variable.
+say 'a $x and @b and $b[0] in single quotes';
+
 # A name perl has a meaning for is only a name.
 my $q = 2;
 my $y = 3;
