@@ -22,7 +22,7 @@
 // declared before it, and no `last` or `next` in it reaches a loop
 // outside it (T60).
 import { refuse } from './errors.ts';
-import type { Expr, Foreach, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
+import type { Binder, Expr, Foreach, Invoke, Jump, Loop, My, MyArray, Pos, Program, Stmt, Sub } from './ast.ts';
 import { listSubs } from './shapes.ts';
 
 // A declaration is a number, in the order the `my`s are met; `of` says
@@ -62,7 +62,9 @@ export type Resolution = {
     lists: readonly boolean[];
     loops: ReadonlyMap<Loop, number>;
     jumps: ReadonlyMap<Jump, number>;
-    each: ReadonlyMap<Foreach, Each>;
+    each: ReadonlyMap<Foreach | Binder, Each>;
+    // The declarations that are a loop's variable or `$_`: read-only (D17).
+    readonly: ReadonlySet<number>;
 };
 
 // What a `foreach` has beside its variable: `list`, a declaration no
@@ -73,7 +75,9 @@ export type Each = { list: number; arrays: readonly number[] };
 
 // What is round a statement that perl counts as a loop: a loop, or a
 // bare block, which runs once (T32).
-type Round = { loop: Loop } | { bare: Pos };
+// And the block of a `map` or a `grep`, which no `last` or `next` may leave
+// (T59).
+type Round = { loop: Loop } | { bare: Pos } | { wall: string };
 
 export const resolve = (program: Program): Resolution => {
     const of = new Map<Expr, number>();
@@ -86,11 +90,16 @@ export const resolve = (program: Program): Resolution => {
         const found = [...scopes].reverse().find(scope => scope.has('@' + name));
         if (found === undefined) return refuse(`@${name} is not declared: my @${name}`, e.pos);
         of.set(e, found.get('@' + name)!);
-        naming?.add(found.get('@' + name)!);
+        naming.forEach(set => set.add(found.get('@' + name)!));
     };
-    // The arrays named while a `foreach`'s list is read.
-    let naming: Set<number> | undefined;
-    const each = new Map<Foreach, Each>();
+    // The arrays named while the list of a `foreach`, a `map` or a `grep`
+    // is read: one set for each list that is being read.
+    const naming: Set<number>[] = [];
+    const each = new Map<Foreach | Binder, Each>();
+    const readonly = new Set<number>();
+    // The most slots in use since the statement in hand began: a `map`
+    // in it has slots of its own while it runs.
+    let peak = 0;
     const slots: number[] = [];
     const owner: number[] = [];
     const frames: number[] = [0];
@@ -134,6 +143,7 @@ export const resolve = (program: Program): Resolution => {
         slots[id] = inScope;
         inScope += 1;
         variables = Math.max(variables, inScope);
+        peak = Math.max(peak, inScope);
     };
 
     // The variables an expression uses, each looked up as it is met; and
@@ -142,6 +152,7 @@ export const resolve = (program: Program): Resolution => {
         switch (e.kind) {
         case 'var': {
             const found = [...scopes].reverse().find(s => s.has(e.name));
+            if (found === undefined && e.name === '_') return refuse('$_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)', e.pos);
             if (found === undefined) return refuse(`$${e.name} is not declared: my $${e.name}`, e.pos);
             of.set(e, found.get(e.name)!);
             return;
@@ -169,6 +180,21 @@ export const resolve = (program: Program): Resolution => {
             e.args.forEach(x => walk(x, declared));
             return array(e, e.name);
         case 'listop': return e.args.forEach(x => walk(x, declared));
+        case 'binder': {
+            // The list is read where the binder stands, so a `$_` in it is
+            // the one outside; then the block, in a scope of its own.
+            const arrays = new Set<number>();
+            naming.push(arrays);
+            e.items.forEach(x => walk(x, declared));
+            naming.pop();
+            scopes.push(new Map());
+            bind(e, e.var, arrays);
+            round.push({ wall: e.op });
+            inner(e.body);
+            round.pop();
+            close();
+            return;
+        }
         case 'listassign':
             walk(e.value, declared);
             return e.targets.forEach(x => walk(x, declared));
@@ -203,7 +229,17 @@ export const resolve = (program: Program): Resolution => {
     // been read.
     const whole = (...es: Expr[]): void => {
         const declared: (My | MyArray)[] = [];
+        const before = peak;
+        peak = inScope;
         es.forEach(e => walk(e, declared));
+        // What this declares is stored to as the statement begins, and a
+        // `map` in the statement had slots of its own while it was read:
+        // so these come after them (the slots between are let go with
+        // the scope).
+        if (declared.length > 0 && scopes.at(-1) !== fileScope) {
+            for (; inScope < peak; inScope += 1) scopes.at(-1)!.set(` ${inScope}`, -1);
+        }
+        peak = Math.max(before, peak);
         // In the order they are written: the second of two is the one at
         // fault.
         declared.sort((a, b) => a.pos.line - b.pos.line || a.pos.col - b.pos.col);
@@ -212,6 +248,21 @@ export const resolve = (program: Program): Resolution => {
             if (scope.has(key(d))) refuse(`my ${d.kind === 'myarray' ? '@' : '$'}${d.name} again in one scope: perl warns that it masks the first`, d.pos);
             declare(d);
         }
+    };
+
+    // What a `foreach`, a `map` or a `grep` has in its scope: its list,
+    // a declaration no program can name (no name has a blank in it), and
+    // its variable.
+    const bind = (binder: Foreach | Binder, variable: My, arrays: ReadonlySet<number>): void => {
+        const list: MyArray = { kind: 'myarray', name: 'the list', pos: binder.pos };
+        for (const d of [list, variable]) {
+            of.set(d, names.length);
+            isArray.push(d.kind === 'myarray');
+            names.push(d.name);
+            declare(d);
+        }
+        readonly.add(of.get(variable)!);
+        each.set(binder, { list: of.get(list)!, arrays: [...arrays] });
     };
 
     const inner = (body: readonly Stmt[]): void => {
@@ -251,6 +302,10 @@ export const resolve = (program: Program): Resolution => {
         frames[fn] = variables;
         ({ fn, inScope, variables, scopes, round } = outer);
     };
+
+    // perl's `last` in a `map` block leaves the loop round the `map`, and
+    // warns (T59).
+    const walled = (word: string, op: string): string => `${word} out of the block of a ${op}: a loop says it`;
 
     const statement = (s: Stmt): void => {
         switch (s.kind) {
@@ -292,20 +347,12 @@ export const resolve = (program: Program): Resolution => {
             loops.set(s, loops.size);
             // The list is read where the loop stands: the loop's variable
             // is not in it.
-            naming = new Set<number>();
+            const arrays = new Set<number>();
+            naming.push(arrays);
             whole(...s.items);
-            const arrays = naming;
-            naming = undefined;
+            naming.pop();
             scopes.push(new Map());
-            // (No name has a blank in it.)
-            const list: MyArray = { kind: 'myarray', name: 'the list', pos: s.pos };
-            for (const d of [list, s.var]) {
-                of.set(d, names.length);
-                isArray.push(d.kind === 'myarray');
-                names.push(d.name);
-                declare(d);
-            }
-            each.set(s, { list: of.get(list)!, arrays: [...arrays] });
+            bind(s, s.var, arrays);
             round.push({ loop: s });
             inner(s.body);
             round.pop();
@@ -315,13 +362,15 @@ export const resolve = (program: Program): Resolution => {
         case 'jump': {
             if (s.label !== undefined) {
                 const name = s.label.name;
-                const found = [...round].reverse().find(r => 'loop' in r && r.loop.label?.name === name);
+                const found = [...round].reverse().find(r => 'wall' in r || ('loop' in r && r.loop.label?.name === name));
+                if (found !== undefined && 'wall' in found) return refuse(walled(s.name, found.wall), s.pos);
                 if (found === undefined || !('loop' in found)) return refuse(`no loop called ${name} is round this ${s.name}`, s.label.pos);
                 jumps.set(s, loops.get(found.loop)!);
                 return;
             }
             const nearest = round.at(-1);
             if (nearest === undefined) return refuse(`${s.name} outside a loop`, s.pos);
+            if ('wall' in nearest) return refuse(walled(s.name, nearest.wall), s.pos);
             // To perl a bare block is a loop that runs once, and this
             // would leave it and nothing more (D59).
             if ('bare' in nearest) {
@@ -357,5 +406,5 @@ export const resolve = (program: Program): Resolution => {
         if (owner[id] === 0 && !fileSlots.has(id)) slots[id]! += file;
     }
     frames[0] = file + variables;
-    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, lists: listSubs(subs, calls), loops, jumps, each };
+    return { of, names, isArray, slots, owner, frames, file, fileIds: fileSlots, subs, calls, lists: listSubs(subs, calls), loops, jumps, each, readonly };
 };

@@ -1645,6 +1645,25 @@ included, and a list assignment is refused there (T192, D78).
 **T143's refusals end** where a list is wanted. **`map` and `grep`
 may be statements.**
 
+**D88. What building step 10 has settled so far (10a, 10b).**
+*(User: defaults of the builder's, 2026-11-25, for Stevan to confirm
+or change.)* **A list after `return` is in brackets**, unless it is
+one thing that is a list (T193: perl returns `1, 2` whole). **D18's
+fault is raised before anything of the list is worked out**, and a
+call for nothing works a list-shaped `return` out as a list.
+**`reverse` with nothing to reverse, and a comma after a slurpy
+parameter, are refused** (perl takes both). **A slice of a list by a
+call that gives a list is refused where one value is wanted** (T193:
+perl gives the slice's last). **A block that ends in a `say` or a
+`print` is worth `true`**, as a sub that ends so is (D70).
+**`$_` can not be declared**: perl refuses `my $_` too (T194).
+**`say for LIST;` is refused**, by D85. **A `map` in a loop's list
+freezes the arrays its own list names**, by D80's "named anywhere",
+though perl's `map` gives copies: the stricter, and one rule. **The
+fault's words are the `foreach`'s for every binder**: `an array was
+changed while a foreach is over it`. And `f returned a list where
+one value is wanted`; `joined string too long`.
+
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as

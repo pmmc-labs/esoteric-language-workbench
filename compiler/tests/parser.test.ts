@@ -313,9 +313,7 @@ test('a loop over a list', () => {
 test('what a loop may not be', () => {
     refused('while () { }', 'while () is while (1), to perl: say that, or for (;;)', 1, 7);
     refused('until () { }', "expected a value, found ')'", 1, 8);
-    const bare = 'for (...) with no variable is a loop over $_, which is not in the language: for my $x (...)';
-    refused('for (1, 2) { }', bare, 1, 5);
-    refused('for ($x) { }', bare, 1, 5);
+    refused('for () { }', 'for () is a loop over nothing, and perl does not compile it', 1, 5);
     refused('foreach (;;) { }', 'foreach is the loop over a list here, foreach my $x (...): the loop of three parts is spelled for', 1, 1);
     refused('for my $x () { }', 'for my $x () is a loop over nothing, and perl does not compile it', 1, 11);
     refused('for $x (1) { }', 'for $x (...) borrows a variable from outside the loop: for my $x (...)', 1, 5);
@@ -642,4 +640,29 @@ test('an unbracketed ! on the left of a comparison (T115)', () => {
     assert.equal(grouped('say !1 + 1 == 1;'), '(((!1) + 1) == 1)');
     assert.equal(grouped('say !1 && 2 == 2;'), '((!1) && (2 == 2))');
     assert.equal(grouped('say -1 == -1;'), '((-1) == (-1))');
+});
+
+// Step 10b: the two fors over `$_`, and the binders that take a block.
+test('for (LIST), the for modifier, map and grep', () => {
+    const [loop, under, assign] = parse(lex('for (1, @a) { say $_; }\nsay $_ for 1, 2;\nmy @r = (0, map { my $t = $_; $t * 2 } grep { $_ > 1 or 0 } @a, 9);')).body;
+    assert.ok(loop?.kind === 'foreach' && under?.kind === 'foreach' && assign?.kind === 'do');
+    assert.deepEqual([loop.var.name, loop.items.length, loop.modifier], ['_', 2, undefined]);
+    assert.deepEqual([under.var.name, under.items.length, under.modifier, under.body.map(s => s.kind), under.pos], ['_', 2, true, ['call'], { line: 2, col: 1 }]);
+    // A binder takes everything to the end of the list it stands in.
+    assert.ok(assign.expr.kind === 'assign' && assign.expr.value.kind === 'list');
+    const [zero, map] = assign.expr.value.items;
+    assert.ok(zero?.kind === 'int' && map?.kind === 'binder' && assign.expr.value.items.length === 2);
+    assert.deepEqual([map.op, map.body.map(s => s.kind), map.items.length], ['map', ['do', 'do'], 1]);
+    const grep = map.items[0]!;
+    assert.ok(grep.kind === 'binder');
+    const last = grep.body[0]!;
+    assert.ok(last.kind === 'do' && last.expr.kind === 'binary');
+    assert.deepEqual([grep.op, last.expr.op, grep.items.map(i => i.kind)], ['grep', 'or', ['array', 'int']]);
+    refused('my @r = map { 1, $_ } @a;', "1 and a comma first in map's block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets", 1, 15);
+    refused('my @r = grep { } @a;', 'an empty block after grep: an anonymous hash, to perl', 1, 16);
+    refused('my @r = map { $_ } , @a;', "a comma after map's block: perl does not compile it", 1, 20);
+    refused('my @r = map { $_ };', 'map needs a list after its block', 1, 19);
+    refused('my @r = map($_, @a);', 'map takes no brackets of its own: map { ... } LIST', 1, 12);
+    refused('say 1 for 1 if 2;', "a second modifier after for's list: perl does not compile it", 1, 13);
+    refused('my $_;', '$_ is not a name a program may declare: it is what a for, a map or a grep gives its block', 1, 4);
 });

@@ -660,8 +660,10 @@ undef is.
 
 A name is a letter or an underscore, then letters, digits and
 underscores, all ASCII, hard against its dollar: `$total`, `$x2`,
-`$_tmp`. It is 251 characters at most, as in perl. Three names are refused, `$a`, `$b` and `$_`, because perl
-keeps them for itself and lets them by without a `my`. `${name}` and
+`$_tmp`. It is 251 characters at most, as in perl. Three names are
+not a program's to declare, `$a`, `$b` and `$_`: perl keeps them for
+itself. (`$_` is what a `for`, a `map` or a `grep` gives its block:
+"Arrays and lists", below.) `${name}` and
 `$ name`, which perl takes, are refused too.
 
 A variable is visible from the statement after its `my` to the end of
@@ -1458,11 +1460,117 @@ smallest integer: perl refuses that loop, and so it is a fault.
 #### What is refused
 
 `for $x (LIST)`, with no `my`: perl lends the loop a variable from
-outside and gives it its old value back after. `for (LIST)` and
-`STATEMENT for LIST;`, which are loops over `$_`. `for my $x ()`,
+outside and gives it its old value back after. `for my $x ()`,
 which perl does not compile. `for my ($k, $v) (LIST)`, two at a time.
 And `foreach (FIRST; TEST; EACH)`: to perl `foreach` and `for` are
 one word, and here the loop of three parts is spelled `for`.
+
+### `$_`, map and grep
+
+Four constructs run a block, or one statement, once for each value of
+a list, and call that value **`$_`**:
+
+    for (LIST) { ... }            # the loop above, with $_ for its variable
+    STATEMENT for LIST;           # the same for one statement
+    map { ... } LIST              # a list made from a list
+    grep { ... } LIST             # the values of a list that pass a test
+
+    my @a = (3, 1, 4);
+    for (@a) {
+        say $_ * 2;
+    }
+    say "item: ", $_ for @a;
+    my @doubled = map { $_ * 2 } @a;       # (6, 2, 8)
+    my @big = grep { $_ > 2 } @a;          # (3, 4)
+
+Each is the loop over a list of the section before, under another
+spelling, and everything said there holds: the list is worked out
+once and copied; `$_` is a copy, new each time round, and
+**read-only**; every array named in the list is frozen while it runs;
+a block that can change a variable the list names is refused; an
+element or a slice past the end of its array, in the list, is a
+fault.
+
+**`$_` is seen in the block, or the statement, of the construct that
+gives it, and nowhere else.** A sub called from the block does not
+see it (hand it over: `f($_)`); outside all four there is no `$_`;
+and it can not be declared. One of the four inside another has a
+`$_` of its own, and the outer one is itself again after. The list of
+an inner one is outside it, so it sees the outer `$_`:
+
+    for (1, 2, 3) {
+        my @upto = map { $_ * 10 } 1 .. $_;     # 1 .. $_ is the outer one
+    }
+
+`$_` is always written: `grep { defined($_) } @a`, `say $_ for @a;`.
+perl's builtins that mean `$_` when given nothing are refused without
+it.
+
+#### map
+
+`map`'s block is statements and then an expression, which is the
+block's value: one value, several, or none, and `map` gives all of
+them in a row.
+
+    my @pairs = map { ($_, $_ * $_) } 1 .. 3;            # (1, 1, 2, 4, 3, 9)
+    my @evens = map { $_ % 2 == 0 ? ($_) : () } @a;      # some, by a test
+    my @lens = map {
+        my $w = $_;
+        length($w)
+    } @words;
+
+A `my` in the block is new each time round.
+
+#### grep
+
+`grep`'s block ends in one value, which is tested for truth, and
+`grep` gives the values of the list for which it was true, each a
+copy.
+
+#### Where one value is wanted
+
+`map` and `grep` are **how many values they give**:
+
+    my $n = grep { $_ > 2 } @a;          # 2
+    if (grep { $_ eq "x" } @names) { ... }
+
+After `return`, though, each is a list like any other, and a call
+that wants one value is the fault (above).
+
+#### How they are written
+
+`map` and `grep` take a block, then a list with no comma between and
+no brackets round the two: `map { ... } @a`. They **take every value
+to the end of the list they stand in**, as perl's do: in `(0, map {
+$_ * 2 } @a, 9)` the 9 is doubled too. Brackets round the whole end
+it: `(0, (map { $_ * 2 } @a), 9)`.
+
+The statement under a `for` is what may stand before an `if`: `say`,
+`print`, an assignment, a step, `push` and its kin, a call. Not
+`last`, `next` or `return` (to perl they would leave the `for`'s own
+loop), not a `my`, and no second modifier.
+
+In a block:
+
+- **no `return`**: in perl it ends the sub from a `map` block. And
+  **no `last` or `next` to a loop outside the block**; one for a loop
+  written inside the block is fine.
+- **the block ends in an expression**, with no modifier; or in a
+  `say` or a `print`, and is then worth `true`. The last statement
+  may be two values joined by `or` or `and`. A list assignment has no
+  value, and may not end one.
+- **what comes first in it** may not be a string or a number with a
+  comma after it, nor another `{`, and the block may not be empty:
+  perl takes each of those for a hash, not a block. `map { ($_, 1)
+  }` and `map { "x" . $_ }` are blocks.
+
+`map` and `grep` may stand as statements, for what their blocks do.
+`map EXPR, LIST`, with no block, is not in the language.
+
+For "what a list may not do", below: a block is part of its `map` or
+`grep`, so what the block changes, they change; and `grep` hands on
+the things it was given, so what its list names, it names. `map`
+gives copies.
 
 ### Arrays and subs
 

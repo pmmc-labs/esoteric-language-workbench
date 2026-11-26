@@ -32,7 +32,17 @@ const parts = (e: Expr): readonly Expr[] =>
     : e.kind === 'list' ? e.items
     : e.kind === 'slice' ? [...e.indexes, ...(e.items ?? [])]
     : e.kind === 'listassign' ? [e.value, ...e.targets]
+    // A block is part of its `map` or `grep`: what it changes, they
+    // change, and what it reads, they read (D76 goes through a block).
+    : e.kind === 'binder' ? [...e.items, ...within(e.body)]
     : [];
+
+// Every expression the statements of a block hold.
+const within = (body: readonly Stmt[]): Expr[] => {
+    const found: Expr[] = [];
+    body.forEach(s => expressions(s, e => found.push(e)));
+    return found;
+};
 
 const checkLiteral = (e: Expr): void => {
     if (e.kind !== 'int' && e.kind !== 'num') return;
@@ -109,6 +119,7 @@ const listy = (in_: Expr): boolean => {
         || e.kind === 'slice'
         || (e.kind === 'arrayop' && e.op === 'splice')
         || (e.kind === 'listop' && e.op === 'reverse')
+        || e.kind === 'binder'
         || (e.kind === 'ternary' && (listy(e.then) || listy(e.else)))
         || (e.kind === 'binary' && infixOp(e.op)?.when !== undefined && listy(e.right));
 };
@@ -156,6 +167,9 @@ const named = (w: World, in_: Expr, scalars: boolean, into = new Set<number>()):
     // `reverse` hands on the containers it was given, as a list does
     // (T185, D87); `join` gives a value at once.
     else if (e.kind === 'listop' && e.op === 'reverse') e.args.forEach(x => named(w, x, true, into));
+    // So does `grep`: what it keeps are the things it was given. `map`
+    // copies what its block gives.
+    else if (e.kind === 'binder' && e.op === 'grep') e.items.forEach(x => named(w, x, true, into));
     return into;
 };
 
@@ -210,6 +224,8 @@ const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
     case 'slice': return [...all(e.indexes, 'list'), ...all(e.items ?? [], 'list')];
     case 'arrayop': return e.op === 'splice' ? [...all(e.args.slice(0, 2), 'scalar'), ...all(e.args.slice(2), 'list')] : all(e.args, 'list');
     // `join`'s separator is one value (T182).
+    // A block's statements are checked as statements, by `checkExpr`.
+    case 'binder': return [];
     case 'listop': return e.op === 'join' ? [...all(e.args.slice(0, 1), 'scalar'), ...all(e.args.slice(1), 'list')] : all(e.args, 'list');
     case 'listassign': return [[e.value, 'list'], ...all(e.targets, 'list')];
     default: return [];
@@ -376,6 +392,18 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     // `join`'s separator is read when `join` runs, so it is the first
     // item of its list (T186, D87).
     if (e.kind === 'listop') checkOrder(w, e.op, e.args, true);
+    if (e.kind === 'binder') {
+        bound(w, `${e.op}'s list`, `the ${e.op}`, e.items, e.body);
+        const last = e.body.at(-1);
+        if (last === undefined) throw new Error(`a ${e.op} block with no value`);
+        e.body.slice(0, -1).forEach(s => checkStmt(w, s));
+        // A block that ends in a `say` is worth `true` (D70).
+        if (last.kind !== 'do') return checkStmt(w, last);
+        // `map`'s block gives a list, and `grep`'s one value, which is
+        // tested (D53).
+        if (e.op === 'grep') tested(last.expr);
+        checkExpr(w, last.expr, true, e.op === 'grep' ? 'scalar' : 'list');
+    }
     if (e.kind === 'invoke') {
         const callee = w.names.calls.get(e)!;
         // The arguments are copied into a list when one of them is a
@@ -485,6 +513,30 @@ const checkPart = (w: World, e: Expr, first: boolean): void => {
     checkExpr(w, e.value, false);
 };
 
+// The list of a `foreach`, a `map` or a `grep`, and what its block may
+// not do to it (D76, D77). perl walks the variables themselves (T13,
+// T180), and here the list is a copy: so nothing the block does may change
+// a scalar its list names, anywhere in it (T162). An array it names is
+// frozen as the program runs.
+const bound = (w: World, what: string, binder: string, items: readonly Expr[], body: readonly Stmt[]): void => {
+    checkOrder(w, what, items, true);
+    items.forEach(e => checkExpr(w, e, false, 'list'));
+    const scalars = new Map<number, Expr>();
+    const collect = (e: Expr): void => {
+        if (e.kind === 'var') scalars.set(w.names.of.get(e)!, e);
+        parts(e).forEach(collect);
+    };
+    items.forEach(collect);
+    const refused = (id: number, at: Expr): never =>
+        refuse(`this can change ${sigil(w, id)}, which the list of ${binder} it is in names: perl's ${binder.replace('the ', '')} walks the variable itself; take the value into a my before ${binder}`, at.pos);
+    const guard = (e: Expr): void => {
+        for (const id of changesItself(w, e)) if (scalars.has(id)) refused(id, e);
+        if (e.kind === 'invoke') for (const id of w.changed[w.names.calls.get(e)!]!) if (scalars.has(id)) refused(id, e);
+        parts(e).forEach(guard);
+    };
+    if (scalars.size > 0) body.forEach(b => expressions(b, guard));
+};
+
 // A statement below the top of the file. `modified`: it stands before an
 // `if` or `unless` modifier, where a `my` may be skipped and leave the
 // last value behind (T30).
@@ -503,7 +555,10 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
         // (D72, T140), a list to perl (T143).
         const does = s.expr.kind === 'assign' || s.expr.kind === 'step' || s.expr.kind === 'my' || s.expr.kind === 'invoke'
             || s.expr.kind === 'myarray' || s.expr.kind === 'listassign' || (s.expr.kind === 'list' && s.expr.my === true)
-            || (s.expr.kind === 'arrayop' && s.expr.op !== 'scalar');
+            || (s.expr.kind === 'arrayop' && s.expr.op !== 'scalar')
+            // A `map` or a `grep` may be one, for what its block does: perl
+            // does not warn of it (D87).
+            || s.expr.kind === 'binder';
         if (!does && !last) {
             refuse('this statement only has a value, and nothing is done with it: perl warns that it is useless', s.pos);
         }
@@ -548,29 +603,9 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
         s.each.forEach(e => checkPart(w, e, false));
         return s.body.forEach(b => checkStmt(w, b));
     // A loop over a list (D17, D77, D80).
-    case 'foreach': {
-        checkOrder(w, "the loop's list", s.items, true);
-        s.items.forEach(e => checkExpr(w, e, false, 'list'));
-        // perl walks the variables themselves (T13), and here the list is
-        // a copy: so nothing the loop does may change a scalar its list
-        // names, anywhere in it (T162). An array it names is frozen as
-        // the program runs.
-        const scalars = new Map<number, Expr>();
-        const collect = (e: Expr): void => {
-            if (e.kind === 'var') scalars.set(w.names.of.get(e)!, e);
-            parts(e).forEach(collect);
-        };
-        s.items.forEach(collect);
-        const refused = (id: number, at: Expr): never =>
-            refuse(`this can change ${sigil(w, id)}, which the list of the loop it is in names: perl's loop walks the variable itself; take the value into a my before the loop`, at.pos);
-        const guard = (e: Expr): void => {
-            for (const id of changesItself(w, e)) if (scalars.has(id)) refused(id, e);
-            if (e.kind === 'invoke') for (const id of w.changed[w.names.calls.get(e)!]!) if (scalars.has(id)) refused(id, e);
-            parts(e).forEach(guard);
-        };
-        if (scalars.size > 0) s.body.forEach(b => expressions(b, guard));
-        return s.body.forEach(b => checkStmt(w, b));
-    }
+    case 'foreach':
+        bound(w, "the loop's list", 'the loop', s.items, s.body);
+        return s.body.forEach(b => checkStmt(w, b, s.modifier === true));
     // Which loop it is for is the resolver's to say.
     case 'jump': return;
     // A list, to a call that wants one (D18): the fault for a call that
@@ -612,11 +647,12 @@ const expressions = (s: Stmt, f: (e: Expr) => void): void => {
 // A `foreach`'s variable is read-only (D17): in perl it is the list's own
 // element, and changing it changes the array.
 const checkReadOnly = (program: Program, names: Resolution): void => {
-    const variables = new Set<number>([...names.each.keys()].map(loop => names.of.get(loop.var)!));
+    const variables = names.readonly;
     const w: World = { names, changed: [], defaults: [] };
     const guard = (e: Expr): void => {
         for (const id of changesItself(w, e)) {
-            if (variables.has(id)) refuse(`$${names.names[id]} is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my`, e.pos);
+            if (variables.has(id)) refuse(names.names[id] === '_' ? "$_ is read-only: in perl, changing it changes the list's own element; take the value into a my"
+                : `$${names.names[id]} is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my`, e.pos);
         }
         parts(e).forEach(guard);
     };

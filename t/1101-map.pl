@@ -432,6 +432,27 @@ say((map { $_ } (())) ? 'yes' : 'no');
 say($a102[(map { $_ } (1, 2))]);
 (map { push(@r102, $_); 0 } (@a102));
 say(scalar(@r102));
+(map { say('m' . $_); } (@a102));
+@r102 = ((map { say($_); } (1, 2)));
+{
+    my $dump_i = 0;
+    my $dump_s = "";
+    while ($dump_i < @r102) {
+        $dump_s .= (defined($r102[$dump_i]) ? (('<' . $r102[$dump_i]) . '>') : '<undef>');
+        $dump_i++;
+    }
+    say((scalar(@r102) . ':') . $dump_s);
+}
+@r102 = ((grep { say('g', $_); } (3, 4)));
+{
+    my $dump_i = 0;
+    my $dump_s = "";
+    while ($dump_i < @r102) {
+        $dump_s .= (defined($r102[$dump_i]) ? (('<' . $r102[$dump_i]) . '>') : '<undef>');
+        $dump_i++;
+    }
+    say((scalar(@r102) . ':') . $dump_s);
+}
 my @a103 = (1, 2, 3);
 my @r103;
 sub row103($p) {

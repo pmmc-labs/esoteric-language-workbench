@@ -1,0 +1,2 @@
+t/1186-it-as-a-file-handle.pl:4:19: say $_ -1: perl takes $_ for a file handle here; put a blank after the '-', or none before it
+exit: 1

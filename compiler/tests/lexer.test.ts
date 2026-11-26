@@ -302,10 +302,12 @@ test('a variable is a dollar and a name, hard against it (D55)', () => {
     refused('say $1;', message, 1, 5);
     refused('say $$;', message, 1, 5);
     refused('say $', message, 1, 5);
-    // perl's own: the sort's two, and the one everything defaults to.
+    // perl's own: the sort's two. `$_` is a token since step 10b, and
+    // an element of perl's `@_` is not.
     refused('my $a = 1;', '$a is not a name a variable may have', 1, 4);
     refused('say $b;', '$b is not a name a variable may have', 1, 5);
-    refused('say $_;', '$_ is not a name a variable may have', 1, 5);
+    assert.deepEqual(lex('say $_;').map(t => t.text), ['say', '$_', ';', '']);
+    refused('say $_[0];', "$_[ is an element of perl's own @_ or %_, which are not in the language", 1, 5);
     assert.deepEqual(lex('$ab $_1 $A').map(t => t.text), ['$ab', '$_1', '$A', '']);
     // perl's longest name is 251 characters (T126).
     assert.equal(lex('$' + 'n'.repeat(251)).length, 2);

@@ -1,0 +1,2 @@
+t/1192-value-alone-in-a-block.pl:4:15: this statement only has a value, and nothing is done with it: perl warns that it is useless
+exit: 1

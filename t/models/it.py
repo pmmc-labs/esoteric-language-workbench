@@ -24,7 +24,9 @@ and tested for truth. A `my` in a block is new each time round.
 **Where one value is wanted, `map` and `grep` are how many values they
 give** (D84). After `return`, each is list-shaped (D18).
 
-A fault in a block names the line its statement stands on.
+A fault in a block names the line the block's statement stands on (the
+model writes a block on one line); in a sub the block calls, the line of
+the sub's own statement.
 
 This model works a program out; it does not refuse one: that `$_` is
 read-only, that a block has no `return`, D76 and D77 are the compiler's.
@@ -192,16 +194,17 @@ class Run(ret.Run):
                     for s in body:
                         self.run(s)
                     self.at = at
-                    if kind == 'map':
+                    if isinstance(last, tuple) and last[0] in ('say', 'sayl'):
+                        # A block that ends in a `say` is worth `true` (D70).
+                        self.run(last)
+                        self.at = at
+                        out.append(TRUE if kind == 'map' else v)
+                    elif kind == 'map':
                         out += self.evl(last)
                     elif logic.truth(get(self.ev(last))):
                         out.append(v)
                 finally:
                     self.scopes.pop()
-        except Fault:
-            # The block is on its statement's line.
-            self.at = at
-            raise
         finally:
             for a in frozen:
                 a.frozen -= 1
@@ -237,7 +240,8 @@ def inline(statements):
     return ''.join(line.strip() + ' ' for s in statements for line in source(s))
 
 def binder_text(e, top):
-    return f'({e[0]} {{ {inline(e[1])}{text(e[2])} }} ({items(e[3])}))'
+    last = inline([e[2]]) if isinstance(e[2], tuple) and e[2][0] in ('say', 'sayl') else text(e[2]) + ' '
+    return f'({e[0]} {{ {inline(e[1])}{last}}} ({items(e[3])}))'
 
 var.MORE.update({'map': binder_text, 'grep': binder_text})
 
@@ -264,10 +268,25 @@ def output(statements):
     assert len(r.scopes) == 1 and r.frames == [] and r.wants == [], 'something was left open'
     return r.out, None, None
 
+def blocks(e, line, found):
+    """The statements of the blocks in an expression are on its line."""
+    if isinstance(e, tuple):
+        if e[0] in ('map', 'grep'):
+            for s in e[1] + [e[2]]:
+                found[id(s)] = line
+        for part in e:
+            blocks(part, line, found)
+    elif isinstance(e, list):
+        for part in e:
+            blocks(part, line, found)
+
 def lines_(statements, line, found):
-    """each.py's `lines_`, with a statement under a `for`."""
+    """each.py's `lines_`, with a statement under a `for`, and the
+    statements of a block."""
     for s in statements:
         found[id(s)] = line
+        if s[0] not in ('block', 'unless', 'while', 'until', 'for', 'sub', 'foreach', 'if'):
+            blocks(s, line, found)
         kind = s[0]
         if kind in ('block', 'unless', 'while', 'until', 'for', 'sub', 'foreach'):
             line = lines_(s[-1], line + 1, found) + 1
@@ -396,8 +415,10 @@ def map_cases():
                 ('my', g('n'), pair()), say_(G('n')), say_(('+', M(), 1)), say_(join('n', M())), say_(('scalar', a)),
                 ('if', [(mp([A(a)], lst()), [say_('never')]), (M(), [say_('some')])], None),
                 say_(('?:', mp([lst()], IT), 'yes', 'no')), say_(el(a, mp([1, 2], IT))),
-                # As a statement, for what its block does.
-                do(mp([A(a)], do(('push', r, [IT])), 0)), say_(('scalar', r))]
+                # As a statement, for what its block does; and a block
+                # that ends in a say is worth true.
+                do(mp([A(a)], do(('push', r, [IT])), 0)), say_(('scalar', r)),
+                do(mp([A(a)], say_(join('m', IT)))), seta(r, mp([1, 2], say_(IT))), dump(r), seta(r, gr([3, 4], sayl('g', IT))), dump(r)]
     c.case(places)
     # One inside another, a map in a for and a for in a map's block, and a
     # block that calls a sub which maps.

@@ -1,0 +1,2 @@
+t/1183-for-over-nothing.pl:4:5: for () is a loop over nothing, and perl does not compile it
+exit: 1

@@ -1,0 +1,2 @@
+t/1178-last-out-of-a-map.pl:5:19: last out of the block of a map: a loop says it
+exit: 1

@@ -1,0 +1,2 @@
+t/1177-return-in-a-block.pl:5:19: return in the block of a map or a grep: a loop says it
+exit: 1

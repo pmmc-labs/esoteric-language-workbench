@@ -1,0 +1,2 @@
+t/1181-return-under-a-for.pl:5:15: return for: under a for it would leave the for's own loop, to perl; write the loop with a block
+exit: 1

@@ -25,11 +25,13 @@ const unexpected = (t: Token, wanted: string): never =>
 // `if`, `unless`, `while` and `until`, which may follow a statement.
 const isModifier = (t: Token): boolean => {
     const kind = t.kind === 'word' ? NAMES.get(t.text)?.kind : undefined;
-    return kind === 'if' || kind === 'while';
+    return kind === 'if' || kind === 'while' || kind === 'for';
 };
 
 export const parse = (tokens: readonly Token[]): Program => {
     let i = 0;
+    // How many blocks of a `map` or a `grep` are open.
+    let blocks = 0;
     // The lexer ends every list with `eof`, and nothing reads past it.
     const peek = (): Token => tokens[i]!;
     const next = (): Token => tokens[i++]!;
@@ -258,6 +260,46 @@ export const parse = (tokens: readonly Token[]): Program => {
         return made([]);
     };
 
+    // The name of a variable that is being declared: not `$_`, which perl
+    // does not let a program declare (`Can't use global $_ in "my"`).
+    const own = (v: Token & { kind: 'var' }): string =>
+        (v.name === '_' ? refuse('$_ is not a name a program may declare: it is what a for, a map or a grep gives its block', v.pos) : v.name);
+
+    // `map { ... } LIST` and `grep { ... } LIST`, the word just read.
+    const binder = (head: Token): Expr => {
+        const open = next();
+        if (open.kind === '(') refuse(`${head.text} takes no brackets of its own: ${head.text} { ... } LIST`, open.pos);
+        if (open.kind !== '{') refuse(`${head.text} takes a block: ${head.text} { ... } LIST; with an expression and a comma it is not in the language (D85)`, open.pos);
+        // perl guesses whether this is a block or an anonymous hash from
+        // what comes first in it (T175, T192, D21): refused where its
+        // guess is the hash.
+        const first = peek();
+        if (first.kind === '}') refuse(`an empty block after ${head.text}: an anonymous hash, to perl`, first.pos);
+        if (first.kind === '{') refuse(`'{' first in ${head.text}'s block: an anonymous hash, to perl`, first.pos);
+        if ((first.kind === 'str' || first.kind === 'int' || first.kind === 'num') && tokens[i + 1]?.kind === ',') {
+            refuse(`${first.text} and a comma first in ${head.text}'s block: perl takes the block for an anonymous hash, and does not compile it; put the list in brackets`, first.pos);
+        }
+        const outer = inList;
+        inList = false;
+        depth += 1;
+        blocks += 1;
+        const body: Stmt[] = [];
+        while (peek().kind !== '}' && peek().kind !== 'eof') body.push(statement());
+        blocks -= 1;
+        depth -= 1;
+        inList = outer;
+        const close = next();
+        if (close.kind !== '}') unexpected(close, "'}'");
+        // The block's value is its last statement's (T176).
+        const last = body.at(-1);
+        // And `true` after a `say` or a `print`, as a sub's is (D70).
+        if (last?.kind !== 'do' && last?.kind !== 'call') refuse(`${head.text}'s block ends in an expression, which is its value`, (last ?? close).pos);
+        const after = peek();
+        if (after.kind === ',') refuse(`a comma after ${head.text}'s block: perl does not compile it`, after.pos);
+        if (ends(after) || after.kind === ')' || after.kind === ']' || after.kind === 'eof' || isModifier(after)) refuse(`${head.text} needs a list after its block`, after.pos);
+        return { kind: 'binder', op: head.text, var: { kind: 'my', name: '_', pos: head.pos }, body, items: list(), pos: head.pos };
+    };
+
     // `join` and `reverse`, the word just read: a list in brackets, or to
     // the end of the list they stand in.
     const listOp = (head: Token): Expr => {
@@ -392,7 +434,7 @@ export const parse = (tokens: readonly Token[]): Program => {
                 const items: Expr[] = [];
                 while (peek().kind !== ')') {
                     const d = next();
-                    if (d.kind === 'var' && peek().kind !== '[') items.push({ kind: 'my', name: d.name, pos: d.pos });
+                    if (d.kind === 'var' && peek().kind !== '[') items.push({ kind: 'my', name: own(d), pos: d.pos });
                     else if (d.kind === 'array') items.push({ kind: 'myarray', name: d.name, pos: d.pos });
                     else if (d.kind === 'word' && d.text === 'undef') items.push({ kind: 'constant', name: 'undef', pos: d.pos });
                     else return refuse(`in my (...), expected a variable, an array or undef, found ${show(d)}`, d.pos);
@@ -404,12 +446,13 @@ export const parse = (tokens: readonly Token[]): Program => {
                 return { kind: 'list', items, my: true, pos: t.pos, bracketed: true };
             }
             if (v.kind !== 'var') return refuse(`after 'my', expected a variable, found ${show(v)}`, v.pos);
-            return { kind: 'my', name: v.name, pos: t.pos };
+            return { kind: 'my', name: own(v), pos: t.pos };
         }
         const name = t.kind === 'word' ? NAMES.get(t.text) : undefined;
         if (name?.kind === 'constant' || name?.kind === 'unary' || name?.kind === 'function' || name?.kind === 'statement') return apply(t);
         if (name?.kind === 'arrayop') return arrayOp(t);
         if (name?.kind === 'listop') return listOp(t);
+        if (name?.kind === 'binder') return binder(t);
         // perl takes `$done and last` and `$x ? last : next` (T120), and
         // `my $x = return 5;` (T139).
         if (name?.kind === 'jump' || name?.kind === 'return') {
@@ -597,6 +640,9 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (name?.kind === 'return') {
             next();
             if (!inSub) refuse("return outside a sub: perl dies there, when it gets to it", head.pos);
+            // perl's `return` in a `map` block ends the sub, and in a
+            // `sort` block the comparison (T174).
+            if (blocks > 0) refuse('return in the block of a map or a grep: a loop says it', head.pos);
             if (ends(peek()) || isModifier(peek())) return { kind: 'return', pos: head.pos };
             const value = expression(AND_ROW);
             const after = peek();
@@ -632,7 +678,11 @@ export const parse = (tokens: readonly Token[]): Program => {
             return label === undefined ? { kind: 'jump', name: head.text, pos: head.pos } : { kind: 'jump', name: head.text, label, pos: head.pos };
         }
         if (head.kind === ';' || head.kind === '}' || head.kind === ')' || head.kind === 'eof') return unexpected(next(), 'a statement');
-        const expr = expression(AND_ROW);
+        // In the block of a `map` or a `grep` the last statement is the
+        // block's value, and may be two joined by a word operator (`$a
+        // <=> $b or $a cmp $b`); one that is not the last only has a
+        // value, and the checker refuses it.
+        const expr = expression(blocks > 0 ? Infinity : AND_ROW);
         loose();
         return { kind: 'do', expr, pos: head.pos };
     };
@@ -673,7 +723,7 @@ export const parse = (tokens: readonly Token[]): Program => {
             if (peek().kind === ')') refuse(`${head.text} my $${v.name} () is a loop over nothing, and perl does not compile it`, paren.pos);
             const items = itemsTo(')');
             const body = block();
-            return { kind: 'foreach', var: { kind: 'my', name: v.name, pos: open.pos }, items, body, pos: head.pos, ...(label ? { label } : {}) };
+            return { kind: 'foreach', var: { kind: 'my', name: own(v), pos: open.pos }, items, body, pos: head.pos, ...(label ? { label } : {}) };
         }
         if (open.kind !== '(') {
             // perl makes a variable from outside the loop's own while it
@@ -689,15 +739,24 @@ export const parse = (tokens: readonly Token[]): Program => {
             return { kind: 'while', test, body, pos: head.pos, ...(name.until ? { negate: true as const } : {}), ...(label ? { label } : {}) };
         }
         // A `for` with no `;` in its brackets is a loop over a list.
+        // (A `;` in the block of a `map` or a `grep` in a part is the
+        // block's.)
         let depth = 0;
+        let braces = 0;
         let semicolons = 0;
         for (let j = i; tokens[j]!.kind !== 'eof' && depth >= 0; j++) {
             const kind = tokens[j]!.kind;
             depth += kind === '(' ? 1 : kind === ')' ? -1 : 0;
-            if (kind === ';' && depth === 0) semicolons += 1;
-            if (kind === '{' && depth === 0) break;
+            braces += kind === '{' ? 1 : kind === '}' ? -1 : 0;
+            if (kind === ';' && depth === 0 && braces === 0) semicolons += 1;
         }
-        if (semicolons === 0) refuse(`${head.text} (...) with no variable is a loop over $_, which is not in the language: ${head.text} my $x (...)`, open.pos);
+        if (semicolons === 0) {
+            // `for (LIST) { }`: a loop over a list, with `$_` (step 10b).
+            if (peek().kind === ')') refuse(`${head.text} () is a loop over nothing, and perl does not compile it`, open.pos);
+            const items = itemsTo(')');
+            const body = block();
+            return { kind: 'foreach', var: { kind: 'my', name: '_', pos: head.pos }, items, body, pos: head.pos, ...(label ? { label } : {}) };
+        }
         // To perl `foreach` is `for`, with three parts too (T122).
         if (name?.kind === 'for' && name.each) refuse('foreach is the loop over a list here, foreach my $x (...): the loop of three parts is spelled for', head.pos);
         const first = part(';');
@@ -770,7 +829,7 @@ export const parse = (tokens: readonly Token[]): Program => {
                 // takes `:$x`, and perl doesn't (T55).
                 if (v.kind !== 'var') return refuse(`a parameter is $name or, last, @name, found ${show(v)}`, v.pos);
                 const assign = peek();
-                let param: Param = v.name === '' ? { pos: v.pos } : { my: { kind: 'my', name: v.name, pos: v.pos }, pos: v.pos };
+                let param: Param = v.name === '' ? { pos: v.pos } : { my: { kind: 'my', name: own(v), pos: v.pos }, pos: v.pos };
                 if (assign.kind === 'op' && (assign.text === '=' || assign.text === '//=' || assign.text === '||=')) {
                     next();
                     param = { ...param, op: assign.text };
@@ -847,11 +906,20 @@ export const parse = (tokens: readonly Token[]): Program => {
         // `STATEMENT if TEST;`, `unless`, `while`, `until`
         const word = peek();
         const modifier = word.kind === 'word' ? NAMES.get(word.text) : undefined;
-        if (modifier?.kind !== 'if' && modifier?.kind !== 'while') {
+        if (modifier?.kind !== 'if' && modifier?.kind !== 'while' && modifier?.kind !== 'for') {
             ending();
             return inner;
         }
         next();
+        if (modifier.kind === 'for') {
+            // `STATEMENT for LIST;` (step 10b). perl's `last for 1, 2;`
+            // leaves the modifier's own loop (T191).
+            if (inner.kind === 'return' || inner.kind === 'jump') refuse(`${inner.kind === 'return' ? 'return' : inner.name} ${word.text}: under a ${word.text} it would leave the ${word.text}'s own loop, to perl; write the loop with a block`, word.pos);
+            const items = list();
+            if (isModifier(peek())) refuse(`a second modifier after ${word.text}'s list: perl does not compile it`, peek().pos);
+            ending();
+            return { kind: 'foreach', var: { kind: 'my', name: '_', pos: word.pos }, items, body: [inner], modifier: true, pos: inner.pos };
+        }
         if (inner.kind === 'return' && modifier.kind === 'while') {
             refuse(`return ${word.text}: a return takes an if or an unless`, word.pos);
         }

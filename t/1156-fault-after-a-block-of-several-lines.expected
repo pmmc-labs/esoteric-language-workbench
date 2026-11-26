@@ -1,0 +1,4 @@
+1
+235
+fault: undef where a number is wanted at t/1156-fault-after-a-block-of-several-lines.pl line 12.
+exit: 1

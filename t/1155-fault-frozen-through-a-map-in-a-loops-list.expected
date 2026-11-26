@@ -1,0 +1,5 @@
+1
+1
+2
+fault: an array was changed while a foreach is over it at t/1155-fault-frozen-through-a-map-in-a-loops-list.pl line 12.
+exit: 1

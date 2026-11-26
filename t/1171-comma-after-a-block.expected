@@ -1,0 +1,2 @@
+t/1171-comma-after-a-block.pl:4:23: a comma after map's block: perl does not compile it
+exit: 1

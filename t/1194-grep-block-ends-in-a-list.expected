@@ -1,0 +1,2 @@
+t/1194-grep-block-ends-in-a-list.pl:5:16: a list where one value is wanted: perl gives its last value, and warns of the others
+exit: 1

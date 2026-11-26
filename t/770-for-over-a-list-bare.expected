@@ -1,2 +1,3 @@
-t/770-for-over-a-list-bare.pl:4:5: for (...) with no variable is a loop over $_, which is not in the language: for my $x (...)
-exit: 1
+x
+x
+x

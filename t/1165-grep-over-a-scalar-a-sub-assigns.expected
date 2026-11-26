@@ -1,0 +1,2 @@
+t/1165-grep-over-a-scalar-a-sub-assigns.pl:9:16: this can change $p, which the list of the grep it is in names: perl's grep walks the variable itself; take the value into a my before the grep
+exit: 1

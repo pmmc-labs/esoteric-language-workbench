@@ -1,0 +1,2 @@
+t/1160-it-assigned-in-a-for.pl:6:8: $_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+exit: 1

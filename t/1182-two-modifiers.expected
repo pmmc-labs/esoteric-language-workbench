@@ -1,0 +1,2 @@
+t/1182-two-modifiers.pl:5:21: a second modifier after for's list: perl does not compile it
+exit: 1

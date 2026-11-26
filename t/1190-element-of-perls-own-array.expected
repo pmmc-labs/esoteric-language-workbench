@@ -1,0 +1,2 @@
+t/1190-element-of-perls-own-array.pl:4:15: $_[ is an element of perl's own @_ or %_, which are not in the language
+exit: 1

@@ -102,7 +102,9 @@ comparison: *in*, *out*, or *n/a*.
 | `foreach (FIRST; TEST; EACH)` | Cut | | | D81: `for` is the loop of three parts (T122) |
 | `for my $x () { }` | Cut | | | T155: perl does not compile it |
 | `foreach $x (LIST)` with a variable that isn't `my` | Cut | | in | T14 |
-| `foreach` with no variable, postfix `for` | In | 10 | in | `$_`, read-only, and only inside the block that binds it |
+| `for (LIST) { }`, `foreach (LIST) { }`, `STATEMENT for LIST;` | In | 10 | in | `foreach` with `$_` for its variable (D17, D80, D77). Under the modifier: what may stand before `if`, less `last`, `next`, `return` (T191) and a second modifier (T192); `for () { }` is refused (T192) |
+| `$_` | In | 10 | in | Read-only (D17); seen in the block or statement of the `for`, `map` or `grep` that gives it, and not in a sub they call (T180, T15); not declared (`my $_`); always written (D85); `$_[0]` is refused (T192) |
+| `map { } LIST`, `grep { } LIST` | In | 10 | in | D84, D85, D87. A block and a list, no brackets of their own, no comma after the block; the list is copied, its arrays frozen, D77 for its scalars, T177's fault past the end; where one value is wanted, the count; list-shaped after `return` (D18); as statements too. In the block: no `return` (T174), no `last` or `next` to a loop outside it (T59); it ends in an expression, or a `say` (`true`, as D70); not a string or a number and a comma first, nor `{`, nor empty (T175, T192) |
 | `foreach` over `($p, $q)` naming variables | In | 9 | in | D77: copies; refused when the block, or a sub it calls, can change a scalar named anywhere in the list, the end of a range too (T13, T162, T172) |
 | A closure over, or `\` of, a loop variable or `$_` | Later | 14 | in | D17: perl keeps the alias after the loop |
 | `foreach my ($k, $v) (%h)` | Later | 12 | | 5.36's; to be proposed |
@@ -126,7 +128,7 @@ comparison: *in*, *out*, or *n/a*.
 | `...` as a statement | Later | 15 | | It is a `die` |
 | `given`, `when`, smartmatch | Cut | | | Not on under `use v5.42` either |
 | `exit` | In | 21 | | |
-| `say;`, `print;` with no argument | In | 10 | | They print `$_` |
+| `say;`, `print;` with no argument | Cut | | | D85: `$_` is always written |
 | A builtin's brackets and then an operator, `say (1 + 2) * 3;` | Cut | | | D21, T25: perl prints 3 |
 | `say (...)` after one space, not ending on its line, or with a bracket in a string or a comment that perl's count of them trips on | Cut | | | T76, T100: perl warns. `say(...)`, hard against, may run over lines |
 | `(LIST) x N`, a list repeated, where a list is wanted | In | 9 | | D80, T101. After `return` and as a sub's last statement too, from step 10 (T143); a comma list on the left of `x` where one value is wanted: Cut (T168) |
@@ -246,7 +248,7 @@ Opal's notation, `docs/BUILTINS.md`.
 | `say LIST`, `print LIST` | In | 9 | Each value, nothing between; every value is looked at before any is written |
 | `sort` with `$a` and `$b` | In | 10 |
 | `any`, `all` (experimental in 5.42, and not in the bundle) | Later | 10 |
-| `map EXPR, LIST`, `grep EXPR, LIST` | In | 10 |
+| `map EXPR, LIST`, `grep EXPR, LIST` | Cut | | D85: a block always |
 | `ceil`, `floor`, `trim`, `indexed` (imported by `use v5.42`), `fc` | Later | 16, 22 |
 | `abs`, `int`, `sqrt`, `sin`, `cos`, `atan2`, `exp`, `log`, `hex`, `oct` | In | 22 |
 | `rand`, `srand`, `time`, `localtime`, `gmtime`, `sleep` | Later | 22 |

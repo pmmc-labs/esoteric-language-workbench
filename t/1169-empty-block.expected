@@ -1,0 +1,2 @@
+t/1169-empty-block.pl:4:15: an empty block after map: an anonymous hash, to perl
+exit: 1

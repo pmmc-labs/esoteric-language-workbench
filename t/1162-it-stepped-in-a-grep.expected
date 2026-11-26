@@ -1,0 +1,2 @@
+t/1162-it-stepped-in-a-grep.pl:5:18: $_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+exit: 1

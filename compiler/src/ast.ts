@@ -30,7 +30,7 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
 export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
-    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp;
+    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder;
 
 // An array, `@name`, and `my @name`, which declares one (D80).
 export type ArrayVar = { kind: 'array'; name: string; pos: Pos; bracketed?: true };
@@ -57,6 +57,11 @@ export type ArrayOp = { kind: 'arrayop'; op: string; name: string; args: readonl
 // `join(SEP, LIST)` and `reverse(LIST)`, with brackets or without (step
 // 10a): the builtins that take a list and name no array.
 export type ListOp = { kind: 'listop'; op: string; args: readonly Expr[]; pos: Pos; bracketed?: true };
+
+// `map { ... } LIST` and `grep { ... } LIST` (step 10b): `body` is the
+// block's statements, the last an expression, which is the block's value;
+// `var` is `$_`, as a declaration, new for each value of the list.
+export type Binder = { kind: 'binder'; op: string; var: My; body: readonly Stmt[]; items: readonly Expr[]; pos: Pos; bracketed?: true };
 
 // A list assignment, `(targets) = value` and `my (targets) = value`: a
 // statement (D78). A target is a variable, an element, `undef`, or, last,
@@ -125,7 +130,9 @@ export type For = { kind: 'for'; first: readonly Expr[]; test?: Expr; each: read
 // `for my $x (LIST) { }`, and spelled `foreach` (D17, D77, D80): the
 // block once for each value of the list, `var` a copy of it and new each
 // time round.
-export type Foreach = { kind: 'foreach'; var: My; items: readonly Expr[]; body: readonly Stmt[]; label?: Label; pos: Pos };
+// `for (LIST) { }` is the same with `$_` for its variable, and `STATEMENT
+// for LIST;` that with `modifier`, its body the statement (step 10b).
+export type Foreach = { kind: 'foreach'; var: My; items: readonly Expr[]; body: readonly Stmt[]; label?: Label; modifier?: true; pos: Pos };
 
 // `last;` and `next;`, with a label or without (D62). `name` is the word.
 export type Jump = { kind: 'jump'; name: string; label?: Label; pos: Pos };

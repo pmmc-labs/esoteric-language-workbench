@@ -1,0 +1,2 @@
+t/1170-block-begins-with-a-block.pl:4:15: '{' first in map's block: an anonymous hash, to perl
+exit: 1

@@ -1,0 +1,2 @@
+t/1172-map-in-brackets.pl:4:12: map takes no brackets of its own: map { ... } LIST
+exit: 1

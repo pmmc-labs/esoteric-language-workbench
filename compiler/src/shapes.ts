@@ -25,7 +25,7 @@ export const handsOn = (in_: Expr, gives: Gives): boolean => {
 // List-shaped (D18): what gives a call for one value something other
 // than its one value, in perl (T183). An array, a list of two or more, or
 // of one that is itself list-shaped, a range, a slice, `(LIST) x N`,
-// `splice`, `reverse`, and `? :` or `|| && //` with such an arm, whichever
+// `splice`, `reverse`, `map`, `grep`, and `? :` or `|| && //` with such an arm, whichever
 // arm is taken. `(LIST)[N]` with one index that is one value is that
 // element; `()` is nothing, as `return;` is.
 export const shaped = (in_: Expr, gives: Gives): boolean => {
@@ -36,6 +36,7 @@ export const shaped = (in_: Expr, gives: Gives): boolean => {
     case 'slice': return e.name !== undefined || e.indexes.length !== 1 || shaped(e.indexes[0]!, gives) || handsOn(e.indexes[0]!, gives);
     case 'arrayop': return e.op === 'splice';
     case 'listop': return e.op === 'reverse';
+    case 'binder': return true;
     case 'ternary': return shaped(e.then, gives) || shaped(e.else, gives);
     case 'binary': return isRange(e) || isRepeat(e) || (infixOp(e.op)?.when !== undefined && shaped(e.right, gives));
     default: return false;

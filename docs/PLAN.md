@@ -3029,6 +3029,52 @@ fault, slurpy parameters, `join` and `reverse`. 10b and 10c are not.
 - **The numbers**: 760 golden tests, 125 unit tests, 677
   statements about perl; green under gcc, clang, and UBSan with
   ASan, poison on and off.
+
+**10b is built** (2026-11-25, by Fable 5.2): `$_`, `for (LIST)`, the
+`for` modifier, `map` and `grep`. 10c, `sort`, is not.
+
+- **The model first, red before any code** (`t/models/it.py`, commit
+  3f0b540), on `ret.py`: 1100 to 1102, about 200 lines on which perl
+  5.42 agreed with it the first time, and 45 programs that fault
+  once each, 1110 to 1154: each binder and each way its array is
+  changed, the freeze given back, every shape that names an array,
+  past the end in each binder's list, D18 for a `map` and a `grep`.
+- **T131 twice more, and perl's own crash** (T194): a `for` that
+  pushes onto its array never ends under perl, and **perl 5.42
+  itself dies of a segmentation fault** on a `grep` whose block
+  shifts or assigns its array. The freeze makes each a fault here,
+  and no test asks perl for them.
+- **A binder is a `foreach`**: the two `for`s are the same node with
+  `$_` for a variable, and the runtime gained nothing. `map` and
+  `grep` are a `foreach` in the middle of a statement: the block's
+  statements are generated where they stand, their temporaries
+  numbered after those the statement has in use, and the block's
+  value is the statement's own to work out, added to the list it is
+  building. Nothing calls anything.
+- **`$_` is a declaration of its binder's**, in the scope of its
+  block, so that a sub can not see it, a binder inside another hides
+  it, and a list is read outside it, all by the rule variables have.
+- **What a statement declares is stored to as it begins**, and a
+  `map` in it has slots while it runs: the resolver gives the
+  declarations slots after the map's.
+- **What the build found**: a block that ends in a `say` is worth
+  `true`, as a sub is (D70); `my $_` is refused by perl too; a
+  block's last statement had to take a word operator, for `$a <=> $b
+  or $a cmp $b` at 10c; and **the scan that tells a `for` of three
+  parts from one over a list counted the semicolons in a block**,
+  so `for (map { my $t = $_; $t * 2 } @a)` was read as three
+  parts: found by a breakage that nothing caught.
+- **Broken on purpose** (`briefs/step10b-mutations.py`, the compiler
+  alone): 37 of 41 caught the first time. One test did not test what
+  it was written for (a fault after a block of several lines: the
+  `map` had taken the faulting item into its own list); one was a
+  hole, a `map` in the first part of a `for` after a `my`, which is
+  where the slots above matter; one is caught by a test of step 5's
+  the script had not been running; and one changed nothing a program
+  can see, and is out of the list.
+- **The numbers**: 847 golden tests, 127 unit tests, 681
+  statements about perl; green under gcc, clang, and UBSan with
+  ASan, poison on and off.
 Everything here about perl was run under 5.42.0 and is in
 `briefs/claims.py` (46 rows, `T173` to `T184-global`). Traps: T3,
 T4, T6, T8, T10, T15 to T18, T20, T23, T29, T41, T54, T59, T61, and

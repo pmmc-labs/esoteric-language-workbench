@@ -1,0 +1,2 @@
+t/1180-last-under-a-for.pl:5:10: after 'last' comes ';', a label in capitals, or an if or unless: perl takes anything else for an expression that names a label
+exit: 1

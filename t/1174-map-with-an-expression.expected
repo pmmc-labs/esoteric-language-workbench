@@ -1,0 +1,2 @@
+t/1174-map-with-an-expression.pl:4:13: map takes a block: map { ... } LIST; with an expression and a comma it is not in the language (D85)
+exit: 1

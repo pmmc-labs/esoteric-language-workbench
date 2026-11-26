@@ -176,3 +176,39 @@ test('a foreach: what its list names, and what its variable is', () => {
     refused('for my $x (1) { } say $x;', '$x is not declared: my $x', 1, 23);
     refused('for my $x ($x) { }', '$x is not declared: my $x', 1, 12);
 });
+
+// Step 10b: `$_` is its binder's, the list is read outside the binding, a
+// block is a wall to `last` and `next`, and what a statement declares
+// comes after the slots a `map` in it had while it ran.
+test('a map in a statement: its slots, its $_, and the wall its block is', () => {
+    const program = parse(lex('my @a;\nsub f() { my $p = 1; my @r = map { my $t = $_; $t } @a; return 0; }\nfor (1, 2) { my @s = grep { $_ } ($_, 3); }'));
+    const names = resolve(program);
+    const sub = program.body.find(s => s.kind === 'sub');
+    assert.ok(sub?.kind === 'sub');
+    const assign = sub.body[1]!;
+    assert.ok(assign.kind === 'do' && assign.expr.kind === 'assign' && assign.expr.value.kind === 'binder');
+    const map = assign.expr.value;
+    const slot = (id: number) => names.slots[id]!;
+    // $p is slot 0; the map's list, its $_ and the block's $t are 1, 2 and
+    // 3 while it runs; and @r, which is stored to before it runs, is 4.
+    assert.deepEqual([slot(names.each.get(map)!.list), slot(names.of.get(map.var)!), slot(names.of.get(assign.expr.target)!)], [1, 2, 4]);
+    assert.deepEqual(names.each.get(map)!.arrays, [0]);
+    assert.ok(names.readonly.has(names.of.get(map.var)!));
+    assert.equal(names.frames[1], 5);
+    // The grep's list sees the for's $_, and its block its own.
+    const loop = program.body.find(s => s.kind === 'foreach');
+    assert.ok(loop?.kind === 'foreach');
+    const inner = loop.body[0]!;
+    assert.ok(inner.kind === 'do' && inner.expr.kind === 'assign' && inner.expr.value.kind === 'binder');
+    const grep = inner.expr.value;
+    const last = grep.body[0]!;
+    assert.ok(last.kind === 'do');
+    const given = grep.items[0]!;
+    assert.ok(given.kind === 'list');
+    assert.deepEqual([names.of.get(given.items[0]!), names.of.get(last.expr)], [names.of.get(loop.var), names.of.get(grep.var)]);
+    assert.notEqual(names.of.get(loop.var), names.of.get(grep.var));
+    refused('my @a; while (1) { my @r = map { last; 1 } @a; }', 'last out of the block of a map: a loop says it', 1, 34);
+    refused('my @a; A: while (1) { my @r = grep { next A; 1 } @a; }', 'next out of the block of a grep: a loop says it', 1, 38);
+    refused('say $_;', '$_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)', 1, 5);
+    refused('sub f() { return $_; } for (1) { f(); }', '$_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)', 1, 18);
+});

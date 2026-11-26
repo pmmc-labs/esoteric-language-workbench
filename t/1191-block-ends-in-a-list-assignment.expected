@@ -1,0 +1,2 @@
+t/1191-block-ends-in-a-list-assignment.pl:5:21: an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
+exit: 1

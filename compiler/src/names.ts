@@ -46,6 +46,9 @@ export type Name =
     // a separator and a list, and `reverse`, a list; with brackets or
     // without.
     | { kind: 'listop'; rt: string }
+    // `map` and `grep` (step 10b): a block and a list, and no brackets of
+    // their own (D85, D87).
+    | { kind: 'binder' }
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
@@ -85,6 +88,8 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['splice', { kind: 'arrayop', shape: 'splice', rt: 'rt_splice' }],
     ['scalar', { kind: 'arrayop', shape: 'scalar', rt: 'rt_count' }],
     ['join', { kind: 'listop', rt: 'rt_join' }],
+    ['map', { kind: 'binder' }],
+    ['grep', { kind: 'binder' }],
     ['reverse', { kind: 'listop', rt: 'rt_list_add_reversed' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
