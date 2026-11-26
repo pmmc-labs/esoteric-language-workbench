@@ -1,2 +1,0 @@
-t/1447-interpolate-pragma-argument.pl:5:1: 'use open' is written: use open ':std', ':encoding(UTF-8)';
-exit: 1

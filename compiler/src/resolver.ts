@@ -88,10 +88,20 @@ export const resolve = (program: Program): Resolution => {
     // The array a node names, looked up as it is met.
     const array = (e: Expr, name: string): void => {
         const found = [...scopes].reverse().find(scope => scope.has('@' + name));
-        if (found === undefined) return refuse(`@${name} is not declared: my @${name}`, e.pos);
+        if (found === undefined) {
+            // In a string, what was read may not be what was meant.
+            const meant = !quoted ? '' : e.kind === 'elem'
+                ? `; in a string $${name}[ is an element of @${name}: for the scalar and a bracket, \${${name}}[ or $${name}\\[`
+                : '; in a string, \\@ is the character';
+            return refuse(`@${name} is not declared: my @${name}${meant}`, e.pos);
+        }
         of.set(e, found.get('@' + name)!);
-        naming.forEach(set => set.add(found.get('@' + name)!));
+        // A string is a copy: an array in one is not named by the list
+        // the string stands in (T209).
+        if (!quoted) naming.forEach(set => set.add(found.get('@' + name)!));
     };
+    // Whether what is being read is a piece of a string (step 11a).
+    let quoted = false;
     // The arrays named while the list of a `foreach`, a `map` or a `grep`
     // is read: one set for each list that is being read.
     const naming: Set<number>[] = [];
@@ -154,8 +164,17 @@ export const resolve = (program: Program): Resolution => {
             const found = [...scopes].reverse().find(s => s.has(e.name));
             if (found === undefined && (e.name === 'a' || e.name === 'b')) return refuse(`$${e.name} outside the block of a sort: $a and $b are the two values a sort gives its block, and are seen there alone`, e.pos);
             if (found === undefined && e.name === '_') return refuse('$_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)', e.pos);
-            if (found === undefined) return refuse(`$${e.name} is not declared: my $${e.name}`, e.pos);
+            if (found === undefined) {
+                return refuse(`$${e.name} is not declared: my $${e.name}${quoted ? '; in a string, \\$ is the character, and ${name} ends a name sooner' : ''}`, e.pos);
+            }
             of.set(e, found.get(e.name)!);
+            return;
+        }
+        case 'interp': {
+            const outer = quoted;
+            quoted = true;
+            e.parts.forEach(x => walk(x, declared));
+            quoted = outer;
             return;
         }
         case 'my':

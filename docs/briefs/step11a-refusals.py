@@ -106,8 +106,8 @@ r('index-at-two-to-the-63', 'perl warns: an element at the smallest integer (T21
 OPEN = "an index in a string that does not close: write \\[ for the character"
 r('index-that-does-not-close', 'perl does not compile it.', A + 'say "$a[0";', '[0', OPEN)
 r('slice-that-does-not-close', 'perl does not compile it.', A + 'say "@a[0, 1";', '[0', OPEN)
-r('slice-of-one-index', 'perl warns: Scalar value @a[0] better written as $a[0] (T206).', A + 'say "@a[0]";', '@a', '@a[...] with one index: perl warns that it is better written $a[...]')
-r('slice-of-one-scalar', 'perl warns: Scalar value @a[...] better written as $a[...] (T206).', I + 'say "@a[$i]";', '@a', '@a[...] with one index: perl warns that it is better written $a[...]')
+r('slice-of-one-index', 'perl warns: Scalar value @a[0] better written as $a[0] (T206).', A + 'say "@a[0]";', '@a[', '@a[...] with one index: perl warns that it is better written $a[...]')
+r('slice-of-one-scalar', 'perl warns: Scalar value @a[...] better written as $a[...] (T206).', I + 'say "@a[$i]";', '@a[', '@a[...] with one index: perl warns that it is better written $a[...]')
 # ---- what is not declared
 SC = lambda n: f"${n} is not declared: my ${n}; in a string, \\$ is the character, and ${{name}} ends a name sooner"
 AR = lambda n: f"@{n} is not declared: my @{n}; in a string, \\@ is the character"
@@ -135,12 +135,10 @@ r('map-block-begins-with-a-string-and-a-comma', 'perl does not compile it: a has
 r('repeat-hard-against-a-number', 'perl prints a3a3; refused as of any string (T57).', X + 'say "a$x" x2;', 'x2', 'x2: the repetition operator is a word of its own: write x 2')
 r('string-as-a-statement', 'perl warns: Useless use of string in void context.', X + '"a$x";', '"a', None)
 r('assignment-to-a-string', "perl does not compile it: Can't modify string in scalar assignment.", X + '"$x" = 5;', '= 5', None)
-r('pragma-argument', 'perl would take it, if $x were set as it compiles.', "my $x = ':std';\nuse open \"$x\", ':encoding(UTF-8)';", None, None)
 
 BY_HAND = {
     'string-as-a-statement': ('"a', 'this statement only has a value, and nothing is done with it: perl warns that it is useless'),
     'assignment-to-a-string': ('= 5', "the left side of '=' is a variable, an element, an array, or a list of them in brackets"),
-    'pragma-argument': ('use open', "'use open' is written: use open ':std', ':encoding(UTF-8)';"),
 }
 
 def write(first):

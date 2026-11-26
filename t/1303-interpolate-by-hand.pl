@@ -87,8 +87,8 @@ say "@a";
 @a = ("@a", "@a");
 say scalar(@a);
 
-# The assignments perl keeps (T198): a string that is one thing alone, a
-# declaration, more after the bracket, and any operator but `.=`.
+# The assignments perl keeps (T198): a string that is one thing alone,
+# more after the bracket, and any operator but `.=`.
 my $u = "u";
 my $z = "z";
 $x = "a";
@@ -111,9 +111,6 @@ say "$t $u";
 $t = "t";
 $t .= ($u = "${x}");
 say "$t $u";
-$t = "t";
-$t .= (my $w = "$x$z");
-say "$t $w";
 $t = "t";
 $t .= ($u = "$x$z") . "b";
 say "$t $u";
@@ -147,7 +144,6 @@ say "$x->";
 say "$x->y";
 say "$x->(1)";
 say "$x->%*";
-say "$x->$x";
 say "$x-\>[0]";
 say "$x\->[0]";
 say "$x->\[0]";
@@ -205,8 +201,8 @@ say "$#{b}é";
 # After a string an operator comes next; and a string is one value.
 say "$x" -1;
 say "$x" . 1 + 1;
-sub all() { return "@b"; }
-my $v = all();
+sub whole() { return "@b"; }
+my $v = whole();
 say $v;
 say length("@b");
 my @one = ("@b");

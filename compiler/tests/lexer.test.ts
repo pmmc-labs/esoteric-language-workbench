@@ -130,11 +130,82 @@ test('a string in double quotes: the escapes (D43)', () => {
     at('"\\129"', '\\129: an octal escape that 9 cuts short, and perl warns: write \\012', 2);
     at('"a\\\tb"', 'a backslash before a tab is not in the language', 3);
     at('"a\\\nb"', 'a backslash before the end of a line is not in the language', 3);
-    at('"cost: $x"', "'$' in a double-quoted string is a variable to perl: write \\$ (interpolation is not in the language yet)", 8);
-    at('"a@b"', "'@' in a double-quoted string is a variable to perl: write \\@ (interpolation is not in the language yet)", 3);
+    at('"cost: $"', "'$' in a double-quoted string begins a variable, and no name is hard against it: write \\$ for the character", 8);
+    at('"a@ b"', "'@' in a double-quoted string begins an array, and no name is hard against it: write \\@ for the character", 3);
     at('"abc', 'a string that never ends: it begins with " here', 1);
     at('"abc\\', 'a string that never ends: it begins with " here', 1);
     at('"abc\\"', 'a string that never ends: it begins with " here', 1);
+});
+
+test('a string with a variable in it is its pieces, each shape with where it stands (step 11a)', () => {
+    const pieces = (src: string) => {
+        const t = lex(src)[0]!;
+        assert.equal(t.kind, 'str');
+        return t.kind === 'str' ? t.pieces : undefined;
+    };
+    assert.equal(pieces('"no variable \\$x \\@a"'), undefined);
+    assert.deepEqual(pieces('"a $x b"'), [{ kind: 'text', value: 'a ' }, { kind: 'var', name: 'x', pos: { line: 1, col: 4 } }, { kind: 'text', value: ' b' }]);
+    // The longest name; braces end it; and what follows braces is text.
+    assert.deepEqual(pieces('"$x_y${x}_y@{a}[0]$#{a}::"'), [
+        { kind: 'var', name: 'x_y', pos: { line: 1, col: 2 } }, { kind: 'var', name: 'x', pos: { line: 1, col: 6 } }, { kind: 'text', value: '_y' },
+        { kind: 'array', name: 'a', pos: { line: 1, col: 12 } }, { kind: 'text', value: '[0]' }, { kind: 'lastindex', name: 'a', pos: { line: 1, col: 19 } },
+        { kind: 'text', value: '::' },
+    ]);
+    assert.deepEqual(pieces('"@a$#a"'), [{ kind: 'array', name: 'a', pos: { line: 1, col: 2 } }, { kind: 'lastindex', name: 'a', pos: { line: 1, col: 4 } }]);
+    // An index: a whole number, with a minus or without, or a scalar.
+    assert.deepEqual(pieces('"$a[0]$a[ -12 ]$a[$i]"'), [
+        { kind: 'elem', name: 'a', index: { kind: 'int', text: '0', negative: false, pos: { line: 1, col: 5 } }, pos: { line: 1, col: 2 } },
+        { kind: 'elem', name: 'a', index: { kind: 'int', text: '12', negative: true, pos: { line: 1, col: 11 } }, pos: { line: 1, col: 7 } },
+        { kind: 'elem', name: 'a', index: { kind: 'var', name: 'i', pos: { line: 1, col: 19 } }, pos: { line: 1, col: 16 } },
+    ]);
+    // A slice: indexes and ranges with commas between, and one after.
+    assert.deepEqual(pieces('"@a[0, $i .. 2,]s"'), [
+        { kind: 'slice', name: 'a', pos: { line: 1, col: 2 }, indexes: [
+            { kind: 'int', text: '0', negative: false, pos: { line: 1, col: 5 } },
+            { kind: 'range', pos: { line: 1, col: 11 }, from: { kind: 'var', name: 'i', pos: { line: 1, col: 8 } }, to: { kind: 'int', text: '2', negative: false, pos: { line: 1, col: 14 } } },
+        ] },
+        { kind: 'text', value: 's' },
+    ]);
+    // What follows a shape and is text; and a backslash ends a name.
+    for (const after of ["'s", ':', ': ', '->', '->y', '->(1)', '-1', '.', ' [0]', ' {a}', '\\[0]', '\\{a}', '\\::y', '\\->[0]', '-\\>[0]', ')', ']', '}', '%', '#']) {
+        const found = pieces(`"$x${after}"`)!;
+        assert.deepEqual(found[0], { kind: 'var', name: 'x', pos: { line: 1, col: 2 } }, after);
+        assert.equal(found.length, 2, after);
+    }
+    // After a string an operator comes next, as after any value.
+    assert.deepEqual(lex('"$x" x 3 . "@a" .5').map(t => t.kind), ['str', 'op', 'int', 'op', 'str', 'op', 'int', 'eof']);
+});
+
+test('what a string may not hold of a variable, each at its character (D91, D92)', () => {
+    const at = (src: string, message: string, col: number) => refused(src, message, 1, col);
+    const index = 'in a string an index is a whole number or a scalar variable (D91): take the index into a my first';
+    at('"$a[$i+1]"', index, 7);
+    at('"$a[1.5]"', index, 6);
+    at('"$a[\'1\']"', index, 5);
+    at('"@a[0 ... 1]"', index, 9);
+    at('"$a[010]"', '010 in an index in a string: a leading zero makes it octal, to perl; write the number without it', 5);
+    at('"$a[9223372036854775808]"', 'an index of 9223372036854775808 or more in a string: perl wraps it round to the other end of the array', 5);
+    assert.doesNotThrow(() => lex('"$a[9223372036854775807]$a[-9223372036854775807]$a[0]$a[-0]"'));
+    at('"$a[0"', 'an index in a string that does not close: write \\[ for the character', 4);
+    at('"$x::y"', "'::' hard after $x in a string: perl reads a variable of another package; write ${x}:: or $x\\::", 4);
+    at('"$a[0]::y"', "'::' hard after $a[0] in a string: perl reads a variable of another package; write $a[0]\\::", 7);
+    at('"$x{a}"', "'{' hard after $x in a string: a hash's, to perl, and hashes are not in the language yet (step 12); write ${x}{ or $x\\{", 4);
+    at('"$a[0][1]"', "'[' hard after $a[0] in a string: another index, to perl; write $a[0]\\[", 7);
+    at('"$#a[1]"', "'[' hard after $#a in a string: another index, to perl; write $#a\\[", 5);
+    at('"$x->[0]"', "'->[' hard after $x in a string: a dereference, to perl, and references are not in the language yet (step 13); write $x\\->[", 4);
+    at('"${ x }"', 'in a string a name in braces is hard against both of them: ${name}', 2);
+    at('"@{a[0, 1]}"', '@{a[...]} in a string: perl warns that it is ambiguous; write @a[...]', 2);
+    at('"${\\ $x}"', '${\\ in a string takes a reference, and references are not in the language yet (step 13)', 2);
+    at('"@{[ $x ]}"', '@{[ in a string takes a reference, and references are not in the language yet (step 13)', 2);
+    at('"$$x"', '$$ in a string takes a reference, and references are not in the language yet (step 13)', 2);
+    at('"$$"', "'$' in a double-quoted string begins a variable, and no name is hard against it: write \\$ for the character", 2);
+    at('"$#"', "after '$#' in a string comes an array's name, or one in braces: write \\$ for the character", 2);
+    at('"@_"', '@_ is not in the language: a sub has a signature (D17)', 2);
+    at('"$_[0]"', "$_[ is an element of perl's own @_ or %_, which are not in the language", 2);
+    // A character past ASCII hard after a bare name; not after braces or
+    // an index, where perl has no name to go on with (T205).
+    refused('use utf8;\n"$x\u00e9"', 'a character past ASCII (U+00E9) hard after $x in a string: perl takes a letter, a digit or a mark there into the name; write ${x}', 2, 4);
+    assert.doesNotThrow(() => lex('use utf8;\n"${x}\u00e9$a[0]\u00e9@a[0, 1]\u00e9 \u00e9$x"'));
 });
 
 test('a string token is the literal as written, and where it starts', () => {

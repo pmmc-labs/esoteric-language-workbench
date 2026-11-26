@@ -19,6 +19,14 @@ export type Num = { kind: 'num'; text: string; value: number; pos: Pos; brackete
 // character past U+FFFF is two units there and one character here.
 export type Str = { kind: 'str'; text: string; value: string; pos: Pos; bracketed?: true };
 
+// A double-quoted string with a variable in it (step 11a; D91 to D95):
+// `parts` are its pieces from left to right, the text between as `str`s
+// and each variable as the node it is outside a string (`var`, `array`,
+// `elem`, `slice`, `lastindex`). It is one value, a Str, made where it
+// stands (T196): no pass looks inside it for what a row of dots reads or
+// a list names.
+export type Interp = { kind: 'interp'; text: string; parts: readonly Expr[]; pos: Pos; bracketed?: true };
+
 // An operator before its operand, `-x`; `pos` is the operator's.
 export type Unary = { kind: 'unary'; op: string; operand: Expr; pos: Pos; bracketed?: true };
 
@@ -29,7 +37,7 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // `(x + y)`. The tree's shape already holds the grouping; this is for the
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
-export type Expr = Int | Num | Str | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
+export type Expr = Int | Num | Str | Interp | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
     | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder | Sort;
 
 // An array, `@name`, and `my @name`, which declares one (D80).

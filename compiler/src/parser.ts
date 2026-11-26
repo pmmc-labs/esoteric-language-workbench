@@ -4,7 +4,7 @@
 // (which `use`, which integers) are the checker's.
 import { refuse } from './errors.ts';
 import { AND_ROW, COMMA_ROW, NAMED_UNARY_ROW, NAMES, NAME_MAX_LENGTH, OPERATORS, PERL_KEYWORDS, PERL_WORDS, PRAGMAS, PRECEDENCE, TERNARY_ROW, infixOp, isLabel, isVersionString, prefixOp, stepOp } from './names.ts';
-import type { Token } from './lexer.ts';
+import type { Index, Token } from './lexer.ts';
 import type { Arm, Elem, Expr, Label, Param, Program, Stmt, Var } from './ast.ts';
 
 // A token as a diagnostic names it. A string is shown if it is short.
@@ -404,6 +404,22 @@ export const parse = (tokens: readonly Token[]): Program => {
         const digits = t.text.replaceAll('_', '');
         if (t.kind === 'int') return { kind: 'int', text: t.text, value: BigInt(digits), pos: t.pos };
         if (t.kind === 'num') return { kind: 'num', text: t.text, value: Number(digits), pos: t.pos };
+        if (t.kind === 'str' && t.pieces !== undefined) {
+            // A string with a variable in it (step 11a): each piece the
+            // node it is outside a string, the text between as strings.
+            const index = (x: Index): Expr => {
+                if (x.kind === 'var') return { kind: 'var', name: x.name, pos: x.pos };
+                if (x.kind === 'range') return { kind: 'binary', op: '..', left: index(x.from), right: index(x.to), pos: x.pos };
+                const whole: Expr = { kind: 'int', text: x.text, value: BigInt(x.text), pos: x.pos };
+                return x.negative ? { kind: 'unary', op: '-', operand: whole, pos: x.pos } : whole;
+            };
+            const parts = t.pieces.map((p): Expr =>
+                p.kind === 'text' ? { kind: 'str', text: '', value: p.value, pos: t.pos }
+                : p.kind === 'elem' ? { kind: 'elem', name: p.name, index: index(p.index), pos: p.pos }
+                : p.kind === 'slice' ? { kind: 'slice', name: p.name, indexes: p.indexes.map(index), pos: p.pos }
+                : { kind: p.kind, name: p.name, pos: p.pos });
+            return { kind: 'interp', text: t.text, parts, pos: t.pos };
+        }
         if (t.kind === 'str') return { kind: 'str', text: t.text, value: t.value, pos: t.pos };
         if (t.kind === '(') {
             // A list, if a comma stands in the brackets or nothing does;

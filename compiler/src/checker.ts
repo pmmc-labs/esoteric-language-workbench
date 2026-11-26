@@ -36,6 +36,9 @@ const parts = (e: Expr): readonly Expr[] =>
     // change, and what it reads, they read (D76 goes through a block).
     : e.kind === 'binder' ? [...e.items, ...within(e.body)]
     : e.kind === 'sort' ? [...e.items, ...within(e.body ?? [])]
+    // An interpolated string is a value, made where it stands (T196, D95):
+    // for what a row of dots reads, what a list names and what a loop's
+    // list holds, it has no parts. (`children` has them, to be checked.)
     : [];
 
 // Every expression the statements of a block hold.
@@ -81,7 +84,7 @@ const plain = (e: Expr): Expr => (e.kind === 'unary' && prefixOp(e.op)?.rt === u
 // `$y`, which is no constant: this says yes to a little more than perl
 // does, with no folder of its own.
 const folds = (e: Expr): boolean =>
-    e.kind === 'var' || e.kind === 'my' || e.kind === 'assign' || e.kind === 'step' || e.kind === 'invoke' ? false
+    e.kind === 'var' || e.kind === 'my' || e.kind === 'assign' || e.kind === 'step' || e.kind === 'invoke' || e.kind === 'interp' ? false
     // (An array, an element, and what works on one are no constants.)
     : e.kind === 'array' || e.kind === 'myarray' || e.kind === 'elem' || e.kind === 'lastindex' || e.kind === 'arrayop' || e.kind === 'listassign' ? false
     : e.kind === 'slice' && e.name !== undefined ? false
@@ -224,6 +227,8 @@ const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
     case 'assign': return [[e.value, e.target.kind === 'array' || e.target.kind === 'myarray' ? 'list' : 'scalar'], [e.target, 'list']];
     case 'step': return [[e.target, 'scalar']];
     case 'elem': return [[e.index, 'scalar']];
+    // A string's pieces: an array there is its values, not its count.
+    case 'interp': return all(e.parts, 'list');
     case 'list': return all(e.items, 'list');
     case 'slice': return [...all(e.indexes, 'list'), ...all(e.items ?? [], 'list')];
     case 'arrayop': return e.op === 'splice' ? [...all(e.args.slice(0, 2), 'scalar'), ...all(e.args.slice(2), 'list')] : all(e.args, 'list');
@@ -277,7 +282,10 @@ const wholes = (e: Expr): Expr[] => {
 // `$t .= ($u = $x . $z);` never assigns `$u`, in perl 5.42 and 5.38: it
 // makes one operation of the `.=` and the dot, and the `=` between them
 // is lost (T129). So the right side of `.=` may not be an assignment of
-// a concatenation.
+// a concatenation. Nor of an interpolated string, which is one to perl,
+// however many pieces it has (T198, T212); a string that is one variable,
+// one array, one element, one slice or one `$#a` and nothing else is
+// assigned.
 const checkLostAssignment = (e: Expr): void => {
     if (e.kind !== 'assign' || !infixOp(e.op)?.concat) return;
     for (const w of wholes(e.value)) {
@@ -285,6 +293,9 @@ const checkLostAssignment = (e: Expr): void => {
         const plainAssign = w.kind === 'assign' && (w.target.kind === 'var' || w.target.kind === 'elem') && infixOp(w.op)?.rt === undefined && infixOp(w.op)?.when === undefined;
         if (w.kind === 'assign' && plainAssign && wholes(w.value).some(v => v.kind === 'binary' && infixOp(v.op)?.concat)) {
             refuse(`'${e.op}' of an assignment of a concatenation: perl makes one operation of the three and never assigns $${w.target.name}; make the assignment a statement of its own`, w.pos);
+        }
+        if (w.kind === 'assign' && plainAssign && wholes(w.value).some(v => v.kind === 'interp' && v.parts.length > 1)) {
+            refuse(`'${e.op}' of an assignment of an interpolated string: perl makes one operation of them and never assigns $${w.target.name}; make the assignment a statement of its own`, w.pos);
         }
     }
 };

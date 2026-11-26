@@ -333,6 +333,23 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         b.strings.push(`static const rt_str s${b.strings.length + 1} = { ${bytes}, ${[...e.value].length}, ${cString(e.value)} };`);
         return { c: `rt_string(&s${b.strings.length})`, place: false };
     }
+    // A string with variables in it (step 11a): its pieces from left to
+    // right, each joined on as soon as it is worked out, so that the
+    // first of two faults is the left one's. An array's or a slice's
+    // values are joined with a space first. The first piece is made a
+    // string at once: `"$x"` is a Str, and never the variable (T196).
+    case 'interp': {
+        const literal = (value: string): C => genExpr({ kind: 'str', text: '', value, pos: e.pos }, b);
+        let whole: C | undefined;
+        for (const part of e.parts) {
+            const joined = part.kind === 'array' || part.kind === 'slice';
+            const piece = joined ? temp(b, `rt_join(cx, ${literal(' ').c}, ${genList([part], b).c})`) : genExpr(part, b);
+            whole = whole !== undefined ? temp(b, `rt_concat(cx, ${whole.c}, ${piece.c})`)
+                : joined || part.kind === 'str' ? piece
+                : temp(b, `rt_concat(cx, ${piece.c}, ${literal('').c})`);
+        }
+        return whole!;
+    }
     case 'constant': {
         const name = NAMES.get(e.name);
         if (name?.kind !== 'constant') throw new Error(`no value for ${e.name}`);

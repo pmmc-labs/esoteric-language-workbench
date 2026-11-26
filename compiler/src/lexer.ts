@@ -16,8 +16,9 @@ export type Token =
     | { kind: 'word'; text: string; pos: Pos; asFunction?: true }
     | { kind: 'int' | 'num'; text: string; pos: Pos }
     // `text` is the literal as written, quotes and all; `value` is the
-    // string it stands for.
-    | { kind: 'str'; text: string; value: string; pos: Pos }
+    // string it stands for. `pieces`: it has a variable in it (step 11a),
+    // and is these from left to right; `value` is then nothing.
+    | { kind: 'str'; text: string; value: string; pos: Pos; pieces?: readonly Piece[] }
     | { kind: 'version'; text: string; pos: Pos }
     // A variable: `text` is `$name`.
     | { kind: 'var'; text: string; name: string; pos: Pos }
@@ -26,6 +27,24 @@ export type Token =
     | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}' | '[' | ']'; text: string; pos: Pos }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
+
+// An index in a string (D91): a whole number, with a minus or without, or
+// a scalar variable; and in a slice a range between two of them.
+export type Index =
+    | { kind: 'int'; text: string; negative: boolean; pos: Pos }
+    | { kind: 'var'; name: string; pos: Pos }
+    | { kind: 'range'; from: Index; to: Index; pos: Pos };
+
+// A piece of a string that has a variable in it (D92): text, or one of
+// the shapes that interpolate. `pos` is the `$`'s or the `@`'s.
+export type Piece =
+    | { kind: 'text'; value: string }
+    | { kind: 'var' | 'array' | 'lastindex'; name: string; pos: Pos }
+    | { kind: 'elem'; name: string; index: Index; pos: Pos }
+    | { kind: 'slice'; name: string; indexes: readonly Index[]; pos: Pos };
+
+const INDEX = 'in a string an index is a whole number or a scalar variable (D91): take the index into a my first';
+const INDEX_MAX = 9223372036854775807n;
 
 const isDigit = (c: string) => c >= '0' && c <= '9';
 const isOctalDigit = (c: string) => c >= '0' && c <= '7';
@@ -201,15 +220,155 @@ export const lex = (src: string): Token[] => {
         return refuse(`a backslash before ${c === '\n' ? 'the end of a line' : c === '\t' ? 'a tab' : codePoint(c.codePointAt(0)!)} is not in the language`, where);
     };
 
+    // One index in a string, the next character its first (D91). A number
+    // is the language's own whole-number literal: with a leading zero it
+    // is octal to perl, in silence, and from 2^63 perl wraps it round to
+    // the other end of the array (T211). `open` is the bracket's place,
+    // for an index that the end of the string cuts short.
+    const index = (open: Pos): Index => {
+        const where = pos();
+        const cut = (): never => (i >= src.length || at() === '"'
+            ? refuse('an index in a string that does not close: write \\[ for the character', open)
+            : refuse(INDEX, pos()));
+        if (at() === '$') {
+            take();
+            if (!isWordStart(at())) refuse(INDEX, where);
+            const name = run(isWord);
+            if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, where);
+            return { kind: 'var', name, pos: where };
+        }
+        const negative = at() === '-';
+        if (negative) {
+            if (!isDigit(src[i + 1] ?? '')) refuse(INDEX, where);
+            take();
+        }
+        if (!isDigit(at())) cut();
+        const digitsAt = pos();
+        const digits = run(isDigit);
+        if (digits.length > 1 && digits[0] === '0') refuse(`${digits} in an index in a string: a leading zero makes it octal, to perl; write the number without it`, digitsAt);
+        if (BigInt(digits) > INDEX_MAX) refuse(`an index of ${INDEX_MAX + 1n} or more in a string: perl wraps it round to the other end of the array`, digitsAt);
+        return { kind: 'int', text: digits, negative, pos: where };
+    };
+
+    // The indexes between square brackets in a string, the bracket next:
+    // one for an element; for a slice, any number with commas between,
+    // each an index or a range between two, and a comma after the last
+    // if wanted. Blanks where perl takes them, and all of it on one line:
+    // to perl this is code, with comments, quotes and calls (T202).
+    const indexes = (slice: boolean): Index[] => {
+        const open = pos();
+        take();
+        const blanks = (): void => { while (at() === ' ') take(); };
+        const cut = (): never => (i >= src.length || at() === '"'
+            ? refuse('an index in a string that does not close: write \\[ for the character', open)
+            : refuse(INDEX, pos()));
+        const found: Index[] = [];
+        for (;;) {
+            blanks();
+            let one = index(open);
+            blanks();
+            if (slice && src.startsWith('..', i)) {
+                const dots = pos();
+                take(); take();
+                if (at() === '.') refuse(INDEX, pos());
+                blanks();
+                const to = index(open);
+                blanks();
+                one = { kind: 'range', from: one, to, pos: dots };
+            }
+            found.push(one);
+            if (slice && at() === ',') {
+                take();
+                blanks();
+                if (at() === ']') break;
+                continue;
+            }
+            if (at() === ']') break;
+            cut();
+        }
+        take();
+        return found;
+    };
+
+    // A variable in a double-quoted string, its `$` or `@` just taken at
+    // `where` (D92). It is one of a short list of shapes, each hard
+    // against its `$` or `@`, or the string is refused: perl takes blanks
+    // and a new line before a name (T200), and has thirty variables of
+    // its own that are punctuation, some printing nothing in silence
+    // (T204). What stands hard after a shape and perl would take into the
+    // variable is refused too: `::` (T199), `{`, another `[`, an arrow
+    // before `[ { @ $` (T203), and after a bare name a character past
+    // ASCII, which goes on with the name if it is a letter, a digit or a
+    // mark by perl's tables (T205). After a name in braces nothing is.
+    const variable = (sigil: string, where: Pos): Piece => {
+        const from = i - 1;
+        let open = sigil;
+        if (sigil === '$' && at() === '#') {
+            if (!isWordStart(src[i + 1] ?? '') && src[i + 1] !== '{') {
+                refuse("after '$#' in a string comes an array's name, or one in braces: write \\$ for the character", where);
+            }
+            take();
+            open = '$#';
+        }
+        const kind = open === '$' ? 'var' : open === '@' ? 'array' : 'lastindex';
+        const reference = (what: string): never => refuse(`${what} in a string takes a reference, and references are not in the language yet (step 13)`, where);
+        if (at() === '$' && (isWordStart(src[i + 1] ?? '') || src[i + 1] === '{')) reference(open + '$');
+        const tooLong = (name: string): void => {
+            if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, where);
+        };
+        if (at() === '{') {
+            const inside = src[i + 1] ?? '';
+            if (inside === '\\' || inside === '[' || inside === '$') reference(open + '{' + inside);
+            const hard = (): never => refuse(`in a string a name in braces is hard against both of them: ${open}{name}`, where);
+            take();
+            if (!isWordStart(at())) hard();
+            const name = run(isWord);
+            if (at() === '[') refuse(`${open}{${name}[...]} in a string: perl warns that it is ambiguous; write ${open}${name}[...]`, where);
+            if (at() !== '}') hard();
+            take();
+            if (kind === 'array' && name === '_') refuse('@_ is not in the language: a sub has a signature (D17)', where);
+            tooLong(name);
+            return { kind, name, pos: where };
+        }
+        if (!isWordStart(at())) {
+            refuse(sigil === '$'
+                ? "'$' in a double-quoted string begins a variable, and no name is hard against it: write \\$ for the character"
+                : "'@' in a double-quoted string begins an array, and no name is hard against it: write \\@ for the character", where);
+        }
+        const name = run(isWord);
+        if (kind === 'array' && name === '_') refuse('@_ is not in the language: a sub has a signature (D17)', where);
+        if (kind === 'var' && name === '_' && (at() === '[' || at() === '{')) refuse(`$_${at()} is an element of perl's own @_ or %_, which are not in the language`, where);
+        tooLong(name);
+        const braced = `${open}{${name}}`;
+        let piece: Piece = { kind, name, pos: where };
+        if (at() === '[' && kind !== 'lastindex') {
+            piece = kind === 'var' ? { kind: 'elem', name, index: indexes(false)[0]!, pos: where } : { kind: 'slice', name, indexes: indexes(true), pos: where };
+        }
+        const shown = src.slice(from, i);
+        const named = piece.kind !== 'elem' && piece.kind !== 'slice';
+        const or = (after: string): string => (named ? `${braced}${after} or ` : '');
+        if (src.startsWith('::', i)) refuse(`'::' hard after ${shown} in a string: perl reads a variable of another package; write ${or('::')}${shown}\\::`, pos());
+        if (at() === '{') refuse(`'{' hard after ${shown} in a string: a hash's, to perl, and hashes are not in the language yet (step 12); write ${or('{')}${shown}\\{`, pos());
+        if (at() === '[') refuse(`'[' hard after ${shown} in a string: another index, to perl; write ${shown}\\[`, pos());
+        const then = src[i + 2] ?? '';
+        if (src.startsWith('->', i) && then !== '' && '[{@$'.includes(then)) {
+            refuse(`'->${then}' hard after ${shown} in a string: a dereference, to perl, and references are not in the language yet (step 13); write ${shown}\\->${then}`, pos());
+        }
+        const next = src.codePointAt(i) ?? 0;
+        if (named && next > 0x7f && line >= utf8From) {
+            refuse(`a character past ASCII (${codePoint(next)}) hard after ${shown} in a string: perl takes a letter, a digit or a mark there into the name; write ${braced}`, pos());
+        }
+        return piece;
+    };
+
     // A string literal. In single quotes a backslash is itself, except
     // before a backslash or the quote. In double quotes it begins an
-    // escape, and a `$` or an `@` begins a variable to perl, which is
-    // refused until there is interpolation (T34): perl takes some of them
-    // as they stand (`"a @ b"`) and stops at others (`"a$"`).
+    // escape, and a `$` or an `@` begins a variable (step 11a).
     const string = (start: Pos): Token => {
         const from = i;
         const quote = take();
         let value = '';
+        const pieces: Piece[] = [];
         for (;;) {
             if (i >= src.length) refuse(`a string that never ends: it begins with ${quote} here`, start);
             const where = pos();
@@ -217,7 +376,10 @@ export const lex = (src: string): Token[] => {
             if (c === quote) break;
             if (c !== '\\') {
                 if (quote === '"' && (c === '$' || c === '@')) {
-                    refuse(`'${c}' in a double-quoted string is a variable to perl: write \\${c} (interpolation is not in the language yet)`, where);
+                    if (value !== '') pieces.push({ kind: 'text', value });
+                    value = '';
+                    pieces.push(variable(c, where));
+                    continue;
                 }
                 value += c;
             } else if (quote === '"') {
@@ -226,7 +388,9 @@ export const lex = (src: string): Token[] => {
                 value += at() === '\\' || at() === "'" ? take() : '\\';
             }
         }
-        return { kind: 'str', text: src.slice(from, i), value, pos: start };
+        if (pieces.length === 0) return { kind: 'str', text: src.slice(from, i), value, pos: start };
+        if (value !== '') pieces.push({ kind: 'text', value });
+        return { kind: 'str', text: src.slice(from, i), value: '', pos: start, pieces };
     };
 
     // Whether the last token ends a value, so that an operator comes next.
