@@ -1,9 +1,10 @@
 <title>/*NAME*/ decisions</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: a sticky bar with three views (the log as a ledger, number in the
-   gutter; a force graph; an arc map), the log scrolling as a document so
-   anchors and Back work as they do on any page. */
+/* Layout: a sticky bar with five views (the log as a ledger, number in the
+   gutter; the documents; what's open; an entry among its neighbours; an arc
+   map), the log scrolling as a document so anchors and Back work as they do
+   on any page. */
 :root {
     --bg: #fafbf9;
     --panel: #f0f2ef;
@@ -63,6 +64,8 @@ button, select, input { font: inherit; color: inherit; }
 #count { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #theme { margin-left: auto; border: 1px solid var(--rule); background: var(--bg); border-radius: 7px; padding: 4px 10px; cursor: pointer; }
 
+/* A view's own link, #arcs, is its section's id: the browser scrolls to it, and not under the bar. */
+main > section { scroll-margin-top: calc(var(--bar) + 40px); }
 .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
 /* The log */
@@ -175,8 +178,8 @@ details > summary { cursor: pointer; font: 600 15px/1.4 var(--ui); padding: 10px
 .note { color: var(--muted); font: 400 13px/1.45 var(--ui); }
 #nomatch { color: var(--muted); font: 16px var(--read); padding: 40px 0; }
 
-/* Graph and arcs */
-.view { padding-block: 12px; }
+/* Around an entry, and the arc map */
+.view { padding-block: 12px 30vh; }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-bottom: 10px; font-size: 13px; }
 .controls label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
 .controls select, .controls input[type="text"] { padding: 3px 6px; border: 1px solid var(--rule); border-radius: 5px; background: var(--bg); color: var(--fg); }
@@ -186,18 +189,59 @@ details > summary { cursor: pointer; font: 600 15px/1.4 var(--ui); padding: 10px
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
 .legend i.line { width: 18px; height: 0; border-top: 2px solid; border-radius: 0; }
 .stage { position: relative; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); overflow: hidden; }
-#gstage { height: calc(100vh - var(--bar) - 130px); min-height: 360px; touch-action: none; }
-#gstage svg { width: 100%; height: 100%; display: block; cursor: grab; }
-#gstage svg.panning { cursor: grabbing; }
-#astage { overflow-x: auto; }
-#astage svg { display: block; }
 .tip { position: absolute; pointer-events: none; max-width: 340px; padding: 6px 9px; background: var(--panel); border: 1px solid var(--rule); border-radius: 5px; font-size: 12.5px; box-shadow: 0 2px 8px rgb(0 0 0 / .15); z-index: 3; }
 .tip b { font-family: var(--mono); }
 .tip .s { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
 .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
 svg text { font-family: var(--mono); fill: var(--fg); }
-.gn { cursor: pointer; }
-.gn text { font-size: 9px; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+
+/* Around: columns of cards, the entry in the middle, lines between */
+#nstage { position: relative; }
+#nlinks { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+#ncols { position: relative; display: grid; gap: 0 44px; align-items: start; grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr) minmax(0, 1fr); }
+#ncols.deep { gap: 0 34px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1fr); }
+.ncol > h3 { font: 600 11px/1.2 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.ncol > h3.sub { margin-top: 18px; }
+.ncol .none { color: var(--muted); font-size: 12.5px; }
+.nc { display: block; margin: 0 0 6px; padding: 5px 8px 5px 9px; border: 1px solid var(--rule); border-left: 4px solid var(--c, var(--muted)); border-radius: 4px; background: var(--bg); color: var(--fg); text-decoration: none; font-size: 12.5px; line-height: 1.3; }
+.nc:hover, .nc.hot { background: var(--panel); border-top-color: var(--accent); border-right-color: var(--accent); border-bottom-color: var(--accent); }
+.nc b { font-family: var(--mono); margin-right: 6px; }
+.nc .w { color: var(--muted); font-size: 11.5px; }
+.nc .t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nc.gone b { color: var(--retire); text-decoration: line-through; }
+.nc.dim, .nc.miss { opacity: .3; }
+.nc.doc { border-left-style: double; }
+#ncentre { position: sticky; top: calc(var(--bar) + 12px + env(safe-area-inset-top, 0px)); max-height: calc(100vh - var(--bar) - 28px); overflow: auto; padding: 0 16px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); }
+#ncentre .entry { grid-template-columns: minmax(0, 1fr); border-bottom: 0; }
+#ncentre .gut { text-align: left; }
+#ncentre .links { display: none; }
+#ncentre .goto { grid-column: 1; }
+.nl { fill: none; stroke: var(--edge); stroke-width: 1.2; opacity: .55; }
+.nl.rt { stroke: var(--retire); stroke-width: 1.8; opacity: .85; }
+.nl.off { opacity: .07; }
+.nl.on { opacity: 1; stroke-width: 2; }
+
+/* Arcs: one axis under a lens */
+#astage svg { display: block; width: 100%; touch-action: pan-y; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+#astage svg.lens { cursor: grab; }
+#astage svg.panning { cursor: grabbing; }
+.al { font-size: 11px; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+.al.dim { fill: var(--muted); }
+.al.on { font-weight: 700; fill: var(--accent); }
+.zoom { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.zoom button { min-width: 28px; padding: 2px 8px; border: 1px solid var(--rule); border-radius: 5px; background: var(--bg); cursor: pointer; }
+.zoom output { min-width: 3.2em; text-align: center; font-variant-numeric: tabular-nums; }
+#a-read { max-width: 56rem; margin-top: 8px; }
+#a-read .entry { border-bottom: 0; }
+tr[id] { scroll-margin-top: calc(var(--bar) + 40px); }
+tr.flash td { animation: flash 1.6s ease-out; }
+
+@media (max-width: 900px) {
+    #ncols, #ncols.deep { grid-template-columns: minmax(0, 1fr); }
+    #nlinks { display: none; }
+    #ncentre { position: static; max-height: none; order: -1; margin-bottom: 18px; }
+    .ncol { margin-bottom: 18px; }
+}
 
 @media (max-width: 760px) {
     #log, #docs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -217,7 +261,7 @@ svg text { font-family: var(--mono); fill: var(--fg); }
         <button id="tab-log" role="tab" data-view="log">Log</button>
         <button id="tab-docs" role="tab" data-view="docs">Docs</button>
         <button id="tab-open" role="tab" data-view="open">Open</button>
-        <button id="tab-graph" role="tab" data-view="graph">Graph</button>
+        <button id="tab-around" role="tab" data-view="around">Around</button>
         <button id="tab-arcs" role="tab" data-view="arcs">Arcs</button>
     </nav>
     <input id="search" type="search" placeholder="Search: D158, words…  ( / )" autocomplete="off" spellcheck="false">
@@ -254,27 +298,15 @@ svg text { font-family: var(--mono); fill: var(--fg); }
 
     <section id="open" class="wrap" hidden><div id="openbody"></div></section>
 
-    <section id="graph" class="view wrap" hidden>
+    <section id="around" class="view wrap" hidden>
         <div class="controls">
-            <label>Show <select id="g-scope">
-                <option value="around">Around an entry</option>
-                <option value="section">One section</option>
-                <option value="all">Everything</option>
-            </select></label>
-            <label id="g-around">D<input id="g-centre" type="text" inputmode="numeric" value="">
-                depth <select id="g-depth"><option selected>1</option><option>2</option><option>3</option></select></label>
-            <label id="g-sec" hidden>section <select id="g-section"></select></label>
-            <label>Colour by <select id="g-colour">
-                <option value="attr">who decided</option>
-                <option value="section">section</option>
-            </select></label>
-            <label><input id="g-retire" type="checkbox" checked> retirements</label>
-            <label id="g-docs-l"><input id="g-docs" type="checkbox" checked> documents</label>
-            <span id="g-stats" class="legend"></span>
+            <label>Around D<input id="n-centre" type="text" inputmode="numeric" value=""></label>
+            <label>steps <select id="n-depth"><option selected>1</option><option>2</option></select></label>
+            <label id="n-docs-l"><input id="n-docs" type="checkbox" checked> documents</label>
+            <span id="n-stats" class="legend"></span>
         </div>
-        <div id="gstage" class="stage"><div class="tip" id="gtip" hidden></div></div>
-        <div class="legend" id="g-legend" style="margin-top:8px"></div>
-        <div class="hint">Click an entry to read it. Shift-click to centre on it. Drag to move, scroll to zoom. Size is how often it's cited; the ring is the other colouring.</div>
+        <div id="nstage"><div id="ncols"></div></div>
+        <div class="hint">What the entry cites is on its left, what cites it on its right. Click a card to stand on that entry; its number, in the middle, goes to the log. Hover a card for its own links among those shown.</div>
     </section>
 
     <section id="arcs" class="view wrap" hidden>
@@ -289,11 +321,13 @@ svg text { font-family: var(--mono); fill: var(--fg); }
                 <option value="attr">who decided the citing entry</option>
             </select></label>
             <label><input id="a-retire" type="checkbox" checked> retirements</label>
+            <span class="zoom">Lens <button id="a-out" title="Zoom out ( - )">−</button><output id="a-zoom">×1</output><button id="a-in" title="Zoom in ( + )">+</button><button id="a-reset" title="No lens ( 0 )">Reset</button></span>
             <span id="a-pin" class="legend" hidden></span>
         </div>
         <div id="astage" class="stage"><div class="tip" id="atip" hidden></div></div>
         <div class="legend" id="a-legend" style="margin-top:8px"></div>
-        <div class="hint">Above the line, an entry citing an earlier one; below, one pointing forward to a later one. Hover an entry to see its arcs, click to read it.</div>
+        <div class="hint">Above the line, an entry citing an earlier one; below, one pointing forward to a later one. Scroll to zoom where the pointer is: the lens stretches the axis there and squeezes the rest, so the whole log stays in view. Drag to slide it. Click an entry to hold its arcs and read it below; arrow keys step to the next.</div>
+        <div id="a-read"></div>
     </section>
 </main>
 
@@ -327,6 +361,9 @@ const ST = { proposed: 'Proposed', idea: 'Idea', agreed: 'Agreed', begun: 'Begun
 const OPEN = ['proposed', 'idea', 'agreed', 'begun'];
 const badge = st => st ? `<span class="st st-${st.class}" title="${esc(st.text)}">${ST[st.class]}</span>` : '';
 let driftCtx = null;        // while a section renders: its drift, by number
+const LAB = D.labels || {};  // T12 and the like: the section whose table has its row, and the row's next cell
+let apart = false;          // while a document from elsewhere renders: its D12 isn't this log's
+let labCtx = null;          // while a section renders: its id, so the rows it defines can be gone to
 let store = {};
 try { store = JSON.parse(localStorage.getItem('decisions') || '{}'); } catch (_) {}
 const save = () => { try { localStorage.setItem('decisions', JSON.stringify(store)); } catch (_) {} };
@@ -360,7 +397,12 @@ function text(s) {
         const id = D.doc_refs?.[name]?.[q.replace(/\s+/g, ' ').trim()];
         return id && SEC.has(id) ? hold(`<a href="#${id}">${w}</a>`) : w;
     });
+    if (apart) return emph(s, keep);
     s = s.replace(/\bD(\d+)\b/g, (w, n) => E.has(+n) ? hold(dref(+n)) : w);
+    s = s.replace(/\b[A-CE-Z]\d+\b/g, w => LAB[w] && SEC.has(LAB[w].id) ? hold(`<a class="d lab" href="#${w}" title="${esc(clip(plain(LAB[w].text), 200))}">${w}</a>`) : w);
+    return emph(s, keep);
+}
+function emph(s, keep) {
     s = s.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w*])\*(?=[^\s*])([^*]*?[^\s*])\*(?![\w*])/g, '$1<em>$2</em>');
     return s.replace(/\u0001(\d+)\u0001/g, (w, i) => keep[+i]);
@@ -408,7 +450,7 @@ function blocks(lines) {
             const head = cells(l), rows = [];
             for (i += 2; i < lines.length && TABLE.test(lines[i]); i++) rows.push(cells(lines[i]));
             html += '<div class="tbl"><table><thead><tr>' + head.map(c => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>'
-                + rows.map(r => '<tr>' + r.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>';
+                + rows.map(r => `<tr${LAB[r[0]] && LAB[r[0]].id === labCtx ? ` id="${r[0]}"` : ''}>` + r.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>';
             continue;
         }
         const lm = l.match(LIST);
@@ -551,7 +593,7 @@ function entry(e) {
     <div class="body">${md(e.body)}</div>
 </div>
 <dl class="links">${row('Cites', e.mentions.filter(m => m < e.n))}${row('Points to', e.mentions.filter(m => m > e.n))}${row('Cited by', e.mentioned_by)}${row('Retires', e.retires.map(r => r.n), 'rt')}${e.cited_in && e.cited_in.length ? `<dt>In the docs</dt><dd class="din">${e.cited_in.map(sref).join('<span aria-hidden="true">·</span>')}</dd>` : ''}${e.tests.length ? `<dt>Tests</dt><dd>${e.tests.join(', ')}</dd>` : ''}</dl>
-<div class="goto"><a href="#graph-D${e.n}">Graph around D${e.n}</a><a href="#arcs-D${e.n}">On the arc map</a></div>`;
+<div class="goto"><a href="#around-D${e.n}">Around D${e.n}</a><a href="#arcs-D${e.n}">On the arc map</a></div>`;
     hay.set(e.n, (e.title + ' ' + e.attribution.text + ' ' + e.body).toLowerCase());
     return a;
 }
@@ -595,8 +637,8 @@ function filter() {
     document.querySelectorAll('#sections a').forEach(a => a.classList.toggle('empty', !per[a.dataset.sec]));
     $('nomatch').hidden = shown > 0;
     $('count').textContent = shown === D.entries.length ? `${shown} entries` : `${shown} of ${D.entries.length}`;
-    if (view === 'graph') gDim();
-    if (view === 'arcs') aDim();
+    if (view === 'around') nDim();
+    if (view === 'arcs') aFocus();
     if (view === 'docs') dFilter();
 }
 $('search').addEventListener('input', filter);
@@ -629,9 +671,9 @@ function docNode(d) {
         const head = s.level === 1 ? `<h1 class="dh">${inline(d.title)}</h1>`
             : `<div class="crumb">${esc(docLabel(d))}${up.map(t => ' › ' + esc(t)).join('')}</div>`
             + `<h${Math.min(s.level, 6)} class="dh">${inline(s.title)}${badge(s.status)}${s.status ? `<span class="sttext">(${inline(s.status.text)})</span>` : ''}</h${Math.min(s.level, 6)}>`;
-        driftCtx = new Map(s.drift.map(x => [x.n, x]));
+        driftCtx = new Map(s.drift.map(x => [x.n, x])); labCtx = s.id; apart = !!d.apart;
         sec.innerHTML = head + `<div class="body">${md(s.body)}</div>`;
-        driftCtx = null;
+        driftCtx = null; labCtx = null; apart = false;
         dv.hay.set(s.id, (s.title + ' ' + s.body).toLowerCase());
         wrap.append(sec);
     }
@@ -738,7 +780,7 @@ function openShow() {
 /* ---- Views and the hash ---- */
 let view = 'log';
 let logY = 0;
-const VIEWS = ['log', 'docs', 'open', 'graph', 'arcs'];
+const VIEWS = ['log', 'docs', 'open', 'around', 'arcs'];
 function show(v, d) {
     if (view === 'log' && v !== 'log') logY = window.scrollY;
     const back = view !== 'log' && v === 'log', same = view === v && (!d || d === dv.d);
@@ -746,10 +788,10 @@ function show(v, d) {
     for (const x of VIEWS) { $(x).hidden = x !== v; $('tab-' + x).setAttribute('aria-selected', x === v); }
     if (v !== 'log' && !same) window.scrollTo(0, 0);
     else if (back) window.scrollTo(0, logY);
-    if (v === 'log' || v === 'graph' || v === 'arcs') filter();
+    if (v === 'log' || v === 'around' || v === 'arcs') filter();
     if (v === 'docs') dShow(d || dv.d);
     if (v === 'open') { openShow(); $('count').textContent = ''; }
-    if (v === 'graph') gShow();
+    if (v === 'around') nShow();
     if (v === 'arcs') aShow();
 }
 if (!DOCS.length) { $('tab-docs').hidden = true; $('tab-open').hidden = true; }
@@ -763,12 +805,19 @@ function route() {
         if (a.hidden) { $('search').value = ''; document.querySelectorAll('#attrs button').forEach(b => b.setAttribute('aria-pressed', 'true')); filter(); }
         a.scrollIntoView();
         a.classList.remove('flash'); void a.offsetWidth; a.classList.add('flash');
-    } else if ((m = h.match(/^graph(?:-D(\d+))?$/))) {
-        if (m[1] && E.has(+m[1])) { g.scope = 'around'; g.centre = +m[1]; g.dirty = true; }
-        show('graph');
+    } else if ((m = h.match(/^(?:around|graph)(?:-D(\d+))?$/))) {
+        // #graph-D12 is what the view was called when it was a graph.
+        const moved = m[1] && E.has(+m[1]) && +m[1] !== nb.centre;
+        if (moved) nb.centre = +m[1];
+        show('around');
+        if (moved) window.scrollTo(0, 0);
     } else if ((m = h.match(/^arcs(?:-D(\d+))?$/))) {
-        if (m[1] && E.has(+m[1])) am.pin = +m[1];
+        if (m[1] && E.has(+m[1])) { am.pin = +m[1]; am.moved = true; }
         show('arcs');
+    } else if (LAB[h] && SEC.has(LAB[h].id)) {
+        dGo(LAB[h].id);
+        const row = $(h);
+        if (row) { row.scrollIntoView({ block: 'center' }); row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
     } else if (SEC.has(h)) {
         if (SEC.get(h).s.level === 1) show('docs', SEC.get(h).d); else dGo(h);
     } else if (h === 'docs' && DOCS.length) {
@@ -807,332 +856,362 @@ function tip(box, html, x, y) {
 }
 const tipHtml = e => `<b>D${e.n}</b> ${inline(e.title)}<div class="s">${ATTR[e.attribution.class]} · ${esc(plain(D.sections[e.section].title))} · cites ${e.mentions.length}, cited by ${e.mentioned_by.length}</div>`;
 
-/* ---- The graph: a force layout, by hand, since 300 nodes don't need a library ---- */
-const g = { scope: 'around', centre: null, depth: 1, section: 0, colour: 'attr', retire: true, docs: true, dirty: true,
-    pos: new Map(), nodes: [], edges: [], alpha: 0, fit: true, k: 1, tx: 0, ty: 0, raf: 0 };
-let seed = 1;
-const rand = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-// A node is a decision's number, or a document section's id.
-const isDoc = n => typeof n === 'string';
-const radius = n => isDoc(n) ? 6 : 3 + 2 * Math.sqrt(E.get(n).mentioned_by.length);
-const nodeKey = v => /^\d+$/.test(v) ? +v : v;
-let gsvg, gview, gedges, gnodes;
+/* ---- An entry again, outside the log: its links stay in the view it's in ---- */
+function cloneEntry(n, to, links) {
+    const c = arts.get(n).cloneNode(true);
+    c.removeAttribute('id'); c.hidden = false; c.classList.remove('flash');
+    for (const a of c.querySelectorAll('a.d:not(.lab)')) a.setAttribute('href', a.getAttribute('href').replace(/^#D/, '#' + to + '-D'));
+    c.querySelector('.goto').innerHTML = `<a href="#D${n}">Read in the log</a>` + links;
+    return c;
+}
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function gInit() {
-    gsvg = el('svg', {}, $('gstage'));
-    const defs = el('defs', {}, gsvg);
-    for (const [id, col] of [['arr', 'var(--edge)'], ['arr-r', 'var(--retire)']]) {
-        const mk = el('marker', { id, viewBox: '0 0 10 10', refX: 10, refY: 5, markerWidth: 8, markerHeight: 8, markerUnits: 'userSpaceOnUse', orient: 'auto-start-reverse' }, defs);
-        el('path', { d: 'M0,1 L10,5 L0,9 z', style: `fill:${col}` }, mk);
+/* ---- Around an entry: what it cites on its left, what cites it on its right.
+   Cards in columns, so a title can be read and a hub is a long list, not a knot. ---- */
+const nb = { centre: null, depth: 1, docs: true, cards: new Map(), links: [], hot: null, raf: 0, svg: null };
+function nCard(n, mutual) {
+    const e = E.get(n), a = document.createElement('a'), c = e.attribution.class;
+    a.className = 'nc' + (e.retired_by.length ? ' gone' : ''); a.href = '#around-D' + n; a.dataset.k = n;
+    a.style.setProperty('--c', secColour(e.section));
+    a.title = plain(D.sections[e.section].title) + ' · ' + ATTR[c] + (e.retired_by.length ? ' · retired or changed by ' + e.retired_by.map(r => 'D' + r.n).join(', ') : '');
+    a.innerHTML = `<b>D${n}</b><span class="w"><span class="dot" style="background:${attrColour(c)};border-color:${attrColour(c)}"></span>${mutual ? ' <span title="each cites the other">↔</span>' : ''}</span><span class="t">${esc(plain(e.title))}</span>`;
+    nb.cards.set(n, a);
+    return a;
+}
+function nDocCard(id) {
+    const { d, s } = SEC.get(id), a = document.createElement('a');
+    a.className = 'nc doc'; a.href = '#' + id; a.dataset.k = id;
+    a.title = secLabel(id);
+    a.innerHTML = `<b>${esc(docLabel(d))}</b>${badge(s.status)}<span class="t">${esc(secTitle(d, s))}</span>`;
+    nb.cards.set(id, a);
+    return a;
+}
+function nBuild() {
+    const c = nb.centre, e = E.get(c), num = (a, b) => a - b;
+    nb.cards = new Map(); nb.links = []; nb.hot = null;
+    const placed = new Set([c]);
+    const L1 = [...e.mentions], R1 = e.mentioned_by.filter(n => !e.mentions.includes(n));
+    for (const n of [...L1, ...R1]) placed.add(n);
+    let L2 = [], R2 = [];
+    if (nb.depth > 1) {
+        L2 = [...new Set(L1.flatMap(n => E.get(n).mentions))].filter(n => !placed.has(n)).sort(num);
+        for (const n of L2) placed.add(n);
+        R2 = [...new Set(R1.flatMap(n => E.get(n).mentioned_by))].filter(n => !placed.has(n)).sort(num);
     }
-    gview = el('g', {}, gsvg); gedges = el('g', {}, gview); gnodes = el('g', {}, gview);
-    $('g-section').innerHTML = D.sections.map((s, i) => `<option value="${i}">${esc(plain(s.title))} (${s.entries.length})</option>`).join('');
-    const top = [...D.entries].sort((a, b) => b.mentioned_by.length - a.mentioned_by.length)[0];
-    if (g.centre == null) g.centre = top ? top.n : null;
+    const secs = nb.docs ? (e.cited_in || []) : [];
+    const col = (title, ns, extra) => {
+        const d = document.createElement('div');
+        d.className = 'ncol';
+        d.innerHTML = `<h3>${title} <span class="n">${ns.length}</span></h3>` + (ns.length ? '' : '<div class="none">None.</div>');
+        for (const n of ns) d.append(nCard(n, e.mentions.includes(n) && e.mentioned_by.includes(n)));
+        if (extra) extra(d);
+        return d;
+    };
+    const mid = document.createElement('div');
+    mid.className = 'ncol'; mid.id = 'ncentre';
+    mid.append(cloneEntry(c, 'around', `<a href="#arcs-D${c}">On the arc map</a>`));
+    nb.cards.set(c, mid);
+    const cols = [];
+    if (nb.depth > 1) cols.push(col('Cited by those', L2));
+    cols.push(col(`D${c} cites`, L1), mid, col(`Cite D${c}`, R1, d => {
+        if (!secs.length) return;
+        d.insertAdjacentHTML('beforeend', `<h3 class="sub">In the documents <span class="n">${secs.length}</span></h3>`);
+        for (const id of secs) d.append(nDocCard(id));
+    }));
+    if (nb.depth > 1) cols.push(col('Cite those', R2));
+    // A line is from the citing card, on the right, to the cited, on the left.
+    const link = (a, b) => nb.links.push({ a, b, cls: isRetire.has(Math.min(a, b) + '-' + Math.max(a, b)) ? 'rt' : '' });
+    for (const n of L1) link(c, n);
+    for (const n of R1) link(n, c);
+    for (const n of L1) for (const m of L2) if (E.get(n).mentions.includes(m)) link(n, m);
+    for (const n of R2) for (const m of R1) if (E.get(n).mentions.includes(m)) link(n, m);
+    // The document sections all cite the middle and nothing else shown: no lines.
+    $('ncols').className = nb.depth > 1 ? 'deep' : '';
+    $('ncols').replaceChildren(...cols);
+    nb.svg?.remove();
+    nb.svg = el('svg', { id: 'nlinks' });
+    $('nstage').prepend(nb.svg);
+    for (const x of nb.links) x.el = el('path', { class: 'nl ' + x.cls }, nb.svg);
+    $('n-centre').value = c; $('n-depth').value = nb.depth; $('n-docs').checked = nb.docs;
+    $('n-docs-l').hidden = !DOCS.length;
+    $('n-stats').innerHTML = `<span>${dref(c)}&nbsp;${inline(e.title)}</span><span>cites ${e.mentions.length}, cited by ${e.mentioned_by.length}`
+        + (DOCS.length ? ` and ${(e.cited_in || []).length} document sections` : '') + '</span>'
+        + '<span><i class="line" style="color:var(--retire)"></i>retires</span>';
+    nDim(); nLines();
+}
+// Where the lines go depends on where the cards are, so they're drawn again
+// after a scroll (the middle stays put) or a resize.
+function nLines() {
+    if (!nb.svg || view !== 'around') return;
+    const st = $('nstage'), r0 = st.getBoundingClientRect();
+    if (getComputedStyle(nb.svg).display === 'none') return;
+    nb.svg.setAttribute('width', st.clientWidth); nb.svg.setAttribute('height', st.clientHeight);
+    const mid = $('ncentre');
+    for (const x of nb.links) {
+        let p = nb.cards.get(x.b).getBoundingClientRect(), q = nb.cards.get(x.a).getBoundingClientRect();
+        const yOf = (card, r, o) => card === mid ? Math.max(r.top + 16, Math.min(r.bottom - 16, (o.top + o.bottom) / 2)) : (r.top + r.bottom) / 2;
+        let y1 = yOf(nb.cards.get(x.b), p, q), y2 = yOf(nb.cards.get(x.a), q, p);
+        if (p.left > q.left) { [p, q] = [q, p]; [y1, y2] = [y2, y1]; }
+        const x1 = p.right - r0.left, x2 = q.left - r0.left, k = (x2 - x1) / 2;
+        y1 -= r0.top; y2 -= r0.top;
+        x.el.setAttribute('d', `M${x1.toFixed(1)},${y1.toFixed(1)} C${(x1 + k).toFixed(1)},${y1.toFixed(1)} ${(x2 - k).toFixed(1)},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`);
+    }
+}
+const nLater = () => { if (!nb.raf) nb.raf = requestAnimationFrame(() => { nb.raf = 0; nLines(); }); };
+function nHover(k) {
+    nb.hot = k;
+    const near = k == null ? null : isDoc(k) ? new Set(SEC.get(k).s.mentions) : adj.get(k);
+    for (const [key, card] of nb.cards) {
+        if (key === nb.centre) continue;
+        const on = k == null || key === k || (isDoc(key) ? !isDoc(k) && SEC.get(key).s.mentions.includes(k) : near.has(key));
+        card.classList.toggle('dim', !on);
+        card.classList.toggle('hot', k != null && on && key !== k);
+    }
+    for (const x of nb.links) { x.el.classList.toggle('off', k != null && x.a !== k && x.b !== k); x.el.classList.toggle('on', k != null && (x.a === k || x.b === k)); }
+}
+function nDim() {
+    for (const [key, card] of nb.cards) if (key !== nb.centre) card.classList.toggle('miss', !!matched && !isDoc(key) && !matched.has(key));
+}
+const isDoc = k => typeof k === 'string';
+function nShow() {
+    if (nb.centre == null) nb.centre = [...D.entries].sort((a, b) => b.mentioned_by.length - a.mentioned_by.length || a.n - b.n)[0].n;
+    if (nb.built !== nb.centre + '/' + nb.depth + '/' + nb.docs) { nBuild(); nb.built = nb.centre + '/' + nb.depth + '/' + nb.docs; }
+    else { nDim(); nLines(); }
+}
+{
     const set = () => {
-        g.scope = $('g-scope').value; g.depth = +$('g-depth').value; g.section = +$('g-section').value;
-        const n = parseInt($('g-centre').value.replace(/\D/g, ''));
-        if (E.has(n)) g.centre = n;
-        g.colour = $('g-colour').value; g.retire = $('g-retire').checked; g.docs = $('g-docs').checked;
-        g.dirty = true; gShow();
+        nb.depth = +$('n-depth').value; nb.docs = $('n-docs').checked;
+        const n = parseInt($('n-centre').value.replace(/\D/g, ''));
+        if (E.has(n) && n !== nb.centre) go('around-D' + n); else nShow();
     };
-    for (const id of ['g-scope', 'g-depth', 'g-section', 'g-colour', 'g-retire', 'g-docs']) $(id).addEventListener('change', set);
-    $('g-centre').addEventListener('change', set);
-    $('g-centre').addEventListener('keydown', ev => { if (ev.key === 'Enter') set(); });
-
-    // Pan, zoom, drag, click.
-    let drag = null;
-    gsvg.addEventListener('pointerdown', ev => {
-        const node = ev.target.closest('.gn');
-        drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, moved: 0, n: node ? nodeKey(node.dataset.n) : null, tx: g.tx, ty: g.ty };
-        gsvg.setPointerCapture(ev.pointerId);
-        if (!node) gsvg.classList.add('panning');
-    });
-    gsvg.addEventListener('pointermove', ev => {
-        if (!drag || drag.id !== ev.pointerId) return;
-        const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-        drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
-        if (drag.moved < 3) return;
-        g.fit = false;
-        if (drag.n != null) {
-            const p = g.pos.get(drag.n), r = gsvg.getBoundingClientRect();
-            p.x = (ev.clientX - r.left - g.tx) / g.k; p.y = (ev.clientY - r.top - g.ty) / g.k; p.fixed = true;
-            g.alpha = Math.max(g.alpha, 0.15); gRun();
-        } else { g.tx = drag.tx + dx; g.ty = drag.ty + dy; gDraw(); }
-    });
-    const up = ev => {
-        if (!drag || drag.id !== ev.pointerId) return;
-        gsvg.classList.remove('panning');
-        if (drag.n != null) {
-            const p = g.pos.get(drag.n);
-            if (p) p.fixed = drag.n === g.centre && g.scope === 'around';
-            if (drag.moved < 3 && ev.type === 'pointerup') {
-                if (isDoc(drag.n)) go(drag.n); else if (ev.shiftKey) go('graph-D' + drag.n); else go('D' + drag.n);
-            }
-        }
-        drag = null;
-    };
-    gsvg.addEventListener('pointerup', up);
-    gsvg.addEventListener('pointercancel', up);
-    gsvg.addEventListener('wheel', ev => {
-        ev.preventDefault();
-        const r = gsvg.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
-        const f = Math.exp(-ev.deltaY * (ev.deltaMode ? 0.05 : 0.0015));
-        const k = Math.min(8, Math.max(0.1, g.k * f));
-        g.tx = mx - (mx - g.tx) * k / g.k; g.ty = my - (my - g.ty) * k / g.k; g.k = k;
-        g.fit = false; gDraw();
-    }, { passive: false });
-    gsvg.addEventListener('pointerover', ev => {
-        const node = ev.target.closest('.gn'); if (!node) return;
-        const n = nodeKey(node.dataset.n), r = $('gstage').getBoundingClientRect();
-        const html = isDoc(n) ? (({ d, s: sc }) => `<b>${esc(docLabel(d))}</b> ${inline(sc.level === 1 ? d.title : sc.title)}${badge(sc.status)}<div class="s">cites ${sc.mentions.length} decisions</div>`)(SEC.get(n)) : tipHtml(E.get(n));
-        tip($('gtip'), html, ev.clientX - r.left, ev.clientY - r.top);
-        gHover(n);
-    });
-    gsvg.addEventListener('pointerout', ev => { if (ev.target.closest('.gn')) { $('gtip').hidden = true; gHover(null); } });
+    for (const id of ['n-depth', 'n-docs', 'n-centre']) $(id).addEventListener('change', set);
+    const key = ev => { const c = ev.target.closest?.('.nc'); return c ? (/^\d+$/.test(c.dataset.k) ? +c.dataset.k : c.dataset.k) : null; };
+    $('ncols').addEventListener('pointerover', ev => { const k = key(ev); if (k != null && k !== nb.hot) nHover(k); });
+    $('ncols').addEventListener('pointerout', ev => { if (key(ev) != null && !ev.relatedTarget?.closest?.('.nc')) nHover(null); });
+    window.addEventListener('scroll', () => { if (view === 'around') nLater(); }, { passive: true });
+    $('ncols').addEventListener('scroll', nLater, { passive: true, capture: true });
 }
 
-function gBuild() {
-    let core;
-    if (g.scope === 'all') core = new Set(D.entries.map(e => e.n));
-    else if (g.scope === 'section') core = new Set(D.sections[g.section].entries);
-    else {
-        core = new Set([g.centre]);
-        let front = [g.centre];
-        for (let d = 0; d < g.depth; d++) {
-            const next = [];
-            for (const n of front) for (const m of adj.get(n)) if (!core.has(m)) { core.add(m); next.push(m); }
-            front = next;
-        }
-    }
-    const nodes = new Set(core);
-    if (g.scope === 'section') for (const n of core) for (const m of adj.get(n)) nodes.add(m);
-    const seen = new Set(), edges = [];
-    for (const n of nodes) for (const m of E.get(n).mentions) {
-        if (!nodes.has(m)) continue;
-        const key = n < m ? n + '-' + m : m + '-' + n;
-        if (seen.has(key)) { edges.find(x => x.key === key).both = true; continue; }
-        if (g.scope === 'section' && !core.has(n) && !core.has(m)) continue;
-        seen.add(key);
-        edges.push({ key, s: n, t: m, both: false, retire: isRetire.has(key) });
-    }
-    // Retirements point from the retirer to the retired, whichever cites whom.
-    for (const x of edges) if (x.retire) { const r = retirePairs.find(([a, b]) => (a === x.s && b === x.t) || (a === x.t && b === x.s)); x.s = r[0]; x.t = r[1]; }
-    // The sections of the documents that cite the centre, each tied to the
-    // decisions shown that it cites.
-    if (g.docs && g.scope === 'around') for (const d of DOCS) for (const sc of d.sections) {
-        if (!sc.mentions.includes(g.centre)) continue;
-        nodes.add(sc.id);
-        for (const m of sc.mentions) if (core.has(m)) edges.push({ key: sc.id + '>' + m, s: sc.id, t: m, both: false, retire: false, doc: true });
-    }
-    // Place new nodes beside a placed neighbour, so a re-centring moves little.
-    seed = 1;
-    for (const n of nodes) if (!g.pos.has(n)) {
-        const nb = isDoc(n) ? g.centre : [...adj.get(n)].find(m => g.pos.has(m) && nodes.has(m));
-        const p = nb ? g.pos.get(nb) : { x: 0, y: 0 }, a = rand() * 6.283, d = nb ? 30 : 60 + rand() * 200;
-        g.pos.set(n, { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, vx: 0, vy: 0, fixed: false });
-    }
-    for (const p of g.pos.values()) p.fixed = false;
-    if (g.scope === 'around') g.pos.get(g.centre).fixed = true;
-    g.nodes = [...nodes].sort((a, b) => isDoc(a) - isDoc(b) || (isDoc(a) ? (a < b ? -1 : 1) : a - b)); g.core = core; g.edges = edges;
-    g.alpha = 1; g.fit = true; g.dirty = false;
-
-    gedges.replaceChildren(); gnodes.replaceChildren();
-    const arrows = g.scope !== 'all';
-    for (const x of edges) {
-        x.el = el('line', { class: 'ge' }, gedges);
-        const st = x.doc ? 'stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;opacity:.7'
-            : x.retire && g.retire ? 'stroke:var(--retire);stroke-width:2;opacity:.9' : 'stroke:var(--edge);stroke-width:1;opacity:' + (g.scope === 'all' ? .35 : .6);
-        x.el.setAttribute('style', st);
-        if (arrows) {
-            x.el.setAttribute('marker-end', `url(#${x.retire && g.retire ? 'arr-r' : 'arr'})`);
-            if (x.both && !(x.retire && g.retire)) x.el.setAttribute('marker-start', 'url(#arr)');
-        }
-    }
-    for (const n of g.nodes) {
-        if (isDoc(n)) {
-            const { d, s: sc } = SEC.get(n), grp = el('g', { class: 'gn', 'data-n': n }, gnodes);
-            el('rect', { x: -6, y: -6, width: 12, height: 12, rx: 2, style: 'fill:var(--panel);stroke:var(--fg);stroke-width:1.5' }, grp);
-            el('text', { x: 10, y: 3 }, grp).textContent = docLabel(d) + ': ' + clip(secTitle(d, sc), 30);
-            g.pos.get(n).el = grp;
-            continue;
-        }
-        const e = E.get(n), grp = el('g', { class: 'gn', 'data-n': n }, gnodes);
-        const fill = g.colour === 'attr' ? attrColour(e.attribution.class) : secColour(e.section);
-        const ring = g.colour === 'attr' ? secColour(e.section) : attrColour(e.attribution.class);
-        const out = !core.has(n);
-        el('circle', { r: radius(n), style: `fill:${fill};stroke:${ring};stroke-width:${n === g.centre && g.scope === 'around' ? 4 : 2};opacity:${out ? .35 : 1}` }, grp);
-        if (g.scope !== 'all' || e.mentioned_by.length >= 5)
-            el('text', { x: radius(n) + 2, y: 3, style: out ? 'opacity:.5' : '' }, grp).textContent = 'D' + n;
-        g.pos.get(n).el = grp;
-    }
-    $('g-stats').innerHTML = '<span>' + (g.scope === 'around' ? `${dref(g.centre)}&nbsp;${inline(E.get(g.centre).title)} · ` : '') + `${core.size} entries, ${edges.filter(x => !x.doc).length} links` + (nodes.size > core.size && g.scope === 'around' ? `, ${nodes.size - core.size} document sections` : '') + (g.scope === 'section' ? ` (and ${nodes.size - core.size} neighbours, faded)` : '') + '</span>';
-    $('g-centre').value = g.centre;
-    gDim();
+/* ---- The arc map: every entry on one axis, under a lens.
+   The lens is Sarkar and Brown's fisheye: a point at distance x from the
+   focus, as a fraction of the way to the edge, goes to (d+1)x / (dx+1). That
+   is a hyperbola: the axis is stretched d+1 times at the focus and squeezed
+   toward the ends, which stay where they are, so nothing leaves the view. ---- */
+const am = { pin: null, hot: null, axis: 'number', colour: 'section', retire: true, f: .5, d: 0, key: '', raf: 0, anim: 0,
+    list: [], idx: new Map(), x: [], arcs: [], labels: new Map(), svg: null };
+const AM = { M: 34, DOWN: 190 };
+const fish = (u, f, d) => {
+    const s = u >= f ? 1 - f : f;
+    if (!d || s <= 0) return u;
+    const x = Math.abs(u - f) / s, y = (d + 1) * x / (d * x + 1);
+    return u >= f ? f + s * y : f - s * y;
+};
+const unfish = (t, f, d) => {
+    const s = t >= f ? 1 - f : f;
+    if (!d || s <= 0) return t;
+    const y = Math.abs(t - f) / s, x = y / (d + 1 - d * y);
+    return t >= f ? f + s * x : f - s * x;
+};
+// The focus that puts the point u at t on the screen: what a drag and a
+// zoom at the pointer both ask for. fish falls as the focus rises.
+function focusFor(u, t, d) {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (fish(u, m, d) > t) lo = m; else hi = m; }
+    return (lo + hi) / 2;
 }
-
-function gTick() {
-    const ns = g.nodes.map(n => g.pos.get(n)), N = ns.length;
-    const rep = g.scope === 'all' ? 260 : 600, len = g.scope === 'all' ? 34 : 70, a = g.alpha;
-    for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
-        const p = ns[i], q = ns[j];
-        let dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy;
-        if (d2 < 1) { dx = rand() - .5; dy = rand() - .5; d2 = 1; }
-        if (d2 > 250000) continue;
-        const f = rep * a / d2, d = Math.sqrt(d2);
-        p.vx -= dx / d * f; p.vy -= dy / d * f; q.vx += dx / d * f; q.vy += dy / d * f;
-    }
-    for (const x of g.edges) {
-        const p = g.pos.get(x.s), q = g.pos.get(x.t);
-        const dx = q.x - p.x, dy = q.y - p.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
-        const f = (d - len) * 0.06 * a / d;
-        p.vx += dx * f; p.vy += dy * f; q.vx -= dx * f; q.vy -= dy * f;
-    }
-    let cx = 0, cy = 0;
-    if (g.scope === 'around') { const c = g.pos.get(g.centre); cx = c.x; cy = c.y; }
-    for (const p of ns) {
-        p.vx += (cx - p.x) * 0.012 * a; p.vy += (cy - p.y) * 0.012 * a;
-        if (p.fixed) { p.vx = p.vy = 0; continue; }
-        p.vx *= 0.6; p.vy *= 0.6;
-        p.x += Math.max(-30, Math.min(30, p.vx)); p.y += Math.max(-30, Math.min(30, p.vy));
-    }
-    g.alpha *= 0.982;
-}
-function gRun() {
-    if (g.raf) return;
-    const step = () => {
-        g.raf = 0;
-        for (let i = 0; i < 3 && g.alpha > 0.01; i++) gTick();
-        gDraw();
-        if (g.alpha > 0.01 && view === 'graph') g.raf = requestAnimationFrame(step);
-    };
-    g.raf = requestAnimationFrame(step);
-}
-function gDraw() {
-    const W = gsvg.clientWidth, H = gsvg.clientHeight;
-    if (g.fit && g.nodes.length) {
-        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-        for (const n of g.nodes) { const p = g.pos.get(n); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
-        const k = Math.min(2, (W - 110) / Math.max(1, x1 - x0), (H - 40) / Math.max(1, y1 - y0));
-        g.k = k; g.tx = W / 2 - 20 - k * (x0 + x1) / 2; g.ty = H / 2 - k * (y0 + y1) / 2;
-    }
-    gview.setAttribute('transform', `translate(${g.tx.toFixed(1)},${g.ty.toFixed(1)}) scale(${g.k.toFixed(4)})`);
-    for (const x of g.edges) {
-        const p = g.pos.get(x.s), q = g.pos.get(x.t);
-        const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 1;
-        const rs = x.both ? radius(x.s) + 1 : 0, rt = radius(x.t) + 1;
-        x.el.setAttribute('x1', (p.x + dx / d * rs).toFixed(1)); x.el.setAttribute('y1', (p.y + dy / d * rs).toFixed(1));
-        x.el.setAttribute('x2', (q.x - dx / d * rt).toFixed(1)); x.el.setAttribute('y2', (q.y - dy / d * rt).toFixed(1));
-    }
-    for (const n of g.nodes) { const p = g.pos.get(n); p.el.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`); }
-}
-function gDim() {
-    if (!gsvg) return;
-    for (const n of g.nodes) g.pos.get(n).el.style.opacity = !matched || isDoc(n) || matched.has(n) ? '' : .15;
-}
-function gHover(n) {
-    for (const x of g.edges) x.el.style.strokeOpacity = n == null || x.s === n || x.t === n ? '' : .15;
-}
-function gShow() {
-    if (!gsvg) gInit();
-    $('g-scope').value = g.scope; $('g-depth').value = g.depth; $('g-section').value = g.section;
-    $('g-around').hidden = g.scope !== 'around'; $('g-sec').hidden = g.scope !== 'section';
-    $('g-docs-l').hidden = g.scope !== 'around' || !DOCS.length;
-    $('g-legend').innerHTML = (g.colour === 'attr'
-        ? Object.keys(ATTR).filter(c => D.counts.attribution[c]).map(c => `<span><i style="background:${attrColour(c)}"></i>${ATTR[c]}</span>`).join('') + '<span>ring: section</span>'
-        : '<span>fill: section (hover for its name)</span><span>ring: who decided</span>')
-        + `<span><i class="line" style="color:var(--retire)"></i>retires</span><span><i class="line" style="color:var(--edge)"></i>cites (arrow toward the cited)</span>`
-        + (DOCS.length && g.scope === 'around' && g.docs ? '<span><i style="border-radius:2px;background:var(--panel);border:1.5px solid var(--fg)"></i>a document section that cites the centre</span>' : '');
-    if (g.dirty) gBuild();
-    gRun();
-}
-
-/* ---- The arc map ---- */
-const am = { pin: null, axis: 'number', colour: 'section', retire: true, svg: null, arcs: [], xs: new Map() };
-function aShow() {
-    am.axis = $('a-axis').value; am.colour = $('a-colour').value; am.retire = $('a-retire').checked;
-    const list = am.axis === 'number' ? byNum : [...D.entries].sort((x, y) => x.order - y.order);
-    const N = list.length, M = 34;
-    const W = Math.max(900, $('astage').clientWidth - 2), step = (W - 2 * M) / Math.max(1, N - 1);
-    list.forEach((e, i) => am.xs.set(e.n, M + i * step));
-    let maxUp = 1, maxDown = 1;
-    const arcs = [];
-    for (const e of list) for (const m of e.mentions) {
-        const span = Math.abs(am.xs.get(e.n) - am.xs.get(m));
-        const fwd = m > e.n;
-        if (fwd) maxDown = Math.max(maxDown, span); else maxUp = Math.max(maxUp, span);
-        arcs.push({ s: e.n, t: m, fwd, span });
-    }
-    const UP = Math.min(380, maxUp / 2), DOWN = Math.min(150, maxDown / 2), ky = UP / (maxUp / 2), kd = DOWN / (maxDown / 2);
-    const Y = UP + 24, H = Y + 34 + DOWN + 12;
+function aBuild() {
+    const list = am.list = am.axis === 'number' ? byNum : [...D.entries].sort((x, y) => x.order - y.order);
+    const N = list.length, M = AM.M;
+    am.idx = new Map(list.map((e, i) => [e.n, i]));
+    const W = am.W = Math.max(320, $('astage').clientWidth - 2), inner = am.inner = W - 2 * M;
+    am.step = inner / Math.max(1, N - 1);
+    am.dmax = Math.max(3, Math.min(120, 150 / am.step - 1));
+    am.dread = Math.max(0, Math.min(am.dmax, 26 / am.step - 1));    // enough for the titles to show
+    am.d = Math.min(am.d, am.dmax);
+    const UP = am.UP = Math.max(120, Math.min(360, inner * .4)), Y = am.Y = UP + 14, H = am.H = Y + 14 + AM.DOWN + 8;
     $('astage').querySelector('svg')?.remove();
-    const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+    const svg = am.svg = el('svg', { height: H, viewBox: `0 0 ${W} ${H}`, tabindex: 0, role: 'img', 'aria-label': 'Arc map of the decisions' });
     $('astage').prepend(svg);
-    am.svg = svg;
     const garcs = el('g', {}, svg), gret = el('g', {}, svg);
-    const maxSpan = Math.max(maxUp, maxDown);
-    for (const x of arcs) {
-        const x1 = am.xs.get(x.s), x2 = am.xs.get(x.t), rx = x.span / 2;
-        const ry = rx * (x.fwd ? kd : ky), y0 = x.fwd ? Y + 26 : Y;
-        const sweep = (x2 > x1) !== x.fwd ? 1 : 0;
-        const ret = isRetire.has(x.s < x.t ? x.s + '-' + x.t : x.t + '-' + x.s) && am.retire;
-        const se = E.get(x.s);
+    am.arcs = [];
+    for (const e of list) for (const m of e.mentions) am.arcs.push({ s: e.n, t: m, si: am.idx.get(e.n), ti: am.idx.get(m), fwd: m > e.n });
+    const maxSpan = Math.max(1, ...am.arcs.map(x => Math.abs(x.si - x.ti)));
+    for (const x of am.arcs) {
+        const ret = isRetire.has(x.s < x.t ? x.s + '-' + x.t : x.t + '-' + x.s) && am.retire, se = E.get(x.s);
         const col = ret ? 'var(--retire)' : am.colour === 'section' ? secColour(se.section)
             : am.colour === 'attr' ? attrColour(se.attribution.class)
-            : `hsl(${(205 - 190 * Math.sqrt(x.span / maxSpan)).toFixed(0)} 70% var(--sec-l))`;
-        x.el = el('path', { d: `M${x1.toFixed(1)},${y0} A${rx.toFixed(1)},${ry.toFixed(1)} 0 0 ${sweep} ${x2.toFixed(1)},${y0}`,
-            style: `fill:none;stroke:${col};stroke-width:${ret ? 1.6 : 1};opacity:${ret ? .8 : .45}` }, ret ? gret : garcs);
+            : `hsl(${(205 - 190 * Math.sqrt(Math.abs(x.si - x.ti) / maxSpan)).toFixed(0)} 70% var(--sec-l))`;
+        x.el = el('path', { style: `fill:none;stroke:${col};stroke-width:${ret ? 1.6 : 1};opacity:${ret ? .8 : .45}` }, ret ? gret : garcs);
     }
-    am.arcs = arcs;
-    // The axis: a strip of section colours, ticks, and a hit column per entry.
-    el('line', { x1: M, x2: W - M, y1: Y + 13, y2: Y + 13, style: 'stroke:var(--rule)' }, svg);
-    const strip = el('g', {}, svg);
-    for (const e of list) el('rect', { x: am.xs.get(e.n) - step / 2, y: Y + 4, width: Math.max(step, 1), height: 6, style: `fill:${secColour(e.section)}` }, strip);
-    for (const e of list) {
-        const x = am.xs.get(e.n);
-        const tick = am.axis === 'number' ? e.n % 10 === 0 : D.sections[e.section].entries[0] === e.n;
-        if (!tick) continue;
-        el('line', { x1: x, x2: x, y1: Y + 10, y2: Y + 17, style: 'stroke:var(--muted)' }, svg);
-        if (am.axis === 'number' ? e.n % 50 === 0 : false) el('text', { x, y: Y + 19 + 8, 'text-anchor': 'middle', style: 'font-size:10px;fill:var(--muted)' }, svg).textContent = 'D' + e.n;
-    }
-    am.mark = el('rect', { x: 0, y: 0, width: Math.max(step, 2), height: H, style: 'fill:var(--accent);opacity:.12', visibility: 'hidden' }, svg);
-    const hit = el('g', { style: 'cursor:pointer' }, svg);
-    for (const e of list) el('rect', { x: am.xs.get(e.n) - step / 2, y: 0, width: step, height: H, 'data-n': e.n, style: 'fill:transparent' }, hit);
-    hit.addEventListener('pointermove', ev => {
-        const n = +ev.target.dataset.n; if (!n) return;
-        const r = $('astage').getBoundingClientRect();
-        tip($('atip'), tipHtml(E.get(n)), ev.clientX - r.left + $('astage').scrollLeft, ev.clientY - r.top);
-        aFocus(n);
+    // The axis: a strip of section colours, a dot for each entry, sized by how
+    // often it's cited, once there's room for one, and ticks.
+    el('line', { x1: M, x2: W - M, y1: Y + 7, y2: Y + 7, style: 'stroke:var(--rule)' }, svg);
+    const strip = el('g', {}, svg), dots = el('g', {}, svg), ticks = el('g', {}, svg);
+    am.strip = list.map(e => el('rect', { y: Y + 4, height: 6, style: `fill:${secColour(e.section)}` }, strip));
+    am.dots = list.map(e => el('circle', { cy: Y + 7, style: `fill:${secColour(e.section)};stroke:var(--bg);stroke-width:1` }, dots));
+    am.tick = list.map(e => am.axis === 'number' ? e.n % 10 === 0 : D.sections[e.section].entries[0] === e.n);
+    am.ticks = list.map((e, i) => am.tick[i] ? el('line', { y1: Y + 10, y2: Y + 16, style: 'stroke:var(--muted)' }, ticks) : null);
+    am.glabels = el('g', {}, svg); am.labels = new Map();
+    am.mark = el('rect', { y: 0, height: H, style: 'fill:var(--accent);opacity:.12;pointer-events:none', visibility: 'hidden' }, svg);
+
+    // Pointer: hover an entry, click to hold it, drag to slide the lens, scroll to zoom.
+    const tOf = ev => { const r = svg.getBoundingClientRect(); return Math.min(1, Math.max(0, ((ev.clientX - r.left) * W / r.width - M) / inner)); };
+    const at = t => list[Math.round(unfish(t, am.f, am.d) * (N - 1))].n;
+    let grab = null;
+    svg.addEventListener('pointerdown', ev => {
+        if (ev.button) return;
+        grab = { id: ev.pointerId, x: ev.clientX, moved: 0, u: unfish(tOf(ev), am.f, am.d), n: at(tOf(ev)) };
+        svg.setPointerCapture(ev.pointerId);
     });
-    hit.addEventListener('pointerleave', () => { $('atip').hidden = true; aFocus(am.pin); });
-    hit.addEventListener('click', ev => { const n = +ev.target.dataset.n; if (n) go('D' + n); });
+    svg.addEventListener('pointermove', ev => {
+        if (grab && grab.id === ev.pointerId) {
+            grab.moved = Math.max(grab.moved, Math.abs(ev.clientX - grab.x));
+            if (grab.moved < 4 || !am.d) return;
+            svg.classList.add('panning'); $('atip').hidden = true;
+            cancelAnimationFrame(am.anim);
+            am.f = focusFor(grab.u, tOf(ev), am.d); aLater();
+            return;
+        }
+        const n = at(tOf(ev)), r = $('astage').getBoundingClientRect();
+        tip($('atip'), tipHtml(E.get(n)), ev.clientX - r.left, ev.clientY - r.top);
+        if (n !== am.hot) { am.hot = n; aFocus(); aLater(); }
+    });
+    const up = ev => {
+        if (!grab || grab.id !== ev.pointerId) return;
+        svg.classList.remove('panning');
+        if (grab.moved < 4 && ev.type === 'pointerup') go('arcs-D' + grab.n);
+        grab = null;
+    };
+    svg.addEventListener('pointerup', up);
+    svg.addEventListener('pointercancel', up);
+    svg.addEventListener('pointerleave', () => { if (grab) return; $('atip').hidden = true; am.hot = null; aFocus(); aLater(); });
+    svg.addEventListener('wheel', ev => {
+        ev.preventDefault();
+        cancelAnimationFrame(am.anim);
+        const t = tOf(ev);
+        // A sideways scroll slides the lens; an up-and-down one zooms where the pointer is.
+        if (Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) { if (am.d) am.f = Math.min(1, Math.max(0, am.f + ev.deltaX / inner / (am.d + 1))); }
+        else aZoom(Math.exp(-ev.deltaY * (ev.deltaMode ? 0.05 : 0.0025)), t);
+        aLater();
+    }, { passive: false });
+    svg.addEventListener('keydown', ev => {
+        const i = am.pin != null ? am.idx.get(am.pin) : Math.round(am.f * (N - 1));
+        const stepTo = j => { j = Math.min(N - 1, Math.max(0, j)); if (am.pin != null) go('arcs-D' + list[j].n); else { am.f = j / Math.max(1, N - 1); aLater(); } };
+        if (ev.key === 'ArrowLeft') stepTo(i - 1);
+        else if (ev.key === 'ArrowRight') stepTo(i + 1);
+        else if (ev.key === '+' || ev.key === '=') { aZoom(1.5); aLater(); }
+        else if (ev.key === '-') { aZoom(1 / 1.5); aLater(); }
+        else if (ev.key === '0') aLens(am.f, 0);
+        else if (ev.key === 'Escape') aUnpin();
+        else return;
+        ev.preventDefault();
+    });
+}
+// Zoom by a factor, keeping what is at t on the screen where it is; with no
+// t, about the focus.
+function aZoom(k, t) {
+    const d = Math.min(am.dmax, Math.max(0, (am.d + 1) * k - 1));
+    if (t != null && d) am.f = am.d ? focusFor(unfish(t, am.f, am.d), t, d) : t;
+    am.d = d < 0.02 ? 0 : d;
+}
+function aLens(f, d) {
+    cancelAnimationFrame(am.anim);
+    if (reduced() || view !== 'arcs') { am.f = f; am.d = d; aLater(); return; }
+    const f0 = am.d ? am.f : f, d0 = am.d, t0 = performance.now();
+    const step = now => {
+        const p = Math.min(1, (now - t0) / 280), q = 1 - (1 - p) ** 3;
+        am.f = f0 + (f - f0) * q; am.d = d0 + (d - d0) * q;
+        aDraw();
+        if (p < 1) am.anim = requestAnimationFrame(step);
+    };
+    am.anim = requestAnimationFrame(step);
+}
+const aLater = () => { if (!am.raf) am.raf = requestAnimationFrame(() => { am.raf = 0; aDraw(); }); };
+function aDraw() {
+    if (!am.svg) return;
+    const { list, inner, Y, UP } = am, N = list.length, M = AM.M, R = inner / 2;
+    const x = am.x = list.map((e, i) => M + inner * fish(N > 1 ? i / (N - 1) : .5, am.f, am.d));
+    for (const a of am.arcs) {
+        const x1 = x[a.si], x2 = x[a.ti], rx = Math.abs(x2 - x1) / 2;
+        // A near arc is a half circle; a far one is flattened to fit.
+        const ry = Math.min(rx, (a.fwd ? AM.DOWN - 10 : UP) * Math.pow(rx / R, .7)), y0 = a.fwd ? Y + 14 : Y;
+        a.el.setAttribute('d', `M${x1.toFixed(1)},${y0} A${rx.toFixed(1)},${ry.toFixed(1)} 0 0 ${(x2 > x1) !== a.fwd ? 1 : 0} ${x2.toFixed(1)},${y0}`);
+    }
+    const lo = i => i ? (x[i - 1] + x[i]) / 2 : x[0] - (N > 1 ? (x[1] - x[0]) / 2 : 4);
+    const hi = i => i < N - 1 ? (x[i] + x[i + 1]) / 2 : x[i] + (N > 1 ? (x[i] - x[i - 1]) / 2 : 4);
+    const sel = am.hot ?? am.pin;
+    let last = -1e9;
+    const shown = new Set();
+    for (let i = 0; i < N; i++) {
+        const e = list[i], a = lo(i), b = hi(i), gap = Math.min(i ? x[i] - x[i - 1] : 1e9, i < N - 1 ? x[i + 1] - x[i] : 1e9);
+        am.strip[i].setAttribute('x', a.toFixed(1)); am.strip[i].setAttribute('width', Math.max(.5, b - a).toFixed(1));
+        const r = gap >= 7 ? Math.min(gap / 2 - 1, 2 + 1.3 * Math.sqrt(e.mentioned_by.length)) : 0;
+        am.dots[i].setAttribute('cx', x[i].toFixed(1)); am.dots[i].setAttribute('r', r.toFixed(1));
+        if (am.ticks[i]) { am.ticks[i].setAttribute('x1', x[i].toFixed(1)); am.ticks[i].setAttribute('x2', x[i].toFixed(1)); am.ticks[i].setAttribute('visibility', r > 4 ? 'hidden' : 'visible'); }
+        // A title where the lens has made room for one; a number where there's
+        // a line's height, at the tens, and on the entry in hand.
+        const full = gap >= 22, want = gap >= 13 || am.tick[i] || e.n === sel;
+        if (!want || x[i] - last < 13 && e.n !== sel) continue;
+        last = x[i]; shown.add(i);
+        let t = am.labels.get(i);
+        if (!t) am.labels.set(i, t = el('text', { class: 'al' }, am.glabels));
+        const txt = full ? `D${e.n} ${clip(plain(e.title), 26)}` : 'D' + e.n;
+        if (t.textContent !== txt) t.textContent = txt;
+        t.setAttribute('transform', `translate(${(x[i] - 2).toFixed(1)},${Y + 26 + (r > 4 ? r - 4 : 0)}) rotate(55)`);
+        t.setAttribute('class', 'al' + (e.n === sel ? ' on' : full || gap >= 13 ? '' : ' dim'));
+        t.removeAttribute('display');
+    }
+    for (const [i, t] of am.labels) if (!shown.has(i)) t.setAttribute('display', 'none');
+    if (sel == null) am.mark.setAttribute('visibility', 'hidden');
+    else { const i = am.idx.get(sel); am.mark.setAttribute('x', lo(i).toFixed(1)); am.mark.setAttribute('width', Math.max(2, hi(i) - lo(i)).toFixed(1)); am.mark.setAttribute('visibility', 'visible'); }
+    $('a-zoom').textContent = '×' + (am.d + 1).toFixed(am.d < 9 ? 1 : 0).replace(/\.0$/, '');
+    am.svg.classList.toggle('lens', am.d > 0);
+}
+// The arcs of the entry under the pointer, or the one held; with neither,
+// those the search matches.
+function aFocus() {
+    const n = am.hot ?? am.pin;
+    for (const x of am.arcs) x.el.style.strokeOpacity = n != null ? (x.s === n || x.t === n ? 1 : .08) : !matched || matched.has(x.s) || matched.has(x.t) ? '' : .06;
+}
+function aPinned() {
+    const n = am.pin;
+    $('a-pin').hidden = n == null;
+    $('a-read').replaceChildren();
+    if (n == null) return;
+    $('a-pin').innerHTML = `<span>Holding ${dref(n)}</span><button class="chip" id="a-unpin">Let go</button>`;
+    $('a-read').append(cloneEntry(n, 'arcs', `<a href="#around-D${n}">Around D${n}</a>`));
+}
+function aUnpin() {
+    if (am.pin == null) { aLens(am.f, 0); return; }
+    am.pin = null; history.replaceState(null, '', '#arcs');
+    aPinned(); aFocus(); aLens(am.f, 0);
+}
+$('a-pin').addEventListener('click', ev => { if (ev.target.id === 'a-unpin') aUnpin(); });
+$('a-in').addEventListener('click', () => { aZoom(1.6); aLater(); });
+$('a-out').addEventListener('click', () => { aZoom(1 / 1.6); aLater(); });
+$('a-reset').addEventListener('click', () => aLens(am.f, 0));
+function aShow() {
+    const moved = am.moved; am.moved = false;
+    am.axis = $('a-axis').value; am.colour = $('a-colour').value; am.retire = $('a-retire').checked;
+    const key = [am.axis, am.colour, am.retire, $('astage').clientWidth].join('/');
+    const fresh = key !== am.key;
+    if (fresh) { aBuild(); am.key = key; }
+    const N = am.list.length;
     $('a-legend').innerHTML = (am.colour === 'section' ? '<span>arcs and strip: section (hover for its name)</span>'
         : am.colour === 'attr' ? Object.keys(ATTR).filter(c => D.counts.attribution[c]).map(c => `<span><i style="background:${attrColour(c)}"></i>${ATTR[c]}</span>`).join('')
         : '<span><i style="background:hsl(205 70% var(--sec-l))"></i>near</span><span><i style="background:hsl(15 70% var(--sec-l))"></i>far</span>')
         + '<span><i class="line" style="color:var(--retire)"></i>retires</span>'
-        + `<span>${N} entries, ${arcs.length} arcs</span>`;
-    aPin();
-    aFocus(am.pin);
-    aDim();
-    if (am.pin != null) { const x = am.xs.get(am.pin); $('astage').scrollLeft = Math.max(0, x - $('astage').clientWidth / 2); }
+        + `<span>${N} entries, ${am.arcs.length} arcs</span>`;
+    aPinned(); aFocus();
+    // An entry newly held comes under the lens, wide enough for its neighbours' titles.
+    if (am.pin != null && (moved || fresh)) {
+        const f = am.idx.get(am.pin) / Math.max(1, N - 1);
+        if (fresh && !moved) { am.f = f; aDraw(); } else aLens(f, Math.max(am.d, am.dread));
+    } else aDraw();
 }
-function aPin() {
-    $('a-pin').hidden = am.pin == null;
-    if (am.pin != null) $('a-pin').innerHTML = `<span>Showing ${dref(am.pin)} ${inline(E.get(am.pin).title)}</span><button class="chip" id="a-unpin">Show all</button>`;
-}
-$('a-pin').addEventListener('click', ev => { if (ev.target.id === 'a-unpin') { am.pin = null; history.replaceState(null, '', '#arcs'); aPin(); aFocus(null); aDim(); } });
-function aFocus(n) {
-    for (const x of am.arcs) x.el.style.strokeOpacity = n == null ? '' : x.s === n || x.t === n ? 1 : .08;
-    if (n == null) am.mark.setAttribute('visibility', 'hidden');
-    else { am.mark.setAttribute('x', am.xs.get(n) - +am.mark.getAttribute('width') / 2); am.mark.setAttribute('visibility', 'visible'); }
-}
-function aDim() {
-    if (!am.svg || am.pin != null) return;
-    for (const x of am.arcs) x.el.style.strokeOpacity = !matched || matched.has(x.s) || matched.has(x.t) ? '' : .06;
-}
-for (const id of ['a-axis', 'a-colour', 'a-retire']) $(id).addEventListener('change', aShow);
+for (const id of ['a-axis', 'a-colour', 'a-retire']) $(id).addEventListener('change', () => aShow());
 let resize = 0;
-window.addEventListener('resize', () => { clearTimeout(resize); resize = setTimeout(() => { if (view === 'arcs') aShow(); if (view === 'graph') { g.fit = true; gDraw(); } }, 150); });
+window.addEventListener('resize', () => { clearTimeout(resize); resize = setTimeout(() => { if (view === 'arcs') aShow(); if (view === 'around') nLines(); }, 150); });
 
 theme(store.theme || 'system');
 renderLog();

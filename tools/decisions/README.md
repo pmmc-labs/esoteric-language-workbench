@@ -2,8 +2,9 @@
 
 A decision log in the workbench's format (`docs/PROCESS.md`, "The
 decision log") as one HTML page: the log hyperlinked, the project's
-other documents beside it, what's open, a graph of which entries cite
-which, and an arc map of the whole. Built from
+other documents beside it, what's open, an entry among the ones it
+cites and the ones that cite it, and an arc map of the whole under a
+lens. Built from
 [`docs/briefs/decisions-browser.md`](../../docs/briefs/decisions-browser.md);
 a64-slight's log, 290 entries in 30 sections, was the first to browse.
 
@@ -14,10 +15,12 @@ make decisions                  # this log and a64-slight's, into build/
 make decisions A64=path/to/a64-slight
 ```
 
-That writes `build/decisions-workbench.html` and
+That writes `build/decisions-curly.html` and
 `build/decisions-a64-slight.html`, each with its JSON beside it, and
-reads each project's `PLAN.md`, `DESIGN.md`, `LANGUAGE.md` and
-`BACKGROUND.md` beside its log, those that exist, and for a64-slight
+reads every `.md` beside each project's log: `LANGUAGE`, `DESIGN`,
+`SURFACE`, `PLAN`, `TRAPS` and `BACKGROUND` first, those that exist,
+then any others by name, and last the workbench's own `PROCESS`,
+`MODELS` and `REPORT` as `--other`; and for a64-slight
 its Sublime syntax, `editors/sublime/Slight/Slight.sublime-syntax`, to
 colour the code in them. A page
 is one file with the data inlined: open it from Finder or send it; it
@@ -30,7 +33,10 @@ python3 tools/decisions/page.py a64.json -o a64.html --name a64-slight \
     --base https://github.com/pmmc-labs/a64-slight/blob/main/docs/
 ```
 
-`--doc` is any Markdown document of the project, as many as wanted. A
+`--doc` is any Markdown document of the project, as many as wanted.
+`--other` is a document to show with them that isn't about this log:
+its `D12` is another log's, so it's left as text, and the document
+cites nothing and drifts from nothing. A
 link to one that came (`[DESIGN.md](DESIGN.md)`) stays in the page;
 `--base` is where other relative links go, and without it they're shown
 as text. `--syntax` is a Sublime syntax for the language's
@@ -72,21 +78,32 @@ JSON can be committed and diffed.
   **(open)** and the open questions; what was stopped, parked or
   retired, folded. Then every drifting citation, by document, with its
   sentence.
-- **Graph.** Around an entry to a depth (the default, starting at the
-  most-cited), one section with its outside neighbours faded, or
-  everything. Size is citations received; fill is who decided and the
-  ring the section, or the other way round. Retirements are red, arrowed
-  from the retirer. Click an entry to read it; shift-click to centre on
-  it; drag, scroll to zoom. A search fades what doesn't match. Around
-  an entry, the document sections that cite it are squares, tied to
-  the decisions shown that they cite; click one to read it.
+- **Around.** One entry in the middle, in full; on its left a card for
+  each entry it cites, on its right one for each that cites it and for
+  each document section that does, and with two steps a column further
+  out each way. A card has the number, who decided (the dot), the
+  section (the bar) and the title; a retired entry's number is struck
+  through, and a retirement's line is red. Click a card to stand on
+  that entry, so Back retraces the walk; hover one for its links among
+  the cards shown. The middle stays put while long columns scroll.
 - **Arcs.** Every entry on one axis by number, which is time (or as
   filed), and an arc for every citation: above the axis to an earlier
   entry, below to a later one. Coloured by the citing entry's section,
-  by distance, or by who decided; retirements red. Hover an entry for
-  its arcs, click to read it. The strip under the axis is the sections.
+  by distance, or by who decided; retirements red. The strip is the
+  sections. The axis is under a lens: scroll to zoom where the pointer
+  is, and the axis stretches there and is squeezed toward the ends,
+  which don't move, so the whole log is always in view; drag to slide
+  the lens, `+` `-` `0` or the buttons to zoom. Where there's room an
+  entry gets a dot, sized by how often it's cited, its number, and
+  then its title. Hover an entry for its arcs; click to hold it, which
+  brings it under the lens and puts the entry itself under the map,
+  where its links hold the next; the arrow keys step along the axis.
 
-Links are `#D158`, `#graph-D158`, `#arcs-D158`, `#open`, a document's
+A label that a document's table defines in a row's first cell
+(TRAPS.md's `| T12 | program | ... |`) is a link wherever it's written,
+with the row's next cell as its tooltip, and `#T12` is that row.
+
+Links are `#D158`, `#around-D158`, `#arcs-D158`, `#T12`, `#open`, a document's
 `#plan` and a section's `#plan-floats-without-boxes`, so Back works and
 a view can be sent.
 
@@ -112,9 +129,11 @@ order), `unresolved` (mentions of numbers with no entry), `counts`, and
 With `--doc`, `docs` too, each `name`, `key` (the name as a link),
 `title` and `sections`, each `id`, `level` (1 for the text before the
 first `##`), `title`, `status` (`{class, text}` or null), `parent` (an
-index), `body` (Markdown), `mentions`, and `drift` (`{n, by, sentence}`);
-and `doc_refs`, each quoted section title the extractor resolved, by
-document, to its id.
+index), `body` (Markdown), `mentions`, and `drift` (`{n, by, sentence}`),
+and `apart: true` on one given as `--other`; `doc_refs`, each quoted
+section title the extractor resolved, by document, to its id; and
+`labels`, each label a table defines, to `{id, text}`: the section with
+its row, and the row's next cell.
 
 ## Judgement calls
 
@@ -135,10 +154,31 @@ document, to its id.
   so shell commands, output and `.sly` stay plain. Calls stay plain too,
   so a page of code isn't a page of colour. Code spans in running text
   aren't coloured.
-- **No library.** The brief allowed one, for the force layout. A
-  hand-written one is about 40 lines for 300 nodes, and without a CDN the
-  page opens offline from a `file://` URL, which matters more for a
-  file sent to be tried.
+- **No library.** Nothing here needs one, and without a CDN the page
+  opens offline from a `file://` URL, which matters more for a file
+  sent to be tried.
+- **No graph.** The first version had a force layout: around an entry,
+  one section, or everything. It crowded as soon as an entry had a
+  dozen neighbours, and a dot can't be read, so every node needed a
+  hover. Around an entry, the question is a list (what does this lean
+  on, what leans on it), and columns of cards answer it with the
+  titles in view and no layout to settle. The whole and the sections
+  are the arc map's. What went: edges between two neighbours, which
+  hovering a card now shows instead, and the section view. `#graph-D12`
+  still goes to Around.
+- **The lens** is Sarkar and Brown's fisheye: a point a fraction x of
+  the way from the focus to an end goes to (d+1)x / (dx+1), a
+  hyperbola, with d+1 the stretch at the focus. It's driven by where
+  the pointer is but doesn't follow it: a lens that follows the
+  pointer moves its targets as you reach for them. So a zoom or a drag
+  solves for the focus that keeps the point under the pointer where it
+  is (a bisection: the map falls as the focus rises). The scroll wheel
+  over the map zooms and doesn't scroll the page.
+- **Whose `D12`.** A project that copied the workbench's `PROCESS.md`
+  and `MODELS.md` has documents that cite other logs' numbers; linked,
+  each would go to the wrong decision. `--other` is the Makefile's
+  guess for those three names; a project's own document that cites
+  another log wants it too.
 - **Mentions inside code spans don't count.** The brief's 291st number
   was `\u{D800}` in a Unicode range. Every mention now resolves.
 - **Ranges.** `D175–D178` is each of the four. `D281 to D284` is too,
@@ -196,7 +236,7 @@ document, to its id.
 
 ## To ask, after a day's use
 
-1. Do you reach for the neighbourhood view or the arc map?
+1. Do you reach for Around or the arc map?
 2. Which grouping helps more, the sections or who decided?
 3. Is history wanted (when an entry landed, how it was edited), and
    for what?

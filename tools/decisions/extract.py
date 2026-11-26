@@ -18,8 +18,12 @@ each is cut at its headings, and a section keeps the numbers it cites,
 a status if its heading ends with one ("(done)", "(proposed, open)"),
 and the decisions it cites that a later one retired or changed, with
 the sentence, unless the sentence says so itself (drift, for a person
-to judge). A quoted section title after a document's name, `PLAN.md's
-"Floats without boxes"`, is resolved to that section where it can be.
+to judge). `--other` is a document shown with them that isn't about
+this log (the workbench's PROCESS.md in a project that copied it): its
+Dn are another log's, and are left as text. A quoted section title after a document's name, `PLAN.md's
+"Floats without boxes"`, is resolved to that section where it can be,
+and a label a table defines in its first cell (TRAPS.md's `| T12 |`) to
+the section that has the row.
 
 The output is deterministic, so it can be committed and diffed. The
 count of entries parsed must equal a plain count of `**D` lines, or the
@@ -204,8 +208,8 @@ def prose(body):
             prev = ''   # an indented block continues while it's indented
     return '\n'.join(out)
 
-RESERVED = {'bar', 'tabs', 'search', 'count', 'theme', 'log', 'docs', 'open', 'graph', 'arcs', 'attrs', 'order',
-            'sections', 'entries', 'doclist', 'dstatus', 'toc', 'doc', 'openbody', 'gstage', 'gtip', 'astage', 'atip',
+RESERVED = {'bar', 'tabs', 'search', 'count', 'theme', 'log', 'docs', 'open', 'graph', 'around', 'arcs', 'attrs', 'order',
+            'sections', 'entries', 'doclist', 'dstatus', 'toc', 'doc', 'openbody', 'nstage', 'ncols', 'ncentre', 'nlinks', 'astage', 'atip',
             'data', 'preamble', 'nomatch'}
 
 def read_doc(path, text):
@@ -214,7 +218,7 @@ def read_doc(path, text):
     key = slug(os.path.splitext(name)[0])
     # A section's id is also an element's id and a link in the page, so a
     # document can't take a name the page uses.
-    if key in RESERVED or re.fullmatch(r'd\d+|s\d+|graph.*|arcs.*', key):
+    if key in RESERVED or re.fullmatch(r'd\d+|s\d+|graph.*|around.*|arcs.*', key):
         key += '-doc'
     title, secs, cur, fence, used = name, [], None, False, set()
     stack = []          # (level, index) of the headings above
@@ -282,7 +286,8 @@ def join_docs(docs, entries):
         e['cited_in'] = []
     for d in docs:
         for s in d['sections']:
-            text = prose(s['body'])
+            # A document from elsewhere has its own D12, or none: it cites nothing here.
+            text = '' if d.get('apart') else prose(s['body'])
             s['mentions'] = sorted(m for m in mentions(text) if m in by_n)
             for m in s['mentions']:
                 by_n[m]['cited_in'].append(s['id'])
@@ -316,6 +321,36 @@ def units(text):
             cur.append(line)
     out.append(' '.join(cur))
     return [u for u in out if u.strip()]
+
+LABEL_ROW = re.compile(r'\s*\|\s*([A-Z]\d+)\s*\|(.*)')
+
+def labels(docs):
+    """A table row whose first cell is a label, a letter and a number
+    (TRAPS.md's `| T12 | program | ... |`), names it: each label to the
+    section that has its row, and the row's next cell, so that a T12
+    anywhere in the page goes there and says what it is. The first row
+    wins. D is the log's own."""
+    out = {}
+    for d in docs:
+        for s in ([] if d.get('apart') else d['sections']):
+            fence = False
+            for line in s['body'].split('\n'):
+                if line.lstrip().startswith('```'):
+                    fence = not fence
+                m = None if fence else LABEL_ROW.match(line)
+                if not m or m.group(1).startswith('D') or m.group(1) in out:
+                    continue
+                # The next cell ends at the first pipe outside a code span.
+                cell, code = '', False
+                for c in m.group(2):
+                    if c == '`':
+                        code = not code
+                    if c == '|' and not code:
+                        break
+                    cell += c
+                cell = re.sub(r'\s+', ' ', cell).strip()
+                out[m.group(1)] = {'id': s['id'], 'text': cell if len(cell) <= 240 else cell[:240].rsplit(' ', 1)[0] + ' …'}
+    return dict(sorted(out.items(), key=lambda kv: (kv[0][0], int(kv[0][1:]))))
 
 QUOTED = re.compile(r'\b([\w-]+\.md)(?:\'s)?,? ["\u201c]([^"\u201d\n]{3,80}?)["\u201d]')
 
@@ -441,20 +476,24 @@ def main(argv):
     ap.add_argument('log', help='a DECISIONS.md')
     ap.add_argument('-o', '--out', help='the JSON to write (stdout without it)')
     ap.add_argument('--doc', action='append', default=[], help='another document of the project (repeatable)')
+    ap.add_argument('--other', action='append', default=[], help="a document shown beside them whose Dn aren't this log's (repeatable)")
     args = ap.parse_args(argv)
     with open(args.log, encoding='utf-8') as f:
         data = extract(f.read())
     docs = []
-    for path in args.doc:
+    for path in args.doc + args.other:
         with open(path, encoding='utf-8') as f:
             docs.append(read_doc(path, f.read()))
-    heading_retirements(docs, data['entries'])
+        if path in args.other:
+            docs[-1]['apart'] = True
+    heading_retirements([d for d in docs if not d.get('apart')], data['entries'])
     data['counts']['retirements'] = sum(len(e['retires']) for e in data['entries'])
     join_docs(docs, data['entries'])
     texts = [data['preamble']] + [e['title'] + '\n' + e['attribution']['text'] + '\n' + e['body'] for e in data['entries']] \
         + [s['body'] for d in docs for s in d['sections']]
     data['docs'] = docs
     data['doc_refs'] = doc_refs(docs, texts)
+    data['labels'] = labels(docs)
     data['counts']['docs'] = {d['name']: {
         'sections': len(d['sections']),
         'cites': len({m for s in d['sections'] for m in s['mentions']}),
@@ -474,7 +513,7 @@ def main(argv):
     for name, k in c['docs'].items():
         print(f"  {name}: {k['sections']} sections citing {k['cites']} decisions, {k['drift']} drift"
               + (f", status {k['status']}" if k['status'] else ''), file=sys.stderr)
-    print(f"  quoted sections resolved: {sum(len(v) for v in data['doc_refs'].values())}", file=sys.stderr)
+    print(f"  quoted sections resolved: {sum(len(v) for v in data['doc_refs'].values())}; labels: {len(data['labels'])}", file=sys.stderr)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -23,7 +23,8 @@
 # make check    type-check the compiler (needs `npm install` first)
 # make decisions  the decision-log browser (tools/decisions/) for this
 #               log and a64-slight's (A64=path, ../a64-slight by default),
-#               as build/decisions-*.html
+#               with every document in docs/ beside it, as
+#               build/decisions-*.html
 # make clean    remove build/
 #
 # The compiler emits C and the driver links it with cc (D3), so a binary
@@ -79,8 +80,14 @@ check:
 
 A64 ?= ../a64-slight
 DEC = tools/decisions
-# The project's other documents, those of them that exist.
-DOCS = $(foreach f,PLAN DESIGN LANGUAGE BACKGROUND,$(if $(wildcard $(1)/$(f).md),--doc $(1)/$(f).md))
+# The project's other documents: every .md beside the log, these first
+# and in this order, then the rest by name.
+FIRST = LANGUAGE DESIGN SURFACE PLAN TRAPS BACKGROUND
+# The workbench's own, copied into a project: a D12 in one is not this log's.
+OTHER = PROCESS MODELS REPORT
+DOCS = $(foreach f,$(FIRST),$(if $(wildcard $(1)/$(f).md),--doc $(1)/$(f).md)) \
+	$(foreach p,$(sort $(filter-out $(1)/DECISIONS.md $(foreach f,$(FIRST) $(OTHER),$(1)/$(f).md),$(wildcard $(1)/*.md))),--doc $(p)) \
+	$(foreach f,$(OTHER),$(if $(wildcard $(1)/$(f).md),--other $(1)/$(f).md))
 
 decisions:
 	@mkdir -p build
