@@ -44,8 +44,11 @@ finding about D35.
 
 Two C libraries can differ in the last bit of a pow, and these files are
 written on one machine and checked on others. So a line with `**` is in a
-test only if its answer prints the same one double up and one double
-down: no last bit can change it.
+test only if its answer prints the same two doubles up and two doubles
+down. One each way is not enough: another library's answer may be the
+next double, and whether *that* prints the same as its own neighbours
+decides whether the line is in the file there (found on the Mac after
+step 11b, where `make models` wrote another 045).
 
 040 to 045 are an operator each, over every pair of an Int and a Num, a
 Num and an Int, and two Nums (and two Ints for `/` and `**`, which step 1
@@ -307,7 +310,8 @@ def steady(v):
     if not is_num(v):
         return True
     try:
-        return printed(v) == printed(math.nextafter(v, math.inf)) == printed(math.nextafter(v, -math.inf))
+        up, down = math.nextafter(v, math.inf), math.nextafter(v, -math.inf)
+        return printed(v) == printed(up) == printed(down) == printed(math.nextafter(up, math.inf)) == printed(math.nextafter(down, -math.inf))
     except Fault:
         return False
 

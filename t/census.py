@@ -240,7 +240,8 @@ def dumps(probes):
     counts = collections.Counter(p['verdict'] for p in probes.values())
     reasons = collections.Counter(p['reason'].split()[0] for p in probes.values() if p['verdict'] == 'REFUSED')
     head = {
-        'perl': subprocess.run([checks.PERL, '-e', 'print $^V'], capture_output=True, text=True).stdout,
+        # (5.42, and not which 5.42: the file is written on more than one machine.)
+        'perl': 'v5.42',
         'counts': {v: counts.get(v, 0) for v in VERDICTS},
         'refused': {k: reasons.get(k, 0) for k in ('later', 'open', 'design')},
         'by_design': count(BY_DESIGN),
