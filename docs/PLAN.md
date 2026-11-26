@@ -3446,15 +3446,89 @@ block this proposal had tried. The amendments, which D87 records:
   `reverse`, over 3,000 arrays. Context is syntax, 75 calls; D18's
   shapes, 47 `return`s.
 
-### 11a. Interpolation
+### 11a. Interpolation (done)
 
 Referee: perl. Size: large.
 
-**Proposed 2026-11-26, by Fable 5.2 (the size the line asks for).
-Nothing of it is agreed or built: Q1 to Q4 are Stevan's. Its
-adversarial review found one way to be WRONG, which amends Q1(a):
-"What the review found", at the end. The text is kept as it was
-proposed.** Pulled forward from step 16, to before the census (D90).
+**Proposed 2026-11-26, by Fable 5.2 (the size the line asks for),
+and agreed the same day: Stevan took the recommendation on each
+question, which are now D91 (Q1, as the review amended it), D92
+(Q2), D93 (Q3) and D94 (Q4); D95 has the builder's defaults, for him
+to confirm. Its adversarial review found one way to be WRONG, which
+amends Q1(a): "What the review found", at the end. The text is kept
+as it was proposed.** Pulled forward from step 16, to before the
+census (D90).
+
+**Built** (2026-11-26, by Fable 5.2).
+
+- **The model first, red before any code** (`t/models/interp.py`,
+  commit ca0c424), on `sort.py`: 1300 to 1302, about 2,100 lines
+  on which perl 5.42 agreed with it the first time they were
+  compared, once two mistakes in the cases were mended; and 37
+  programs that fault once each, 1310 to 1346. One of the mistakes
+  was T199 itself: a case wrote two colons after a name, and perl
+  read another variable. 138 tests failed against the compiler as
+  it was.
+- **By hand**: 1303, perl's own answers for what the model does not
+  write (a string made where it stands, the assignments perl keeps,
+  what follows a name and is text); 1349, the largest index there
+  is; and 101 refusals, 1350 to 1450, written from a table of the
+  program, the place and the message
+  (`briefs/step11a-refusals.py`), which asks the compiler nothing.
+  610 is a test of what prints now, and 200 and 201 are refused for
+  a variable that is not declared.
+- **The lexer does nearly all of it**: a string with a variable in
+  it is a token whose value is its pieces, each shape with its
+  place, and every refusal that needs no declaration is raised at
+  its character. The token is still a string to whatever asks what
+  a token is. **The tree has one new node**, whose pieces are the
+  nodes the language had; the resolver looks each variable up by
+  the rule it has, and knows it is in a string for two things: an
+  array there is not named by the list the string stands in, and
+  what is not declared is told how a string reads a name. The
+  checker's walks have nothing to learn: a node they do not know
+  has no parts. It is no constant, its pieces are checked as a
+  list's are, and D57's refusal looks for it on the right of `.=`.
+  **The generated C** is `rt_concat` and `rt_join`: each piece
+  joined on before the next is worked out. **The runtime gained
+  nothing.**
+- **The compiler passed every test of the model's and every refusal
+  the first time it ran them.** What failed were four tests that
+  were wrong: a place counted in a comment, a sub named for a word
+  of perl's, a `my` where the language has none, a line perl
+  itself warns of.
+- **Held to the reviewer's model** (`briefs/step11a-review/
+  compiler.py` and `classify.ts`, written after the build): over
+  1,885,000 strings from the reviewer's generators, the compiler and
+  the model both take 805,000, and the lexer's pieces are the
+  model's for every one. The 2,951 the compiler alone takes are
+  escapes the model does not carry, and each prints what perl
+  prints. A sample of 4,000 from each set was compiled and run
+  beside perl: the same, or a fault where perl warns. The 2,644 the
+  compiler alone refuses are D95's: a blank after an index's minus,
+  a slice by one index. With `::` after a name let through on
+  purpose the driver finds four programs that run where perl warns.
+- **What the build settled** (D95): past ASCII is refused after a
+  bare name alone; a slice by one index as outside a string;
+  `"$x->$y"` with the other arrows; of two faults in one string,
+  the left one's. One test that was planned could not be written, a
+  pragma's argument with a variable in it: the variable is not
+  declared where a pragma may stand.
+- **Broken on purpose** (`briefs/step11a-mutations.py`, the compiler
+  alone): 62 of 66 caught the first time. Four were holes, each
+  closed by a test: a blank after a brace alone (1449, 1450); the
+  largest index itself (1349); a variable in single quotes (1303);
+  and a resolver that never leaves a string, which shows only in an
+  array named after a string in a loop's list (1345).
+- **The numbers**: 1,041 golden tests, 131 unit tests, 737
+  statements about perl; green under gcc, clang, and UBSan with
+  ASan, poison on and off.
+- **What step 11a hands on**: step 12 gives `"$h{key}"` its
+  meaning, and step 13 the arrows, `"@{[ ... ]}"` and `"${\ ...}"`,
+  each a refusal with its step in the message today; step 16 keeps
+  `\U` and its kin, `qq` and heredocs; an expression as an index
+  in a string is cut (D91) and can be proposed again. The census's
+  probes can now be read past their first string.
 
 Everything here about perl was run under 5.42.0 and is in
 `briefs/claims.py` (50 rows, `T196` to `T210-brace`; about 420
