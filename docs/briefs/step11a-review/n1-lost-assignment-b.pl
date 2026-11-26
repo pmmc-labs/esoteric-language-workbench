@@ -1,0 +1,34 @@
+use v5.42;
+my ($t, $u, $x, $z, @a, @b, $r, $i, $c);
+sub reset_() { $t = "t"; $u = "u"; $x = "a"; $z = "z"; @a = (1, 2); @b = ("p","q"); $r = "r"; $i = 0; $c = 1 }
+reset_(); $u = ""; $t .= ($u ||= "$x$z");           say "01 $t $u";
+reset_(); $u = undef; $t .= ($u //= "$x$z");        say "02 $t $u";
+reset_(); $t .= ($u &&= "$x$z");        say "03 $t $u";
+reset_(); $t .= $c ? ($u = "$x$z") : "n";        say "04 $t $u";
+reset_(); $t .= ($c ? ($u = "$x$z") : "n");        say "05 $t $u";
+reset_(); $t .= ($c && ($u = "$x$z"));        say "06 $t $u";
+reset_(); $t .= ($c and $u = "$x$z");        say "07 $t $u";
+reset_(); $c = 0; $t .= ($c || ($u = "$x$z"));        say "08 $t $u";
+reset_(); $c = undef; $t .= ($c // ($u = "$x$z"));        say "09 $t $u";
+reset_(); $t .= !($u = "$x$z");        say "10 $t $u";
+reset_(); $t .= length($u = "$x$z");        say "11 $t $u";
+reset_(); $t .= uc($u = "$x$z");        say "12 $t $u";
+reset_(); $t .= ($u = "$x$z") x 1;        say "13 $t $u";
+reset_(); $t .= ($u x= "$a[1]$a[1]" + 0);        say "14 $t $u";
+reset_(); $u = 1; $t .= ($u += "$a[1]$a[1]");        say "15 $t $u";
+reset_(); $t .= ($u = "$x$z" x 2);        say "16 $t $u";
+reset_(); $t .= ($u = uc "$x$z");        say "17 $t $u";
+reset_(); $t .= ($u = "$x$z" eq "az");        say "18 $t $u";
+reset_(); $t .= ($u = $c ? "$x$z" : "n");        say "19 $t $u";
+reset_(); $t .= ($u = $c && "$x$z");        say "20 $t $u";
+reset_(); $t .= ($u = ("$x$z") . "q");        say "21 $t $u";
+reset_(); $t .= ($u = join("", "$x$z"));        say "22 $t $u";
+reset_(); $t .= ($u = join("", $x, $z));        say "23 $t $u";
+reset_(); $t .= ($u = "$x$z", "k")[0];        say "24 $t $u";
+reset_(); my @l = ($t .= ($u = "$x$z"));        say "25 $t $u @l";
+reset_(); say "26 ", $t .= ($u = "$x$z"); say "26 $u";
+reset_(); $r = ($t .= ($u = "$x$z"));        say "27 $t $u $r";
+reset_(); ($t .= ($u = "$x$z")) .= "k";        say "28 $t $u";
+sub id($p) { return $p }
+reset_(); $t .= id($u = "$x$z");        say "29 $t $u";
+reset_(); $t .= scalar($u = "$x$z");        say "30 $t $u";

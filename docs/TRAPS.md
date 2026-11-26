@@ -532,6 +532,16 @@ Each is in `briefs/claims.py` under its number.
 | T209 | `for my $v ("$x", "$x-") { $x = 5; say $v; }`; `for my $v ("@a") { push @a, 3; ... }`; `for my $v ("$a[0]") { $a[0] = 9; ... }` | `3`, `3-`; `1 2`, and the push is done; `1`: the loop walks the string, a copy | 11a | A string in a loop's list freezes no array and names no scalar (D77), and D80's fault past the end is not for an element in a string (T208's is) |
 | T210 | `sort { say "$a[0]$b"; $a <=> $b } @a`; `for (@a) { say "$_[0]"; }`; `map { "$_", 1 } @a`; `"${s}${q}${y}${m}${tr}"` | `$a[0]` is the array's element, as outside a string (T195); `$_[0]` is an element of `@_`; the `map` does not compile (T175: a string and a comma is a hash); a name perl has a meaning for is only a name in braces | 11a | Agree with the first; `$_[` is refused, there being no `@_`; T175's refusal already has the third |
 
+## Found by the review of step 11a
+
+`briefs/step11a-review/`, with the reviewer's model of the proposal's
+lexing rule and the scripts that held it to perl.
+
+| | Program | perl 5.42 prints | Step | What the language does |
+|---|---|---|---|---|
+| T211 | `my @a = (0 .. 20); say "$a[010]"; say "$a[-010]"; say "@a[010, 011]"; say "@a[07 .. 010]";`; `"$a[08]"`; `"$a[18446744073709551615]"` | `8`, `13`, `8 9`, `7 8`: **a leading zero is octal**, in silence (T202 had tried `01`, which is 1 both ways); does not compile; the last element: from 2^63 up an index wraps, in silence | 11a | The number in an index is the language's own whole-number literal: no leading zero (as `017` is refused outside a string), and no more than 2^63 - 1 |
+| T212 | `$t .= ($u = "$x$z$x");`; `$t .= ($u = (1 ? "$x$z" : 0));`; `say "$x" -1;`; `sub f() { return "@a" }` | `$u` is not assigned in either: a string of three pieces is lost like one of two (T129's concatenation of three is kept), and behind a test perl folds; `2`: after a string an operator comes next; one value | 11a | T198's refusal has no exception for three pieces and looks through what D57's does; the string is a value to every part of the compiler that asks what a token or a node is |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

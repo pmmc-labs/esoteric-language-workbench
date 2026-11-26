@@ -6,10 +6,16 @@ value for, perl must print that value, exit 0, and say nothing on stderr.
                                             printable characters, and every
                                             one-character prefix
     python3 fuzz.py random N SEED [--zero]  N random strings over a nasty alphabet
+    python3 fuzz.py arrow                   every shape, `->` and two characters;
+                                            eight shapes and every three
+                                            characters of a nasty alphabet
+    python3 fuzz.py binder for|sort         $_ in a for's block, $a and $b in a
+                                            sort's, and every suffix of 0 to 2
     python3 fuzz.py index [--zero]          every index and slice body of up
                                             to 4 tokens
 
---zero makes the model refuse a leading zero in an index (finding W1), so
+--comma lets a slice end in a comma, `@a[1,]` (the other reading of "has a
+comma").  --zero makes the model refuse a leading zero in an index (finding W1), so
 that the rest can be seen.  CURLY_PERL names perl (default
 /opt/perl-5.42/bin/perl).  Work files go to $REVIEW_TMP (default: a
 directory under the scratchpad given in FINDINGS.md, or ./tmp).
@@ -43,11 +49,14 @@ HEADER = 'use v5.42;\n' + ''.join(
     for k, v in ENV.items())
 
 
+WRAP = ('', '')        # what stands round the print: a binder's block, in `binder` mode
+
+
 def run_one(args):
     n, body = args
     path = os.path.join(TMP, 'f%d-%d.pl' % (os.getpid(), n))
     with open(path, 'w') as f:
-        f.write(HEADER + 'print "' + body + '";\n')
+        f.write(HEADER + WRAP[0] + 'print "' + body + '";' + WRAP[1] + '\n')
     try:
         r = subprocess.run([PERL, path], capture_output=True, timeout=10)
         res = (r.returncode, r.stdout.decode('utf-8', 'replace'), r.stderr.decode('utf-8', 'replace'))
@@ -129,6 +138,54 @@ def rand(n, seed):
     return sorted(out)
 
 
+NASTY = list('$@#{}[]():-><\'\\.,_ax01 ^*&%!~+=;?/|`')
+
+
+def arrow():
+    """Every shape, then `->` and every two printable characters; and the
+    main shapes with every three characters of a nasty alphabet."""
+    out = []
+    for s in SHAPES:
+        for a in PRINT:
+            out.append(s + '->' + a)
+            for b in PRINT:
+                out.append(s + '->' + a + b)
+    for s in ['$x', '${x}', '@a', '@{a}', '$a[0]', '@a[0,1]', '$#a', '$#{a}']:
+        for a in NASTY:
+            for b in NASTY:
+                for c in NASTY:
+                    out.append(s + a + b + c)
+    return [o for o in out if not (o.endswith('\\') and not o.endswith('\\\\'))]
+
+
+def binder(which):
+    """The shapes with $_ in a `for` block, or $a and $b in a `sort` block,
+    and every suffix of 0 to 2 printable characters."""
+    global WRAP
+    if which == 'for':
+        WRAP = ('for (1) { ', ' }')
+        ENV['$_'] = 1
+        SCALARS.append('_')
+        shapes = ['$_', '${_}', '$a[$_]', '@a[$_, 0]', '@a[0 .. $_]', '$x$_', '@{_}', '$#_', '$#{_}']
+    else:
+        WRAP = ('my @r = sort { ', ' $a <=> $b } (3, 1);')
+        ENV['$a'] = 3
+        ENV['$b'] = 1
+        SCALARS.extend(['a', 'b'])
+        shapes = ['$a', '${a}', '$b', '${b}', '$a$b', '$a[0]', '$a[$a]', '$a[$b]', '@a[$b, $a]', '$x[$b]', '$b[0]', '@b', '$#b',
+                  '@a', '$#a']
+    out = []
+    for s in shapes:
+        out.append(s)
+        for a in PRINT:
+            out.append(s + a)
+            for b in PRINT:
+                out.append(s + a + b)
+        for t in ['->[0]', '->{a}', '->@*', '->$*', '::y', '\\[0]', ' [0]']:
+            out.append(s + t)
+    return out
+
+
 ITOK = ['0', '1', '2', '-1', '-', '00', '01', '010', '3', '9', '$i', '$j', '$x', '$y', ' ', '  ', '\t', ',', '..',
         '...', '.', '$', '_', '1_0', '+', '$#a', '$i[0]', '@x', '1.0', '1e0', '0x1', '$ i', '${i}', '-0', '--1']
 
@@ -146,15 +203,21 @@ def index():
 
 
 def main():
-    args = [a for a in sys.argv[1:] if a != '--zero']
+    args = [a for a in sys.argv[1:] if a not in ('--zero', '--comma')]
     opts = model.Opts
     if '--zero' in sys.argv:
         opts.refuse_leading_zero = True
+    if '--comma' in sys.argv:
+        opts.trailing_comma = True
     mode = args[0]
     if mode == 'exhaustive':
         check(exhaustive(), 'exhaustive', opts)
     elif mode == 'random':
         check(rand(int(args[1]), int(args[2])), 'random-%s' % args[2], opts)
+    elif mode == 'arrow':
+        check(arrow(), 'arrow', opts)
+    elif mode == 'binder':
+        check(binder(args[1]), 'binder-' + args[1], opts)
     elif mode == 'index':
         check(index(), 'index', opts)
 

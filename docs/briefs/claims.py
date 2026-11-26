@@ -810,6 +810,12 @@ CLAIMS = [
     c('T210-underscore', 'TRAPS; PLAN 11a', r'''my @a = (3); for (@a) { say "$_[0]|"; }''', out='|\n', err='Use of uninitialized value \\$_\\[0\\]'),
     c('T210-hash', 'TRAPS; PLAN 11a', r'''my @a = (1, 2); my @b = map { "$_", 1 } @a;''', compiles=False, err='syntax error'),
     c('T210-brace', 'TRAPS; PLAN 11a', r'''my $s = 1; my $q = 2; my $y = 3; my $m = 4; my $tr = 5; my $print = 6; my @sort = (7, 8); say "${s}${q}${y}${m}${tr}${print}@{sort}";''', out='1234567 8\n'),
+    # ---- step 11a: found by its review
+    c('T211', 'TRAPS; PLAN 11a', r"""my @a = (0 .. 20); say "$a[010]"; say "$a[-010]"; say "@a[010, 011]"; say "@a[07 .. 010]";""", out='8\n13\n8 9\n7 8\n'),
+    c('T211-eight', 'TRAPS; PLAN 11a', r"""my @a = (0 .. 20); say "$a[08]";""", compiles=False, err='Illegal octal digit .8.'),
+    c('T211-large', 'TRAPS; PLAN 11a', r"""my @a = (0 .. 20); say "$a[18446744073709551615]"; say "$a[18446744073709551614]";""", out='20\n19\n'),
+    c('T211-edge', 'TRAPS; PLAN 11a', r"""my @a = (0 .. 20); say "$a[9223372036854775807]|";""", out='|\n', err='Use of uninitialized value'),
+    c('T212', 'TRAPS; PLAN 11a', r"""my $t = "t"; my $u = "u"; my $x = "a"; my $z = "z"; $t .= ($u = "$x$z$x"); say "$t $u"; $t = "t"; $t .= ($u = (1 ? "$x$z" : 0)); say "$t $u"; $x = 3; say "$x" -1; my @a = (1, 2); sub f() { return "@a" } my $v = f(); say $v;""", out='taza u\ntaz u\n2\n1 2\n'),
 ]
 
 def run(perl, prelude, code, flags):

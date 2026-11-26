@@ -3451,8 +3451,10 @@ block this proposal had tried. The amendments, which D87 records:
 Referee: perl. Size: large.
 
 **Proposed 2026-11-26, by Fable 5.2 (the size the line asks for).
-Nothing of it is agreed or built: Q1 to Q4 are Stevan's.** Pulled
-forward from step 16, to before the census (D90).
+Nothing of it is agreed or built: Q1 to Q4 are Stevan's. Its
+adversarial review found one way to be WRONG, which amends Q1(a):
+"What the review found", at the end. The text is kept as it was
+proposed.** Pulled forward from step 16, to before the census (D90).
 
 Everything here about perl was run under 5.42.0 and is in
 `briefs/claims.py` (50 rows, `T196` to `T210-brace`; about 420
@@ -3717,6 +3719,53 @@ become tests of what they print (as five of step 9's refusals did at
   where an interpolated string is not the value this says it is (the
   optimiser: T198 was found by trying, not by rule); and whether
   `"$x"` and `$x . ""` ever differ in what a later operation sees.
+
+#### What the review found
+
+**One way to be WRONG, one shape perl refuses, one place the text
+left a builder to guess, and no recommendation overturned**
+(`briefs/step11a-review/`, with the reviewer's model of the lexing
+rule, its programs and seven scripts; T211 and T212, five more rows
+of `claims.py`). The amendments:
+
+- **The number in an index is the language's own whole-number
+  literal** (T211): `0`, or digits that do not begin with a zero, a
+  minus before it or not, and no more than 2^63 - 1. Q1(a) said
+  "decimal digits", and to perl `"$a[010]"` is element 8, in
+  silence; `"$a[08]"` does not compile; and from 2^63 up an index
+  wraps to the other end of the array, in silence. Outside a string
+  the language refuses all three already.
+- **T198's refusal has no exception for a long string** (T212):
+  T129 found that perl keeps the assignment of a concatenation of
+  three pieces; of a string it loses every one of two pieces or
+  more. And it loses it behind a test perl folds, so the refusal
+  looks through what D57's looks through.
+- **For the build**: five places in the compiler ask whether a token
+  or a node is a string (what comes after a value, T175, what
+  follows a bare `undef`, the index of a string known as it
+  compiles, a pragma's arguments), and three more walks meet an
+  array or a slice inside one (what is list-shaped, an array as a
+  count, how a call's arguments are handed over). Each has to learn
+  that an interpolated string is one value. `say "$x" -1;` is 2, and
+  `return "@a"` is one value.
+- **Left open, either reading safe**: a blank after an index's minus
+  (refused, as the simpler); a comma after a slice's last index
+  (allowed, as a list's is); `...` for `..` (refused).
+- **What stood**: where a variable ends, over about 890,000 strings
+  the reviewer's model accepts, each run under perl and held to the
+  same output with nothing on stderr; index and slice bodies, 2,469
+  accepted once amended; every word perl has a meaning for, as a
+  name in a string, 299 of them in 21 places; a string as a value
+  made where it stands, 80,000 programs; `"$x"` against `$x . ""`,
+  69 kinds of value under 18 things a later operation can see; and
+  that an interpolated string where a plain one stood does not
+  change how perl reads the statement, 7,285 strings in the 136
+  `same` tests. `.=` is the only place perl loses the assignment,
+  of 111 shapes tried.
+- **What it did not cover**: Q1(b) and Q1(c) were not modelled;
+  characters past ASCII were tried by hand; no loops or blocks in
+  the generated programs; which line a fault in a string of several
+  lines names.
 
 ### 11b. The census
 

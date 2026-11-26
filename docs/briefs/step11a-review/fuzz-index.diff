@@ -1,0 +1,296 @@
+string '<@a[\t010..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-596.pl line 13.
+string '<@a[  010..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-817.pl line 13.
+string '<@a[ 010..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-1038.pl line 13.
+string '<@a[$i..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-1304.pl line 13, within string
+string '<@a[$j..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-1548.pl line 13, within string
+string '<@a[-0..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-1792.pl line 13, within string
+string '<@a[-1..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-2156.pl line 13, within string
+string '<@a[0..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-2440.pl line 13, within string
+string '<@a[00..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-2684.pl line 13, within string
+string '<@a[00010..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28564-2803.pl line 13.
+string '<@a[0010..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-2834.pl line 13.
+string '<@a[009..$i]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-2875.pl line 13, within string
+string '<@a[009..$j]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-2876.pl line 13, within string
+string '<@a[009..-0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-2877.pl line 13, within string
+string '<@a[009..-1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-2878.pl line 13, within string
+string '<@a[009..00]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-2879.pl line 13, within string
+string '<@a[009..01]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-2880.pl line 13, within string
+string '<@a[009..0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-2881.pl line 13, within string
+string '<@a[009..1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-2882.pl line 13, within string
+string '<@a[009..2]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-2883.pl line 13, within string
+string '<@a[009..3]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-2884.pl line 13, within string
+string '<@a[01..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3080.pl line 13, within string
+string '<@a[010\t..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3139.pl line 13.
+string '<@a[010  ..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3150.pl line 13.
+string '<@a[010 ..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3161.pl line 13.
+string '<@a[010..\t9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3172.pl line 13.
+string '<@a[010..  9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3183.pl line 13.
+string '<@a[010.. 9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3194.pl line 13.
+string '<@a[010..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3214.pl line 13, within string
+string '<@a[010..009]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3243.pl line 13, within string
+string '<@a[010..09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3251.pl line 13, within string
+string '<@a[010..9\t]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28564-3265.pl line 13.
+string '<@a[010..9  ]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28564-3266.pl line 13.
+string '<@a[010..9 ]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28564-3267.pl line 13.
+string '<@a[010..9]>'
+  model '<>'
+  perl  exit 0, '< >'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28564-3268.pl line 13.
+string '<@a[0109..$i]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3365.pl line 13, within string
+string '<@a[0109..$j]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3366.pl line 13, within string
+string '<@a[0109..-0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3367.pl line 13, within string
+string '<@a[0109..-1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3368.pl line 13, within string
+string '<@a[0109..00]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3369.pl line 13, within string
+string '<@a[0109..010]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3370.pl line 13, within string
+string '<@a[0109..01]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3371.pl line 13, within string
+string '<@a[0109..0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3372.pl line 13, within string
+string '<@a[0109..1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3373.pl line 13, within string
+string '<@a[0109..2]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3374.pl line 13, within string
+string '<@a[0109..3]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3375.pl line 13, within string
+string '<@a[0109..9]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3376.pl line 13, within string
+string '<@a[011..9]>'
+  model '<>'
+  perl  exit 0, '<>'
+  err   Use of uninitialized value in join or string at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28565-3388.pl line 13.
+string '<@a[019..$i]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3413.pl line 13, within string
+string '<@a[019..$j]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3414.pl line 13, within string
+string '<@a[019..-0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3415.pl line 13, within string
+string '<@a[019..-1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3416.pl line 13, within string
+string '<@a[019..00]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3417.pl line 13, within string
+string '<@a[019..010]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3418.pl line 13, within string
+string '<@a[019..01]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3419.pl line 13, within string
+string '<@a[019..0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3420.pl line 13, within string
+string '<@a[019..1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3421.pl line 13, within string
+string '<@a[019..2]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3422.pl line 13, within string
+string '<@a[019..3]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3423.pl line 13, within string
+string '<@a[019..9]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-3424.pl line 13, within string
+string '<@a[09..$i]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3465.pl line 13, within string
+string '<@a[09..$j]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3466.pl line 13, within string
+string '<@a[09..-0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3467.pl line 13, within string
+string '<@a[09..-1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3468.pl line 13, within string
+string '<@a[09..00]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3469.pl line 13, within string
+string '<@a[09..01]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3470.pl line 13, within string
+string '<@a[09..0]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3471.pl line 13, within string
+string '<@a[09..1]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3472.pl line 13, within string
+string '<@a[09..2]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3473.pl line 13, within string
+string '<@a[09..3]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3474.pl line 13, within string
+string '<@a[1..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28563-3670.pl line 13, within string
+string '<@a[2..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28562-4009.pl line 13, within string
+string '<@a[3..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28564-4349.pl line 13, within string
+string '<@a[9..-09]>'
+  model '<>'
+  perl  exit 255, ''
+  err   Illegal octal digit '9' at /tmp/claude-0/-workspace/fef024de-67a3-5769-b4b4-da3a2d1b64f4/scratchpad/review/tmp/f28564-4573.pl line 13, within string

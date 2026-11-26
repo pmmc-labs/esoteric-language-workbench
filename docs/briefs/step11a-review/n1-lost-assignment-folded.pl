@@ -1,0 +1,22 @@
+use v5.42;
+my ($t, $u, $x, $z, @a, $c);
+sub reset_() { $t = "t"; $u = "u"; $x = "a"; $z = "z"; @a = (1, 2); $c = 1 }
+reset_(); $t .= ($u = (1 ? "$x$z" : 0));       say "01 $t $u";
+reset_(); $t .= ($u = +"$x$z");                say "02 $t $u";
+reset_(); $t .= ($u = (0 || "$x$z"));          say "03 $t $u";
+reset_(); $t .= ($u = (1 && "$x$z"));          say "04 $t $u";
+reset_(); $t .= ($u = ("" // "$x$z"));         say "05 $t $u";
+reset_(); $t .= ($u = (undef // "$x$z"));      say "06 $t $u";
+reset_(); $t .= (1 ? ($u = "$x$z") : 0);       say "07 $t $u";
+reset_(); $t .= (0 || ($u = "$x$z"));          say "08 $t $u";
+reset_(); $t .= (1 && ($u = "$x$z"));          say "09 $t $u";
+reset_(); $t .= ($u = (1 ? $x . $z : 0));      say "10 $t $u";
+reset_(); $t .= ($u = (0 || $x . $z));         say "11 $t $u";
+reset_(); $t .= ($u = (1 && $x . $z));         say "12 $t $u";
+reset_(); $t .= ($u = (true ? "$x$z" : 0));    say "13 $t $u";
+reset_(); $t .= ($u = (!0 ? "$x$z" : 0));      say "14 $t $u";
+reset_(); $t .= ($u = ("a" ? "$x$z" : 0));     say "15 $t $u";
+reset_(); $t .= ($u = (1 ? (1 ? "$x$z" : 0) : 0));  say "16 $t $u";
+reset_(); $t .= ($u = (0 or "$x$z"));          say "17 $t $u";
+reset_(); $t .= ($u = (not 0) && "$x$z");      say "18 $t $u";
+reset_(); $t .= ($u = 1 x 0 . "$x$z");         say "19 $t $u";
