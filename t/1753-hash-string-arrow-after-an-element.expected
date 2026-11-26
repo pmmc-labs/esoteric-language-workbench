@@ -1,2 +1,0 @@
-t/1753-hash-string-arrow-after-an-element.pl:5:11: '->[' hard after $h{a} in a string: a dereference, to perl, and references are not in the language yet (step 13); write $h{a}\->[
-exit: 1

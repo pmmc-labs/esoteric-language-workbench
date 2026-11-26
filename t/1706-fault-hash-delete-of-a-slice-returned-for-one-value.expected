@@ -1,0 +1,4 @@
+1
+2
+fault: f returned a list where one value is wanted at t/1706-fault-hash-delete-of-a-slice-returned-for-one-value.pl line 7.
+exit: 1

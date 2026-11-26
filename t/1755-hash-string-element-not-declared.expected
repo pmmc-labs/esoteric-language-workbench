@@ -1,2 +1,0 @@
-t/1755-hash-string-element-not-declared.pl:5:6: %nope is not declared: my %nope
-exit: 1

@@ -1,0 +1,2 @@
+t/1738-hash-delete-of-a-slice-of-one.pl:5:8: @h{...} with one key: perl warns that it is better written $h{...}
+exit: 1

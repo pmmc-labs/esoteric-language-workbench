@@ -234,8 +234,12 @@ Every command that writes a file, one a line (t/checks.py runs them all):
     python3 t/models/hash.py 1703 > t/1703-fault-hash-slice-stored-to-an-undef-key.expected
     python3 t/models/hash.py --program 1704 > t/1704-fault-hash-slice-read-with-an-undef-key.pl
     python3 t/models/hash.py 1704 > t/1704-fault-hash-slice-read-with-an-undef-key.expected
-    python3 t/models/hash.py --program 1705 > t/1705-fault-hash-slice-stored-to-a-frozen-array.pl
-    python3 t/models/hash.py 1705 > t/1705-fault-hash-slice-stored-to-a-frozen-array.expected
+    python3 t/models/hash.py --program 1705 > t/1705-fault-hash-slice-returned-for-one-value.pl
+    python3 t/models/hash.py 1705 > t/1705-fault-hash-slice-returned-for-one-value.expected
+    python3 t/models/hash.py --program 1706 > t/1706-fault-hash-delete-of-a-slice-returned-for-one-value.pl
+    python3 t/models/hash.py 1706 > t/1706-fault-hash-delete-of-a-slice-returned-for-one-value.expected
+    python3 t/models/hash.py --program 1707 > t/1707-fault-hash-slice-stored-to-a-frozen-array.pl
+    python3 t/models/hash.py 1707 > t/1707-fault-hash-slice-stored-to-a-frozen-array.expected
 """
 
 import os
@@ -1098,6 +1102,10 @@ def faults_12b():
     fault('slice-stored-before-the-start', block(mya('a', 1, 2), setslice('a', [-2, 0], 5, 6), dump('a')), block(mya('a', 1, 2), setslice('a', [0, -3], 5, 6), dump('a')))
     fault('slice-stored-to-an-undef-key', block(hh(), sethslice('h', ['a', ''], 1, 2), dumph('h')), block(hh(), sethslice('h', ['a', UNDEF], 1, 2), dumph('h')))
     fault('slice-read-with-an-undef-key', block(hh(), ('mya', 'r', [hslice('h', 'a', '')]), say_(('scalar', 'r'))), block(hh(), ('mya', 'r', [hslice('h', 'a', UNDEF)])))
+    # D18: a slice, and a delete of one, after return, reached for one value.
+    for name, e in (('slice', hslice('g', 'a', 'b')), ('delete-of-a-slice', hdelete('g', 'a', 'b'))):
+        fault(name + '-returned-for-one-value', block(('mya', 'r', [ucall('f')]), say_(('scalar', 'r'))), ('my', 'x', ucall('f')),
+              [myh('g', pair('a', 1), pair('b', 2)), sub('f', [], returns(e))])
     fault('slice-stored-to-a-frozen-array', block(mya('a', 1, 2), each_('v', [A('a')], say_(V), STOP)), block(mya('a', 1, 2), each_('v', [A('a')], setslice('a', [0, 1], 5, 6), STOP)))
     return out
 

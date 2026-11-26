@@ -1,0 +1,2 @@
+t/1737-hash-delete-of-a-slice-for-one-value.pl:5:9: delete of a slice where one value is wanted: perl gives the last value it deleted; delete the element, or assign the list to an array
+exit: 1

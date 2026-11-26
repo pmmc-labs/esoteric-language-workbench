@@ -1,2 +1,0 @@
-t/1747-hash-string-key-a-number.pl:5:9: in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
-exit: 1

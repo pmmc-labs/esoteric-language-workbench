@@ -1,2 +1,0 @@
-t/1739-hash-exists-of-a-slice.pl:5:12: exists takes an element of a hash, found '@h': exists $h{...}
-exit: 1
