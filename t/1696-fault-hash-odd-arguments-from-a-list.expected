@@ -1,0 +1,4 @@
+1
+1
+fault: an odd number of arguments for count's hash at t/1696-fault-hash-odd-arguments-from-a-list.pl line 15.
+exit: 1

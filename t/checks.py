@@ -402,6 +402,33 @@ def counted(code, m):
         if uses and not re.search(r'\$' + array + r'\s*\[|\$#' + array + r'\b', code) \
                 and all(word_before(code, u.start())[0] in ('sort', 'scalar') for u in uses):
             return True
+    # The whole list of a loop, or of a `map`, whose block never reads the
+    # value it is handed (step 12b: the tests of what a loop over a hash
+    # freezes). A `"` in the block may hold the variable, so it is no such
+    # block; a `grep` and a `sort` hand their list on, and are not here.
+    def unread(body, variable):
+        return body is not None and '"' not in body and not re.search(re.escape(variable) + r'(?![A-Za-z0-9_\[{])', body)
+    def block_after(text):
+        depth = 0
+        for k, ch in enumerate(text):
+            depth += {'{': 1, '}': -1}.get(ch, 0)
+            if depth == 0:
+                return text[1:k]
+        return None
+    loop = re.search(r'\bfor(?:each)?\s+(?:my\s+(\$\w+)\s*)?\(\s*$', before)
+    after = re.match(name + r'\s*\)\s*(?=\{)', rest)
+    if loop and after and unread(block_after(rest[after.end():]), loop.group(1) or '$_'):
+        return True
+    if word_before(code, m.start())[0] == 'map' and re.match(name + r'\s*[;)]', rest) and unread(block_before(code, m.start()), '$_'):
+        return True
+    modifier = re.search(r'(?:^|[;{}]\s*\n?)([^;\n]*)\bfor\s+\(?\s*$', before)
+    if modifier and re.match(name + r'\s*\)?\s*;', rest) and unread(modifier.group(1), '$_'):
+        return True
+    # Handed to a sub of the file's whose last parameter is a hash: copied
+    # into it, whatever the order.
+    call = re.search(r'\b(\w+)\([^()]*$', before)
+    if m.group(0)[0] == '%' and call and re.search(r'\bsub\s+' + call.group(1) + r'\s*\([^{;]*%\w*\s*\)\s*\{', code):
+        return True
     # Tested, by `? :` or behind a `!`: whether it has any.
     if re.match(name + r'\s*\?', rest) or re.search(r'!\s*$', before):
         return True
@@ -413,7 +440,7 @@ def counted(code, m):
     if re.search(r'\breturn\s+$', before):
         return True
     # A parameter of a sub.
-    if m.group(0)[0] == '%' and re.search(r'\bsub\s+\w+\s*\([^()]*$', before):
+    if m.group(0)[0] == '%' and re.search(r'\bsub\s+\w+\s*\([^{;]*$', before):
         return True
     return False
 

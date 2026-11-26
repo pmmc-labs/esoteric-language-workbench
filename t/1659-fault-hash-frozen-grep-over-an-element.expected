@@ -1,0 +1,3 @@
+1
+fault: an array was changed while a foreach is over it at t/1659-fault-hash-frozen-grep-over-an-element.pl line 12.
+exit: 1

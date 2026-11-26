@@ -1,0 +1,4 @@
+1
+2
+fault: an odd number of arguments for dflt's hash at t/1698-fault-hash-odd-arguments-before-a-default.pl line 14.
+exit: 1

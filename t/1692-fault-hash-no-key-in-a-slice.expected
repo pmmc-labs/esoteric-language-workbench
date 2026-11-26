@@ -1,0 +1,5 @@
+1
+1
+2
+fault: a slice with a key that is not there, where perl would make it at t/1692-fault-hash-no-key-in-a-slice.pl line 14.
+exit: 1

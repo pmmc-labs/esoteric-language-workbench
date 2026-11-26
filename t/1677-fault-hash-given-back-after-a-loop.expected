@@ -1,0 +1,5 @@
+1
+1
+4:<a=9>,<b=2>,<c=3>,<d=4>
+fault: an array was changed while a foreach is over it at t/1677-fault-hash-given-back-after-a-loop.pl line 18.
+exit: 1

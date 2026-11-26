@@ -1,0 +1,4 @@
+1
+1
+fault: an array was changed while a foreach is over it at t/1705-fault-hash-slice-stored-to-a-frozen-array.pl line 16.
+exit: 1

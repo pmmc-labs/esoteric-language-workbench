@@ -1,0 +1,7 @@
+1
+1
+1
+1
+1
+fault: an array was changed while a foreach is over it at t/1648-fault-hash-frozen-for-modifier-over-values.pl line 12.
+exit: 1

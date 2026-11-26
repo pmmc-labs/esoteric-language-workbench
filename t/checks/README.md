@@ -48,6 +48,9 @@ test is tested apart, on `t/000-say.pl`.)
 | `same-hash-into-an-array` | A hash's values, and the hash, copied into an array that is only sorted or counted (step 12a) |
 | `same-hash-into-an-array-shown` | The same, and the array printed once as it is |
 | `same-hash-into-an-array-element` | The same, and one element of the copy read |
+| `same-hash-loop-unread` | A loop or a `map` over a hash whose block never reads what it is handed; a hash handed to a sub whose last parameter is a hash (step 12b) |
+| `same-hash-loop-read` | The same loops, the value read each way it can be, and a `grep`, which hands its list on |
+| `same-hash-to-a-list-parameter` | A hash handed to a sub that takes a list |
 | `same-hash-in-string` | A hash inside a string that runs code |
 | `same-scalar-each` | `scalar(each %h)`, which is a key and not a count |
 | `same-scalar-reverse` | `scalar reverse keys %h` |

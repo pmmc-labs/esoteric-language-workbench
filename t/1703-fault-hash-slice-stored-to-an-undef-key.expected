@@ -1,0 +1,4 @@
+1
+5:<=2>,<a=1>,<b=2>,<c=3>,<d=4>
+fault: undef where a string is wanted at t/1703-fault-hash-slice-stored-to-an-undef-key.pl line 13.
+exit: 1

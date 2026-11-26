@@ -1,0 +1,4 @@
+1
+1
+fault: an array was changed while a foreach is over it at t/1671-fault-hash-frozen-delete-of-a-slice-under-an-element.pl line 18.
+exit: 1

@@ -1,0 +1,4 @@
+1
+2:<6><2>
+fault: an element before the start of the array at t/1702-fault-hash-slice-stored-before-the-start.pl line 21.
+exit: 1

@@ -1,0 +1,3 @@
+1
+fault: a key that is not there in a foreach, where perl would make it at t/1689-fault-hash-no-key-map.pl line 12.
+exit: 1
