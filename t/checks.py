@@ -48,6 +48,12 @@ models` write what perl and the models say.
             that the change can be found from the log and the log from
             the change. `commit-msg FILE [--staged]` checks one message,
             for the git hook that `make hooks` installs.
+  differences  docs/DIFFERENCES.md, which says where the language and perl
+            differ (D103): each of its programs does under perl and under
+            the compiler what its row says; each rated row has ratings
+            from the lists and decisions that exist, in the section they
+            belong to; and every decision of the log is cited in it or
+            listed as saying nothing there.
   doctor    Each tool's version, and a failure for one the project can't
             use: perl that isn't 5.42 with 64-bit integers and doubles,
             Node before 22.18, no cc, no clang (make doctor).
@@ -679,6 +685,146 @@ def check_census():
     print(f'census: {sum(now.values())} probes (' + ', '.join(f'{n} {v}' for v, n in now.items() if n) + f'); {total} tests of the census itself')
     return bad
 
+# ---- differences
+
+DIFF = 'docs/DIFFERENCES.md'
+FEEL = ('idiom', 'habit', 'accident')
+MET = ('often', 'sometimes', 'rarely')
+WHERE = ('loops', 'subs', 'printing', 'strings', 'numbers', 'data', 'control', 'variables', 'layout', 'errors',
+         'objects', 'old code')
+
+def table_cells(line):
+    """A table row's cells, split at the pipes outside code spans; a
+    backslash before a pipe makes it the cell's own."""
+    out, cur, code, i = [], '', False, 0
+    s = line.strip()[1:]
+    while i < len(s):
+        c = s[i]
+        if c == '\\' and s[i + 1:i + 2] == '|':
+            cur, i = cur + '|', i + 2
+            continue
+        if c == '`':
+            code = not code
+        if c == '|' and not code:
+            out.append(cur.strip())
+            cur = ''
+        else:
+            cur += c
+        i += 1
+    return out
+
+def differences_example(n, program, perl_says, curly_says, tmp):
+    """One row of "Run for this file": the program under perl and under
+    the compiler, held to what the row says of each."""
+    path = f'{tmp}/d{n}.pl'
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write('use v5.42;\n' + program + '\n')
+    what = f'{DIFF}: `{program}`'
+    p = subprocess.run([PERL, path], capture_output=True, stdin=subprocess.DEVNULL, timeout=60)
+    bad = []
+    if perl_says.startswith('dies'):
+        if p.returncode != 255:
+            bad.append(f'{what}: perl is said to die, and exits {p.returncode}')
+    else:
+        lines = [''] if perl_says.startswith('an empty line') else re.findall(r'`([^`]*)`', perl_says)
+        want = ''.join(l + '\n' for l in lines).encode()
+        if p.stdout != want or p.returncode != 0:
+            bad.append(f'{what}: perl is said to print {want!r}, and prints {p.stdout!r}, exit {p.returncode}')
+        if bool(p.stderr) != ('warns' in perl_says):
+            bad.append(f'{what}: perl {"warns" if p.stderr else "does not warn"}: {clip(p.stderr)}')
+    c = subprocess.run(['node', 'bin/curlyc.ts', '-o', f'{tmp}/d{n}', path], capture_output=True)
+    kind = curly_says.split(':')[0].split()[0] if curly_says else ''
+    if kind == 'Refused':
+        if c.returncode != 1:
+            bad.append(f'{what}: said to be refused, and the compiler exits {c.returncode}')
+        return bad
+    if kind not in ('Fault', 'Same'):
+        return bad + [f'{what}: its Curly cell begins with none of Refused, Fault, Same']
+    if c.returncode != 0:
+        return bad + [f'{what}: said to run, and it does not compile: {clip(c.stderr)}']
+    env = dict(os.environ)
+    env.update(knobs())
+    r = run_capped([f'{tmp}/d{n}'], env, b'', 60)
+    if r is None:
+        return bad + [f'{what}: the compiled program did not finish']
+    if kind == 'Same':
+        if (r.stdout, r.returncode) != (p.stdout, p.returncode) or r.stderr:
+            bad.append(f'{what}: said to be the same as perl, and prints {r.stdout!r}, exit {r.returncode}: {clip(r.stderr)}')
+    else:
+        said = re.search(r'`([^`]+)`', curly_says)
+        if r.returncode != 1 or not said or f'fault: ' not in r.stderr.decode() or said.group(1) not in r.stderr.decode():
+            bad.append(f'{what}: said to fault with {said.group(1) if said else "?"!r}, and exits {r.returncode}: {clip(r.stderr)}')
+        if not p.stdout.startswith(r.stdout):
+            bad.append(f'{what}: before its fault it prints {r.stdout!r}, which perl does not begin with')
+    return bad
+
+def check_differences():
+    """docs/DIFFERENCES.md (D103): each program of its "Run for this
+    file" does under perl and under the compiler what its row says;
+    each rated row has a Feel, a Met and a Where from the lists, names
+    decisions that exist, and stands in a section its ratings belong
+    to; and every decision of the log is cited in the file or listed
+    under "Decisions that say nothing here"."""
+    import concurrent.futures
+    import tempfile
+    text = open(DIFF, encoding='utf-8').read()
+    log = open('docs/DECISIONS.md', encoding='utf-8').read()
+    decided = set(int(n) for n in re.findall(r'(?m)^\*\*D(\d+)\.', log))
+    bad, rated, examples, allowed, header = [], 0, [], None, None
+    for line in text.split('\n'):
+        m = re.match(r'<!-- rows: ([^;]*); (.*?) -->', line)
+        if m:
+            allowed = ([w.strip() for w in m.group(1).split(',')], [w.strip() for w in m.group(2).split(',')])
+        if line.startswith('## '):
+            allowed = None
+        if not line.startswith('|'):
+            header = None
+            continue
+        cells = table_cells(line)
+        if header is None:
+            header = cells
+            continue
+        if set(''.join(cells)) <= set('-: '):
+            continue
+        row = clip(cells[0].encode(), 60)
+        if header == ['Program', 'perl 5.42', 'Curly']:
+            program = re.fullmatch(r'`(.*)`', cells[0])
+            if len(cells) != 3 or not program:
+                bad.append(f'{DIFF}: a row of programs is not a program in a code span and two cells: {row}')
+            else:
+                examples.append((program.group(1), cells[1], cells[2]))
+        elif header == ['Perl', 'Curly', 'Feel', 'Met', 'Where', 'Decision']:
+            rated += 1
+            if len(cells) != 6:
+                bad.append(f'{DIFF}: a rated row has {len(cells)} cells, not 6: {row}')
+                continue
+            feel, met, where, ds = cells[2], cells[3], [w.strip() for w in cells[4].split(',')], re.findall(r'\bD(\d+)\b', cells[5])
+            if feel not in FEEL or met not in MET or not where or any(w not in WHERE for w in where):
+                bad.append(f'{DIFF}: Feel, Met or Where is not from the lists ({feel}; {met}; {cells[4]}): {row}')
+            elif allowed is None:
+                bad.append(f'{DIFF}: a rated row in a section that does not say which rows are its own: {row}')
+            elif feel not in allowed[0] or met not in allowed[1]:
+                bad.append(f'{DIFF}: rated {feel}, {met}, in the section for {", ".join(allowed[0])}; {", ".join(allowed[1])}: {row}')
+            if not ds or any(int(d) not in decided for d in ds):
+                bad.append(f'{DIFF}: names no decision, or one the log does not have ({cells[5]}): {row}')
+    if not rated or not examples:
+        bad.append(f'{DIFF}: {rated} rated rows and {len(examples)} programs: the file has lost its tables')
+    cited = set(int(n) for n in re.findall(r'\bD(\d+)\b', text))
+    for a, b in re.findall(r'\bD(\d+) to D(\d+)\b', text):
+        cited.update(range(int(a), int(b) + 1))
+    for n in sorted(decided - cited):
+        bad.append(f'{DIFF}: D{n} is not in it: say what a Perl programmer will notice, or list it under '
+                   f'"Decisions that say nothing here"')
+    for n in sorted(cited - decided):
+        bad.append(f'{DIFF}: it cites D{n}, which the log does not have')
+    with tempfile.TemporaryDirectory() as tmp:
+        with concurrent.futures.ThreadPoolExecutor(int(os.environ.get('JOBS', os.cpu_count() or 2))) as pool:
+            for found in pool.map(lambda a: differences_example(a[0], *a[1], tmp), enumerate(examples)):
+                bad += found
+    print(f'differences: {rated} rated rows, {len(examples)} programs run under perl and the compiler, '
+          f'{len(decided)} decisions accounted for')
+    return bad
+
 def main(argv):
     os.chdir(ROOT)
     what = argv[0] if argv else 'all'
@@ -697,8 +843,10 @@ def main(argv):
         bad = doctor()
     elif what == 'census':
         bad = check_census()
+    elif what == 'differences':
+        bad = check_differences()
     elif what == 'all':
-        bad = check_models() + check_tests() + check_oracle() + check_census()
+        bad = check_models() + check_tests() + check_oracle() + check_census() + check_differences()
     else:
         sys.exit(__doc__)
     for b in bad:

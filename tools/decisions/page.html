@@ -436,7 +436,7 @@ function blocks(lines) {
     const indent = l => l.match(/^ */)[0].length;
     while (i < lines.length) {
         const l = lines[i];
-        if (!l.trim()) { i++; continue; }
+        if (!l.trim() || /^\s*<!--.*-->\s*$/.test(l)) { i++; continue; }
         if (/^ *```/.test(l)) {
             const body = [], tag = l.trim().slice(3).trim();
             for (i++; i < lines.length && !/^ *```/.test(lines[i]); i++) body.push(lines[i]);
