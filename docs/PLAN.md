@@ -3450,20 +3450,273 @@ block this proposal had tried. The amendments, which D87 records:
 
 Referee: perl. Size: large.
 
-**Pulled forward from step 16, to before the census (D90,
-2026-11-26). To be proposed: nothing of it is agreed or built.**
-A variable in a double-quoted string: `"$x"`, `"@a"`, `"$a[0]"`,
-`"@a[0, 1]"`, `"${x}"` and what else the language has to interpolate
-by now (no hashes and no references yet: steps 12 and 13 widen it).
-Decides: exactly which shapes interpolate, since perl guesses at
-`"$x[1]"`, `"@name"` and an email address, and D21 says refuse what
-it has to guess; what joins an array's values (`$"`, which is not in
-the language); an undef in a string (D48: a fault); how an
-interpolated string sits with D57's row of dots and D76's walk,
-since to perl it is a concatenation, and a join for an array; and
-that T34's refusal of a bare `$` or `@` in double quotes ends for
-the shapes that are in. Traps: T9, T22, T23, T34. Every test written
-round its absence since step 5 may use it after.
+**Proposed 2026-11-26, by Fable 5.2 (the size the line asks for).
+Nothing of it is agreed or built: Q1 to Q4 are Stevan's.** Pulled
+forward from step 16, to before the census (D90).
+
+Everything here about perl was run under 5.42.0 and is in
+`briefs/claims.py` (50 rows, `T196` to `T210-brace`; about 420
+programs were run to find them). Traps: T34, and T196 to T210, found
+writing this. T9, T22 and T23, which the outline named, are step
+16's and step 9's: none is about interpolation. The outline this
+replaces said: a variable in a double-quoted string, `"$x"`, `"@a"`,
+`"$a[0]"`, `"@a[0, 1]"`, `"${x}"`; and that the step decides which
+shapes interpolate, what joins an array's values, an undef in a
+string, how a string sits with D57's row of dots and D76's walk, and
+where T34's refusal ends.
+
+#### The picture
+
+Two things, and the second is most of the work.
+
+**1. What a string is worth.** perl makes one value of an
+interpolated string, at the place where it stands: its text and its
+variables joined left to right, each variable made a string as `.`
+makes one, an array as `join(" ", @a)` makes one. That is all of
+the meaning, and the runtime has both operations already. **A string
+is a value**: perl compiles it as an operation of its own, which the
+row of dots round it does not take in (T196), so it is simpler than
+the concatenation it looks like. D57 and D76 have nothing to ask of
+it from outside.
+
+**2. Where a variable in a string ends.** This is the lexer's, and
+it is where perl is strange: a `$` may have blanks and a new line
+before its name (T200); `::` after a name makes it another variable,
+in silence for `$#a::` (T199); a letter past ASCII goes on with the
+name (T205); `[` after a name is always an element, and what stands
+in the brackets is any expression at all, read as code, quotes and
+comments too (T201, T202); `->[`, `{` and a second `[` are steps 12
+and 13 (T203); and `@-`, `@_`, `$-`, `$(` and thirty more are
+variables of perl's own that print something, or nothing, in silence
+(T204). So the rule is written from the other side: **a `$` or an
+`@` in a string begins one of a short list of shapes, written one
+way, or the string is refused.**
+
+What the census's probes use, counted roughly over the 8,811 files
+the census will read (6,152 have a `$` or `@` in double quotes):
+`$name` 4,915 times in 3,564 files and `@name` 2,385 times in 2,051;
+an element by a literal index 175 times in 134 files, by a scalar 3
+times, by `$#a` 4 times, by arithmetic twice in one file; a slice 22
+times; `$#a` 13 times. What is not this step's: a hash element 524
+times in 403 files (step 12), a dereference or an arrow in about
+200 files (step 13), `$@`, `$!`, `$0` and their kin in 189, `@_` in 113,
+`$main::x` in 93, `$1` in 53. With scalars, arrays and the simple
+elements in, 5,061 of the 6,152 files have no string the language
+refuses for its shape; every index perl allows would add two.
+
+#### The language at step 11a
+
+- **`"$x"`**: the scalar's value, made a string. The name is the
+  longest perl would take, so `"$x_y"` is `$x_y`; **`"${x}"`** ends
+  the name where the writer says, `"${x}_y"`. In a `for`, `map`,
+  `grep` or `sort` block, `"$_"`, `"$a"` and `"$b"` are as they are
+  outside a string.
+- **`"@a"`** and **`"@{a}"`**: the array's values with one space
+  between each two, as `join(" ", @a)`; nothing for an empty array.
+- **`"$a[I]"`**: the element. `$x[` in a string is an element of
+  `@x`, as it is to perl, whether or not there is a `$x`; without
+  an `@x` it is refused, and the message says to write `${x}[` or
+  `$x\[` if the scalar was meant.
+- **`"@a[I, J]"`** and **`"@a[I .. J]"`**: the slice, joined with a
+  space.
+- **`"$#a"`** and **`"$#{a}"`**: the last index.
+- **What I may be** is Q1.
+- **Each piece is made a string as `.` makes one**: a number as it
+  prints, a boolean `1` or the empty string, D36's fault for a whole
+  Num from 10^15. **An undef is D48's fault**, `undef where a string
+  is wanted`: a scalar, an element past the end, an undef among an
+  array's values or a slice's (T208). An element or a slice in a
+  string makes nothing.
+- **A string is a value, worked out where it stands**, left to
+  right. It is a Str whatever it holds: `"$t"` of a boolean is a
+  string (T207), and `"$n"` is `$n . ""`.
+- `\$` and `\@` are those characters, as before, and so `"$x\[0]"`,
+  `"$x\::y"` and `"me\@example.com"` say what they look like.
+- Still step 16's: `\U`, `\L`, `\Q` and `\E`, `qq`, heredocs.
+
+#### What perl does that the obvious build gets wrong
+
+- **A string is not the dots it looks like** (T196): `"$x-" . ($x =
+  5)` is `3-5` where `$x . "-" . ($x = 5)` is `5-5`. A build that
+  turned a string into a row of dots would be refused by D57 where
+  perl has an answer, and one that let the row read `$x` late would
+  be WRONG.
+- **Inside the string it is a row of dots** (T197): `"$i $a[$i++]
+  $i"` is `1 1 1`.
+- **perl loses an assignment** (T198, which is T129 again): `$t .=
+  ($u = "$x$z");` never assigns `$u`.
+- **`"$x::y"` runs** (T199): `use strict` passes a name with a
+  package in it. `"$#a::"` prints `-1` and says nothing.
+- **Blanks after a `$`** (T200): `"a $ b"` is `$b`.
+- **An index is code** (T202): `"$x[1_0]"` is element 10, `"$x['1']"`
+  and `"$x[\"0\"]"` are elements, a comment and a new line may stand
+  in the brackets, and an index of twenty nines is the last element.
+- **perl's own variables** (T204): `"@-"`, `"@+"`, `"@_"`, `"@$"` and
+  `"@1"` are arrays, empty and silent; `"a$-b"` is `a0b`.
+- **A name goes on past ASCII** (T205): `"$xé"` is the variable
+  `$xé`.
+- **A one-index slice warns** in a string as outside one (T206).
+- **A string in a loop's list is a copy** (T209): nothing of D17's
+  aliasing reaches through it.
+- **In a `sort` block `"$a[0]"` is `@a`'s element** (T210, T195).
+
+#### The questions
+
+**Q1. What may stand in the brackets of an element or a slice, in a
+string?** To perl, any expression, read as code inside the string:
+with quotes of its own if they are single or backslashed, with calls,
+assignments, comments. Outside a string the language has all of
+that; inside one it has to be found by the lexer, in the middle of a
+string, and perl reads the pieces of the string late (T197), so an
+index that changes a variable shows in the pieces before it.
+(a) **Recommended: a whole number or a scalar variable.** `"$a[0]"`,
+`"$a[-1]"`, `"$a[$i]"`; in a slice, two or more of those with commas
+between, or a range between two of them: `"@a[0, 1]"`, `"@a[$i ..
+$j]"`, `"@a[0, 2 .. 4]"`. The number is decimal digits with a minus
+or without, the whole index is on one line, and blanks are allowed
+where perl allows them. Anything else is refused, and the message
+says to take the index into a `my` first. Then nothing in a string
+can change anything, the order its pieces are read in can not show,
+and D57 and D76 have nothing to check inside one. It is what 178 of
+the probes' 184 elements in strings are (four of the others are
+`$a[$#a]`, and two `$i+1` and `$i-1`, in one file).
+(b) An expression that changes nothing: arithmetic on numbers,
+scalars, `$#a` and other elements, no assignment, no step, no call,
+no quote. `"$a[$i + 1]"`, `"$a[$#a]"`, `"$a[$i[0]]"`. The lexer
+reads an expression inside a string, by its own rules run again on
+those characters, and each difference between how perl reads code in
+a string and outside one is a place to be wrong. It adds those six
+of the probes' elements.
+(c) Whatever perl takes that the language has, with D57's and D76's
+walks through the string's pieces. Calls in an index, and the
+refusals that go with them.
+
+**Q2. A `$` or an `@` that perl takes for text.** `"a @ b"`, `"a@"`,
+`"@@"`, `"me@.x"` are text to perl, in silence; `"$x->y"`, `"$x->"`,
+`"$x:"`, `"$x-1"`, `"$x.$y"`, `"$x's"` are a variable and then text.
+(a) **Recommended: what follows a shape is text, as perl has it; a
+`$` or `@` that begins no shape is still refused.** The second half
+is T34 as it stands, with a shorter list of what it stops. `"a @
+b"` would be harmless, but the rule "an `@` in double quotes is an
+array's, or has its backslash" is one line, and perl's rule for
+which `@` is text is a table (`@-`, `@+`, `@_`, `@$` and `@1` are
+not, T204). For what follows a shape there is no table: after a
+name, an element, a slice or `$#a`, the language refuses `::`, `{`,
+`[` (after a name it is the element or the slice), `->` before `[`,
+`{`, `@` or `$`, and a character past ASCII; after `${x}` and
+`@{a}` nothing (T201, T203). Everything else is text.
+(b) Text wherever perl is silent: `"a @ b"` and its kin are in. The
+lexer carries perl's table.
+(c) Stricter after a shape: refuse any `->`, any `:`, any `'` hard
+after a name, so that `"$x's"` and `"$x: $y"` want braces. Safe, and
+it would refuse what everyone writes.
+
+**Q3. `$#a` in a string.** perl interpolates it, and 13 probes use
+it.
+(a) **Recommended: in**, `"$#a"` and `"$#{a}"`, since perl has one
+reading of them and it is a line of the lexer. `::`, `[` and `{`
+after it are refused (T199, T203).
+(b) Refused: `"last: " . $#a` says it.
+
+**Q4. The tests written round its absence.** Steps 5 to 10 wrote
+`say $x . " " . $y;` and `say join(" ", @a);` where anyone would
+write `"$x $y"` and `"@a"`.
+(a) **Recommended: leave them.** They test what they were written to
+test, their models are records of their steps, and rewriting 800
+tests proves nothing. New tests and new models use interpolation
+from here, and the refusal tests of T34 that are now in the language
+become tests of what they print (as five of step 9's refusals did at
+10a).
+(b) Rewrite the models to print through strings.
+
+#### What has nothing to choose
+
+- **`$"`** is not in the language, so the space between an array's
+  values is always one space, as perl's is until it is set.
+- **An undef is a fault** (D48, D15: perl warns), everywhere in a
+  string.
+- **D57 and D76** (T196, T209): a string is a value, so it is no
+  piece of the row it stands in, names nothing for D76's walk,
+  freezes no array in a loop's list, and names no scalar for D77.
+  Inside it, with Q1 as recommended, nothing can change. One refusal
+  is added to D57, perl's fault and not the language's: **the right
+  side of `.=` may not be an assignment of an interpolated string**
+  (T198), unless the string is one variable, one array or one
+  element and nothing else, where perl does assign.
+- **A `$` or `@` is hard against its name or its brace** (T200), and
+  a name in braces is hard against both: `"${ x }"` is refused, and
+  so are `"${x[1]}"` and `"@{a[0,1]}"`, which perl warns of (T201).
+- **`"${\ ...}"` and `"@{[ ... ]}"`** are refused, with a message
+  that says they come with references (step 13). So are `"$$x"`,
+  `"@$x"` and `"${$x}"`.
+- **`"$x{...}"` and `"@a{...}"`** are refused until step 12, with a
+  message that says so and says how to write a brace as text.
+- **A slice by one index** is refused, as outside a string (T206).
+  `"@a[@which]"`, a slice by an array, is refused with Q1 as
+  recommended.
+- **A variable that is not declared** is refused as it is anywhere,
+  and the message shows the name that was read: `"$x_y"` with only
+  `$x` declared says `$x_y`, and how to write `${x}_y`. For
+  `"user@example.com"` it says `@example`, and `\@`.
+- **A character past ASCII hard after a name** is refused (T205):
+  perl's rule is every letter, digit and mark of Unicode, by perl's
+  tables, and `${x}` says what is meant in a way no table has to
+  agree on. It refuses `"$x→"` too, which perl takes.
+- **`$_[`** is refused: an element of `@_`, which the language does
+  not have (T210). `"$a[0]"` in a `sort` block is the array's
+  element, as it is outside a string (T195).
+- **T175 stands**: a `map` block that begins with a string and a
+  comma is refused whether or not the string interpolates.
+- **A string that interpolates is no constant**: `if ($x = "a$y")`
+  is not D53's refusal, and perl does not warn of it.
+- **The lexer finds the end of the string first**, as perl does: the
+  first `"` without a backslash, whatever brackets are open.
+
+#### The build, once the questions are answered
+
+- **One step.** It is the lexer, a node, a walk or two that learn to
+  stop at it, and a few lines of generated C.
+- **The lexer** turns a string with a variable in it into a token
+  whose value is a row of pieces: text, and for each variable its
+  shape, its name, its index if it has one and its position. Every
+  refusal above is raised there, at the character, but the ones that
+  need a declaration.
+- **The tree**: one new node, an interpolated string, whose pieces
+  are text and the nodes the language has already (`var`, `elem`,
+  `array`, `slice`, `lastindex`), so the resolver finds each
+  variable by the rule it has. The checker's walks for D57, D69, D76
+  and D77, the freeze and D80's fault past the end treat it as a
+  value and do not look inside.
+- **The generated C** is what `.` and `join` generate: each piece
+  into a temporary, left to right, an array through `rt_join` with a
+  constant space, and the pieces joined with `rt_concat`. **The
+  runtime gains nothing**, unless joining many pieces one at a time
+  is slow enough to want one call that takes them all; that would be
+  measured first, and it would be the runtime's first function of
+  many operands, which opens a frame.
+- **The model first, red before any code** (`t/models/interp.py`, on
+  `list.py`'s values): each shape, each kind of value in each shape
+  (Int, Num, the Num that faults, boolean, Str, undef), text and
+  escapes between, a string as every kind of operand. A program for
+  each fault, one fault each: undef in each shape, past each end,
+  D36's Num, an index that is no whole number.
+- **By hand**: T196's and T209's programs with perl's answers, since
+  what they test is that nothing is read late and nothing aliased;
+  and a refusal test for every shape this proposal refuses, with the
+  character each message points at.
+- **T34's old tests**: the ones whose shape is now in become `same`
+  tests.
+- **Broken on purpose**, as every step: the lexer's ends of names,
+  the order of the pieces, the space, each fault.
+- **`docs/LANGUAGE.md`**, "Writing strings", gains the section; D43's
+  line that a `$` must have its backslash goes.
+- Tests are numbered from 1300.
+- **Adversarial review before any of it is built.** What I would ask
+  it first: a string perl reads as some other variable than the
+  lexer's rule does (the end of a name is the whole risk); a place
+  where an interpolated string is not the value this says it is (the
+  optimiser: T198 was found by trying, not by rule); and whether
+  `"$x"` and `$x . ""` ever differ in what a later operation sees.
 
 ### 11b. The census
 
