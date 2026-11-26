@@ -55,6 +55,7 @@ models` write what perl and the models say.
 
 import glob
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -592,6 +593,17 @@ def doctor():
     return bad
 
 
+def check_census():
+    """The census's file, held to the probes of t/census/run/, to no
+    WRONG and to the last commit's (step 11b; t/census.py has the rules),
+    and the census's own tests. No probe is run: `make census` does that."""
+    import census
+    failed, total = census.self_test()
+    bad = [f'the census itself: {f}' for f in failed] + census.check()
+    now = json.load(open(census.JSON, encoding='utf-8'))['counts'] if os.path.exists(census.JSON) else {}
+    print(f'census: {sum(now.values())} probes (' + ', '.join(f'{n} {v}' for v, n in now.items() if n) + f'); {total} tests of the census itself')
+    return bad
+
 def main(argv):
     os.chdir(ROOT)
     what = argv[0] if argv else 'all'
@@ -608,8 +620,10 @@ def main(argv):
         bad = check_commit_msg(argv[1], '--staged' in argv)
     elif what == 'doctor':
         bad = doctor()
+    elif what == 'census':
+        bad = check_census()
     elif what == 'all':
-        bad = check_models() + check_tests() + check_oracle()
+        bad = check_models() + check_tests() + check_oracle() + check_census()
     else:
         sys.exit(__doc__)
     for b in bad:

@@ -1,0 +1,2 @@
+use v5.42;
+my @a; for (@a[0,1]) { } print scalar(@a),"\n";

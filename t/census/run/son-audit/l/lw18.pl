@@ -1,0 +1,2 @@
+use v5.42;
+my @a = (1,2,3); my @r; for my $i (1..2) { push @r, join(",", @a); shift @a } print "@r\n";

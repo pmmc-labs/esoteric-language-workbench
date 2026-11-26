@@ -1,0 +1,10 @@
+use v5.42;
+my $a = $ARGV[0] // 3;
+my $b = $ARGV[1] // 5;
+print "eq [", ($a == $b), "]\n";
+print "ne [", ($a != $b), "]\n";
+print "lt [", ($a < $b), "]\n";
+print "gt [", ($a > $b), "]\n";
+print "le [", ($a <= $b), "]\n";
+print "ge [", ($a >= $b), "]\n";
+print "cmp [", ($a <=> $b), "]\n";

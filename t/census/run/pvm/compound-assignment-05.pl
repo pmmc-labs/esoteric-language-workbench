@@ -1,0 +1,12 @@
+use v5.42;
+my $a = $ENV{X} // 12;
+my $b = $ENV{X} // 12;
+my $c = $ENV{X} // 12;
+my $d = $ENV{Y} // 1;
+my $e = $ENV{Z} // 16;
+$a |= 3;
+$b &= 10;
+$c ^= 3;
+$d <<= 3;
+$e >>= 2;
+print "$a $b $c $d $e\n";

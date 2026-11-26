@@ -1,0 +1,11 @@
+use v5.42;
+my $s = "abc";
+my $n = 1;
+$s =~ s/a/$n+1/e;
+my $c = q{3*4};
+$s =~ s/b/$c/ee;
+my $k = 0;
+$s =~ /2(?{ $k = 5 })/;
+my $i = qr/c/;
+print "hit\n" if $s =~ /(??{ $i })/;
+print "$s $k\n";

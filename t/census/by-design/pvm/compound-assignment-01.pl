@@ -1,0 +1,10 @@
+use v5.42;
+my $a = $ENV{X} // 5;
+my $b = $ENV{X} // 5;
+my $c = $ENV{X} // 5;
+my $d = $ENV{Y} // 6;
+$a += 2;
+$b -= 2;
+$c *= 2;
+$d /= 2;
+print "$a $b $c $d\n";

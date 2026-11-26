@@ -18,7 +18,7 @@ review of step 8 and from building it, which he confirmed; D75 is
 his, on seeing the build. D76 to D80 are his answers to step 9's
 proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
-confirmed.
+confirmed. D96 and D97 are his, on the census.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1774,6 +1774,50 @@ a comma after it or not (T167); `"$x->$y"`, which is text and a
 variable to perl, is refused with the other arrows before a `$`;
 and of two faults in one string the left one's is raised, each piece
 being joined on before the next is worked out.
+
+**D96. The census imports its probes, with `use v5.42;` in front; a
+probe refused by design is kept and not run; and its results are a
+JSON file in git.** *(User, 2026-11-26: "it is okay to prepend use
+v5.42. tests that we would refuse By Design should be included, but
+we don't need to run them. Then if we do bring something back, we
+move the tests where they can be run... `make census` should
+generate a JSON file of the results. Then WRONG items can be
+prioritized, etc. and if we track it in git, it also shows progress
+towards the census goals"; and, of pvm's cases, "Lets import them
+into t/census/".)* D11 said the probes are copied in and judged;
+this says how. All but 21 of the 9,059 programs lacked the line the
+language begins with, so without it the census is one refusal;
+perl's own answer is taken from the file as imported. The probes
+are perl5-son's two sets, Chalk's and pvm's `conformance/mdtest`
+programs, 5,786 once copies are one probe. PerlOnJava's unit tests,
+which pvm carries, are `Test::More` scripts and wait for step 18;
+pvm's parser fragments print nothing and are no probes. Rejected:
+reading pvm's cases in place (one corpus shared, and the census
+tied to another repository's revision); running the probes as they
+are; porting them (D8 bends an example, and a ported probe is no
+longer somebody else's).
+
+**D97. The census's verdicts, and its rules.** *(User: accepted as
+recommended, 2026-11-26; step 11b, Q1 to Q4: "Sounds good, they
+suit me".)* D11's four verdicts, and two more: **WARNS**, the same
+output where perl also warns (D15 makes that no agreement, and it
+is no WRONG), and **UNJUDGED**, where perl's own output moves with
+the hash seed or perl does not end. A REFUSED has a reason, by a
+table in the census's script from the compiler's message: `design`
+with the decision, `later` with the step, or `open`; the compiler's
+messages are not touched. **A probe's reason is its first
+refusal's**, and the compiler does not go on past one to find the
+rest. **A WRONG may stand in the committed file while it is worked
+on, and fails `make test` while it does**, so no step ends with
+one: D11's "WRONG is 0" holds at every step's end, and the finding
+is in the history. A probe that was SAME in the last commit is SAME
+in this one, or is named in `t/census/LEFT-SAME.tsv` with the
+decision that moved it. The 206 probes perl itself stops at with
+the line in front are kept in `not-perl/`, and never run. Rejected:
+a reason on every refusal in the compiler (212 of them); a file
+that may not hold a WRONG (the finding is then in nobody's
+history); a WRONG marked as known and allowed (the door D11 shut);
+one step for the import and another for the rest.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

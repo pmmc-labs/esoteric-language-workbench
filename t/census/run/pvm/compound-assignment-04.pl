@@ -1,0 +1,10 @@
+use v5.42;
+my $p = $ENV{X} // 0;
+my $q = $ENV{X} // 0;
+my $r = $ENV{Y} // 1;
+my $s = $ENV{X} // 0;
+$p //= 99;
+$q ||= 99;
+$r &&= 99;
+$s &&= 99;
+print "$p $q $r $s\n";

@@ -1,0 +1,2 @@
+use v5.42;
+my @a=(1,2); my $r=\$a[1]; shift @a; $$r=9; print "@a\n";

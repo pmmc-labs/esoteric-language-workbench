@@ -1,0 +1,2 @@
+use v5.42;
+my $r; push @$r, 1; $r->[3] = 1; print scalar(@$r), "\n";

@@ -3841,13 +3841,56 @@ of `claims.py`). The amendments:
   the generated programs; which line a fault in a string of several
   lines names.
 
-### 11b. The census
+### 11b. The census (done)
 
 Referee: perl. Size: medium.
 
-**Proposed 2026-11-26, by Fable 5.2. Not agreed: Q1 to Q4 are
-Stevan's. What he has said already is under "Decided".** After 11a
-(D90). D11; perigrin has agreed.
+**Proposed 2026-11-26, by Fable 5.2, and agreed the same day: what
+Stevan had said already is under "Decided" and is D96, and he took
+the recommendation on Q1 to Q4, which are D97.** After 11a (D90).
+D11; perigrin has agreed.
+
+**Built** (2026-11-26, by Fable 5.2).
+
+- **The import** (`t/census/import.py`, which needs the three
+  repositories beside this one, and is run again when one moves):
+  5,786 probes from 9,059 programs, `use v5.42;` in front of each
+  that lacked it, a copy counted once; `SOURCES.tsv` has every
+  place each came from, each repository's revision and its licence.
+  206 that perl itself stops at went to `not-perl/`.
+- **The census** (`t/census.py`, `make census`, about two minutes):
+  the compiler's front over every probe in one process
+  (`t/census/front.ts`), since most are refused; the driver, a run
+  with the knobs every test has, and perl under eight seeds, for
+  the ones that pass. `--sort` moved the 2,633 refused by design to
+  `by-design/`, each with its decision in `BY-DESIGN.tsv`: 1,721 for
+  D17 (`@_`, a sub with no signature, a loop's variable changed),
+  453 for D19 (`our`, `local`, `package`), 119 for D13, 81 for D76,
+  74 for D92.
+- **The first census** (`t/census/census.json`): **2,947 probes
+  run: 718 SAME, 66 LOUD, 2,163 REFUSED, no WARNS, none UNJUDGED,
+  no WRONG.** Of the refused, 1,662 wait for a step (643 for
+  references, 638 for hashes, 214 for patterns, 97 for step 16),
+  and 501 are *open*: 85 kinds of message the table has no reason
+  for, the largest a `$` or `@` that begins no name (202: perl's
+  own variables and dereferences without braces) and an assignment
+  to what is no variable (96). Of the LOUD, 28 are an array changed
+  while a loop is over it, 12 an integer overflow, 10 a string that
+  is no number.
+- **What it found before it was written**: T213, eleven probes
+  WRONG, one trap of step 9's, fixed first (see the Status).
+- **The check** (`t/checks.py census`, in `make test`): runs no
+  probe; holds the file to the probes of `run/`, to its own counts,
+  to no WRONG, and to the last commit's SAME; and runs the census's
+  own tests, 33 of them: the judge on each kind of run, the
+  reasons, and the check itself against each thing it guards
+  (`t/census.py --self`). With a SAME probe's verdict changed by
+  hand in the file, `make checks` fails and names the probe.
+- **What 11b hands on**: every step's account says how the census
+  moved; a step that takes a construct in takes its row out of the
+  census's table of reasons; the 501 open refusals are to be read,
+  and each given a reason or found to be a refusal the language
+  should not make; PerlOnJava's suite at step 18.
 
 #### What was measured first
 

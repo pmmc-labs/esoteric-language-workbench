@@ -1,0 +1,2 @@
+use v5.42;
+package P; sub new { bless {}, shift } package main; my $o = P->new; my $r = eval { $o->nope; 1 }; print $r ? "ok" : "died", $@ =~ /Can't locate object method "nope" via package "P"/ ? "msg" : "other", "\n";
