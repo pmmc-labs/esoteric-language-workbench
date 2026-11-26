@@ -1398,6 +1398,7 @@ son-audit/y/yg28.pl	D17	$_ is read-only: in perl, changing it changes the list's
 son-audit/y/yg29.pl	D16	'no warnings' goes at the top, after 'use v5.42;' and before anything else
 son-audit/y/yg30.pl	D38	017 starts with a zero: perl reads that as octal, which the language writes 0o17
 son-audit/y/yg31.pl	D38	100000000000000000000 is past the largest integer, 9223372036854775807
+son-audit/y/yg67.pl	D99	'{' hard after @h in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write @{h}{ or @h\{
 son-audit/y/yg76.pl	D38	18446744073709551615 is past the largest integer, 9223372036854775807
 son-audit/y/yg77.pl	D38	18446744073709551615 is past the largest integer, 9223372036854775807
 son-audit/y/yg78.pl	D38	18446744073709551615 is past the largest integer, 9223372036854775807
@@ -1545,6 +1546,8 @@ son-audit/y/ym31.pl	D78	an assignment of a list is a statement: perl gives the c
 son-audit/y/ym33.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/ym34.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/ym35.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/y/ym41.pl	D99	in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
+son-audit/y/ym43.pl	D99	in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
 son-audit/y/ym45.pl	D92	'[' hard after $m[0] in a string: another index, to perl; write $m[0]\[
 son-audit/y/ym48.pl	D91	in a string an index is a whole number or a scalar variable (D91): take the index into a my first
 son-audit/y/ym50.pl	D80	a slice where one value is wanted: perl gives its last element; write the element, $a[...]
@@ -1732,11 +1735,15 @@ son-audit/z/mi34.pl	D91	in a string an index is a whole number or a scalar varia
 son-audit/z/mi39.pl	D13	'wantarray' is not in the language
 son-audit/z/mi40.pl	D78	an assignment of a list is a statement: perl gives the count of its right side as its value (D78)
 son-audit/z/mi42.pl	D13	expected a value, found 'wantarray'
+son-audit/z/mi45.pl	D99	in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
 son-audit/z/mi49.pl	D54	else after unless: write it as an if
 son-audit/z/mi61.pl	D91	in a string an index is a whole number or a scalar variable (D91): take the index into a my first
 son-audit/z/mi64.pl	D16	'no warnings' goes at the top, after 'use v5.42;' and before anything else
 son-audit/z/mi72.pl	D102	a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...
 son-audit/z/mi83.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/z/mi88.pl	D99	in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
+son-audit/z/nd03.pl	D99	in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
+son-audit/z/nd10.pl	D99	in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
 son-audit/z/pa01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa02.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/pa03.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -2169,6 +2176,7 @@ son-corpus/pp-rv.pl	D17	$_[ is an element of perl's own @_ or %_, which are not 
 son-corpus/pp-sa066.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-sa131.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-sa132.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-corpus/pp-sa142.pl	D99	in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first
 son-corpus/pp-sa183.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/pp-so098.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/pp-so222.pl	D17	@_ is not in the language: a sub has a signature (D17)

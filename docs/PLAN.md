@@ -4019,8 +4019,8 @@ Stevan took the recommendation on each question, which are D98
 (Q1), D99 (Q2), D100 (Q3) and D101 (Q4). Its adversarial review
 found two ways to be WRONG: "What the review found", at the end,
 and D102, the builder's defaults on it, for him to confirm. The
-text is kept as it was proposed. 12a is built ("12a, as built", at
-the end); 12b is next.** D27 (a hash keeps the order its keys were first stored
+text is kept as it was proposed. 12a and 12b are built ("12a, as built" and
+"12b, as built", at the end): the step is done.** D27 (a hash keeps the order its keys were first stored
 in) and D17 (what freezes) are decided already, and this stands on
 them.
 
@@ -4384,6 +4384,80 @@ slices, `%opts`, an element in a string.
   tested from C, since nothing in the language can freeze one yet);
   the resolver has one line to take out; `"$h{k}"` is refused in
   the lexer with its step in the message.
+
+#### 12b, as built
+
+**Built** (2026-11-26, by Fable 5.2): what stands on a hash. The
+freeze in the list of a loop, a `map`, a `grep` or a `sort`; slices,
+read, stored to and deleted; a hash as a last parameter; a hash's
+element in a string. Step 12 is done with it.
+
+- **The model first, red before any code** (`t/models/hash.py` again,
+  committed before the build): 1620 and 1622 to 1624, on which perl
+  agreed under four seeds; 1621, the loops with no sort, a `new`
+  test, where the order is D27's; and 68 programs that fault once
+  each, 1640 to 1707: every binder over every way of naming a hash,
+  every change perl survives, a key that is not there in each list,
+  an odd count for a hash parameter. **No fault test asks perl for a
+  delete or an assignment under a loop over the hash's own values**
+  (T194's kin: perl reads freed memory there); those two are the
+  runtime's own tests, in C.
+- **The first cases were wrong in a way the oracle would have
+  caught and the model could not**: several printed a loop's
+  variable over an unsorted hash, which is perl's own order. They
+  were rewritten so that no block reads the value it is handed, and
+  a `grep` or a `sort`, which hand their list on, is over a sorted
+  one.
+- **The oracle check's reading rule learned two more shapes**, each
+  with a fixture it must pass and one it must fail: a loop or a
+  `map` over a hash whose block never reads what it is handed, and a
+  hash handed to a sub whose last parameter is a hash. It is still
+  by pattern.
+- **By hand**: 1710, perl's own answers for small programs with all
+  four; and 42 refusals, 1720 to 1761, from a table
+  (`briefs/step12b-refusals.py`). Seven of the table's comments
+  about perl had been written before perl was asked, and were
+  wrong; each is perl's own words now.
+- **The build was small, because 12a had made a hash an array's
+  node**: the resolver stopped refusing a hash in a list and put it
+  in the set a loop freezes (not for `keys`, not in a string); the
+  runtime's freeze already took a hash. A slice of a hash is the
+  slice node with the flag; on the left of `=` a slice, an array's
+  too, is the one target of a list assignment; `delete` of a slice
+  is the hash builtin with a list of keys. The lexer lets a brace
+  hard after `@name` open keys, takes `%` alone in a signature, and
+  in a string reads `$h{word}` and `$h{$k}` and nothing else. The
+  runtime gained seven small functions.
+- **The compiler passed all of the model's tests the first time but
+  for the words of one fault**: the model said an array was changed
+  where the runtime says a hash was. The model was wrong.
+- **Broken on purpose** (`briefs/step12b-mutations.py`): 49 of 54
+  caught the first time. Two were holes, each closed by a refusal: a
+  change hidden in the keys of a `delete` of a slice, and a hash
+  parameter named in a D76 refusal. Three were the script's own
+  mistakes, breakages that changed nothing; two are taken out and
+  one mended.
+- **Decided on the way** (Stevan's, under D100): a slice is the one
+  target of its assignment, for now; `($x, @h{...}) = ...` is
+  refused.
+- **What the build found**: `1 .. %h` as a loop's list names the
+  hash and freezes it, as `$#a` names its array, where `1 .. keys
+  %h` does not; `"$h{$i}"` on the right of a store to `$h{$i =
+  ...}` is refused by T230's rule though perl reads that piece
+  early, the rule being wider than it has to be.
+- **The census**: of the 181 probes that waited for 12b, **83 print what
+  perl prints**, 58 are refused by design behind what they waited
+  for, 22 wait for step 16 and 4 for references, 10 are open, and 4
+  fault where perl carries on. No probe left SAME, and none is
+  WRONG. With the other session's D105 on the same branch the file
+  stands at 1,019 SAME, 124 LOUD, 2,120 REFUSED (1,233 for a later
+  step, 887 open) and one that cannot be judged, of 3,264 run: a
+  loop over `values` whose sub stores to the hash, which perl
+  answers by its own order and this faults.
+- **The numbers**: 1,253 golden tests, 146 unit tests, 806 statements
+  about perl, 55 tests of the oracle check itself; green under gcc,
+  clang, and UBSan with ASan, poison on and off, on the tree as
+  merged with D105.
 
 ### 13. References and nested data
 
