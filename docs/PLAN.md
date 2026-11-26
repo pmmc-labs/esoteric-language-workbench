@@ -4014,15 +4014,193 @@ at step 18.
 
 Referee: perl. Size: medium.
 
-Literals, elements, `exists`, `delete`, `keys`, `values`, a hash in
-list and scalar position, slurpy `%opts`, slices. D27. The first step
-to meet the oracle check's reading rule in earnest: read `TRAPS.md`,
-"The checks themselves", and `t/checks/README.md` first, and have the
-check reviewed again once this step's tests exist. A hash is
-frozen while `values`, a slice or the hash itself is being iterated,
-and not while its `keys` are (D17, T7). A `same` test sorts its keys;
-D10's check rejects one that doesn't. `=>` quotes the word on its
-left, whatever the word. Traps: T2, T7, T63.
+**Proposed 2026-11-26, by Fable 5.2. Not agreed: Q1 to Q4 are
+Stevan's.** D27 (a hash keeps the order its keys were first stored
+in) and D17 (what freezes) are decided already, and this stands on
+them.
+
+Everything here about perl was run under 5.42.0 and is in
+`briefs/claims.py` (26 rows, `T214` to `T222`). Traps: T2, T7, T63,
+and T214 to T222, found writing this. The outline this replaces
+said: literals, elements, `exists`, `delete`, `keys`, `values`, a
+hash in list and scalar position, slurpy `%opts`, slices; a hash
+frozen while `values`, a slice or the hash itself is iterated, and
+not while its `keys` are; a `same` test sorts its keys; `=>` quotes
+the word on its left, whatever the word.
+
+**The census**: 638 probes wait for this step, more than for any
+other. Of them 536 use `=>`, 466 declare a hash, 442 read an
+element, 184 use `keys` (100 of those sorted), 55 `exists`, 52
+`delete`, 30 `values`, 29 a slice, 10 `each`. But 205 also want a
+reference and 276 a hash's element in a string, so the step's own
+account will say how many came through.
+
+#### The picture
+
+**A hash is an array whose indexes are strings.** Nearly every rule
+is step 9's with "key" for "index": an element is read where it
+stands and a read makes nothing (T216); storing makes the key; the
+orders of an assignment are the same (T218); D76 and the freeze say
+the same things of the same shapes (T217). What is new is small:
+keys are strings, and there are three ways to write one; `exists`
+and `delete`; `keys` and `values`; and the order, which perl does
+not have and D27 gives.
+
+#### The language at step 12
+
+- **`my %h;`** and **`my %h = LIST;`**: a hash of its own name (`%h`,
+  `@h` and `$h` are three variables). The list is keys and values
+  by turns; a key given twice keeps its last value and its first
+  place; **an odd number of values is a fault** (T219).
+- **`=>`** is a comma that makes a string of the word before it,
+  whatever the word: `(if => 1, true => 2)` has the keys `if` and
+  `true` (T214).
+- **`$h{KEY}`**: the element. **One word alone in the braces is that
+  string**, `$h{name}`, whatever the word; anything else is an
+  expression, made a string as `.` makes one: `$h{$k}`, `$h{"a
+  b"}`, `$h{$i + 1}`, `$h{1}` (T215). An undef key is D48's fault.
+  Reading a key that is not there gives undef and makes nothing;
+  storing makes it; `$h{k}++`, `+=`, `.=`, `//=` and the rest work
+  on it as on an array's element.
+- **`exists $h{k}`**, **`delete $h{k}`** (which gives the value that
+  was there, or undef), with brackets or without.
+- **`keys %h`**, **`values %h`**: lists, in the hash's order; where
+  one value is wanted, the count.
+- **`%h` where a list is wanted** is its keys and values by turns;
+  **where one value is wanted, how many keys** (T219): `if (%h)`,
+  `my $n = %h`.
+- **`@h{K1, K2}`**: a slice, the values at those keys, undef for one
+  that is not there.
+- **`sub f($x, %opts)`**: a last parameter that takes what is left
+  as a hash; an odd number left is a fault, as it kills perl
+  (T219). `%` alone takes and names nothing.
+- **The order** (D27): `keys`, `values` and the hash in a list go
+  in the order the keys were first stored; a key deleted and stored
+  again is last. perl's order is another every run, so a test that
+  shows it sorts, and the oracle check refuses one that does not.
+- **`"$h{k}"` in a string**: Q2.
+
+#### What perl does that the obvious build gets wrong
+
+- **`$h{true}` is the key `true`**, and so is `(true => 1)`; `$h{q}`,
+  `$h{shift}` and `$h{time}` are those words (T214, T215). A build
+  that asked its table of names first would be WRONG for every one.
+- **A sub's name before `=>` is not called** (T214): `(f => 2)` is
+  the key `f` beside a sub `f`.
+- **`=>` quotes across the end of a line and a comment** (T214).
+- **A key is a string, so `1`, `1.0` and `"1"` are one key**, and
+  `010` is the key `8` (T63, T214).
+- **`exists $h{a} + 1` dies** (T220): the sum is the argument.
+- **`&&=` makes the key and stores nothing** (T216).
+- **A key that is not there is made** by a loop over it, by `map`,
+  `grep` and `sort`, and by a slice among a call's arguments
+  (T216), as an array's element is.
+- **`values` are the hash's own** (T217, T218): a store shows
+  through a loop over them, and through a list they were put in.
+  `keys` are copies.
+- **A `%` parameter with an odd number of arguments is fatal in
+  perl** (T219), where an odd assignment only warns.
+
+#### The questions
+
+**Q1. One step or two?**
+(a) **Recommended: two, each green and committed.** 12a: the hash
+itself (declaring, the literal and `=>`, elements, `exists`,
+`delete`, `keys`, `values`, the count, assignment and copying, D76
+and the orders), which needs the runtime's table. 12b: what stands
+on it (the freeze in loops and binders, slices, `%opts`, a hash's
+element in a string).
+(b) One.
+
+**Q2. A key in a string.** `"$h{name}"` is in 276 of the waiting
+probes. To perl what stands in the braces is code, as an index is
+(D91 met the same thing): quotes, calls, arithmetic.
+(a) **Recommended: a word or a scalar variable**: `"$h{name}"`,
+`"$h{$k}"`, and nothing else; the message says to take the key
+into a `my`. Of the probes' keys in strings 304 are a word or a
+variable, 10 a number and 3 a quoted string. A slice in a string,
+`"@h{...}"`, is refused: a list of keys there has to be quoted, and
+a string cannot hold the quotes without backslashes.
+(b) And a whole number, and a string in single quotes: `"$h{1}"`,
+`"$h{'a b'}"`. Thirteen more of the probes' keys; and a number
+brings the leading zero back (T221: `"$h{01}"` is the key `1`).
+(c) Whatever perl takes.
+
+**Q3. Slices on the left of `=`, and `%h{...}`.** `@h{"a", "b"} =
+(1, 2);` stores two keys. An array's slice on the left is still out
+(step 9 left it).
+(a) **Recommended: both in at this step, the array's and the
+hash's**, as targets of a list assignment: it is one rule for the
+two, D80's order is already written for it (the right side, every
+index or key, then the stores), and 29 of the waiting probes use a
+hash's slice. `%h{...}`, the slice that gives keys and values, is
+cut: four probes, and perl warns of it where one value is wanted.
+(b) Reading only, as arrays have it; the left side later.
+
+**Q4. `each`, and `foreach my ($k, $v) (%h)`.** `each` is cut
+already (its iterator is hidden state in the hash). The loop of two
+variables is perl 5.36's replacement, and `SURFACE.md` has it for
+this step.
+(a) **Recommended: neither, at this step.** `for my $k (sort keys
+%h)` says it, and is what a test has to write anyway, since the
+order of the other is perl's own. A loop of two variables is a
+second shape of `foreach` in every pass, and can be proposed when a
+program wants it.
+(b) The loop of two variables, over any list, freezing as a loop
+over `%h` does.
+
+#### What has nothing to choose
+
+- **D76 for a hash** (T218): an element, a slice, the hash in a
+  list and `values` name their hash, and a later part may not
+  change it; `keys` names nothing. An assignment to an element and
+  a `++` before one name it too (T213).
+- **The freeze** (D17, T217): while a `foreach`, a `map`, a `grep`
+  or a `sort` runs, a hash named in its list by `values`, by
+  itself, by a slice or by an element is frozen; a store to it, a
+  delete or a new key is the fault arrays have. Not by `keys`.
+- **A key that is not there**, in such a list or in a slice among a
+  call's arguments, is D80's fault (T216).
+- **The orders are an array's** (T218): `$h{K} = V` is V, then K,
+  then the store; `$h{K} OP= V` is K, the element made, then V.
+- **`exists` and `delete` before an operator that binds tighter**
+  are refused without brackets (T220); `delete` of a slice gives a
+  list; `exists` and `delete` of an array's element stay out.
+- **Refused**: `-word` as a key (cut already); a word with `::`;
+  `$h{}`; `%h` in a string is text, as it is to perl; `"$h{a}{b}"`
+  and `$h{a}{b}` (step 13); `undef %h`, `keys %h = N`, `%$r`,
+  `wantarray`, `local`; `scalar(%h)` is allowed, being the count.
+- **Where one value is wanted**: `%h`, `keys %h` and `values %h`
+  are a count; a slice is refused, as an array's is.
+- **A `same` test sorts** what it prints of a hash's order, and
+  `t/checks.py` refuses one that does not. The check's reading rule
+  is by pattern (`TRAPS.md`, "The checks themselves"), and this is
+  the first step to lean on it: it is reviewed again once the
+  step's tests exist.
+- **In the runtime** a hash is a block of the collector's with
+  storage of its own, as an array is: its entries in the order
+  they were stored, and an index over them by the key's bytes. A
+  delete leaves a hole that the next growth closes. No seed: the
+  order is the language's, and a table that an adversary can slow
+  down is a question for the step that reads input (21).
+
+#### The build, once the questions are answered
+
+- **12a.** The model first, on `list.py`'s values: a Python dict is
+  already a hash that keeps the order of first storing. Fault
+  tests: an odd list, an undef key, D36's Num as a key. The
+  runtime's table, with its own tests in C. The census's table of
+  reasons loses its rows for step 12.
+- **12b.** The model on `each.py` and `it.py`: every way of
+  changing a frozen hash, for each binder and each shape that names
+  one; a key that is not there, in each list.
+- **Adversarial review before it is built**, though the step is
+  medium: every review so far has found a WRONG, and the census
+  found one more. What I would ask it first: a word in braces or
+  before `=>` that perl does not read as a string; a place where a
+  hash's element is not read as an array's is; and whether the
+  oracle check's reading rule lets a test through that shows
+  perl's order.
 
 ### 13. References and nested data
 
