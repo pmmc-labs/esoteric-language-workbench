@@ -816,6 +816,9 @@ CLAIMS = [
     c('T211-large', 'TRAPS; PLAN 11a', r"""my @a = (0 .. 20); say "$a[18446744073709551615]"; say "$a[18446744073709551614]";""", out='20\n19\n'),
     c('T211-edge', 'TRAPS; PLAN 11a', r"""my @a = (0 .. 20); say "$a[9223372036854775807]|";""", out='|\n', err='Use of uninitialized value'),
     c('T212', 'TRAPS; PLAN 11a', r"""my $t = "t"; my $u = "u"; my $x = "a"; my $z = "z"; $t .= ($u = "$x$z$x"); say "$t $u"; $t = "t"; $t .= ($u = (1 ? "$x$z" : 0)); say "$t $u"; $x = 3; say "$x" -1; my @a = (1, 2); sub f() { return "@a" } my $v = f(); say $v;""", out='taza u\ntaz u\n2\n1 2\n'),
+    # ---- found by the census's first run, before step 11b was proposed
+    c('T213', 'TRAPS', r"""my @a = (1); my $n = ($a[0] = 5) + ($a[0] = 7); say $n; @a = (1); $n = ++$a[0] + ++$a[0]; say $n; @a = (1); $n = (++$a[0]) + $a[0]++; say $n; @a = (1, 2, 3); $n = ($a[0] += 1) + ($a[0] += 1); say $n; @a = (1); my @l = ($a[0] = 5, $a[0] = 7); say "@l"; @a = (1); my $v = (($a[0] = 5), ($a[0] = 7))[0]; say $v;""", out='14\n6\n5\n6\n7 7\n7\n'),
+    c('T213-sub', 'TRAPS', r"""my @a = (1); sub nine() { $a[0] = 9; return 1; } my $n = ($a[0] = 5) + nine(); say $n;""", out='10\n'),
 ]
 
 def run(perl, prelude, code, flags):

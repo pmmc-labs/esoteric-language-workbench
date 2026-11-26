@@ -542,6 +542,17 @@ lexing rule and the scripts that held it to perl.
 | T211 | `my @a = (0 .. 20); say "$a[010]"; say "$a[-010]"; say "@a[010, 011]"; say "@a[07 .. 010]";`; `"$a[08]"`; `"$a[18446744073709551615]"` | `8`, `13`, `8 9`, `7 8`: **a leading zero is octal**, in silence (T202 had tried `01`, which is 1 both ways); does not compile; the last element: from 2^63 up an index wraps, in silence | 11a | The number in an index is the language's own whole-number literal: no leading zero (as `017` is refused outside a string), and no more than 2^63 - 1 |
 | T212 | `$t .= ($u = "$x$z$x");`; `$t .= ($u = (1 ? "$x$z" : 0));`; `say "$x" -1;`; `sub f() { return "@a" }` | `$u` is not assigned in either: a string of three pieces is lost like one of two (T129's concatenation of three is kept), and behind a test perl folds; `2`: after a string an operator comes next; one value | 11a | T198's refusal has no exception for three pieces and looks through what D57's does; the string is a value to every part of the compiler that asks what a token or a node is |
 
+## Found by the census's first run
+
+Before step 11b was proposed, every probe of perl5-son's, Chalk's and
+pvm's was compiled and run once beside perl, to see what the proposal
+had to say: 5,786 programs, and eleven that ran, did not fault and
+printed what perl does not. They are one trap.
+
+| | Program | perl 5.42 prints | Step | What the language does |
+|---|---|---|---|---|
+| T213 | `my @a = (1); my $n = ($a[0] = 5) + ($a[0] = 7);`; `++$a[0] + ++$a[0]`; `(++$a[0]) + $a[0]++`; `($a[0] += 1) + ($a[0] += 1)` for a first element of 1; `my @l = ($a[0] = 5, $a[0] = 7);`; `($a[0] = 5) + nine()` where `nine` stores 9 | 14, 6, 5, 6; `7 7`; 10: **an assignment to an element, and `++$a[0]`, are the element itself**, read when the operator runs, as `$x = 5` is `$x` (D14). The compiler had each as the value it stored, and D76's walk did not count it as naming anything: 12, 5, 4, 5 and `5 7` | 9 | Refuse, by D76: an assignment to an element and a `++` or `--` before one name the element's array, so a later part may not change it. `($a[0] = 5) + 1` and `($a[0] = 5) + ($b[0] = 7)` are as they look |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

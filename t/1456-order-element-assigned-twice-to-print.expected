@@ -1,0 +1,2 @@
+t/1456-order-element-assigned-twice-to-print.pl:5:24: a later part of print's list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

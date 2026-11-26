@@ -1,0 +1,2 @@
+t/1453-order-element-stepped-twice-in-a-sum.pl:5:19: a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

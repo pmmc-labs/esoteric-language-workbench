@@ -165,6 +165,10 @@ const named = (w: World, in_: Expr, scalars: boolean, into = new Set<number>()):
     else if (e.kind === 'list') e.items.forEach(x => named(w, x, true, into));
     else if (e.kind === 'var' && scalars) id(e);
     else if ((e.kind === 'assign' || (e.kind === 'step' && e.before)) && e.target.kind === 'var' && scalars) id(e.target);
+    // An assignment to an element, and `++$a[0]`, are the element itself
+    // to perl, read late like any other (T213): `($a[0] = 5) + ($a[0] =
+    // 7)` is 14. Here each is the value it stored, so it names its array.
+    else if ((e.kind === 'assign' || (e.kind === 'step' && e.before)) && e.target.kind === 'elem') id(e.target);
     else if (e.kind === 'ternary') { named(w, e.then, scalars, into); named(w, e.else, scalars, into); }
     else if (e.kind === 'binary' && infixOp(e.op)?.when) { named(w, e.left, scalars, into); named(w, e.right, scalars, into); }
     else if (isRepeat(e) && e.kind === 'binary') named(w, e.left, true, into);
