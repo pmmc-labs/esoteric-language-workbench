@@ -19,7 +19,7 @@ his, on seeing the build. D76 to D80 are his answers to step 9's
 proposal, as its review had amended it. D91 to D94 are his answers
 to step 11a's; D95 was the builder's defaults there, which he
 confirmed. D96 and D97 are his, on the census; D98 to D101 his answers to
-step 12's.
+step 12's, and D102 the builder's defaults on its review.
 What a decision leaves for a step to settle is listed under Open
 questions at the end of [`DESIGN.md`](DESIGN.md).
 
@@ -1853,6 +1853,30 @@ was cut already, its iterator being hidden state in the hash.
 variables is a second shape of `foreach` in every pass. It can be
 proposed when a program wants it. Rejected: the loop of two
 variables now.
+
+**D102. What step 12's review settled.** *(Default: the builder's,
+on the review's findings, for Stevan to confirm.)* **A word alone in
+a hash's braces, and a word before `=>`, is a string only on one
+line**: the word and its braces, or the word and its `=>`, with
+nothing but blanks between; anything else is refused. perl reads
+`true` as the boolean and `v65` as a version string once a line end
+stands beside the word (T223, T224), and quotes every other word
+across a line before `=>`, which this refuses too, for one rule
+with no list. `keys` and `values` are refused before an operator
+that binds tighter, as `exists` and `delete` are (T225). An odd
+count for a `%` parameter, named or not, is the fault for a wrong
+number of arguments, raised as the sub is entered (T226). After a
+hash's element in a string, `[`, `{`, and `->` before `[ { @ $` are
+refused (T227). `delete` and an assignment to a hash are changes
+for D76. A slice on the left stores an undef for each target the
+list does not reach; a slice of one there, a hash that is not the
+last target, and `@h{...} OP= ...` are refused (T228). `%h` after
+`return` is list-shaped (T229). `map { $_ => 1 } @l` stays refused
+for its bare comma. And the oracle check's reading rule is mended
+before the step's tests are written: it learns where a hash is
+counted, copied or handed on, and rejects a `sort` block that does
+not only compare `$a` with `$b`, a block that prints between a
+`sort` and its `keys`, and a slice of `keys`.
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

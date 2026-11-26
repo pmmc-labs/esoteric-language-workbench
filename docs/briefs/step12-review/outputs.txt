@@ -1,0 +1,55 @@
+== w1.pl
+[]=c,[1]=a,[A]=d,[true]=b,[v65]=e
+the word
+one
+[exit 0]
+== w2.pl
+B,C,v65
+[exit 0]
+== p1.pl
+Experimental keys on scalar is now forbidden at p1.pl line 6.
+Type of arg 1 to keys must be hash or array (not addition (+)) at p1.pl line 6, near "1;"
+Experimental values on scalar is now forbidden at p1.pl line 7.
+Type of arg 1 to values must be hash or array (not multiplication (*)) at p1.pl line 7, near "2;"
+Experimental keys on scalar is now forbidden at p1.pl line 8.
+Type of arg 1 to keys must be hash or array (not concatenation (.) or string) at p1.pl line 8, near "" keys";"
+Experimental keys on scalar is now forbidden at p1.pl line 9.
+Type of arg 1 to keys must be hash or array (not repeat (x)) at p1.pl line 9, near "2;"
+Execution of p1.pl aborted due to compilation errors.
+[exit 255]
+== p2.pl
+Odd name/value argument for subroutine 'main::f' at p2.pl line 6.
+ok 1
+ok 1
+[exit 255]
+== p3.pl
+Can't use string ("1") as an ARRAY ref while "strict refs" in use at p3.pl line 8.
+1->%*|1->|1::x|1(0)
+[exit 255]
+== p4.pl
+dump() must be written as CORE::dump() as of Perl 5.30 at p4.pl line 5.
+[exit 255]
+== g1.pl
+Odd name/value argument for subroutine 'main::f' at g1.pl line 8.
+before
+[exit 255]
+== g2.pl
+a 0 0
+0 0
+0 0
+0
+[]
+1 1
+[exit 0]
+== g3.pl
+made
+3
+3
+9
+a,b,p,q
+[exit 0]
+== c3.pl
+differ
+differ
+differ
+[exit 0]

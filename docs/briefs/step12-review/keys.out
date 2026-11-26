@@ -1,0 +1,5 @@
+literal in braces      true                         [true] [1] DIFFERENT  
+before =>              true                         [true] [1] DIFFERENT  
+literal in braces      false                        [false] [] DIFFERENT  
+before =>              false                        [false] [] DIFFERENT  
+1356 programs

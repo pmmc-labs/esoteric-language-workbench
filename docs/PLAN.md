@@ -4016,8 +4016,10 @@ Referee: perl. Size: medium.
 
 **Proposed 2026-11-26, by Fable 5.2, and agreed the same day:
 Stevan took the recommendation on each question, which are D98
-(Q1), D99 (Q2), D100 (Q3) and D101 (Q4). Its adversarial review was
-still running when he answered; nothing is built.** D27 (a hash keeps the order its keys were first stored
+(Q1), D99 (Q2), D100 (Q3) and D101 (Q4). Its adversarial review
+found two ways to be WRONG: "What the review found", at the end,
+and D102, the builder's defaults on it, for him to confirm. The
+text is kept as it was proposed. Nothing is built.** D27 (a hash keeps the order its keys were first stored
 in) and D17 (what freezes) are decided already, and this stands on
 them.
 
@@ -4203,6 +4205,75 @@ over `%h` does.
   hash's element is not read as an array's is; and whether the
   oracle check's reading rule lets a test through that shows
   perl's order.
+
+#### What the review found
+
+**Two ways to be WRONG, four shapes perl refuses, three places the
+text left a builder to guess, and three findings about the oracle
+check** (`briefs/step12-review/`, with eight scripts and their
+programs; T223 to T229, 13 more rows of `claims.py`). No answer to
+Q1 to Q4 is overturned. Both WRONGs are one thing: **a word stops
+being a string when a line end stands beside it.** The amendments,
+which D102 records:
+
+- **A word alone in braces is on one line with its braces** (T223):
+  only blanks between. Across a line `$h{ true }` is the key `1`
+  to perl and `v65` is `A`, in silence, and an ordinary word does
+  not compile. The proposal's "whatever the word" was right on one
+  line and nowhere else.
+- **A word and its `=>` are on one line** (T224): perl quotes every
+  word across a line but a `v` and digits, which is a version
+  string there. One rule for all of them is stricter than perl and
+  needs no list.
+- **`keys` and `values` are named unary operators too** (T225):
+  T220's refusal is for the four of them.
+- **`%` alone checks the count**, and **an odd count is the fault
+  for a wrong number of arguments, raised as the sub is entered**,
+  before any default runs (T226).
+- **After a hash's element in a string** (T227): `[`, `{`, and `->`
+  before `[ { @ $` are refused. Step 11a's list said "a second
+  `[`", and after `$h{a}` the first is already an index.
+- **For D76, `delete` and an assignment to a hash are changes**:
+  perl reads freed values there (`(%h, del())` prints a value that
+  is gone, and one shape crashes perl). None can be a test that
+  asks perl.
+- **A slice on the left stores an undef for each target the list
+  does not reach**, and so makes it (T228). A slice of one on the
+  left is refused, as a slice of one is on the right. A hash that
+  is not the last target is refused, as an array is. `@h{...} +=
+  1` is refused.
+- **`%h` after `return` is list-shaped** (T229): D18's fault.
+- **`map { $_ => 1 } @l` stays refused**, for the bare comma in a
+  block: `map { ($_ => 1) } @l` says it. (To perl the braces may be
+  a hash there, T175.) `$h{$k, }` is refused.
+- **The oracle check, which this step is the first to lean on**:
+  its reading rule lets an order through three ways (a `sort` whose
+  block compares nothing, or logs; a `grep` or `map` that prints,
+  between a `sort` and its `keys`; `(keys %h)[0]`), and eight seeds
+  agree on a pair of keys often enough that a test of two keys can
+  be one seed's accident. And it rejects what shows no order at
+  all: `if (%h)`, `my $n = %h`, `my %g = %h`, a `%opts` parameter,
+  `keys %h == 2`. **Both are mended at 12a, before any test of a
+  hash is written**, each with a fixture in `t/checks/`: the rule
+  learns the places a hash is counted, copied or handed to a `%`
+  parameter, and rejects a `sort` block that does not compare `$a`
+  with `$b` or that does anything else, a block that prints
+  between a `sort` and its `keys`, and a slice of `keys`. A test of
+  a hash has four keys or more.
+- **No fault test asks perl for what crashes it** (T194's kin): a
+  `grep` or a `sort` over `values` whose block deletes or assigns
+  the hash is a segmentation fault in perl 5.42, and a loop over
+  `values` that deletes prints a freed value.
+- **What stood**: a word is a string on one line, for all 328 of
+  perl's words in every place the proposal names, beside a sub of
+  that name and in a string too (8,885 programs); a key is the
+  string `.` makes, 113 values in 12 places; perl makes a hash's
+  element exactly where it makes an array's, in 45 places; D80's
+  orders; T220 for `exists` and `delete`, 700 programs; Q2 as
+  amended, 67,483 strings; Q3's order.
+- **What it did not cover**: keys past ASCII; large hashes; the
+  freeze beyond T217; D36's and D48's faults for a key, beyond
+  perl's warning.
 
 ### 13. References and nested data
 

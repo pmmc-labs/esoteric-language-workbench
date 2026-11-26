@@ -1,0 +1,17 @@
+keys twice, nothing between                perl {'same': 40}                 D27 same    agree
+keys and values pair up                    perl {'same': 40}                 D27 same    agree
+a copy keeps the order (my %g = %h)        perl {'differ': 40}               D27 same    FAIR, AND D27 DIFFERS
+a copy of two keys                         perl {'differ': 25, 'same': 15}   D27 same    perl moves with the seed
+assigned to itself (%h = %h)               perl {'differ': 40}               D27 same    FAIR, AND D27 DIFFERS
+the same list twice, two hashes            perl {'differ': 39, 'same': 1}    D27 same    perl moves with the seed
+the same keys stored in the other order    perl {'differ': 40}               D27 differ  agree
+two keys, the other order                  perl {'differ': 21, 'same': 19}   D27 differ  perl moves with the seed
+after a delete, the rest                   perl {'same': 40}                 D27 same    agree
+after a store to an old key                perl {'same': 40}                 D27 same    agree
+after one new key, the old ones            perl {'differ': 39, 'same': 1}    D27 same    perl moves with the seed
+after 100 new keys, the old ones           perl {'differ': 40}               D27 same    FAIR, AND D27 DIFFERS
+deleted and stored again is last           perl {'differ': 40}               D27 same    FAIR, AND D27 DIFFERS
+the first key stored is first              perl {'differ': 40}               D27 same    FAIR, AND D27 DIFFERS
+a %opts parameter keeps the order          perl {'differ': 40}               D27 same    FAIR, AND D27 DIFFERS
+keys after a loop over values              perl {'same': 40}                 D27 same    agree
+sorted by a tie                            perl {'same': 40}                 D27 same    agree

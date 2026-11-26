@@ -1,0 +1,72 @@
+  map { $_ => 1                }  a block: p=1,q=1
+  map { "$_" => 1              }  perl stops: syntax error at - line 2, near "} @a"
+  map { "k" => $_              }  perl stops: syntax error at - line 2, near "} @a"
+  map { 'k' => $_              }  perl stops: syntax error at - line 2, near "} @a"
+  map { "k$_" => 1             }  perl stops: syntax error at - line 2, near "} @a"
+  map { "${_}" => 1            }  perl stops: syntax error at - line 2, near "} @a"
+  map { k => $_                }  perl stops: syntax error at - line 2, near "} @a"
+  map { lc($_) => 1            }  a block: p=1,q=1
+  map { lc $_ => 1             }  a block: p=1,q=1
+  map { uc => 1                }  perl stops: syntax error at - line 2, near "} @a"
+  map { ($_ => 1)              }  a block: p=1,q=1
+  map { +($_ => 1)             }  a block: p=1,q=1
+  map { ; $_ => 1              }  a block: p=1,q=1
+  map { ;"$_" => 1             }  a block: p=1,q=1
+  map { +"$_" => 1             }  a block: p=1,q=1
+  map { $h{$_} => 1            }  perl stops: Global symbol "%h" requires explicit package name (did you forget to declare "my %h"?) at - line 2.
+  map { $_, 1                  }  a block: p=1,q=1
+  map { "$_", 1                }  perl stops: syntax error at - line 2, near "} @a"
+  map { "a", 1                 }  perl stops: syntax error at - line 2, near "} @a"
+  map { 1 => $_                }  perl stops: syntax error at - line 2, near "} @a"
+  map { 1.5 => $_              }  a block: 1.5=q
+  map { $_ . "x" => 1          }  a block: px=1,qx=1
+  map { "x" . $_ => 1          }  a block: xp=1,xq=1
+  map { -$_ => 1               }  a block: -p=1,-q=1
+  map { @a => 1                }  a block: 1=p,p=q,q=1
+  map { my $k = $_; $k => 1    }  a block: p=1,q=1
+  map { $_ => $_ * 2           }  a block, WARNS: Argument "p" isn't numeric in multiplication (*) at - line 2. -> p=0,q=0
+  map { $k => 1                }  a block: kk=1
+  map { true => $_             }  perl stops: syntax error at - line 2, near "} @a"
+  map { q => $_                }  perl stops: syntax error at - line 2, near "} @a"
+  map { x => $_                }  perl stops: syntax error at - line 2, near "} @a"
+  map { $_ => 1,               }  a block: p=1,q=1
+  map { $_ => 1;               }  a block: p=1,q=1
+  map { $_                     }  a block: p=q
+  map { "$_"                   }  a block: p=q
+  map { "$_" . "x" => 1        }  a block: px=1,qx=1
+  map { "$_" x 2 => 1          }  a block: pp=1,qq=1
+  map { "a$k" => 1             }  perl stops: syntax error at - line 2, near "} @a"
+  map { $a[0] => 1             }  a block: p=1
+  map { $g{a} => 1             }  a block: b=1
+  map { %g                     }  a block: a=b
+  map { %g, $_ => 1            }  a block: a=b,p=1,q=1
+  map { %g => 1                }  a block: 1=a,a=b,b=1
+  map { K => 1                 }  perl stops: syntax error at - line 2, near "} @a"
+  map { f($_) => 1             }  a block: fp=1,fq=1
+  map { f => 1                 }  perl stops: syntax error at - line 2, near "} @a"
+  map { (f($_)) => 1           }  a block: fp=1,fq=1
+  map { "a" . "b" => 1         }  a block: ab=1
+  map { "a" => 1, "b" => 2     }  perl stops: syntax error at - line 2, near "} @a"
+  map { $_ => "v"              }  a block: p=v,q=v
+  map { $_ => "$_"             }  a block: p=p,q=q
+  map { $_ => 'v'              }  a block: p=v,q=v
+  map { { $_ => 1 }            }  a block: HASH(0x55ac08e225c8)=HASH(0x55ac08e22700)
+  map { +{ $_ => 1 }           }  a block: HASH(0x557ab19f65c8)=HASH(0x557ab19f6700)
+  map { "$_", "v"              }  perl stops: syntax error at - line 2, near "} @a"
+  map { "\$x" => 1             }  perl stops: syntax error at - line 2, near "} @a"
+  map { "a\n" => 1             }  perl stops: syntax error at - line 2, near "} @a"
+  map { '' => 1                }  perl stops: syntax error at - line 2, near "} @a"
+  map { "" => 1                }  perl stops: syntax error at - line 2, near "} @a"
+  map { undef => 1             }  perl stops: syntax error at - line 2, near "} @a"
+  map { undef, 1               }  a block, WARNS: Use of uninitialized value in list assignment at - line 2. -> =1
+  map { -1 => $_               }  a block: -1=q
+  map { .5 => $_               }  a block: 0.5=q
+  map { 0x10 => $_             }  perl stops: syntax error at - line 2, near "} @a"
+  map { $_=>1                  }  a block: p=1,q=1
+  map { "$_"=>1                }  perl stops: syntax error at - line 2, near "} @a"
+  map { $_ ,1                  }  a block: p=1,q=1
+  map {  $_ => 1               }  a block: p=1,q=1
+  map { \n$_ => 1\n            }  a block: p=1,q=1
+  map { \n"$_" => 1\n          }  perl stops: syntax error at - line 4, near "} @a"
+  map { # c\n "$_" => 1        }  perl stops: syntax error at - line 3, near "} @a"
+71 programs

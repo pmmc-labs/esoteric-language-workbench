@@ -846,6 +846,20 @@ CLAIMS = [
     c('T221-slice', 'TRAPS; PLAN 12', r"""my %h = (a => 1, b => 2); say "@h{'a','b'}"; say "@h{a}";""", out='1 2\n1\n', err='Scalar value @h\\{"a"\\} better written as \\$h\\{"a"\\}'),
     c('T221-nested', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say "$h{a}{b}";""", out='', exit=255, err='as a HASH ref'),
     c('T222', 'TRAPS; PLAN 12', r"""my %h = (b => 2, a => 1, c => 3); my @k = keys %h; my @v = values %h; my @p = %h; say $h{$k[0]} == $v[0] && $h{$k[2]} == $v[2] && $p[0] eq $k[0] && $p[1] == $v[0] ? "one order" : "not"; delete $h{a}; $h{a} = 3; say scalar(keys %h); my %g = %h; $g{a} = 9; say $h{a};""", out='one order\n3\n3\n'),
+    # ---- step 12: found by its review
+    c('T223', 'TRAPS; PLAN 12', 'my %h; $h{\n    true\n} = "a"; $h{ true } = "b"; $h{false   # the flag\n} = "c"; $h{\n    v65 } = "d"; $h{ v65 } = "e"; say join ",", map { "[$_]=$h{$_}" } sort keys %h;', out='[]=c,[1]=a,[A]=d,[true]=b,[v65]=e\n'),
+    c('T223-word', 'TRAPS; PLAN 12', 'my %h; $h{\n    name\n} = 1;', compiles=False, err='Bareword "name" not allowed'),
+    c('T224', 'TRAPS; PLAN 12', 'my %h = (v65 => 1, v66\n    => 2, v67   # c\n    => 3, name\n    => 4); say join ",", sort keys %h;', out='B,C,name,v65\n'),
+    c('T225', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say keys %h + 1;""", compiles=False, err='Type of arg 1 to keys must be hash or array'),
+    c('T225-values', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say values %h . "x";""", compiles=False, err='Type of arg 1 to values must be hash or array'),
+    c('T225-fine', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say keys(%h) + 1; say "two" if keys %h == 1 or values %h > 5;""", out='2\ntwo\n'),
+    c('T226', 'TRAPS; PLAN 12', r"""sub f($x, %) { return "ok $x" } say f(1, 2, 3); say f(1, 2);""", out='ok 1\n', exit=255, err='Odd name/value argument for subroutine'),
+    c('T226-entry', 'TRAPS; PLAN 12', r"""sub t() { say "default"; return 1 } sub f($x //= t(), %o) { return 1 } say "before"; f(undef, "k");""", out='before\n', exit=255, err='Odd name/value argument for subroutine'),
+    c('T227', 'TRAPS; PLAN 12', r"""my %h = (a => 1); my @r = (0, 0, 0); @r = ("$h{a}->", "$h{a}->%*", "$h{a}::x", "$h{a}(1)"); say "@r";""", out='1-> 1->%* 1::x 1(1)\n'),
+    c('T227-index', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say "$h{a}[0]";""", out='', exit=255, err='as an ARRAY ref'),
+    c('T227-arrow', 'TRAPS; PLAN 12', r"""my %h = (a => 1); say "$h{a}->{b}";""", out='', exit=255, err='as a HASH ref'),
+    c('T228', 'TRAPS; PLAN 12', r"""my %h; @h{"a", "b"} = (1); say exists $h{b} ? "made" : "not"; my @a = (9); @a[1, 2] = (5); say scalar(@a); my @b; @b[2, 1] = (); say scalar(@b); my (%g, $x) = (p => 1, q => 2); say join(",", sort keys %g), defined $x ? "set" : "undef";""", out='made\n3\n3\np,qundef\n'),
+    c('T229', 'TRAPS; PLAN 12', r"""my %h = (a => 1, b => 2); sub n() { return %h } my $c = n(); say $c;""", out='2\n'),
 ]
 
 def run(perl, prelude, code, flags):

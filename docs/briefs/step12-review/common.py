@@ -22,7 +22,7 @@ def perl(body, seed=None, head='use v5.42;\n', name='p.pl'):
         if not env['PERL_PERTURB_KEYS']:
             del env['PERL_PERTURB_KEYS']
     try:
-        r = subprocess.run([PERL, path], capture_output=True, timeout=10, env=env)
+        r = subprocess.run([PERL, path], capture_output=True, timeout=10, env=env, stdin=subprocess.DEVNULL)
     except subprocess.TimeoutExpired:
         return ('', 'TIMEOUT', -1)
     return (r.stdout.decode('utf-8', 'replace'), r.stderr.decode('utf-8', 'replace').replace(path, '-'), r.returncode)

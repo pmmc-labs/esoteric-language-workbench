@@ -72,28 +72,36 @@ def expect(place, word):
 
 def main():
     words = sys.argv[1:] or sorted(set(keywords() + EXTRA))
+    kw = set(keywords())
     n = 0
     odd = {}
     for w in words:
         for place, (text, _) in PLACES.items():
-            if place == 'with-sub' and w in set(keywords()):
+            if place == 'with-sub' and w in kw:
                 continue
             n += 1
             out, err, code = perl(text.replace('W', w))
             want = expect(place, w)
             if want is None:
-                key = (place, 'ok' if (code == 0 and not err) else 'stops')
-                # a place the proposal does not say is in: show what perl does when it runs
+                # a place the proposal does not say is in: what perl does when it runs
                 if code == 0:
-                    odd.setdefault((place, ('RUNS: ' + out.strip() + (' WARNS ' + err.strip()[:70] if err else '')).replace(w, 'W')), []).append(w)
+                    odd.setdefault((place, 'not in the proposal, and perl runs it' + (', warning' if err else ', in silence: ' + out.strip().replace(w, 'W'))), []).append(w)
                 continue
             if out == want and not err and code == 0:
                 continue
-            what = 'no compile/dies: ' + err.strip().split('\n')[0][:90] if code else ('prints %r' % out + (' WARNS ' + err.strip()[:90] if err else ''))
-            odd.setdefault((place, what.replace(w, 'W')), []).append(w)
-    print('%d programs, %d words' % (n, len(words)))
+            shown = w
+            if code:
+                what = 'perl stops'
+            elif err:
+                what = 'perl warns'
+            else:
+                what = 'ANOTHER KEY, IN SILENCE'
+                shown = '%s (%r)' % (w, out.strip()[:24])
+            odd.setdefault((place, what), []).append(shown)
+    print('%d programs, %d words, %d places' % (n, len(words), len(PLACES)))
+    print('places where every word is its own text, in silence: ' + ', '.join(p for p in PLACES if expect(p, 'k') is not None and not any(k[0] == p for k in odd)))
     for (place, what), ws in sorted(odd.items()):
-        print('%-14s %s\n      %s' % (place, what, ' '.join(ws) if len(ws) < 30 else '%d words: %s ...' % (len(ws), ' '.join(ws[:10]))))
+        print('%-14s %s (%d words)\n      %s' % (place, what, len(ws), ' '.join(ws) if len(ws) < 60 else ' '.join(ws[:25]) + ' ...'))
 
 
 main()

@@ -1,0 +1,460 @@
+== exists $h{a}
+   +        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   -        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   *        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   /        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   %        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   **       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   .        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   x        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   ==       looser, in silence
+   !=       looser, in silence
+   <        looser, in silence
+   <=       looser, in silence
+   >        looser, in silence
+   >=       looser, in silence
+   <=>      looser, in silence
+   eq       looser, in silence
+   ne       looser, in silence
+   lt       looser, in silence
+   le       looser, in silence
+   gt       looser, in silence
+   ge       looser, in silence
+   cmp      looser, in silence
+   &&       looser, in silence
+   ||       looser, in silence
+   //       looser, in silence
+   ? 5 :    looser, in silence
+   and      looser, in silence
+   or       looser, in silence
+   xor      looser, in silence
+   ..       looser, in silence
+   ,        looser, in silence
+   =>       looser, in silence
+   =        perl stops: Can't modify exists in scalar assignment at - line 2, near "3)"
+   +=       perl stops: Can't modify exists in addition (+) at - line 2, near "3)"
+   .=       perl stops: Can't modify exists in concatenation (.) or string at - line 2, near "3)"
+   ||=      perl stops: Can't modify exists in logical or assignment (||=) at - line 2, near "3)"
+   //=      perl stops: Can't modify exists in defined or assignment (//=) at - line 2, near "3)"
+   &&=      perl stops: Can't modify exists in logical and assignment (&&=) at - line 2, near "3)"
+   ++       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   --       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   [0]      perl stops: Can't use string ("4") as an ARRAY ref while "strict refs" in use at - line 2.
+   {a}      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   (        perl stops: exists argument is not a subroutine name at - line 2.
+   if 1     perl stops: syntax error at - line 2, near "} if"
+   x 2 .    perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   =~       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   <<       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   &        looser, in silence
+   |        looser, in silence
+   isa      looser, in silence
+== delete $h{a}
+   +        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   -        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   *        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   /        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   %        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   **       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   .        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   x        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   ==       looser, in silence
+   !=       looser, in silence
+   <        looser, in silence
+   <=       looser, in silence
+   >        looser, in silence
+   >=       looser, in silence
+   <=>      looser, in silence
+   eq       looser, in silence
+   ne       looser, in silence
+   lt       looser, in silence
+   le       looser, in silence
+   gt       looser, in silence
+   ge       looser, in silence
+   cmp      looser, in silence
+   &&       looser, in silence
+   ||       looser, in silence
+   //       looser, in silence
+   ? 5 :    looser, in silence
+   and      looser, in silence
+   or       looser, in silence
+   xor      looser, in silence
+   ..       looser, in silence
+   ,        looser, in silence
+   =>       looser, in silence
+   =        perl stops: Can't modify delete in scalar assignment at - line 2, near "3)"
+   +=       perl stops: Can't modify delete in addition (+) at - line 2, near "3)"
+   .=       perl stops: Can't modify delete in concatenation (.) or string at - line 2, near "3)"
+   ||=      perl stops: Can't modify delete in logical or assignment (||=) at - line 2, near "3)"
+   //=      perl stops: Can't modify delete in defined or assignment (//=) at - line 2, near "3)"
+   &&=      perl stops: Can't modify delete in logical and assignment (&&=) at - line 2, near "3)"
+   ++       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   --       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   [0]      perl stops: Can't use string ("4") as an ARRAY ref while "strict refs" in use at - line 2.
+   {a}      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   (        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   if 1     perl stops: syntax error at - line 2, near "} if"
+   x 2 .    perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   =~       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   <<       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   &        looser, in silence
+   |        looser, in silence
+   isa      looser, in silence
+== keys %h
+   +        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   -        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   *        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   /        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   %        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   **       perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   .        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   x        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   ==       looser, in silence
+   !=       looser, in silence
+   <        looser, in silence
+   <=       looser, in silence
+   >        looser, in silence
+   >=       looser, in silence
+   <=>      looser, in silence
+   eq       looser, in silence
+   ne       looser, in silence
+   lt       looser, in silence
+   le       looser, in silence
+   gt       looser, in silence
+   ge       looser, in silence
+   cmp      looser, in silence
+   &&       looser, in silence
+   ||       looser, in silence
+   //       looser, in silence
+   ? 5 :    looser, in silence
+   and      looser, in silence
+   or       looser, in silence
+   xor      looser, in silence
+   ..       looser, in silence
+   ,        looser, in silence
+   =>       ANOTHER WAY: 'a|b|3\na=4,b=6\n'  (bracketed: 'b|a|3\na=4,b=6\n')
+   =        ANOTHER WAY: '2\na=4,b=6\n'  (bracketed: '')
+   +=       looser, in silence
+   .=       looser, in silence
+   ||=      looser, in silence
+   //=      looser, in silence
+   &&=      looser, in silence
+   ++       perl stops: Can't modify private hash in postincrement (++) at - line 2, near "%h ++"
+   --       perl stops: Can't modify private hash in postdecrement (--) at - line 2, near "%h --"
+   [0]      perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   {a}      perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   (        perl stops: syntax error at - line 2, near "%h ("
+   if 1     perl stops: syntax error at - line 2, near "%h if"
+   x 2 .    perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   =~       perl stops: Applying pattern match (m//) to %h will act on scalar(%h) at - line 2.
+   <<       perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   &        looser, in silence
+   |        looser, in silence
+   isa      looser, in silence
+== values %h
+   +        perl stops: Experimental values on scalar is now forbidden at - line 2.
+   -        perl stops: Experimental values on scalar is now forbidden at - line 2.
+   *        perl stops: Experimental values on scalar is now forbidden at - line 2.
+   /        perl stops: Experimental values on scalar is now forbidden at - line 2.
+   %        perl stops: Experimental values on scalar is now forbidden at - line 2.
+   **       perl stops: Experimental values on scalar is now forbidden at - line 2.
+   .        perl stops: Experimental values on scalar is now forbidden at - line 2.
+   x        perl stops: Experimental values on scalar is now forbidden at - line 2.
+   ==       looser, in silence
+   !=       looser, in silence
+   <        looser, in silence
+   <=       looser, in silence
+   >        looser, in silence
+   >=       looser, in silence
+   <=>      looser, in silence
+   eq       looser, in silence
+   ne       looser, in silence
+   lt       looser, in silence
+   le       looser, in silence
+   gt       looser, in silence
+   ge       looser, in silence
+   cmp      looser, in silence
+   &&       looser, in silence
+   ||       looser, in silence
+   //       looser, in silence
+   ? 5 :    looser, in silence
+   and      looser, in silence
+   or       looser, in silence
+   xor      looser, in silence
+   ..       looser, in silence
+   ,        ANOTHER WAY: '4|6|3\na=4,b=6\n'  (bracketed: '6|4|3\na=4,b=6\n')
+   =>       looser, in silence
+   =        perl stops: Can't modify values in scalar assignment at - line 2, near "3)"
+   +=       perl stops: Can't modify values in addition (+) at - line 2, near "3)"
+   .=       perl stops: Can't modify values in concatenation (.) or string at - line 2, near "3)"
+   ||=      perl stops: Can't modify values in logical or assignment (||=) at - line 2, near "3)"
+   //=      perl stops: Can't modify values in defined or assignment (//=) at - line 2, near "3)"
+   &&=      perl stops: Can't modify values in logical and assignment (&&=) at - line 2, near "3)"
+   ++       perl stops: Can't modify private hash in postincrement (++) at - line 2, near "%h ++"
+   --       perl stops: Can't modify private hash in postdecrement (--) at - line 2, near "%h --"
+   [0]      perl stops: Experimental values on scalar is now forbidden at - line 2.
+   {a}      perl stops: Experimental values on scalar is now forbidden at - line 2.
+   (        perl stops: syntax error at - line 2, near "%h ("
+   if 1     perl stops: syntax error at - line 2, near "%h if"
+   x 2 .    perl stops: Experimental values on scalar is now forbidden at - line 2.
+   =~       perl stops: Applying pattern match (m//) to %h will act on scalar(%h) at - line 2.
+   <<       perl stops: Experimental values on scalar is now forbidden at - line 2.
+   &        looser, in silence
+   |        looser, in silence
+   isa      looser, in silence
+== exists $h{a}{b}
+   +        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   -        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   *        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   /        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   %        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   **       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   .        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   x        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   ==       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   !=       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   <        perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   <=       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   >        perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   >=       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   <=>      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   eq       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   ne       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   lt       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   le       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   gt       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   ge       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   cmp      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   &&       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   ||       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   //       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   ? 5 :    perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   and      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   or       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   xor      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   ..       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   ,        perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   =>       perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   =        perl stops: Can't modify exists in scalar assignment at - line 2, near "3)"
+   +=       perl stops: Can't modify exists in addition (+) at - line 2, near "3)"
+   .=       perl stops: Can't modify exists in concatenation (.) or string at - line 2, near "3)"
+   ||=      perl stops: Can't modify exists in logical or assignment (||=) at - line 2, near "3)"
+   //=      perl stops: Can't modify exists in defined or assignment (//=) at - line 2, near "3)"
+   &&=      perl stops: Can't modify exists in logical and assignment (&&=) at - line 2, near "3)"
+   ++       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   --       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   [0]      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   {a}      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   (        perl stops: exists argument is not a subroutine name at - line 2.
+   if 1     perl stops: syntax error at - line 2, near "} if"
+   x 2 .    perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   =~       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   <<       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   &        perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   |        perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   isa      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+== delete @h{"a", "b"}
+   +        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   -        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   *        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   /        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   %        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   **       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   .        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   x        perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   ==       looser, in silence
+   !=       looser, in silence
+   <        looser, in silence
+   <=       looser, in silence
+   >        looser, in silence
+   >=       looser, in silence
+   <=>      looser, in silence
+   eq       looser, in silence
+   ne       looser, in silence
+   lt       looser, in silence
+   le       looser, in silence
+   gt       looser, in silence
+   ge       looser, in silence
+   cmp      looser, in silence
+   &&       looser, in silence
+   ||       looser, in silence
+   //       looser, in silence
+   ? 5 :    looser, in silence
+   and      looser, in silence
+   or       looser, in silence
+   xor      looser, in silence
+   ..       looser, in silence
+   ,        looser, in silence
+   =>       looser, in silence
+   =        perl stops: Can't modify delete in scalar assignment at - line 2, near "3)"
+   +=       perl stops: Can't modify delete in addition (+) at - line 2, near "3)"
+   .=       perl stops: Can't modify delete in concatenation (.) or string at - line 2, near "3)"
+   ||=      perl stops: Can't modify delete in logical or assignment (||=) at - line 2, near "3)"
+   //=      perl stops: Can't modify delete in defined or assignment (//=) at - line 2, near "3)"
+   &&=      perl stops: Can't modify delete in logical and assignment (&&=) at - line 2, near "3)"
+   ++       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   --       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   [0]      perl stops: syntax error at - line 2, near "} ["
+   {a}      perl stops: syntax error at - line 2, near "} {a"
+   (        perl stops: syntax error at - line 2, near "} ("
+   if 1     perl stops: syntax error at - line 2, near "} if"
+   x 2 .    perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   =~       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   <<       perl stops: delete argument is not a HASH or ARRAY element or slice at - line 2.
+   &        looser, in silence
+   |        looser, in silence
+   isa      looser, in silence
+== delete local $h{a}
+   +        perl stops: Can't modify addition (+) in local at - line 2, near "3)"
+   -        perl stops: Can't modify subtraction (-) in local at - line 2, near "3)"
+   *        perl stops: Can't modify multiplication (*) in local at - line 2, near "3)"
+   /        perl stops: Can't modify division (/) in local at - line 2, near "3)"
+   %        perl stops: Can't modify modulus (%) in local at - line 2, near "3)"
+   **       perl stops: Can't modify exponentiation (**) in local at - line 2, near "3)"
+   .        perl stops: Can't modify concatenation (.) or string in local at - line 2, near "3)"
+   x        perl stops: Can't modify repeat (x) in local at - line 2, near "3)"
+   ==       ANOTHER WAY: '\nb=6\n' 
+   !=       ANOTHER WAY: '1\nb=6\n' 
+   <        ANOTHER WAY: '\nb=6\n' 
+   <=       ANOTHER WAY: '\nb=6\n' 
+   >        ANOTHER WAY: '1\nb=6\n' 
+   >=       ANOTHER WAY: '1\nb=6\n' 
+   <=>      ANOTHER WAY: '1\nb=6\n' 
+   eq       ANOTHER WAY: '\nb=6\n' 
+   ne       ANOTHER WAY: '1\nb=6\n' 
+   lt       ANOTHER WAY: '\nb=6\n' 
+   le       ANOTHER WAY: '\nb=6\n' 
+   gt       ANOTHER WAY: '1\nb=6\n' 
+   ge       ANOTHER WAY: '1\nb=6\n' 
+   cmp      ANOTHER WAY: '1\nb=6\n' 
+   &&       ANOTHER WAY: '3\nb=6\n' 
+   ||       ANOTHER WAY: '4\nb=6\n' 
+   //       ANOTHER WAY: '4\nb=6\n' 
+   ? 5 :    ANOTHER WAY: '5\nb=6\n' 
+   and      ANOTHER WAY: '3\nb=6\n' 
+   or       ANOTHER WAY: '4\nb=6\n' 
+   xor      ANOTHER WAY: '\nb=6\n' 
+   ..       ANOTHER WAY: '\nb=6\n' 
+   ,        ANOTHER WAY: '4|3\nb=6\n' 
+   =>       ANOTHER WAY: '4|3\nb=6\n' 
+   =        perl stops: Can't modify delete in scalar assignment at - line 2, near "3)"
+   +=       perl stops: Can't modify delete in addition (+) at - line 2, near "3)"
+   .=       perl stops: Can't modify delete in concatenation (.) or string at - line 2, near "3)"
+   ||=      perl stops: Can't modify delete in logical or assignment (||=) at - line 2, near "3)"
+   //=      perl stops: Can't modify delete in defined or assignment (//=) at - line 2, near "3)"
+   &&=      perl stops: Can't modify delete in logical and assignment (&&=) at - line 2, near "3)"
+   ++       perl stops: Can't modify postincrement (++) in local at - line 2, near "++)"
+   --       perl stops: Can't modify postdecrement (--) in local at - line 2, near "--)"
+   [0]      perl stops: Can't use string ("4") as an ARRAY ref while "strict refs" in use at - line 2.
+   {a}      perl stops: Can't use string ("4") as a HASH ref while "strict refs" in use at - line 2.
+   (        perl stops: Useless localization of subroutine entry at - line 2.
+   if 1     perl stops: syntax error at - line 2, near "} if"
+   x 2 .    perl stops: Can't modify concatenation (.) or string in local at - line 2, near "3)"
+   =~       perl stops: Can't modify pattern match (m//) in local at - line 2, near "3)"
+   <<       perl stops: Can't modify left bitshift (<<) in local at - line 2, near "3)"
+   &        ANOTHER WAY: '0\nb=6\n' 
+   |        ANOTHER WAY: '7\nb=6\n' 
+   isa      ANOTHER WAY: '\nb=6\n' 
+== exists &f
+   +        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   -        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   *        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   /        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   %        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   **       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   .        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   x        perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   ==       ANOTHER WAY: '\na=4,b=6\n' 
+   !=       ANOTHER WAY: '1\na=4,b=6\n' 
+   <        ANOTHER WAY: '1\na=4,b=6\n' 
+   <=       ANOTHER WAY: '1\na=4,b=6\n' 
+   >        ANOTHER WAY: '\na=4,b=6\n' 
+   >=       ANOTHER WAY: '\na=4,b=6\n' 
+   <=>      ANOTHER WAY: '-1\na=4,b=6\n' 
+   eq       ANOTHER WAY: '\na=4,b=6\n' 
+   ne       ANOTHER WAY: '1\na=4,b=6\n' 
+   lt       ANOTHER WAY: '1\na=4,b=6\n' 
+   le       ANOTHER WAY: '1\na=4,b=6\n' 
+   gt       ANOTHER WAY: '\na=4,b=6\n' 
+   ge       ANOTHER WAY: '\na=4,b=6\n' 
+   cmp      ANOTHER WAY: '-1\na=4,b=6\n' 
+   &&       ANOTHER WAY: '\na=4,b=6\n' 
+   ||       ANOTHER WAY: '3\na=4,b=6\n' 
+   //       ANOTHER WAY: '\na=4,b=6\n' 
+   ? 5 :    ANOTHER WAY: '3\na=4,b=6\n' 
+   and      ANOTHER WAY: '\na=4,b=6\n' 
+   or       ANOTHER WAY: '3\na=4,b=6\n' 
+   xor      ANOTHER WAY: '1\na=4,b=6\n' 
+   ..       ANOTHER WAY: '0|1|2|3\na=4,b=6\n' 
+   ,        ANOTHER WAY: '|3\na=4,b=6\n' 
+   =>       ANOTHER WAY: '|3\na=4,b=6\n' 
+   =        perl stops: Can't modify exists in scalar assignment at - line 2, near "3)"
+   +=       perl stops: Can't modify exists in addition (+) at - line 2, near "3)"
+   .=       perl stops: Can't modify exists in concatenation (.) or string at - line 2, near "3)"
+   ||=      perl stops: Can't modify exists in logical or assignment (||=) at - line 2, near "3)"
+   //=      perl stops: Can't modify exists in defined or assignment (//=) at - line 2, near "3)"
+   &&=      perl stops: Can't modify exists in logical and assignment (&&=) at - line 2, near "3)"
+   ++       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   --       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   [0]      perl stops: syntax error at - line 2, near "&f ["
+   {a}      perl stops: syntax error at - line 2, near "&f {a"
+   (        perl stops: exists argument is not a subroutine name at - line 2.
+   if 1     perl stops: syntax error at - line 2, near "&f if"
+   x 2 .    perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   =~       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   <<       perl stops: exists argument is not a HASH or ARRAY element or a subroutine at - line 2.
+   &        ANOTHER WAY: '0\na=4,b=6\n' 
+   |        ANOTHER WAY: '3\na=4,b=6\n' 
+   isa      ANOTHER WAY: '\na=4,b=6\n' 
+== keys my %g
+   +        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   -        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   *        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   /        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   %        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   **       perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   .        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   x        perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   ==       ANOTHER WAY: '\na=4,b=6\n' 
+   !=       ANOTHER WAY: '1\na=4,b=6\n' 
+   <        ANOTHER WAY: '1\na=4,b=6\n' 
+   <=       ANOTHER WAY: '1\na=4,b=6\n' 
+   >        ANOTHER WAY: '\na=4,b=6\n' 
+   >=       ANOTHER WAY: '\na=4,b=6\n' 
+   <=>      ANOTHER WAY: '-1\na=4,b=6\n' 
+   eq       ANOTHER WAY: '\na=4,b=6\n' 
+   ne       ANOTHER WAY: '1\na=4,b=6\n' 
+   lt       ANOTHER WAY: '1\na=4,b=6\n' 
+   le       ANOTHER WAY: '1\na=4,b=6\n' 
+   gt       ANOTHER WAY: '\na=4,b=6\n' 
+   ge       ANOTHER WAY: '\na=4,b=6\n' 
+   cmp      ANOTHER WAY: '-1\na=4,b=6\n' 
+   &&       ANOTHER WAY: '0\na=4,b=6\n' 
+   ||       ANOTHER WAY: '3\na=4,b=6\n' 
+   //       ANOTHER WAY: '0\na=4,b=6\n' 
+   ? 5 :    ANOTHER WAY: '3\na=4,b=6\n' 
+   and      ANOTHER WAY: '0\na=4,b=6\n' 
+   or       ANOTHER WAY: '3\na=4,b=6\n' 
+   xor      ANOTHER WAY: '1\na=4,b=6\n' 
+   ..       ANOTHER WAY: '0|1|2|3\na=4,b=6\n' 
+   ,        ANOTHER WAY: '3\na=4,b=6\n' 
+   =>       ANOTHER WAY: '3\na=4,b=6\n' 
+   =        ANOTHER WAY: '0\na=4,b=6\n' 
+   +=       ANOTHER WAY: '0\na=4,b=6\n' 
+   .=       ANOTHER WAY: '0\na=4,b=6\n' 
+   ||=      ANOTHER WAY: '0\na=4,b=6\n' 
+   //=      ANOTHER WAY: '0\na=4,b=6\n' 
+   &&=      ANOTHER WAY: '0\na=4,b=6\n' 
+   ++       perl stops: Can't modify private hash in postincrement (++) at - line 2, near "%g ++"
+   --       perl stops: Can't modify private hash in postdecrement (--) at - line 2, near "%g --"
+   [0]      perl stops: syntax error at - line 2, near "%g ["
+   {a}      perl stops: syntax error at - line 2, near "%g {a"
+   (        perl stops: syntax error at - line 2, near "%g ("
+   if 1     perl stops: syntax error at - line 2, near "%g if"
+   x 2 .    perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   =~       perl stops: Applying pattern match (m//) to %g will act on scalar(%g) at - line 2.
+   <<       perl stops: Experimental keys on scalar is now forbidden at - line 2.
+   &        ANOTHER WAY: '0\na=4,b=6\n' 
+   |        ANOTHER WAY: '3\na=4,b=6\n' 
+   isa      ANOTHER WAY: '\na=4,b=6\n' 
+700 programs

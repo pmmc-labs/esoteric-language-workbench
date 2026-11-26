@@ -1,0 +1,37 @@
+Part 1: an order shown, the reading rule satisfied, and the eight seeds agreeing
+  a sort over a slice of a list (found at the 96th pair of keys)
+      my %h = (three => 1, green => 2); say sort { $a cmp $b } (keys %h)[0];
+      the eight seeds all print 'three\n'; seeds 9 to 40 print ['green\n', 'three\n']
+  a block of grep under sort says (found at the 98th pair of keys)
+      my %h = (three => 1, pear => 2); my @s = sort grep { say $_; 1 } keys %h;
+      the eight seeds all print 'pear\nthree\n'; seeds 9 to 40 print ['pear\nthree\n', 'three\npear\n']
+  a block of map under sort collects (found at the 98th pair of keys)
+      my %h = (three => 1, pear => 2); my @o; my @s = sort map { push @o, $_; $_ } keys %h; say "@o";
+      the eight seeds all print 'pear three\n'; seeds 9 to 40 print ['pear three\n', 'three pear\n']
+  a comparator that logs (found at the 96th pair of keys)
+      my %h = (three => 1, green => 2); my @o; my @s = sort { push @o, $a; $a cmp $b } keys %h; say "@o";
+      the eight seeds all print 'three\n'; seeds 9 to 40 print ['green\n', 'three\n']
+  a comparator that says (found at the 96th pair of keys)
+      my %h = (three => 1, green => 2); my @s = sort { say "$a $b"; $a cmp $b } keys %h;
+      the eight seeds all print 'three green\n'; seeds 9 to 40 print ['green three\n', 'three green\n']
+  sort of values under map, block stores (found at the 98th pair of keys)
+      my %h = (three => 1, pear => 2); my $first; my @s = sort map { $first //= $_; $_ } values %h; say $first;
+      the eight seeds all print '2\n'; seeds 9 to 40 print ['1\n', '2\n']
+Part 2: no order shown, and the reading rule rejects
+  the count: if (%h)                   rejected: line 2: a whole hash without sort
+  the count: my $n = %h                rejected: line 2: a whole hash without sort
+  the count: %h + 0                    rejected: line 2: a whole hash without sort
+  a copy: my %g = %h                   rejected: line 2: a whole hash without sort
+  a %opts parameter                    rejected: line 2: a whole hash without sort
+  a hash handed to a sub that sorts    rejected: line 2: a whole hash without sort; line 2: a whole hash without sort
+  the count of keys, compared          rejected: line 2: keys without sort
+  the count of values in a sum         rejected: line 2: values without sort
+  a sum over values                    rejected: line 2: values without sort
+  a hash from a map over keys          rejected: line 2: keys without sort
+  delete in a loop over keys           rejected: line 2: keys without sort
+  scalar(%h)                           passes
+  scalar(keys %h)                      passes
+  a slice                              passes
+  exists and delete                    passes
+  for over sort keys                   passes
+  %h = ()                              passes

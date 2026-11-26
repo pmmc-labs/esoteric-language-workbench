@@ -1,0 +1,47 @@
+                             h elem   a elem   h slice  a slice 
+my $v = E                    no       no       no       no      
+my @l = (E)                  no       no       no       no      
+say E                        no       no       no       no      
+for (E)                      MADE     MADE     MADE     MADE    
+for ((E, 1))                 MADE     MADE     MADE     MADE    
+for (reverse E)              no       no       no       no      
+for (E x 1) list             MADE     MADE     MADE     MADE    
+for $_                       MADE     MADE     MADE     MADE    
+map                          MADE     MADE     MADE     MADE    
+grep                         MADE     MADE     MADE     MADE    
+sort block                   MADE     MADE     MADE     MADE    
+sort plain                   no       no       no       no      
+reverse                      no       no       no       no      
+join                         no       no       no       no      
+call arg                     no       no       MADE     MADE    
+call arg scalar param        no       no       MADE     MADE    
+call in call                 no       no       MADE     MADE    
+push                         no       no       no       no      
+unshift                      no       no       no       no      
+splice                       no       no       no       no      
+return                       no       no       no       no      
+return list                  no       no       no       no      
+last statement               no       no       no       no      
+list assign                  no       no       no       no      
+list slice                   no       no       no       no      
+ternary in for               MADE     MADE     MADE     MADE    
+or in for                    no       no       no       no      
+dor in for                   no       no       no       no      
+defined                      no       no       -        -       
+x                            no       no       no       no      
+string                       no       no       stops    no         <-- a hash and an array differ
+exists other                 no       no       -        -       
+slice index                  no       no       no       no      
+range end in for             no       no       -        -       
+local-ish +=                 no       no       -        -       
+nested for                   MADE     MADE     MADE     MADE    
+grep in for                  MADE     MADE     MADE     MADE    
+sort in for                  MADE     MADE     MADE     MADE    
+say list                     no       no       no       no      
+slice-of-slice assign rhs    no       no       no       no      
+hash assign rhs              no       no       -        -       
+hash assign rhs slice        no       no       no       no      
+slice key                    no       no       no       no      
+elem key                     no       no       -        -       
+delete of other              no       no       -        -       
+166 programs

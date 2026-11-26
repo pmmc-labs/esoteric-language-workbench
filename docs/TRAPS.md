@@ -571,6 +571,21 @@ WRONG, or takes what perl does not. Each is in `briefs/claims.py`.
 | T221 | In a string: `$h{a}`, `$h{$k}`, `$h{'a b'}`, `$h{1}`, `$h{01}`, `$h{ a }`; `$h{"a"}`; `@h{'a','b'}`, `@h{a}`; `$h{a}{b}`; `%h` | The elements, `01` being the key `1` and blanks allowed; does not compile; the slice, and a warning for a slice of one; dies, a hash in a hash; `%h` is text | 12 | Q2: a key in a string is a word or a scalar variable |
 | T222 | `keys`, `values` and `%h` in a list, of one hash; a key deleted and stored again; `my %g = %h` and a store to `%g` | One order for all three, whatever it is; three keys; a copy | 12 | D27: the order keys were first stored in, and a key stored again after a delete is last. A test sorts, or the oracle refuses it |
 
+## Found by the review of step 12
+
+`briefs/step12-review/`, with the reviewer's scripts: about 80,000
+programs under perl 5.42, and 250 by hand.
+
+| | Program | perl 5.42 prints | Step | What the language does |
+|---|---|---|---|---|
+| T223 | `$h{` and `true` on the next line and `}` on the one after; `$h{ true }`; `$h{false` and a comment and `}` on the next line; `$h{` and `v65 }` on the next line; an ordinary word so | The keys `1`, `true`, the empty string and `A`: **a word alone in braces is a string only when nothing but blanks stands between it and the braces, on one line**. Across a line it is the word's own meaning: a boolean, a version string; and an ordinary word does not compile | 12 | A word alone in braces is on one line with its braces, or it is refused |
+| T224 | `(v66` and `=> 2` on the next line; `v67`, a comment, and `=> 3` on the next; `name` so | The keys `B` and `C`: a `v` and digits is a version string when its `=>` is not on its line. `name` is quoted across the line, as every other word is | 12 | A word and its `=>` are on one line, or it is refused: one rule, and stricter than perl for every word but these |
+| T225 | `say keys %h + 1;`, `values %h . "x"`; `keys(%h) + 1`, `keys %h == 1 or values %h > 5` | The first two do not compile, `Type of arg 1 to keys must be hash or array`: `keys` and `values` are named unary operators too (T220). 2, and fine | 12 | T220's refusal for `keys` and `values` as well |
+| T226 | `sub f($x, %)` called with three arguments, and with two; `sub f($x //= t(), %o)` called with `(undef, "k")`, where `t` prints | `ok 1`, and then dies: `%` alone checks the count too. `t` never runs: perl dies as the sub is entered, before any default | 12 | An odd count for a `%` parameter, named or not, is the fault for a wrong number of arguments, raised where that is |
+| T227 | In a string: `$h{a}->`, `$h{a}->%*`, `$h{a}::x`, `$h{a}(1)`; `$h{a}[0]`; `$h{a}->{b}` | Text after the element for the first four; the last two die, a dereference | 12 | After a hash's element in a string: `[`, `{`, and `->` before `[ { @ $` are refused; the rest is text |
+| T228 | `@h{"a", "b"} = (1);`; `@a[1, 2] = (5);` in an array of one; `@b[2, 1] = ();`; `my (%g, $x) = (p => 1, q => 2);` | `b` is made, with undef; the arrays are three long: a slice on the left stores an undef for each target the list does not reach. The hash takes everything, and `$x` is undef | 12 | Agree with the first three; a hash that is not the last target is refused, as an array is |
+| T229 | `sub n() { return %h }` and `my $c = n();` | 2: the count | 12 | D18's fault: `%h` after `return` is list-shaped, as an array is |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only
