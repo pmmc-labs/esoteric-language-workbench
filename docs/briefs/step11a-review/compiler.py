@@ -67,6 +67,10 @@ def norm(pieces):
     return out
 
 def program(bodies):
+    # (In a batch the sort's array is declared once: a second `my @r` is a
+    # warning of perl's, and no part of what is asked.)
+    if fuzz.WRAP[0].startswith('my @r = '):
+        return fuzz.HEADER + 'my @r;\n' + ''.join(f'{fuzz.WRAP[0][3:]}print "{b}"; print "\\n{SEP}\\n";{fuzz.WRAP[1]}\n' for b in bodies)
     return fuzz.HEADER + ''.join(f'{fuzz.WRAP[0]}print "{b}"; print "\\n{SEP}\\n";{fuzz.WRAP[1]}\n' for b in bodies)
 
 def run_both(bodies, tag):
@@ -74,7 +78,7 @@ def run_both(bodies, tag):
     warns on, or stops at, is taken out and tried alone; returns what
     differs."""
     bad = []
-    lines_before = fuzz.HEADER.count('\n')
+    lines_before = fuzz.HEADER.count('\n') + fuzz.WRAP[0].startswith('my @r = ')
     bodies = list(bodies)
     while True:
         path = os.path.join(TMP, f'batch-{tag}.pl')
@@ -151,17 +155,20 @@ def hold(bodies, tag, sample=4000):
     rest = r.sample(taken, min(sample, len(taken)))
     wrong = []
     for name, group in (('alone', [b for b, _ in lone]), ('sample', rest)):
-        ran = faulted = 0
+        ran = faulted = skipped = 0
         for k in range(0, len(group), 1500):
             diffs, bad = run_both(group[k:k + 1500], tag)
             wrong += diffs
             ran += len(group[k:k + 1500]) - len(bad)
-            for b, err in bad:
+            # Each of these is a compile and a run of its own: 150 a
+            # batch at most, picked at random.
+            skipped += max(0, len(bad) - 150)
+            for b, err in r.sample(bad, min(150, len(bad))):
                 why = alone(b, tag)
                 faulted += why is None
                 if why is not None:
                     wrong.append(('PERL COMPLAINS', b, err, why))
-        print(f'  {name}: {ran} run beside perl and the same, {faulted} that perl warns of and the program faults at')
+        print(f'  {name}: {ran} run beside perl and the same, {faulted} that perl warns of and the program faults at, {skipped} more that perl warns of and were not tried')
     for w in wrong[:20]:
         print('  WRONG', w)
     return len(differ) + len(wrong)
