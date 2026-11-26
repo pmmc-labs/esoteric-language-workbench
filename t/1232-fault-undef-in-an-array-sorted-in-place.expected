@@ -1,0 +1,4 @@
+1
+3:<3><1><undef>
+fault: an undef in an array sorted in place: perl drops an element that was never stored at t/1232-fault-undef-in-an-array-sorted-in-place.pl line 22.
+exit: 1

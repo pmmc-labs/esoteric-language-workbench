@@ -1,0 +1,3 @@
+1
+fault: a sort block's value is outside 32 bits, where perl wraps it at t/1225-fault-sort-block-gives-below-32-bits.pl line 12.
+exit: 1
