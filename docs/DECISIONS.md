@@ -1976,6 +1976,52 @@ refusing a call with arguments where the compiler can see one and
 allowing it where it can't (two rules); deciding anonymous subs
 apart, at step 14.
 
+**D106 to D113. Step 13, references: each question answered with its
+recommendation.** *(User, 2026-11-26, before the proposal was
+written: "do not ask me questions, I will only agree with your
+recommendations anyway." The recommendations are Fable 5.2's; each is
+his to overturn. `PLAN.md`, step 13, has the text, the evidence and
+what was rejected.)*
+**D106.** Four sub-steps: 13a references to arrays and hashes and
+elements through them, 13b the whole container through a reference,
+13c references to scalars, 13d in a string.
+**D107. Reading through undef, or through what is not there, is a
+fault, everywhere; storing through it makes the container, as perl
+does.** perl makes it on a read too, the variable itself included
+(T231 to T233, T48 to T50), and for a whole container dies or makes
+by the operator. A fault can be made to agree later and no program
+changes. Rejected: perl's behaviour, for elements or exactly.
+**D108. A dereference is an arrow, a postfix form (`->@*`, `->%*`,
+`->$*`, `->$#*`, `->@[...]`, `->@{...}`) or braces round the whole
+container (`@{ }`, `%{ }`, `${ }`, `$#{ }`).** Cut: every form with
+no braces (`@$r`, `$$r`, `$$r[0]`; T246), a subscript after braces
+(`${$r}[0]`), and the key-and-value slices (`%h{...}`, `->%[...]`).
+It amends `SURFACE.md`, which had the last two In. Rejected: `@$r`,
+`%$r` and `$$r` alone, though 237 of the 795 probes waiting use one:
+a third spelling, and it can come in later.
+**D109. Every walk over names has one more name, "what references
+reach".** A read through a reference names it and what its chain
+names; a store through one changes it; a variable whose reference is
+taken anywhere is named and changed under it too. D76, D77, D57, D69
+and T230's rule all use it (T235 to T238). Rejected for now: a guard
+at run time, freezing what an expression read through until it is
+done; it is the next move if the census shows the refusals bite.
+**D110. `\` takes a named array, a named hash, or a `my` scalar
+that is not a loop's variable.** A scalar whose reference is taken
+lives in a cell. Cut: a reference to an element (T239), `\(LIST)`,
+`\` before a slice, a value, a call or `my`.
+**D111. In a string: a chain of subscripts after a variable, each
+one D91 or D99 allows, and the whole-container forms.** Cut:
+`"@{[ ... ]}"` and `"${\ ... }"`, code in a string.
+**D112. A reference is true, defined, and `==` or `!=` to another
+reference; any other use of one as a number or a string is a
+fault** (D14; T241, T42). `ref` gives `ARRAY`, `HASH`, `SCALAR`,
+`REF`, or the empty string.
+**D113. Where a value may begin `{` is a hash and `[` an array;
+where a statement may begin `{` is a block; what perl guesses at is
+refused** (T243, T116, T175): `+{ ... }` or `return { ... }` says
+a hash.
+
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as

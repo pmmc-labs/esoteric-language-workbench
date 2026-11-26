@@ -367,12 +367,19 @@ took work, and was done.
 What the decisions already say of steps to come. Each is proposed in
 full when its step is, and its rows join the sections above then.
 
-- **References** (step 13). `\` on a variable, `[ ]`, `{ }`. A
-  reference as a string, or under `<`, is a fault: its address is
-  not part of the agreement (D14). Reading through an undef is a
-  fault, where perl creates what it read through; writing through
-  one is perl's. Whether `@$x` and `$$x` stay, beside `->@*`, is the
-  step's to propose.
+- **References** (step 13; D106 to D113, proposed and not yet
+  built). `\@a`, `\%h`, `\$x`, `[ ]`, `{ }`, the arrows and the
+  postfix forms. **No dereference without braces** (`@$r`, `$$r`,
+  `$$r[0]`: D108), which is the commonest spelling in old Perl; no
+  reference to an element (D110). **Reading through an undef is a
+  fault**, where perl creates what it read through; writing through
+  one is perl's (D107). A reference as a string or a number is a
+  fault but for `==` and `!=` between two (D112, D14). A later part
+  of an expression may not store through a reference when an earlier
+  part read through one (D109). No code in a string, `"@{[ ... ]}"`
+  (D111). Where perl guesses between a block and a hash, a refusal
+  (D113). The rows join the sections above as 13a to 13d are built
+  (D106).
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
 - **Errors** (step 15; D13). `die`, `try`, `catch`.

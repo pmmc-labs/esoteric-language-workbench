@@ -587,6 +587,33 @@ programs under perl 5.42, and 250 by hand.
 | T229 | `sub n() { return %h }` and `my $c = n();` | 2: the count | 12 | D18's fault: `%h` after `return` is list-shaped, as an array is |
 | T230 | `my @a; my $i = 0; $a[$i = 2] = $i . "v";`; the same with `"$i$i"` on the right, with `0 \|\| $i . "v"`, with `$a[bump()]` where `bump` sets `$i`; and `$h{$i = "k"} = $i . "v"` | `2v`, `22`, `2v`, `2v`, and `k` => `kv`: perl makes one operation of the concatenation and the store, and joins the pieces after the index is worked out. `$i x 1`, `uc($i . "v")` and `"$i"` there are read first, and `($a[$i = 2]) = ($i . "v")` stores `0v` | 9, 11a, 12a | **Found by step 12a's breakages, and WRONG since step 9**: the compiler printed `0v`. Refused: the index or key of an element that is stored to may not change a variable that a concatenation, or an interpolated string of more than one piece, on the right reads, itself or through a sub (D57's kin, D104) |
 
+## Found proposing step 13
+
+T12, T42 and T48 to T50 are this step's from before. About 230
+programs were run to write the proposal. Each row is in
+`briefs/claims.py`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T231 | `my $r; my $x = $r->{a};`; the same with `->[0]`, `exists $r->{a}`, `delete $r->{a}`, `$r->$#*` | `$r` is a hash (an array) afterwards: a read made it | 13 | Fault: reading through undef (D107) |
+| T232 | `my $r;` and `my @x = $r->@*`, `scalar($r->@*)`, `sort $r->@*`, `join(",", $r->@*)`, `if ($r->%*)`, `$$r`; against `for (...)`, `map`, `grep`, `keys`, `values`, a call's arguments, a slice, `pop` | The first six die; the rest make `$r` an array or a hash in silence | 13 | One fault for all of them (D107) |
+| T233 | `exists $h{a}{b}`, `defined $h{a}{b}`, `$h{a}{b}{c}` read, `$h{y}{z} &&= 4`; `if ($h{a} && $h{a}{b})` | `$h{a}` is made by each of the first three (two hops by the third); `&&=` makes the path and the key; the last makes nothing | 13 | Fault on the read; the store makes, as perl |
+| T234 | `my $x = 5; $x->[0]`; `[1]->{k}`; `my $x = ""; $x->{a} = 1`; the same with `false` | Each dies: a string as a reference under strict refs, or `Not a HASH reference` | 13 | Fault: a defined value that is not the right reference, read or stored through |
+| T235 | `my $r = \@a; say $a[0], ($r->[0] = 5);`; `say $s->[0], f($s);` where `f` stores to `$s->[0]`; the same under `.` and `+`; `say $x, ($$p = 5);` | `55`; `9x`; `9x`, `10`; `55`: each element is read late, through any name | 13 | D109: one more name in every walk |
+| T236 | `say $r->[0], ($r = [7, 8, 9])->[0];`; `my @b = ($r->@*, f($r));` where `f` assigns to `$r->@*` | An undefined value and a warning; `Attempt to free unreferenced scalar` | 13 | Refused by D109; no test asks perl |
+| T237 | A `for` over `@a` whose block stores through `\@a`; over `$s->@*`, storing through a copy of `$s`; over `$u->@*`, assigning `$u`; over `($x)`, storing through `\$x` | The store shows in the first, second and fourth; the third goes on over the old array | 13 | The freeze is on the container; D77 with D109 for the scalar |
+| T238 | `$r->[$i = 2] = $i . "v";` | `2v` | 13 | T230's rule, through a reference |
+| T239 | `\$a[0]` then `shift @a`; `\$h{a}` then `delete`; `\(@b)`; `\@b[0, 1]`; `\($x, $y)` | The element lives on; a list of references to each element; the last of them | 13 | Refuse each (D110) |
+| T240 | `for (1 .. 3) { my @a = ($i); push @r, \@a }`; the same with `my $x` and `\$x`; with `@o` declared outside; a sub that returns `\@a` called twice | `1,2,3`; `1,2,3`; `3,3,3`; two arrays | 13 | A `my` reached again is a new container, a cell too |
+| T241 | `$r == $s`, `[] == []`, `\@a == \@a`; `$r == 0`, `$r + 0`, `"$r"`, `$r eq $s`, `$r` as a key, `$r < $s`, `-$r`, `length($r)`, `$s++` | Identity for the first three; an address for the rest, in silence, and `$s++` leaves a number | 13 | `==` and `!=` between two references; a fault anywhere else (D112) |
+| T242 | `ref` of an array's, a hash's, a scalar's reference, a reference's, a number, undef; `ref $r eq "ARRAY"`; `ref $r . "x"`; `ref $r == 1` | `ARRAY`, `HASH`, `SCALAR`, `REF`, empty, empty; `y`; the empty string; a warning | 13 | A named unary operator, by D41's rules |
+| T243 | As a sub's last statement: `{ $x => 1 }`, `{ lc($x) => 1 }`, `{ "$x" => 1 }`, `{a => 1}`, `{}`. As a value, after `return`, `=`, `(`, `,`, `?`, `:`, `\|\|`, `=>`, `+`: `{ lc($x) => 1 }` | A block, a block, a hash, a hash, a hash. Always a hash | 13 | D113 |
+| T244 | `my @a = [1, 2, 3];`; `{a => 1, a => 2}`; `my %h = {a => 1};`; `{a => 1, "b"}` | One element; the last value; a warning; a warning | 13 | The last two are an odd count: a fault |
+| T245 | `my @c = @$r; $c[1][0] = 9;`; `([0]) x 2`; `[@a]` then a store to `@a`; `$q->{self} = $q` | Shows through `$r`; one array twice; a copy; a cycle | 13 | Agree: copies are shallow, and the collector takes a cycle |
+| T246 | `$$r[0]` with `my $r = \@a`; `$$r[1]` with only `@r` declared; `@$s[1]`; `@$r->[0]`; `push $r, 3` | `${$r}[0]`; does not compile; a slice; dies; does not compile | 13 | D108: nothing without braces |
+| T247 | In a string: `$r->[0]$r->[1]`, `$r->[$i+1]`, `$r->@*`, `$r->$#*`, `@{$r}`, `$r ->[0]`, `$r->`, `$r->foo`, `%$r`, `email@$r`; `$r->[0]->[1]`; `$r->[0]{x`; `$$r[0]` with a scalar's reference; `@{[ ... ]}` | Elements; perl takes an expression; the array, its last index, the array; text for the next four; interpolated; a second subscript, and dies; does not compile; an element, and dies; code | 13 | D111: a chain goes on, by shapes; no code in a string |
+| T248 | `my $r; $r->{a}{b}[2] = 1;`; `$$s = 5`; `$t->[0]++`; `push $u->@*, 1`; `$v->@* = (1, 2)`; `push $a[2]->@*, 1`; `$h{y}{z} //= 4`; `($o->[0], $o->[1]) = (1, 2)` | Each makes every container on the way | 13 | Agree |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

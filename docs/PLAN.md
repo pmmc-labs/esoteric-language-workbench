@@ -4463,15 +4463,271 @@ element in a string. Step 12 is done with it.
 
 Referee: perl. Size: large.
 
+**Proposed 2026-11-26, by Fable 5.2. Stevan, before he read it: "do
+not ask me questions, I will only agree with your recommendations
+anyway", so each question is answered with its recommendation, as
+D106 to D113, his to overturn.** The outline this replaces said:
 `\@a`, `\%h`, `\$x`, `[ ]`, `{ }`, the arrows, postfix dereference,
-`ref`. Decides: writing through undef (proposed: as perl, which is
-silent); reading through undef or a missing key (proposed: fault; perl
-creates the container on the way, and so do `foreach`, `map` and
-`keys` over a missing one); a reference as a string or a number, and
-which comparisons of references are allowed (D14: `==` and `!=`
-only); dereference without braces, `@$x` and `$$x[0]` (proposed:
-cut, as Stevan's own style guide has it, leaving `->@*` and `@{ }`).
-Traps: T12, T42, T48 to T50.
+`ref`; writing through undef as perl, reading through it a fault; a
+reference as a string or a number, and `==` and `!=` only; cutting
+dereference without braces. Traps: T12, T42, T48 to T50, and T231 to
+T248, found writing this; 43 rows of `briefs/claims.py`, all run
+under 5.42.0. About 230 programs were run.
+
+**The census**: 795 probes wait for this step. 372 of them use
+nothing a later step brings (closures, `bless`, `die`, regexes,
+`local`); of those 171 use a dereference without braces and 45 a
+reference to an element, both cut below. So perhaps 150 will come
+through; the step's account will say.
+
+#### The picture
+
+**A reference is a value that says where a container is.** Until
+now every container had one name, and every rule that keeps the
+language from being WRONG (D76's order, D77, D57, T230's) is a walk
+over names. A reference is a second way to a container, one no walk
+can follow. Two things carry the step:
+
+1. **The freeze was always on the container** (the runtime's block),
+   so a loop over `$r->@*` freezes what `$r` points at, whoever
+   stores to it and by what name. Nothing new.
+2. **The walks get one more name, "what references reach"** (D109):
+   every read through a reference names it, every store through one
+   changes it, and so does a store to a variable whose reference is
+   taken anywhere in the program. That is sound and blunt: it
+   refuses `say $o->{name}, bump($o);` when `bump`, or anything it
+   calls, stores through any reference at all. The message says to
+   take the value into a `my` first, as D76's does.
+
+In the runtime an array or a hash is already a block of the
+collector's that its variable's slot points at, and `my @a` makes a
+new one each time it is reached, so `\@a` is that pointer with
+another tag. Only `\$x` needs something new: a variable whose
+reference is taken lives in a cell on the heap, which step 14's
+closures want too.
+
+#### The language at step 13
+
+**13a. References to arrays and hashes, and elements through them.**
+
+- **`[ LIST ]`** is a new array holding copies of the list, and a
+  reference to it; **`{ LIST }`** a new hash, as `my %h = LIST`
+  makes one (a key twice keeps its first place and last value; **an
+  odd count is a fault**, T244). **`\@a`** and **`\%h`** are
+  references to the variable's own container.
+- **`EXPR->[I]`**, **`EXPR->{K}`**: the element. What may stand
+  before the arrow: a scalar variable, an element, a call, brackets
+  round one value, `[ ]` and `{ }` themselves. **Between two
+  subscripts the arrow may be left out**: `$a[0][1]`, `$h{a}{b}`,
+  `$r->[0]{k}`. After a variable it may not: `$r[0]` is an element
+  of `@r`, as it always was. Indexes and keys are step 9's and 12's.
+- **Reading through what is not a reference is a fault** (D107):
+  `undef where a reference is wanted` when the thing read through is
+  undef (a variable, or an element that is undef or not there),
+  `not a reference to an array` (or `to a hash`) for anything else.
+  perl makes the container on the way, in silence (T231, T233,
+  T48 to T50), the variable itself included: `my $r; my $x =
+  $r->{a};` leaves `$r` a hash. `exists` and `delete` read (T231).
+- **Storing through undef makes it**, as perl does (T248): the
+  target of `=`, of an assigning operator or of `++` and `--` may be
+  a chain, and every hop on the way that is undef or not there
+  becomes a new array or hash, by the subscript that follows it.
+  `$h{a}{b} = 1`, `$r->[0]++`, `$h{y}{z} //= 4`; `&&=` too (T233).
+  A hop that is defined and not the right reference faults, an
+  empty string and `false` included (T234).
+- **A reference as a value** (D112): true; defined; `==` and `!=`
+  between two references say whether they are one container (T241).
+  **Anywhere else a number or a string is wanted it is a fault**: `a
+  reference where a number is wanted`, `a reference where a string
+  is wanted`. So arithmetic, `<`, `eq`, `==` against what is not a
+  reference, `.`, a string it stands in, `say`, a hash's key, `x`,
+  `length`, `++`, `sort`'s default order, `join`. perl answers each
+  with an address, in silence (T241, T42).
+- **`ref EXPR`**: `ARRAY`, `HASH` (and `SCALAR`, `REF` at 13c), and
+  the empty string for anything else, undef too. A named unary
+  operator, with brackets or without, under D41's rules: `ref $r eq
+  "ARRAY"` is as it reads and `ref $r . "x"` is refused (T242).
+- **Copies are shallow** (T245): `my @c = $r->@*;` copies the
+  values, and a value that is a reference still points where it
+  did. `([0]) x 2` is one reference twice.
+- **`{` and `[`** (D113). Where a value may begin, `{` is always a
+  hash and `[` an array, as perl has it (T243). Where a statement
+  may begin `{` is a block, as it was; and the three places perl
+  guesses stay refused or become so: a block that starts with a
+  word or a string and then `,` or `=>`, or is empty (T116); `{`
+  first in the block of a `map`, `grep` or `sort` (T175; `+{ ... }`
+  says a hash); `{` first after `say` or `print`.
+- **The order of a statement** is D80's with the chain for the
+  index: for `=` the right side, then the chain left to right,
+  making as it goes, then the store; for an assigning operator and
+  a step the chain, then the right side. **T230's rule holds
+  through a reference** (T238).
+- **D109's name**, in every walk: `checkOrder` (D76), D77, D57 and
+  D69's rows of dots, T230. A read through a reference names "what
+  references reach" and whatever its chain names (so `say $r->[0],
+  ($r = [7])->[0];` is refused for `$r`: perl prints a freed value
+  there, T236); a store through a reference changes it; a variable
+  that has a `\` anywhere in the program is named and changed under
+  both its own name and that one; a sub changes it if it, or a sub
+  it calls, does.
+- **The collector** walks from a container to what it holds with a
+  stack of its own, not C's; a cycle is collected like anything
+  else (D26).
+
+**13b. The whole container through a reference.**
+
+- **`EXPR->@*`**, **`EXPR->%*`**, **`EXPR->$#*`**, and the same with
+  braces round: **`@{ EXPR }`**, **`%{ EXPR }`**, **`$#{ EXPR }`**
+  (D108). Each stands wherever `@a`, `%h` and `$#a` may: in a list
+  (flattened), where one value is wanted (the count), copied by `my
+  @c = ...`, as the array of `push`, `pop`, `shift`, `unshift` and
+  `splice`, under `keys`, `values`, `sort`, `reverse`, `join`,
+  `map`, `grep`, in the list of a `for`, among a call's arguments,
+  after `return` (list-shaped, D18), and assigned to: `$r->@* =
+  LIST;`.
+- **Slices**: `EXPR->@[I, J]` and `EXPR->@{K1, K2}`, read, and as
+  the one target of a list assignment (D100); `delete EXPR->@{...}`.
+- **Through undef**: `push`, `unshift`, `splice`, an assignment to
+  the whole and a slice on the left make it (T248). **Every other
+  use is D107's fault**, where perl dies for half of them
+  (assignment from it, the count, `sort`, `reverse`, `join`) and
+  makes it in silence for the other half (`for`, `map`, `grep`,
+  `keys`, `values`, a call's arguments, a slice, `pop`, `shift`,
+  `->$#*`: T232).
+- **A loop freezes the container, not the name** (T237): the
+  reference is worked out once, as the loop starts; what it points
+  at is frozen while the loop runs, by every rule 9b and 12b have
+  (not through `keys`); assigning to `$r` in the block is allowed
+  and changes nothing of the loop. `map`, `grep` and `sort` alike.
+- What stands in the braces of `@{ }` is an expression that gives
+  one value; **a word alone there is refused** (`@{name}` is `@name`
+  to perl).
+
+**13c. References to scalars.**
+
+- **`\$x`**, where `$x` is a `my` variable or a parameter; **`EXPR->$*`**
+  and **`${ EXPR }`**, read and stored to, the target of every
+  assigning operator and step. `ref` gives `SCALAR`, or `REF` when
+  the scalar holds a reference. Reading through undef is D107's
+  fault; storing through undef makes a new scalar (T248).
+- **A `my` that is reached again is a new variable** to every
+  reference taken (T240), an array and a hash too (they already
+  are).
+- **Not** (D110): a reference to a loop's variable, `$_`, `$a` or
+  `$b` (D17, T12: it would reach into the list); to an element,
+  `\$a[0]`, `\$h{k}` (to perl the element lives on after `shift` or
+  `delete`, T239; here an element is a place in a row); `\(LIST)`
+  and `\` before a slice (a list of references to each, T239); `\`
+  before a value, a call or `my`.
+- In the runtime such a variable's slot holds a cell, and every use
+  of the variable goes through it; the resolver marks the
+  declarations that have a `\`. Step 14 will mark the captured ones
+  the same way.
+
+**13d. In a string** (D111).
+
+- After a scalar variable or an element in double quotes, a chain:
+  `"$r->[0]"`, `"$r->{k}"`, `"$h{a}{b}"`, `"$a[0][1]"`,
+  `"$r->[0]{k}[1]"`, each subscript one D91 or D99 allows (a whole
+  number or a scalar variable; a word or a scalar variable). To perl
+  the chain goes on as long as `[`, `{` or `->[`, `->{` follow hard
+  (T247), so those are taken as subscripts now, where 11a and 12b
+  refused them, and refused when they are not one of the shapes.
+- `"$r->@*"` and `"@{ CHAIN }"`, joined with one space;
+  `"$r->$#*"` and `"$#{ CHAIN }"`; `"$r->$*"` and `"${ CHAIN }"`;
+  `"$r->@[I, J .. K]"` as an array's slice is. CHAIN is a scalar
+  variable with or without subscripts.
+- **Refused for good**: `"@{[ ... ]}"` and `"${\ ... }"`, which put
+  code in a string (the message says to say it outside the string);
+  a hash's slice in a string, as 12b has it.
+
+**Cut by D108**: `@$r`, `%$r`, `$$r`, `$#$r`, `$$r[0]`, `$$r{k}`,
+`@$r[...]`, in code and in strings (T246: `$$r[1]` is `${$r}[1]`, an
+element of what `$r` points at, and never `${$r[1]}`); a subscript
+after braces, `${$r}[0]`, `@{$r}{...}`, which the arrow says; `%h{...}`
+and `->%[...]`, the key-and-value slices (no probe uses one); `exists`
+and `delete` of an array's element stay refused. Each refusal's
+message gives the spelling that is in.
+
+#### What perl does that the obvious build gets wrong
+
+- **A read makes the variable** (T231), and what dies and what
+  makes is by the operator (T232). One fault for all of it.
+- **An element through a reference is read late** like any other
+  (T235): `say $s->[0], f($s);` prints what `f` stored. D109.
+- **perl prints a freed value** when a later part of a list
+  replaces what an earlier part read through (T236). No test asks
+  it to; D109 refuses the shapes.
+- **An interpolated string is made where it stands** (T235, as
+  T196), so it names nothing.
+- **`{ $x => 1 }` as a sub's last statement is a block** to perl,
+  and `{ "$x" => 1 }` a hash (T243). As a value both are hashes.
+- **`my %h = {a => 1};`** warns; here it is one value, an odd
+  count, a fault (T244). `my @a = [1, 2, 3];` is one element.
+- **`ref $r . "x"`** is the empty string (T242).
+- **A chain in a string goes on** (T247): `"$r->[0]->[1]"` is two
+  subscripts, `"$r->[0]{x"` does not compile, and `"email@$r"`
+  interpolates.
+
+#### The decisions, each the recommendation
+
+- **D106: four sub-steps**, 13a to 13d as above, each green and
+  committed. Rejected: one step.
+- **D107: reading through undef, or through what is not there, is a
+  fault, everywhere; storing makes it.** Rejected: perl's own
+  behaviour for elements (one more wart kept, and a `keys` that
+  shows phantom keys); perl's exactly (a table of which operator
+  dies and which makes). **A fault can be made to agree later and
+  no program changes; the other way round breaks programs.** The
+  cost is real: `if ($seen{$x}{$y})` faults where `$seen{$x}` was
+  never stored, and is written `if ($seen{$x} && $seen{$x}{$y})`.
+- **D108: the arrows and the postfix forms; braces for the whole
+  container; nothing without braces.** As the outline had it and
+  Stevan's style guide does. The cost: 237 of the 795 waiting probes
+  use a spelling without braces. Rejected: `@$r`, `%$r` and `$$r`
+  alone (the commonest spelling in old Perl, and a third way to say
+  one thing; it can be let in later, and nothing would change
+  meaning); everything perl takes (T246's precedence).
+- **D109: the walks get one name for everything a reference
+  reaches.** Rejected for now: guarding at run time, by freezing
+  what an expression has read through a reference until the
+  expression is done (precise to the container, and more generated
+  code, with a fault test for every shape). **It is the next move
+  if the census shows the refusals bite**: a refusal that becomes a
+  guard changes no program that compiled.
+- **D110: `\` takes a named array, a named hash or a `my` scalar.**
+  Rejected: references to elements (every element would have to be
+  a cell); no scalar references until step 14 (the cell is step
+  14's too, but 121 probes take `\$x`).
+- **D111: in a string, chains and the whole-container forms; no
+  code.**
+- **D112: a reference is true, defined, and `==` or `!=` to another;
+  any other use as a number or a string is a fault** (D14).
+- **D113: `{` where a value may begin is a hash; where a statement
+  may begin, a block; perl's guesses are refused.**
+
+#### Tests
+
+A model, `t/models/ref.py`: Python's lists and dicts are references
+already, so the model is short; it writes programs over the edges
+(every kind of hop, missing and undef and wrong, at every depth, read
+and stored; identity; shallow copies; cycles; the freeze through two
+names) and their output, and the oracle check holds perl to it. A
+fault test for every fault, at its edge, each printing something
+perl prints too before it stops. Refusals from a table by hand. No
+test prints a reference, compares two by `<`, or asks perl for
+T236. The collector: a long chain (a list linked a million deep)
+under the stress knob, and a cycle dropped under the cap.
+
+#### How it moves the other files
+
+`SURFACE.md`: the rows for references move to In or to Cut by D108
+and D110. `DIFFERENCES.md` gains rows: no dereference without
+braces (Feel: high; Met: often), a read through undef faults (high,
+often), no reference to an element (low, seldom), no reference as a
+string (low; debugging prints), D109's refusals (a guess: medium,
+sometimes). The census: its table loses step 13's rows and says
+what moved.
 
 ### 14. Closures
 
