@@ -422,8 +422,8 @@ message that says how to write it:
 
 - **`::`** after a name: `"$x::y"` is a variable of another package to
   perl. Write `"${x}::y"` or `"$x\::y"`.
-- **`{`**: `"$x{a}"` is an element of a hash, which comes to strings
-  at step 12b.
+- **`{`**: after an array or an element; `"$x{a}"` is an element of
+  the hash `%x` ("A hash's element in a string").
   Write `"${x}{a}"` or `"$x\{a}"`.
 - **`[`** after a scalar is always the element, `"$x[1]"` of `@x`,
   whether or not there is a `$x`. For the scalar and a bracket, write
@@ -446,7 +446,7 @@ or it has a backslash. A variable in a string is declared like any
 other: `"user@example.com"` is refused for want of an `@example`.
 
 Not in the language yet: an expression in a string (`"@{[ ... ]}"`,
-`"${\ ... }"`), which waits for references; an element of a hash (step 12b);
+`"${\ ... }"`), which waits for references;
 the case escapes, `\U` and its kin.
 
 ### Joining and repeating
@@ -1138,7 +1138,7 @@ A parameter is a variable of the sub's, given its value by the call:
 
 The required ones come first. A last parameter may be `@rest`, which
 takes every argument that is left ("Arrays and subs", below);
-`%opts` comes at step 12b.
+or `%opts` ("A hash as the last parameter").
 
     sub greet($name, $greeting = "hello") {
         return $greeting . ", " . $name;
@@ -1455,8 +1455,8 @@ so `@a[1 .. 3]` and `@a[@which]` are slices. `(LIST)[2]` and
 values.
 
 `@a[0]`, a slice with one index, is refused: perl warns that `$a[0]`
-was meant. And `@a[...] = ...`, a slice on the left of `=`, is not in
-the language yet.
+was meant. A slice may be assigned to, `@a[0, 1] = ("x", "y");`: that
+is under "Slices", with a hash's.
 
 ### A loop over a list
 
@@ -1950,13 +1950,101 @@ print the same under perl sorts:
         say $name, " is ", $age{$name};
     }
 
-### What a hash may not do yet
+### A loop over a hash
 
-A hash in the list of a `for`, a `map`, a `grep` or a `sort`, other
-than by its `keys`, waits for step 12b (take the list into an array
-first: `my @v = values %h;`), and so do a slice, `@h{"a", "b"}`, a
-hash as a sub's last parameter, `sub f($x, %opts)`, and an element in
-a string, `"$h{k}"`.
+A hash may stand in the list of a `for`, a `map`, a `grep` or a
+`sort`: by its `keys`, by its `values`, by itself (keys and values by
+turns), by a slice or by an element.
+
+    for my $name (sort keys %age) { say "$name is $age{$name}"; }
+    my $total = 0;
+    $total += $_ for values %age;
+    my @adults = grep { $age{$_} >= 18 } sort keys %age;
+
+**While a loop is over a hash's `values`, the hash itself, a slice or
+an element of it, the hash is frozen**, as an array is: the block may
+read it (`$h{k}`, `exists`, `keys`, how many), and a store to it, a new
+key, a `delete` or an assignment to it, from the block or from a sub
+the block calls, is the fault `a hash was changed while a foreach is
+over it`. In perl such a loop walks the hash's own values, and a
+change under it shows through, or reads what was freed. The freeze is
+given back on every way out of the loop.
+
+**A loop over `keys` freezes nothing**: the keys are copies, so this
+is the loop that changes a hash as it goes.
+
+    for my $k (sort keys %h) { delete $h{$k} if $h{$k} == 0; }
+
+How many keys there are, `scalar(%h)` or `keys %h` where one value is
+wanted, freezes nothing either; `%h` itself as the end of a range, `1
+.. %h`, names the hash and does. A hash's element in a string is a
+copy, and freezes nothing.
+
+**An element or a slice in such a list, whose key is not there, is a
+fault** (`a key that is not there in a foreach, where perl would make
+it`): perl makes the key, with undef. So is a slice with such a key
+among a call's arguments.
+
+### Slices
+
+`@h{K1, K2, ...}` is the values at those keys, in the order asked, in
+a list; undef for a key that is not there, and no key is made.
+
+    my ($x, $y) = @point{"x", "y"};
+    my @some = @age{@names};
+
+The `@` says a list comes out, and the braces say it is a hash:
+`@h{...}` is a slice of `%h`, and `@h[...]` of the array `@h`. A slice
+by one key is refused, as perl warns of it: write the element. Where
+one value is wanted a slice is refused.
+
+**A slice may be assigned to**, a hash's or an array's, as a statement:
+
+    @h{"a", "b"} = (1, 2);
+    @h{"a", "b"} = @h{"b", "a"};      # a swap
+    @row[0, 1] = ("x", "y");
+
+The right side is worked out first, then every key or index, then the
+stores, a value for each in turn. **A target the list does not reach
+is stored an undef**, which makes its key, or grows the array, all the
+same. A slice is the one target of its assignment: beside others in
+brackets, `($x, @h{...}) = ...`, it is refused, and so are `@h{...} +=
+1` and its kin.
+
+`delete @h{K1, K2}` takes each key away and gives what each held, in a
+list.
+
+### A hash as the last parameter
+
+A sub's last parameter may be a hash, which takes the arguments that
+are left as keys and values by turns:
+
+    sub box($text, %opt) {
+        my %o = (left => "[", right => "]", %opt);
+        return $o{left} . $text . $o{right};
+    }
+    say box("a"), box("b", left => "<", right => ">");
+
+It is a copy, filled when its turn comes. `%` alone takes them and
+names nothing. **An odd number of arguments left for it is a fault**,
+raised as the sub is entered, before any default runs; perl dies
+there too. It has no default, and nothing follows it.
+
+### A hash's element in a string
+
+`"$h{name}"` and `"$h{$k}"` are the element, made a string as `.`
+makes one (an undef is a fault, as everywhere). **The key is a word or
+a scalar variable, hard against its braces**, and nothing else: to
+perl what stands there is code, with quotes, calls and arithmetic, so
+`"$h{'a b'}"`, `"$h{ a }"`, `"$h{1}"` and `"$h{$i + 1}"` are refused.
+Take the value into a `my` first, or join the pieces with `.`.
+
+After the closing brace `[`, `{`, and `->` before `[ { @ $` are
+refused, since perl reads on; anything else is text: `"$h{a}::x"`,
+`"$h{a}->x"`. A slice in a string, `"@h{...}"`, is refused: join it.
+`"%h"` is text, as it is to perl.
+
+### What a hash may not do
 
 `map { $_ => 1 } @list` is refused, for the comma in the block (perl
 has to guess whether those braces are a block or a hash): put the pair

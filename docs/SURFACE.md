@@ -64,7 +64,7 @@ comparison: *in*, *out*, or *n/a*.
 | `local` | Cut | | in | D17; parked |
 | `sub name (signature) { }` | In | 8 | in | D72. A signature is required; at the top level of the file; not named for anything perl knows (D21, T28), nor `v` and digits (T136); called before or after it is written |
 | A sub without a signature, `@_`, `shift` on it | Cut | | out | D17 |
-| Defaults in a signature, slurpy `@rest`, `%opts` | In | 8, 10, 12 | in | Defaults are in (D72). `@rest`, or `@` alone, is the last parameter, with no default (T182), a copy, filled at its turn (T191, D87); `%opts` is step 12 |
+| Defaults in a signature, slurpy `@rest`, `%opts` | In | 8, 10, 12 | in | Defaults are in (D72). `@rest`, or `@` alone, is the last parameter, with no default (T182), a copy, filled at its turn (T191, D87); `%opts` so, from step 12b |
 | Prototypes, `&` calls, `goto &sub` | Cut | | out | D21 |
 | `my sub`, anonymous `sub`, closures | In | 14 | in | |
 | `__SUB__` | In | 14 | | |
@@ -205,7 +205,8 @@ Precedence and associativity are `perlop`'s. Chalk's
 | Interpolation: `"$x"`, `"${x}"`, `"@a"`, `"@{a}"`, `"$a[I]"`, `"@a[I, J .. K]"`, `"$#a"`, `"$#{a}"` | In | 11a | D91 to D95. One value, a Str, made where it stands (T196). I is a whole number or a scalar variable (D91). An undef is a fault (D48) |
 | An expression as an index in a string, `"$a[$i + 1]"` | Cut | | D91: take it into a `my`. perl reads a string's pieces late (T197) |
 | After a variable in a string: `::`, `{`, a second `[`, `->` before `[ { @ $`, a character past ASCII after a bare name | Cut | | D92, D95: each is the variable going on, to perl (T199, T203, T205); braces or a backslash say what is meant |
-| `"$h{key}"`, `"@h{...}"` | In | 12b | D99: the key a word or a scalar variable; after it `[`, `{` and `->` before `[ { @ $` are refused (T227) |
+| `"$h{key}"`, `"$h{$k}"` | In | 12b | D99: the key a word or a scalar variable, hard against its braces; after it `[`, `{` and `->` before `[ { @ $` are refused, and the rest is text (T227) |
+| `"$h{'a b'}"`, `"$h{$i + 1}"`, any other key in a string; `"@h{...}"`, a slice in a string | Cut | | D99: to perl the braces hold code (T221); take the value into a `my`, or join |
 | `"$r->[0]"`, `"$$r"`, `"@$r"`, `"@{[ ... ]}"`, `"${\ ... }"` | Later | 13 | With references |
 | `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
 | `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
@@ -215,12 +216,15 @@ Precedence and associativity are `perlop`'s. Chalk's
 | A list assignment as a value, `if ((my @r = f()))`, `my $n = () = ...` | Cut | | D78: a statement. perl gives the count of the right side |
 | An array where one value is wanted, `"x" . @a`, `-@a`, `if (@a)`, `@a \|\| LIST` | In | 9 | Its count, as in perl (T21, T150) |
 | Assigning to `$#a` | Cut | | |
-| Slices `@a[...]`, `(LIST)[...]`; `@h{...}` | In | 9, 12b | As values (D80); a slice of an empty list is empty (T164); where one value is wanted: Cut, but `(LIST)[N]` (T151). On the left of a list assignment: 12b (D100, T228) |
+| Slices `@a[...]`, `(LIST)[...]`; `@h{...}` | In | 9, 12b | As values (D80); a slice of an empty list is empty (T164); a key that is not there is undef and makes nothing; where one value is wanted: Cut, but `(LIST)[N]` (T151); by one index or key: Cut (T167, T221) |
+| A slice on the left, `@a[...] = LIST`, `@h{...} = LIST` | In | 12b | D100: the one target of a list assignment. The right side, every index or key, then the stores; an undef for each target the list does not reach (T228). Among other targets, and `@h{...} OP= ...`: Cut |
 | `%h{...}`, `%a[...]`, slices of keys and values | Later | | D104: not proposed |
 | Hashes: `my %h`, `%h = LIST`, `$h{k}`, `exists`, `delete`, `keys`, `values` | In | 12a | Insertion order (D27), the one place a program may print what perl does not. A key is a string, made as `.` makes one; an undef key, and an odd list: Fault (T219). A read makes nothing, a store makes the key. `exists`, `delete`, `keys`, `values` before an operator that binds tighter, without brackets: Cut (T220, T225). `$h{a}{b}`, `$h{1, 2}`, `$h {a}`, `length(%h)`, `defined(%h)`: Cut |
 | A word alone in a hash's braces, `$h{name}`, across the end of a line; `-word` there or before `=>` | Cut | | D102: `true` is the key 1 to perl there, `v65` is `A` (T223) |
 | A hash where one value is wanted, `if (%h)`, `my $n = %h`, `keys %h` and `values %h` there | In | 12a | How many keys (T219) |
-| A hash in the list of a `for`, `map`, `grep` or `sort`, other than by `keys`; `sub f(%opts)` | In | 12b | The freeze (D17, T217); an odd count for `%opts` is a fault as the sub is entered (T226) |
+| A hash in the list of a `for`, `map`, `grep` or `sort` | In | 12b | Frozen while the loop runs when it is there by `values`, by itself, by a slice or by an element, and a change is a fault (D17, T217); not by `keys`, which are copies. An element or a slice there whose key is not there: Fault (T216) |
+| `sub f($x, %opts)`, and `%` alone | In | 12b | The last parameter, a copy, no default. An odd number of arguments left for it: Fault, as the sub is entered (T226) |
+| `delete @h{...}` | In | 12b | A list of what each key held; where one value is wanted: Cut |
 | `map { $_ => 1 } @l` | Cut | | D102: the comma in the block; `map { ($_ => 1) } @l` says it (T175) |
 | `each`, the iterator | Cut | | D22 |
 | A hash in list context | In | 12a | Its keys and values by turns, in its own order (D27) |

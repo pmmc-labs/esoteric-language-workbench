@@ -6,7 +6,7 @@ be met, and where. It decides nothing. Where it and a decision
 disagree, [`DECISIONS.md`](DECISIONS.md) is right and this file has a
 mistake.
 
-**Built** means steps 0 to 12a: numbers, strings, booleans, variables,
+**Built** means steps 0 to 12: numbers, strings, booleans, variables,
 control, subs, arrays and lists, `map`, `grep`, `sort`,
 interpolation, hashes. What is decided and not built is at the end.
 
@@ -120,6 +120,11 @@ every one under both.
 | `my @q = (1, 2); for my $x (@q) { push @q, 9 if @q < 3; } say scalar(@q);` | `3` | Fault: `an array was changed while a foreach is over it` |
 | `my @a = (1, 2, 3); for my $x (@a) { $a[0] = 9; say $x }` | `9` `2` `3` | Fault: `an array was changed while a foreach is over it` |
 | `my @a = (1, 2, 3); my $i = 0; say "$a[$i + 1]";` | `2` | Refused |
+| `my %h = (a => 1, b => 2); for my $v (values %h) { $h{new} = 1; } say scalar(%h);` | `3` | Fault: `a hash was changed while a foreach is over it` |
+| `my %h = (a => 1, b => 2); for my $k (sort keys %h) { delete $h{$k}; } say scalar(%h);` | `0` | Same |
+| `my %h = ("a b" => 1); say "$h{'a b'}";` | `1` | Refused |
+| `my %h = (a => 1); my $k = "a"; say "$h{a} $h{$k}";` | `1 1` | Same |
+| `my %h = (a => 1, b => 2); @h{"a", "b"} = @h{"b", "a"}; say "$h{a}$h{b}";` | `21` | Same |
 | `my $s = "abc"; say substr $s, 0, 1;` | `a` | Refused |
 | `my @a = ("b", "a"); my @s = sort(@a); say "@s";` | `a b` | Refused |
 | `my $i = 0; do { say $i; $i++; } while ($i < 2);` | `0` `1` | Refused |
@@ -194,11 +199,13 @@ feels like.
 | `"5 apples" + 1` is 6, `"" + 0` is 0, `"abc" == 0` is true, each with a warning | Fault: `not a numeric string`. `"12\n"` and `" 12 "` are numbers, as in perl | habit | sometimes | numbers, strings | D40 |
 | `my $a`, `my $b` | Refused: they are `sort`'s (40 of the census's programs) | habit | sometimes | variables | D55 |
 | Changing an array inside a loop over it: `push @q, ...` in `for (@q)` | Fault, from the block or a sub it calls (the commonest fault in the census: 28 programs). Loop over a copy, or over `0 .. $n` | habit | sometimes | loops | D17 |
+| Changing a hash inside a loop over its `values`, over itself, or over a slice or an element of it: `for my $v (values %h) { $h{new} = 1 }` | Fault. A loop over `keys %h` may change it: the keys are copies | habit | sometimes | loops, data | D17 |
 | `for my $i (0 .. $#a) { ... push @a, ... }` | The same fault: `$#a` names `@a`. Take it into a `my` first | habit | sometimes | loops | D81 † |
 | `for $x (@a)` with a variable declared outside | `for my $x (@a)` | habit | sometimes | loops | D81 |
 | `try { $n / $d } catch ($e) { ... }` catches the division by zero; so with a wrong number of arguments, a method that isn't there | A fault can't be caught. Test first. `die` is caught, as in perl | habit | sometimes | errors | D13 |
 | A sub that ends in an `if` or a loop returns the last thing evaluated | It has no value, and using it is a fault. End it in a `return` | habit | sometimes | subs | D18 |
 | Any expression as an index in a string: `"$a[$i + 1]"`, `"$a[-$n]"` | A whole number or a scalar variable; take the index into a `my` | habit | sometimes | strings | D91 |
+| Any expression as a key in a string: `"$h{'a b'}"`, `"$h{$i + 1}"`, `"$h{ a }"`; a slice there, `"@h{...}"` | A word or a scalar variable, hard against the braces: `"$h{name}"`, `"$h{$k}"`. Take the value into a `my`, or join | habit | sometimes | strings | D99 |
 | A `$` or `@` in double quotes that begins no variable is text, or one of perl's own: `"cost: $ 5"`, `"@-"` | Refused: a backslash says the character (74 of the census's programs) | habit | sometimes | strings | D92 |
 | `"$x::y"`, `"$x{"`, `"$x->[0]"`: the variable goes on | Refused; `"${x}::y"` or a backslash says what is meant | habit | sometimes | strings | D92, D95 |
 | `substr $s, 0, 1;`, `index $s, "a";` | Brackets. `length`, `uc`, `lc`, `ord` and `chr` go without, as in perl | habit | sometimes | strings | D41 † |
@@ -231,7 +238,8 @@ someone.
 | `for my $i (1 .. $n) { $n-- }`: perl fixes a range's ends as the loop starts | Refused: a loop may not change a scalar its list names | habit | rarely | loops | D77, D81 † |
 | A reference to an element, `\$a[0]`; a closure that keeps a loop variable's alias | Refused | idiom | rarely | data | D17 |
 | `$#a = N` to cut or grow an array | Refused | habit | rarely | data | D80 |
-| `%h{...}`, the slice of keys and values | Not in, and not proposed. `@a[...]` is in; `@h{...}` comes at step 12b, on the left of `=` too | idiom | rarely | data | D100, D104 |
+| `%h{...}`, the slice of keys and values | Not in, and not proposed. `@h{...}` and `@a[...]` are in, on the left of `=` too | idiom | rarely | data | D100, D104 |
+| A slice among other targets, `($x, @h{"a", "b"}) = ...`; `@a[0, 1] += 1` | A slice is the one target of its assignment, with `=` | habit | rarely | data | D100 |
 | `exists $a[0]`, `delete $a[0]`, `keys @a`: the hash builtins on an array | For a hash alone | habit | rarely | data | D104 |
 | `caller` | Cut: a sub can't see how it was called | idiom | rarely | subs | D18 |
 | `DESTROY` at a known moment; `weaken` | No reference counts: a cycle is just collected | idiom | rarely | objects | D26 |
@@ -358,14 +366,6 @@ took work, and was done.
 What the decisions already say of steps to come. Each is proposed in
 full when its step is, and its rows join the sections above then.
 
-- **The rest of hashes** (step 12b; D98 to D102). Until then a hash
-  in the list of a `for`, a `map`, a `grep` or a `sort`, other than
-  by its `keys`, is refused (`for my $v (values %h)`, `sort values
-  %h`), and so are a slice `@h{...}`, a `%opts` parameter and an
-  element in a string, `"$h{k}"`; none is a difference that stays
-  (D104). While a loop is over a hash's values the hash will be
-  frozen, as an array is (D17). In a string a key is a word or a
-  scalar variable (D99).
 - **References** (step 13). `\` on a variable, `[ ]`, `{ }`. A
   reference as a string, or under `<`, is a fault: its address is
   not part of the agreement (D14). Reading through an undef is a

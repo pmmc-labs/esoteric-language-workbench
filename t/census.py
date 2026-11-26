@@ -109,6 +109,9 @@ REASONS = [
     (r"^a line that starts '#!'", 'design', 'D33'),
     (r"only has a value, and nothing is done with it", 'design', 'D15'),
     (r"^'(chop|srand|local|tie|format|write|each)' is not in the language$", 'design', 'D17'),
+    (r"^in a string a key is a word or a scalar variable", 'design', 'D99'),
+    (r"a slice of a hash, to perl, which is not in a string", 'design', 'D99'),
+    (r"^a hash was changed while a foreach is over it", 'design', 'D17'),
     (r"are on one line: across the end of a line", 'design', 'D102'),
     (r"is on one line with them: across the end of a line", 'design', 'D102'),
     (r"which is a string here: perl makes one string of the two", 'design', 'D102'),
@@ -117,9 +120,7 @@ REASONS = [
     (r"perl reads on for (exists|delete|keys|values)'s argument", 'design', 'D102'),
     (r"^expected a value, found '(chop|each)'$", 'design', 'D17'),
     # ---- later, by the step
-    # (Step 12a took hashes in; what is left of step 12 is 12b's.)
-    (r"^'\{' hard after .* in a string", 'later', '12'),
-    (r"\(step 12b\)", 'later', '12'),
+    (r"^'\{' hard after .* in a string: an element of what that holds", 'later', '13'),
     (r"^'(\\|->)' is not in the language yet", 'later', '13'),
     (r"in a string takes a reference", 'later', '13'),
     (r"^'%' before a reference", 'later', '13'),
@@ -360,7 +361,7 @@ def self_test():
     for message, want in (
         ('sub f needs a signature: sub f(...) { ... }, with () for no parameters', 'design D17'),
         ('@_ is not in the language: a sub has a signature (D17)', 'design D17'),
-        ('%o as a parameter is not in the language yet (step 12b)', 'later 12'),
+        ('in a string a key is a word or a scalar variable, hard against its braces (D99): take the key into a my first', 'design D99'),
         ("a comma in the block of a map, a grep or a sort: put the list in brackets, map { ($_ => 1) } ...", 'design D102'),
         ("'=~' is not in the language yet", 'later 19'),
         ("expected ';', found '{'", 'open'),

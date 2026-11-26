@@ -878,6 +878,18 @@ CLAIMS = [
     c('12a-defined', 'LANGUAGE Hashes', r"""my %h = (a => 1); say defined(%h) ? 1 : 0;""", exit='nonzero', err="Can't use 'defined\\(%hash\\)'"),
     c('12a-map-block', 'LANGUAGE Hashes', r"""my @a = (1, 2); my %g = map { ($_ => 1) } @a; say join(",", sort keys %g);""", out='1,2\n'),
     c('12a-delete-said', 'LANGUAGE Hashes', r"""my %h = (a => 1, b => 2); say $h{a}, delete $h{a};""", out='11\n'),
+    # ---- step 12b, as built (LANGUAGE "A loop over a hash", "Slices")
+    c('12b-slice-read', 'LANGUAGE Slices', r"""my %h = (a => 1, b => 2); my @v = @h{"b", "nope", "a"}; say scalar(@v), defined $v[1] ? "d" : "u", exists $h{nope} ? "made" : "not";""", out='3unot\n'),
+    c('12b-slice-swap', 'LANGUAGE Slices', r"""my %h = (a => 1, b => 2); @h{"a", "b"} = @h{"b", "a"}; say $h{a}, $h{b}; my @r = (1, 2, 3); @r[0, 1] = ("x", "y"); say "@r";""", out='21\nx y 3\n'),
+    c('12b-slice-of-one', 'LANGUAGE Slices', r"""my %h = (a => 1); say @h{"a"};""", out='1\n', err='better written as'),
+    c('12b-slice-among-targets', 'LANGUAGE Slices', r"""my @a = (1, 2, 3); (@a[0, 1], my $z) = (7, 8, 9); say "@a $z";""", out='7 8 3 9\n'),
+    c('12b-delete-slice', 'LANGUAGE Slices', r"""my %h = (a => 1, b => 2, c => 3); my @d = delete @h{"a", "c"}; say "@d", scalar(%h);""", out='1 31\n'),
+    c('12b-keys-loop', 'LANGUAGE A loop over a hash', r"""my %h = (a => 0, b => 1); for my $k (sort keys %h) { delete $h{$k} if $h{$k} == 0; } say join(",", sort keys %h);""", out='b\n'),
+    c('12b-values-loop', 'LANGUAGE A loop over a hash', r"""my %h = (a => 1, b => 2); for my $v (values %h) { $h{new} = 1; } say scalar(%h);""", out='3\n'),
+    c('12b-range-to-a-hash', 'LANGUAGE A loop over a hash', r"""my %h = (a => 1, b => 2); for my $i (1 .. %h) { $h{"n$i"} = $i; } say scalar(%h);""", out='4\n'),
+    c('12b-parameter', 'LANGUAGE A hash as the last parameter', r"""sub box($text, %opt) { my %o = (left => "[", right => "]", %opt); return $o{left} . $text . $o{right}; } say box("a"), box("b", left => "<", right => ">");""", out='[a]<b>\n'),
+    c('12b-string-keys', 'LANGUAGE A hash\'s element in a string', r"""my %h = (a => 1, "a b" => 2); my $i = 0; say "$h{'a b'}$h{ a }$h{a}::x $h{a}->x";""", out='211::x 1->x\n'),
+    c('12b-string-slice', 'LANGUAGE A hash\'s element in a string', r"""my %h = (a => 1, b => 2); say "@h{'a','b'} %h";""", out='1 2 %h\n'),
 ]
 
 def run(perl, prelude, code, flags):
