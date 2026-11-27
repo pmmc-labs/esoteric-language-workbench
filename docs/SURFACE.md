@@ -174,21 +174,30 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `&. \|. ^. ~.`, the string bit operators | Cut | | |
 | `isa` | In | 17 | |
 | `=~`, `!~` | In | 19 | |
-| `\` on a variable, `[ ]`, `{ }`, `sub { }` | In | 13, 14 | |
-| `\` on an element, a slice or a list | Cut | | D17 |
-| `->[ ]`, `->{ }`, `->( )`, `->@*`, `->%*`, `->$*`, `->$#*` | In | 13 | |
-| `@{ }`, `%{ }`, `${ }` circumfix | In | 13 | Postfix is preferred; both are perl |
-| `@$x`, `%$x`, `$$x`, `$$x[0]`, `$#$x`: dereference without braces | Later | 13 | Stevan's own style guide forbids them; step 13 proposes cutting them |
-| Arrows left out between subscripts, `$a[1][0]`, `$f->()()` | In | 13 | |
-| A list slice `(LIST)[i]`; postfix slices `->@[...]`, `->@{...}`, `->%[...]` | In | 13 | |
+| `[ LIST ]`, `{ LIST }`, `\@a`, `\%h` | In | 13a | D110, D113: `{` where a value may begin is a hash; an odd list for `{ }` faults (T244) |
+| `\$x` (a `my` scalar or a parameter) | In | 13c | D110 |
+| `sub { }` | In | 14 | |
+| `\` on an element, a slice, a list, a value, a call or `my` | Cut | | D110 (T239) |
+| `->[ ]`, `->{ }` | In | 13a | D107: reading through undef or what is not there faults; storing makes it (T248, D114) |
+| `->@*`, `->%*`, `->$#*`, `@{ }`, `%{ }`, `$#{ }` | In | 13b | D108 |
+| `->$*`, `${ }` | In | 13c | D108 |
+| `->( )` | In | 14 | |
+| `@$x`, `%$x`, `$$x`, `$$x[0]`, `$#$x`: dereference without braces | Cut | | D108 (T246): the arrow or braces say it |
+| A subscript after braces, `${$r}[0]`, `@{$r}{...}` | Cut | | D108: the arrow says it |
+| Arrows left out between subscripts, `$a[1][0]`, `$r->[0]{k}` | In | 13a | Not after a variable: `$r[0]` is an element of `@r` |
+| `$f->()()` | In | 14 | |
+| A list slice `(LIST)[i]` | In | 9 | A subscript after one is refused |
+| Postfix slices `->@[...]`, `->@{...}` | In | 13b | D108 |
+| Key-and-value slices `%h{...}`, `%a[...]`, `->%[...]`, `->%{...}` | Cut | | D108, D104 |
 | `\&name`, `defined &name` | Later | 14 | |
 | `->&name(...)`, how a lexical method is called | Later | 17 | New in 5.42; not one of the `&` calls D21 cuts |
 | `&$f()`, `&{$f}()`, `->&*` | Cut | | D21 |
 | A string as a name (symbolic reference) | Cut | | strict refs: perl dies too |
 | File tests, `-e` and the rest | Later | 21 | |
-| `==` and `!=` between two references | In | 13 | Identity |
-| `< <= > >= <=>` on a reference; `==` between a reference and a number | Fault | 13 | The order of two addresses (D14) |
-| A reference as a string | Fault | 13 | D14 |
+| `==` and `!=` between two references | In | 13a | D112: identity (T241) |
+| A reference where a number is wanted: arithmetic, `< <= > >= <=>`, `==` beside a non-reference, `++`, an index, a count | Fault | 13a | D112: perl takes the address (T241, T42) |
+| A reference as a string: `.`, `say`, a string, a key, `eq`, `length`, `join`, `sort` with no block | Fault | 13a | D112 |
+| A block that begins with a word, a string or a number and a comma; `{` first after `say` or `print`, or in their brackets | Cut | | D113 (T243, T254): `+{ ... }` says a hash |
 
 ## Data
 
@@ -208,7 +217,9 @@ Precedence and associativity are `perlop`'s. Chalk's
 | After a variable in a string: `::`, `{`, a second `[`, `->` before `[ { @ $`, a character past ASCII after a bare name | Cut | | D92, D95: each is the variable going on, to perl (T199, T203, T205); braces or a backslash say what is meant |
 | `"$h{key}"`, `"$h{$k}"` | In | 12b | D99: the key a word or a scalar variable, hard against its braces; after it `[`, `{` and `->` before `[ { @ $` are refused, and the rest is text (T227) |
 | `"$h{'a b'}"`, `"$h{$i + 1}"`, any other key in a string; `"@h{...}"`, a slice in a string | Cut | | D99: to perl the braces hold code (T221); take the value into a `my`, or join |
-| `"$r->[0]"`, `"$$r"`, `"@$r"`, `"@{[ ... ]}"`, `"${\ ... }"` | Later | 13 | With references |
+| `"$r->[0]"`, `"$h{a}{b}"`, `"$r->@*"`, `"@{ CHAIN }"` | In | 13d | D111 |
+| `"$$r"`, `"@$r"` | Cut | | D108 |
+| `"@{[ ... ]}"`, `"${\ ... }"`: code in a string | Cut | | D111 |
 | `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
 | `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
 | Arrays: `my @a`, lists that flatten, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | D80. A read past either end is undef and makes nothing; a store past the end grows the array, before the start faults; `@a[one index]`, `$a[0][0]`, `length(@a)`, `defined(@a)`: Cut (T167, T168) |
@@ -229,10 +240,14 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `map { $_ => 1 } @l` | Cut | | D102: the comma in the block; `map { ($_ => 1) } @l` says it (T175) |
 | `each`, the iterator | Cut | | D22 |
 | A hash in list context | In | 12a | Its keys and values by turns, in its own order (D27) |
-| Nested data through references | In | 13 | |
-| Writing through undef (`$h{a}{b} = 1`, `push $h{k}->@*, 1`) | In | 13 | perl's, silently |
-| Reading through undef or a missing key (`$h->{a}{b}`), in an expression, a `foreach`, a `map` or `keys` | Fault | 13 | perl creates `$h->{a}`; to be proposed |
-| `ref`, `reftype`, `blessed`, `refaddr` | In | 13, 17 | The last three are imported by `use v5.42`; `refaddr`'s number is unspecified |
+| Nested data through references | In | 13a | Copies are shallow (T245); a cycle is collected (D26) |
+| Writing through undef (`$h{a}{b} = 1`, `$r->[0]++`) | In | 13a | perl's (T248): only a variable or an element is made (T252), and not a read-only one (T250, D114) |
+| Writing through undef with `push $h{k}->@*, 1` | In | 13b | |
+| Reading through undef or a missing key (`$h->{a}{b}`), `exists` and `delete` through one | Fault | 13a | D107: perl creates `$h->{a}` (T231, T233) |
+| Reading a whole container through undef, in a `foreach`, a `map` or `keys` | Fault | 13b | D107 (T232) |
+| `ref` | In | 13a | D112: ARRAY or HASH, else the empty string; `SCALAR` and `REF` at 13c |
+| `reftype`, `blessed`, `refaddr` | In | 17 | Imported by `use v5.42`; `refaddr`'s number is unspecified |
+| A later part changing what a reference reaches, read through by an earlier part | Cut | | D109, D114 (T235, T236, T249): refused, in every walk over names |
 | `weaken`, `unweaken`, `is_weak`, `is_tainted` | Cut | | D26; all imported by `use v5.42`, so the names are still taken (D21) |
 | Typeglobs, `*name`, filehandles as barewords | Cut | | Except `STDIN`, `STDOUT`, `STDERR` |
 | `=>` quoting the word on its left, `q`, `y`, `s`, `if` and a sub's name included | In | 12a | T214. The word and its `=>` on one line: across a line, Cut (D102, T224) |

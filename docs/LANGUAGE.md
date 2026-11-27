@@ -1911,8 +1911,8 @@ works on an element, and makes its key first: `$count{$word}++`,
 key and stores nothing, as in perl.)
 
 The braces are hard against the name, `$h{k}`: perl takes a blank
-there. `$h{a}{b}` and `$h{a}[0]` are for step 13, and a comma in the
-braces is refused.
+there. A comma in the braces is refused. `$h{a}{b}` and `$h{a}[0]` are
+elements of what `$h{a}` holds, a reference: "References", below.
 
 ### exists and delete
 
@@ -2067,6 +2067,146 @@ change a variable that a concatenation on the right reads**: `$a[$i++]
 = $i . "v";` and `$h{$k = "x"} = "$k-$k";` are refused. perl joins
 such a string as it stores it, after the index is worked out, and
 would read the changed variable. Take the string into a `my` first.
+
+## References
+
+A **reference** is a value that says where an array or a hash is. It
+is how one container holds another, and how a sub is handed one
+without a copy.
+
+    my $point = { x => 3, y => 4 };        # a new hash
+    my $row = [1, 2, 3];                   # a new array
+    my @grid = ([1, 2], [3, 4]);           # an array of arrays
+    say $point->{x}, $row->[2], $grid[1][0];   # 333
+
+`[ LIST ]` makes a new array holding the list's values and gives a
+reference to it; `{ LIST }` a new hash, made from keys and values by
+turns as `my %h = LIST` makes one (a key given twice keeps its last
+value, and **an odd number of values is a fault**). `\@a` and `\%h`
+are references to the variable's own array or hash: a store through
+the reference is a store to `@a`, and the other way round.
+
+    my @list = (1, 2);
+    my $r = \@list;
+    $r->[2] = 3;
+    say scalar(@list);                     # 3
+
+### Elements through a reference
+
+`EXPR->[I]` is an element of the array a reference points at, and
+`EXPR->{K}` one of the hash, with the index or the key as `$a[I]` and
+`$h{K}` have them (one word alone in the braces is that string). What
+stands before the arrow is a scalar variable, an element, a call, `[ ]`
+or `{ }`, or brackets round one value: `$r->[0]`, `$h{list}->[0]`,
+`make()->{name}`, `[1, 2]->[1]`.
+
+**Between two subscripts the arrow may be left out**: `$grid[1][0]` is
+`$grid[1]->[0]`, `$h{a}{b}` is `$h{a}->{b}`, and `$r->[0]{name}` goes
+two hops. After a variable it may not: `$r[0]` is an element of `@r`,
+and `$r->[0]` one of what `$r` points at. The subscripts are hard
+against each other, and the arrow against its bracket.
+
+**Reading through what is not a reference is a fault**: through undef,
+or an element or a key that is not there, `undef where a reference is
+wanted`; through anything else, a number, a string, or a reference to
+the other kind of container, `not a reference to an array` (or `to a
+hash`). perl makes the container as it reads, in silence, the variable
+included: after `my $r; my $x = $r->{a};` perl's `$r` is a hash. So
+`if ($seen{$x}{$y})` faults where `$seen{$x}` was never stored, and is
+written `if ($seen{$x} && $seen{$x}{$y})`. `exists` and `delete` read
+through their chain too: `exists $h{a}{b}` faults if there is no
+`$h{a}`.
+
+**Storing through undef makes it**, as perl does: in `$h{a}{b} = 1`,
+`$r->[0]++`, `$tree->{left}{count} += 1`, every hop on the way that is
+undef or not there becomes a new array or hash, by the subscript after
+it, and the variable at the head too if it holds undef. An array grows
+to hold an index, as it does for `$a[I] = V`. A hop that holds
+something else faults, an empty string and `false` included. Only a
+variable or an element is made: `f()->[0] = 5` with `f` giving undef
+faults, and so does `($r || $s)->[0] = 5`. A loop's variable, `$_`,
+`$a` and `$b` hold a copy, so a store through one that holds undef
+faults (perl's array would land in the list); through a parameter
+that holds undef it is made, in the parameter, as in perl.
+
+The order is an element's (D80): for `=` the right side, then the
+chain from left to right, making as it goes, then the store; for every
+other assigning operator and for `++` and `--`, the chain, then the
+right side.
+
+### A reference as a value
+
+A reference is true and defined. **`==` and `!=` between two
+references say whether they are one container**: `[] == []` is false,
+`$r == $s` true when `$s` is a copy of `$r`. `ref EXPR` is `ARRAY` or
+`HASH` for a reference, and the empty string for anything else, undef
+too; it is a named unary operator, so `ref $r eq "ARRAY"` reads as it
+looks, and `ref $r . "x"` is refused (perl takes the whole of it for
+the argument).
+
+**Anywhere else a number or a string is wanted, a reference is a
+fault**: `a reference where a number is wanted`, `a reference where a
+string is wanted`. That is arithmetic, `<` and `<=>`, `==` beside what
+is not a reference, `.`, a string the reference stands in, `say`, a
+hash's key, `x`, `length`, `++`, `join`, and `sort` with no block.
+perl gives an address in each, which no program means.
+
+**Copies are shallow.** `my @c = @rows;` copies the references, not
+what they point at: `$c[0][0] = 9` changes `$rows[0][0]` too. `[@a]`
+is a new array holding copies of `@a`'s values. `([0]) x 2` is one
+reference twice.
+
+**A `my` reached again is a new array or hash**, so a loop that takes
+`\@row` of a `my @row` in its block gathers a new array each time
+round, and a sub that returns `\%h` of its own `my %h` gives a new
+hash each call.
+
+A cycle, `$node->{self} = $node`, is fine: memory a program can no
+longer reach is freed, whatever holds what.
+
+### References in loops, sorts and subs
+
+A loop's variable, `$_`, `$a`, `$b` and a parameter may hold a
+reference, and an element through it is read and stored as through any
+other:
+
+    for my $row (@grid) { say $row->[0] }
+    my @by_age = sort { $a->{age} <=> $b->{age} } @people;
+    my @names = map { $_->{name} } @people;
+
+**An element through a reference in the list of a `for`, a `map`, a
+`grep` or a `sort` freezes every container on its way** while the loop
+runs, as an array named there is frozen: `for my $x ($r->[0],
+$r->[1]) { ... }` faults if the block stores to what `$r` points at,
+by any name. perl walks the element itself there, and would show the
+store, or a freed value. The block may not assign a variable the list
+reads through, either.
+
+### What references may not do, and what is to come
+
+Not in the language: a dereference without braces, `@$r`, `%$r`,
+`$$r`, `$$r[0]`, `$#$r`, which perl reads by rules of its own; the
+arrow says it, `$r->[0]`. `${$r}[0]` and `@{$r}{...}` are refused for
+the same reason. A reference to an element, `\$a[0]`, `\$h{k}`, and
+`\` before a list or a slice. `{ LIST }` first after `say` or `print`,
+or first inside their brackets (perl takes it for a block): write
+`+{ ... }`. A block that begins with a word, a string or a number and
+a comma, which perl guesses to be a hash.
+
+**A later part of an expression or a list may not change what a
+reference reaches, when an earlier part reads through one**, as for an
+array: `say $r->[0], bump($r);` is refused when `bump`, or anything it
+calls, stores through any reference at all, since perl reads the
+element after the store. A variable whose reference is taken anywhere
+in the program counts as reached by every reference. A store through a
+chain also changes the variable it starts from, since a hop that is
+undef is made in it: `my @l = ($r, ($r->[0] = 1));` is refused. Take
+the value into a `my` first.
+
+Still to come: the whole container through a reference, `$r->@*`,
+`$r->%*`, `$r->$#*`, `@{ $r }`, `%{ $r }` and the slices (step 13b);
+`\$x` and `$r->$*` (step 13c); a reference in a string, `"$r->[0]"`
+(step 13d).
 
 ## Memory
 

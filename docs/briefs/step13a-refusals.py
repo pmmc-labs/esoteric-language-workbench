@@ -5,7 +5,7 @@
 # What perl does with each is in its comment, from perl 5.42 run plain
 # (`python3 docs/briefs/step13a-refusals.py --perl` prints each again).
 #
-#     python3 docs/briefs/step13a-refusals.py 1900
+#     python3 docs/briefs/step13a-refusals.py 1910
 import subprocess
 import sys
 T = []
@@ -97,9 +97,17 @@ r('reach-taken-hash-deleted', "perl runs it, and says nothing.", H + 'my $r = \\
 r('reach-operand-store', "perl runs it: '10\\n'.", R + 'my $s = $r;\nsay $r->[0] + ($s->[0] = 5);', '= 5', "a later part of '+' can change what references reach, which an earlier part names: perl reads it after the change; take the value into a my first")
 r('reach-arguments', "perl runs it: '55\\n'.", R + 'sub f($x, $y) {\n    return $x . $y;\n}\nsay f($r->[0], ($r->[0] = 5));', '= 5)', "a later part of the arguments of f can change what references reach, which an earlier part names: perl reads it after the change; take the value into a my first")
 
-def write(first):
+# ---- two more, which the breakages of the step showed no test reached
+# (briefs/step13a-mutations.py): they are written from 1986.
+LATE = []
+def late(name, why, body, at, message, nth=1):
+    LATE.append((name, why, body, at, message, nth))
+late('reach-deleted-after-read', "perl runs it: '2\\n'.", 'my $r = {a => 1};\nmy @l = ($r->{a}, delete $r->{a});\nsay scalar(@l);', 'delete', 'a later part of this list can change what references reach, which an earlier part names: perl reads it after the change; take the value into a my first')
+late('reach-first-key-concat', "perl runs it: 'b!\\n'.", 'my %h;\nmy $k = "a";\n$h{$k = "b"}{x} = $k . "!";\nsay $h{b}{x};', '= "b"', 'the key changes $k, which the concatenation on the right reads: perl joins its pieces as it stores, after the key is worked out; take the string into a my first')
+
+def write(first, table=None):
     n = first
-    for name, why, body, at, message, nth in T:
+    for name, why, body, at, message, nth in (T if table is None else table):
         program = f'# kind: refused\n# {why}\nuse v5.42;\n{body}\n'
         path = f't/{n}-ref-{name}'
         open(path + '.pl', 'w', encoding='utf-8').write(program)
@@ -119,3 +127,4 @@ if __name__ == '__main__':
             print(f'{name}: exit {r_.returncode}; {r_.stdout!r}; {r_.stderr.strip()[:200]!r}')
     else:
         write(int(sys.argv[1]))
+        write(1986, LATE)

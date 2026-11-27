@@ -6,9 +6,10 @@ be met, and where. It decides nothing. Where it and a decision
 disagree, [`DECISIONS.md`](DECISIONS.md) is right and this file has a
 mistake.
 
-**Built** means steps 0 to 12: numbers, strings, booleans, variables,
-control, subs, arrays and lists, `map`, `grep`, `sort`,
-interpolation, hashes. What is decided and not built is at the end.
+**Built** means steps 0 to 12 and 13a: numbers, strings, booleans,
+variables, control, subs, arrays and lists, `map`, `grep`, `sort`,
+interpolation, hashes, and references to arrays and hashes with
+elements through them. What is decided and not built is at the end.
 
 ## How this file is kept
 
@@ -156,6 +157,13 @@ every one under both.
 | `my %h = (1, 2, 3); say scalar(%h);` | `2`, and warns | Fault: `an odd number of values for a hash` |
 | `my %h = (if => 1, q => 2); say $h{if} + $h{q}, exists $h{x} ? "x" : "no x";` | `3no x` | Same |
 | `my %h = (a => 1); my @a = (0); say exists $a[0] ? "yes" : "no";` | `yes` | Refused |
+| `my $h; $h->{a}{b} = 1; my @g = ([1, 2], [3]); say ref($h->{a}), $g[1][0];` | `HASH3` | Same |
+| `my %h; my $x = $h{a}{b}; say exists $h{a} ? "made" : "no";` | `made` | Fault: `undef where a reference is wanted` |
+| `my $r = [1, 2]; say $$r[0];` | `1` | Refused |
+| `my $p = [1]; my $q = $p; say $p == $q ? "one" : "two", [] == [] ? "one" : "two";` | `onetwo` | Same |
+| `my $r = [1]; say $r + 0 > 0 ? "an address" : "no";` | `an address` | Fault: `a reference where a number is wanted` |
+| `my @a = (1); my $r = \@a; say $a[0], ($r->[0] = 5);` | `55` | Refused |
+| `my @rows = ([1, 2]); my @c = @rows; $c[0][0] = 9; say $rows[0][0];` | `9` | Same |
 
 ## 1. Idioms you will miss
 
@@ -181,6 +189,7 @@ is where the feel changes.
 | `each %h`; `while (my ($k, $v) = each %h)` | Cut: `for my $k (sort keys %h)` | idiom | sometimes | data | D22, D101 |
 | A set or an index built by `map`: `my %seen = map { $_ => 1 } @list;` | Refused, for the comma in the block (perl has to guess whether the braces are a block or a hash): `map { ($_ => 1) } @list` | idiom | sometimes | data | D102 † |
 | `BEGIN`, `eval STRING`, a `require` at run time, `do FILE`, `__DATA__` | Cut: the compiler sees the whole program before any of it runs | idiom | sometimes | layout | D20 |
+| A dereference without braces: `@$r`, `%$r`, `$$r[0]`, `$#$r`, the commonest spelling in old Perl | The arrow: `$r->[0]`, `$r->{k}`; and for the whole container `$r->@*` or `@{ $r }` (step 13b). (237 of the 795 census programs that wait for references use a spelling without braces) | idiom | often | data, old code | D108 |
 
 ## 2. Habits that now stop
 
@@ -216,6 +225,8 @@ feels like.
 | `sort(@a)`, `map(...)`, `grep(...)` with brackets of their own | Without: `sort @a` | habit | sometimes | data | D89 † |
 | `reverse` where one value is wanted reverses a string's characters; `sort` there is undef | Both refused there. `grep` and `map` are their count, as in perl | habit | sometimes | strings, data | D84 |
 | `do { ... } while (...);` | Left out, for the step that takes `do BLOCK`. It is not a loop to perl either: `last` in it leaves the loop round it | habit | sometimes | control | D58 † |
+| Reading through what is not there makes it, in silence: `if ($seen{$x}{$y})`, `my $n = $tree->{left}{size};`, `exists $h{a}{b}` | Fault: `undef where a reference is wanted`. `if ($seen{$x} && $seen{$x}{$y})`. Storing makes it, as in perl | habit | often | data | D107 |
+| A later part reads through a reference that an earlier one stores through, or a sub it calls does: `say $o->{name}, bump($o);` | Refused when a later part, or anything it calls, can store through any reference at all (a guess at how often: no program has met it yet). Take the value into a `my` first | habit | sometimes | data | D109, D114 † |
 
 ## 3. Rare, but you meant it
 
@@ -237,7 +248,8 @@ someone.
 | A label in any case, on any statement | On a loop, in capitals, checked as the program compiles | habit | rarely | control | D61 † |
 | `foreach (my $i = 0; $i < 3; $i++)`: the two words are one | `for` has three parts; `foreach` is over a list | habit | rarely | loops | D81 † |
 | `for my $i (1 .. $n) { $n-- }`: perl fixes a range's ends as the loop starts | Refused: a loop may not change a scalar its list names | habit | rarely | loops | D77, D81 † |
-| A reference to an element, `\$a[0]`; a closure that keeps a loop variable's alias | Refused | idiom | rarely | data | D17 |
+| A reference to an element, `\$a[0]`, `\$h{k}`; `\` before a list or a slice; a closure that keeps a loop variable's alias | Refused | idiom | rarely | data | D17, D110 |
+| A reference printed, joined, used as a hash's key or compared with `<`: `say $r;`, `$seen{$r}++` | Fault: `a reference where a string is wanted`, `... a number ...`. `==` and `!=` between two references say whether they are one container | habit | rarely | printing, data | D112 |
 | `$#a = N` to cut or grow an array | Refused | habit | rarely | data | D80 |
 | `%h{...}`, the slice of keys and values | Not in, and not proposed. `@h{...}` and `@a[...]` are in, on the left of `=` too | idiom | rarely | data | D100, D104 |
 | A slice among other targets, `($x, @h{"a", "b"}) = ...`; `@a[0, 1] += 1` | A slice is the one target of its assignment, with `=` | habit | rarely | data | D100 |
@@ -276,6 +288,8 @@ quiet has met few of them.
 | `!$x == $y` is `(!$x) == $y`, and 5.42 warns | Refused | accident | rarely | control | D50 |
 | `"ab" x3`; `length - 5`; `$x =- $y`; `65.66.67`, which is `ABC` | Each refused | accident | rarely | strings, numbers | D44, D41, D56, D38 |
 | `{ }` alone is an anonymous hash; `while ()` loops for ever | Each refused | accident | rarely | control | D56, D62 |
+| Whether `{` is a block or a hash is perl's guess: `{ $x => 1 }` as a sub's last statement is a block, `{ "$x" => 1 }` a hash; `say { ... }` is a file handle | Where a value may begin `{` is a hash; where a statement may, a block, and the shapes perl guesses at are refused: `+{ ... }` says a hash | accident | rarely | data | D113 |
+| A store through a loop variable or `$_` that holds undef makes an array in the list itself; `($c ? $r : $s)->[0] = 5` makes `$r`, where `f()->[0] = 5` dies | Fault: only a variable or an element is made, and not a read-only one | accident | rarely | data, loops | D114 |
 | `my $x = (4, 5, 6);`: the comma operator, and a warning | Refused: no comma operator, but in a `for`'s first and third parts | accident | rarely | variables | D60 |
 | A word before `=>` is quoted across a line end, but `true` and `v65` are not | A word is a string before `=>`, or alone in braces, only on one line with them | accident | rarely | data | D102 † |
 | `-bar => 1` and `$h{-bar}` are the string `-bar` | Refused: write `"-bar"` | accident | rarely | data | D102 |
@@ -367,19 +381,13 @@ took work, and was done.
 What the decisions already say of steps to come. Each is proposed in
 full when its step is, and its rows join the sections above then.
 
-- **References** (step 13; D106 to D113, proposed and not yet
-  built). `\@a`, `\%h`, `\$x`, `[ ]`, `{ }`, the arrows and the
-  postfix forms. **No dereference without braces** (`@$r`, `$$r`,
-  `$$r[0]`: D108), which is the commonest spelling in old Perl; no
-  reference to an element (D110). **Reading through an undef is a
-  fault**, where perl creates what it read through; writing through
-  one is perl's (D107). A reference as a string or a number is a
-  fault but for `==` and `!=` between two (D112, D14). A later part
-  of an expression may not store through a reference when an earlier
-  part read through one (D109). No code in a string, `"@{[ ... ]}"`
-  (D111). Where perl guesses between a block and a hash, a refusal
-  (D113); what its review changed is D114. The rows join the sections above as 13a to 13d are built
-  (D106).
+- **References, the rest** (steps 13b to 13d; D106, D108, D110,
+  D111). 13a is built, and its rows are above. To come: the whole
+  container through a reference, `$r->@*`, `@{ $r }` and the slices,
+  where reading a whole container through undef is a fault too
+  (D107), as perl does for half the operators and not the other half;
+  `\$x` and `$r->$*`; and in a string, chains and the whole-container
+  forms, with no code in a string, `"@{[ ... ]}"` (D111).
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
 - **Errors** (step 15; D13). `die`, `try`, `catch`.

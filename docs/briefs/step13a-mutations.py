@@ -99,7 +99,6 @@ MUTATIONS = [
  ("a brace first after say is a hash", PARSE, "        if (open.kind === '{') refuse(`'{' first after ${head.text}:", "        if (false) refuse(`'{' first after ${head.text}:"),
  ("a block of a word and a comma is a block", PARSE, "            if ((first.kind === 'str' || first.kind === 'int' || first.kind === 'num' || first.kind === 'word') && second?.kind === ',') {", "            if (false) {"),
  ("a blank between subscripts is read on", PARSE, "                if (!touching(i - 1)) refuse(\"a blank between two subscripts", "                if (false) refuse(\"a blank between two subscripts"),
- ("an arrow may follow anything", PARSE, "            if (t.kind === 'op' && t.text === '->') {\n                if (!arrowable(e)) break;", "            if (t.kind === 'op' && t.text === '->') {"),
  ("a reference to an element is a reference to its array", PARSE, "            if ((what.kind === 'array' || what.kind === 'hash') && !subscripted) {", "            if (what.kind === 'array' || what.kind === 'hash') {"),
  ("exists through an array's element is taken", PARSE, "            } else if (element?.kind === 'chain' && element.hash) {", "            } else if (element?.kind === 'chain') {"),
  # ---- the lexer

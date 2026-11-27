@@ -4793,6 +4793,152 @@ differ, this section is right.
   chain left to right, and an index's call sees the hop before it
   already made.
 
+#### 13a, as built
+
+**Built** (2026-11-27, by Fable 5.2, alone overnight under Stevan's
+standing instruction): references to arrays and hashes, and elements
+through them. **The Size line**, large, is the whole step's; by the
+workbench's `docs/MODELS.md` 13a alone is a large sub-step for this
+model, the compiler's every pass and the collector, and it took one
+session, as 12a did.
+
+- **What is in**: `[ LIST ]`, `{ LIST }`, `\@a`, `\%h`; `EXPR->[I]`
+  and `EXPR->{K}`, the arrow left out between two subscripts; read,
+  with D107's faults; stored to with `=`, every assigning operator,
+  `++` and `--`, making each hop (only a variable or an element, and
+  not a read-only one: D114); a target through a reference in a list
+  assignment too, its hops made in turn after the right side; `exists`
+  and `delete` through a chain; `ref`; a reference true, defined, `==`
+  and `!=` by identity, and a fault wherever else a number or a string
+  is wanted (D112), every runtime operator and builtin with its fault
+  and a fault test; D113's braces; D109's name in every walk, with
+  D114's change of a chain's head; the freeze of every container a
+  chain in a binder's list goes through; the collector's walk by a
+  stack of its own. **Nothing of 13a's scope is left undone.**
+- **The tree** (for 13b to 13d): `chain` (`head`, `index`, `hash`) is
+  an element through a reference, its head any expression; `anon` (`items`,
+  `hash`) a new container; `ref` (`of`, an `array` node; 13c's `\$x`
+  gives it a `var`); `hashop` has `chain` for `exists` and `delete`
+  through one. 13b's whole container through a reference should be a
+  node of its own with a `head` as `chain` has, and reuse `genChain`
+  (codegen.ts), which works a chain out to its last container, reading
+  through or making as it goes, and records each container it passes
+  for the freeze while a binder's list is built (`Code.frozen`). In the
+  resolver a binder whose list holds a chain gets a second hidden
+  declaration, `the frozen`, whose slot holds those containers
+  (`Each.frozen`); 13b's `->@*` in a loop's list is the same freeze.
+- **The runtime** (`runtime/ref.c`, which rt.c includes): the tags
+  `RT_TAG_AREF` and `RT_TAG_HREF`, whose payload is the container's
+  block; `rt_aref`, `rt_href`, `rt_deref` (the fault for undef and for
+  what is not the reference wanted; it gives the container as the
+  value an array's or a hash's variable holds, so every element
+  function takes it), `rt_vivify` (a variable stored through),
+  `rt_elem_hop` and `rt_helem_hop` (a hop of a store: read, or made,
+  which is a store and checks the freeze), `rt_ref`, and
+  `rt_frozen_add`, `rt_freeze_all`, `rt_thaw_all`. **13c's `\$x`
+  needs `RT_TAG_SREF` and a cell; `a_scalar` (rt.c) is the one list
+  of what a scalar may hold, and `to_str`, `numeric`, `rt_is_true`
+  and the two `==` are where a new reference kind is taught.** The
+  collector's stack of containers still to walk is in the context
+  (`marks`), malloc'd, kept between collections, freed with the heap,
+  and not counted against the cap.
+- **Tests**: 1810 to 1814 from `t/models/ref.py` (Python's lists and
+  dicts are references already; the model works every path into four
+  structures and just off their edges, stores from undef and into
+  them, the assigning operators and steps, and writes references as
+  values, loops and subs by hand from the definition), on which perl
+  agreed under all eight seeds the first time; 90 programs that fault
+  once, 1820 to 1909: every way to read or store through what is not
+  the reference wanted, each head that may not be made, 45 operators
+  and builtins given a reference, the freeze through a second name and
+  through a chain in each binder's list; 1910 to 1982, 73 refusals
+  from a table by hand (`briefs/step13a-refusals.py`, each comment
+  perl's own words, pasted by the script's `--perl`); 1983, a list
+  linked a million deep under the stress knob, and 1984, 600,000
+  containers in cycles dropped under a cap of 8 MB; the runtime's own,
+  `runtime/tests/ref.c`, four unit tests: the chain a million deep
+  and a cycle collected, `rt_deref`'s faults, what a store makes and
+  the freeze of a hop, and every operator's fault for a reference.
+  **The model was not committed red before the build**, as 12b's
+  was: the runtime and the passes came first, the model after, and
+  the compiler agreed with it and perl on every line but where the
+  model's own text was wrong (a `my $v` declared twice, `sort(keys
+  %h)`, a sub in a block, a fault's line counted from the wrong
+  header).
+- **Builder's defaults** (none of them a decision; each the simplest
+  answer that cannot be WRONG): `ref` without brackets before a binary
+  operator is refused, and only `ref` (T242); a blank between two
+  subscripts, `$a[0] [1]`, `$h{a} {b}`, and after an arrow, `$r->
+  [0]`, is refused, where perl takes all three; a subscript after a
+  list slice, `(LIST)[0][1]`, stays refused (perl takes it); `exists`
+  and `delete` through a chain take one that starts from a variable,
+  and `++` before a chain one that does, where `f()->[0]++` is taken;
+  brackets round a variable are the variable, `($r)->[0] = 5` making
+  `$r` as perl does; `{` after a word is a new hash only after
+  `return`, a named unary operator, a function, `join`, `reverse`,
+  `say` and `print`, and a block after any other word, so that a
+  later step's `try {` is a block with nothing to change; **a chain
+  anywhere in a binder's list freezes what it goes through**, inside
+  an index too, as an array named anywhere there is frozen, but not
+  in a range's ends, which are numbers once worked out, nor in a
+  `map`'s or a `sort`'s own block; a target through a reference in a
+  list assignment is in, its hops made after the right side is
+  copied, so `($r->[0], $r->[1]) = ($r->[1], $r->[0])` swaps;
+  **making is held to what the right side *is***, not to what it
+  names (`aliases` in checker.ts): `$a[0][0] = $a[0]` and `($q->[0],
+  $x) = ($q, 1)` are refused (perl takes the value after the hop is
+  made, T249), while `$m[$i][$j] = $m[$i - 1][$j]` is in, since a hop
+  is made only where there was undef, which frees nothing; T129's
+  lost assignment is not extended to a chain, which perl assigns
+  (T259); `[ ]` and `{ }` are no constants for D53 (perl does not warn
+  of `if (my $r = [1])`).
+- **What the build found**: T258, perl crashing on `map { $r = [7];
+  $_ } ($r->[0], $r->[1])`, which D77 with D114 refuses; T259, perl
+  assigning `$t .= ($r->[0] = $x . $z)` (and an element of a named
+  array or hash: T129's rule for an element is stricter than perl's,
+  and stays); T340, `say {a => 1}->{a}` taken by perl for a hash,
+  refused all the same. A frozen list built in the slot it is kept in
+  was clobbered by a `sort` in the same list, whose `$a` had the slot
+  first, which the model's `map ... sort` caught: the containers are
+  gathered in a temporary and put in the slot once the list is built.
+  And step 14's review found that a sub ending in an assignment of a
+  list gave undef where perl gives a count (T257, a WRONG since step
+  9); it is the fault for a sub with no value now, D78's own words,
+  in a commit of its own with nine fault tests, 1800 to 1808.
+- **Old tests moved**: the refusals of 11a, 12a and 12b whose
+  messages named step 13 name 13b, 13c or 13d now; 474, 1557 and 1558
+  (an element of an element) are fault tests and 1559 a `same` test.
+  The tables in `briefs/step11a-refusals.py` and the rest are the
+  record of their steps and keep the old words.
+- **Broken on purpose** (`briefs/step13a-mutations.py`): 61 of
+  69 caught the first time. Seven were holes in the tests, closed by
+  1985, by hand with perl's answers (the right side before the chain;
+  a list assignment's hops made; `\@a` in a loop's list, which freezes
+  nothing; a new array, which is no constant for D53; an operator
+  after a new hash) and by two refusals, 1986 and 1987 (a `delete`
+  through a reference after a read through one; T230's rule for a key
+  that is not the last). One was the script's own: `arrowable` in
+  parser.ts is asked only where an arrow may already stand, so
+  breaking it changes nothing, and it is taken out of the script.
+- **The census**: of the 795 probes that waited for step 13, **51
+  print what perl prints**, 32 fault (reading through undef, and the
+  freeze) and 3 cannot be judged (perl's hash order); 233 are refused
+  by design and moved to `by-design/` (175 for D108, a dereference
+  without braces; 22 behind references for D17, 14 for D109, 12 for
+  D19, 5 for D110, five for others); the rest wait for 13b (36), 13c
+  (30), 13d (76), 14 (172), 17 (113) or the steps after (11), and 38
+  are open, 22 of them for `open`. Of the probes that had been open,
+  68 more are refused by design for D108 and 78 now say they wait for
+  13b or 13c. No probe left SAME, and none is WRONG. **1,070 SAME,
+  157 LOUD, 1,732 REFUSED (954 for a later step, 778 open), 4
+  UNJUDGED, of 2,963 run**, and 2,617 by design. D109's refusals met
+  14 probes, all programs that hunt for perl's order of reading:
+  whether they bite real code is still unknown, and a guard at run
+  time is D109's own next move if they do.
+- **The numbers**: 1,435 golden tests, 151 unit tests, 885 statements
+  about perl, 55 tests of the oracle check itself; green under gcc,
+  clang, and UBSan with ASan, poison on and off.
+
 ### 14. Closures
 
 Referee: perl. Size: large.

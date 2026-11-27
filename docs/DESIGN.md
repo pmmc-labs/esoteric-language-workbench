@@ -166,6 +166,18 @@ Four ideas do the cleaning, and `SURFACE.md` applies them:
   `//` give one of their operands (D49).
 - Arrays and hashes are mutable and have identity; assigning one
   copies it, as in Perl.
+- **A reference is a value of its own** (step 13a; D106 to D114): its
+  payload is the container's block, the very block an array's or a
+  hash's variable holds, so `\@a` is that block with another tag and
+  `[ LIST ]` the list built for it. Reading through what is not a
+  reference is a fault, storing through undef makes it (D107); a
+  reference is true, defined, and `==` or `!=` to another by identity,
+  and a fault wherever else a number or a string is wanted (D112).
+  Every walk over names has one more, "what references reach" (D109),
+  and a store through a chain also changes the head it starts from
+  (D114). The collector walks from a container to what it holds with
+  a stack of its own, so a chain of references takes none of C's, and
+  a cycle is collected like anything else (D26).
 - The collector traces: precise, non-moving, roots on a shadow stack
   (D26), with stress and poison knobs. No `DESTROY`. Built at step 7
   (D66): every variable and temporary of a function is a slot of one
@@ -262,7 +274,7 @@ optimization plan.
 
 ## Open questions
 
-D1 to D104 are decided. What is left is what the decisions hand to a
+D1 to D114 are decided. What is left is what the decisions hand to a
 step, roughly in the order it will matter:
 
 1. **Whether perl 5.42 agrees with what was run under 5.38.2**: it
@@ -293,9 +305,11 @@ step, roughly in the order it will matter:
    generated code drives it: the runtime calls no block. The licence
    of the port, `runtime/sort.c`, is to be settled with the
    repository's.
-7. **Reading through undef** (step 13): proposed as a fault. And
-   **dereference without braces**, `@$x` and `$$x[0]`: proposed as
-   cut, leaving `->@*` and `@{ }`, as Stevan's style guide has it.
+7. **Reading through undef** (step 13): settled, a fault (D107), built
+   for elements at 13a and for the whole container at 13b. And
+   **dereference without braces**, `@$x` and `$$x[0]`: cut (D108),
+   leaving the arrow, `->@*` and `@{ }`, as Stevan's style guide has
+   it.
 8. **A closure over a loop variable** (step 14): refused until then,
    and too common an idiom to leave refused.
 9. **`finally` and `defer`; how `warn` is tested** (step 15).
