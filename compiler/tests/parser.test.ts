@@ -444,8 +444,9 @@ test('use takes a version, or a pragma and its arguments', () => {
     refused('use "utf8";', "after 'use', expected a version or a pragma, found \"utf8\"", 1, 5);
     refused('use', "after 'use', expected a version or a pragma, found the end of the file", 1, 4);
     refused('use utf8', "expected a value, found the end of the file", 1, 9);
-    refused('use open qw(:std);', "expected a value, found 'qw'", 1, 10);
-    refused('use open qw(std);', "expected a value, found 'qw'", 1, 10);
+    // `qw` is a list of strings from step 16a (D122): the pragma's own
+    // spelling is the checker's to hold it to (D39).
+    assert.equal(parse(lex('use open qw(:std);')).body[0]!.kind, 'pragma');
     refused('use v5.42 say 1;', "expected ';', found 'say'", 1, 11);
 });
 

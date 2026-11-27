@@ -371,6 +371,62 @@ A string may run over several lines, and then it holds the newlines. A
 tab may be written as itself; any other control character is written
 as an escape.
 
+### q, qq, qw and heredocs
+
+`q(...)` is a string in single quotes, `qq(...)` one in double quotes,
+and the bracket is the quote, so a string can hold both kinds of quote
+as they are:
+
+    say q(it's "here");          # it's "here"
+    say qq(it's "$name");        # the variable's value between the quotes
+
+The bracket may be `( )`, `[ ]`, `{ }` or `< >`, hard against the
+word, and a bracket of the same kind inside nests: `q(a (b) c)` is `a
+(b) c`. In `q` a backslash before a backslash or before either bracket
+is that character, and every other backslash is itself. In `qq` the
+escapes and the variables are those of double quotes, exactly; a
+backslash before the `qq`'s own bracket is refused, since perl takes it
+away before it reads the variables (`qq[$x\[0\]]` is an element of
+`@x` to perl): write such a string with another bracket.
+
+Refused: any other delimiter (`q/.../`, `q!...!`, `q#...#`) and a
+blank before the bracket. One spelling is enough.
+
+**`qw(...)` is a list of words**, the characters between blanks, and is
+exactly the bracketed list of those words in quotes:
+
+    my @days = qw(mon tue wed);
+    say qw(a b c)[1];            # b, a slice of the list
+    my @twice = qw(x y) x 2;     # x y x y
+
+So it is not the brackets of anything else: `for my $d qw(a b) {...}`
+is refused, as perl refuses it, and so is `qw(a b)` where one value is
+wanted. A word may not hold a comma or a `#` (perl warns that you may
+have meant something else) or a backslash (perl keeps it, or takes it
+away before a bracket).
+
+**A heredoc** is a string over the lines after the line it stands on:
+
+    print <<"END";
+    Dear $name,
+      your total is $total.
+    END
+
+The body ends at a line that is the terminator alone. `<<"END"` and
+`<<END` are double-quoted, with escapes and variables; `<<'END'` takes
+every character as it is, a backslash too. With a `~`, `<<~"END"`, the
+terminator may be indented, and its indentation is taken off every line
+of the body; a line of the body that does not begin with it, and is not
+empty, is refused (perl dies). A heredoc is a value where it stands:
+`lc <<END`, `<<END . "more"`, `print(<<END);`.
+
+The terminator is a word hard against the `<<`, the `~` or the quote.
+One heredoc on a line, and nothing after it on that line may go on past
+the end of the line (a string, a `qw`): perl reads the body after the
+line the heredoc is on, and a string that goes on hides it. Refused too:
+a blank after `<<`, an empty terminator or one with a blank in it, and a
+heredoc that never finds its terminator.
+
 ### A variable in a string
 
 In double quotes a variable is replaced by its value:

@@ -209,7 +209,8 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `"$h{key}"`, `"$h{$k}"` | In | 12b | D99: the key a word or a scalar variable, hard against its braces; after it `[`, `{` and `->` before `[ { @ $` are refused, and the rest is text (T227) |
 | `"$h{'a b'}"`, `"$h{$i + 1}"`, any other key in a string; `"@h{...}"`, a slice in a string | Cut | | D99: to perl the braces hold code (T221); take the value into a `my`, or join |
 | `"$r->[0]"`, `"$$r"`, `"@$r"`, `"@{[ ... ]}"`, `"${\ ... }"` | Later | 13 | With references |
-| `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
+| `q`, `qq`, `qw`, heredocs | In | 16a | D121 to D123, D131. A bracket for the delimiter, hard against the word; `qw` a bracketed list (T260); a heredoc's terminator a word, one heredoc on a line, `~` taking the indentation off (T263). A backslash before a `qq`'s own bracket is refused (T278); `'END'` keeps every backslash (T262) |
+| `q/.../`, `q!...!`, any delimiter but a bracket; `q (x)`; `<< "END"`, `<<""`, two heredocs on a line | Cut | | D121, D123: one spelling |
 | `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
 | Arrays: `my @a`, lists that flatten, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | D80. A read past either end is undef and makes nothing; a store past the end grows the array, before the start faults; `@a[one index]`, `$a[0][0]`, `length(@a)`, `defined(@a)`: Cut (T167, T168) |
 | List assignment, `my ($p, $q) = @x`, swaps, an element as a target | In | 9 | D80. The right side, then every target's index, then the stores (T158) |

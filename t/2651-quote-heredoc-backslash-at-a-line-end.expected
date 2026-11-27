@@ -1,0 +1,2 @@
+t/2651-quote-heredoc-backslash-at-a-line-end.pl:5:2: a backslash before the end of a line is not in the language
+exit: 1

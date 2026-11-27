@@ -75,6 +75,9 @@ test is tested apart, on `t/000-say.pl`.)
 | `refused-line-zero` | A diagnostic at line 0, column 0 |
 | `refused-past-end` | A diagnostic at a line the file doesn't have |
 | `kind-unknown` | A kind that isn't one |
+| `same-heredoc-ok` | A heredoc, a `q{}` and a `qw()` holding an apostrophe, a `%` and the words `keys` and `values`: none is code (step 16a) |
+| `same-heredoc-hides` | An apostrophe in a heredoc, and unsorted `keys` after its body: a reader that paired the apostrophe would pass it (step 16a) |
+| `same-q-hides` | A `"` in a `q{}`, and unsorted `keys` after it (step 16a) |
 
 When the check changes, break it on purpose and see one of these go
 red; when it gains a rule, it gains a fixture that only that rule

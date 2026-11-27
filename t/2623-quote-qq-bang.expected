@@ -1,0 +1,2 @@
+t/2623-quote-qq-bang.pl:4:5: qq takes a bracket hard against it, and no other delimiter: qq(...), qq[...], qq{...} or qq<...> (D121)
+exit: 1

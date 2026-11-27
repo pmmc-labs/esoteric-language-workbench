@@ -1,0 +1,2 @@
+t/2644-quote-heredoc-never-ends.pl:4:7: a heredoc that never ends: no line is EOT alone
+exit: 1

@@ -390,7 +390,7 @@ full when its step is, and its rows join the sections above then.
   machine's (D127); `printf` a statement, `sprintf` a value (D128).
   `ucfirst`, `lcfirst`, `rindex` (D129); `chomp` and `chop` of a
   scalar variable, as statements, with no value (D130). The rest is
-  16d (D120).
+  16d (D120). The review's findings are answered by D131.
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
 - **Errors** (step 15; D13). `die`, `try`, `catch`.

@@ -1,0 +1,2 @@
+t/2655-quote-heredoc-first-of-arguments-over-lines.pl:8:1: say is a statement, and has no value
+exit: 1

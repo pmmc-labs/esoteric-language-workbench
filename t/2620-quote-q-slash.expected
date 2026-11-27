@@ -1,0 +1,2 @@
+t/2620-quote-q-slash.pl:4:5: q takes a bracket hard against it, and no other delimiter: q(...), q[...], q{...} or q<...> (D121)
+exit: 1

@@ -22,6 +22,8 @@ export type Token =
     // braces or before `=>` (step 12; T214, T215).
     | { kind: 'str'; text: string; value: string; pos: Pos; pieces?: readonly Piece[]; bare?: true }
     | { kind: 'version'; text: string; pos: Pos }
+    // `qw(...)`, its words (step 16a, D122): a bracketed list of strings.
+    | { kind: 'qw'; text: string; words: readonly string[]; pos: Pos }
     // A variable: `text` is `$name`.
     | { kind: 'var'; text: string; name: string; pos: Pos }
     // An array, `@name`, and its last index, `$#name`.
@@ -435,7 +437,7 @@ export const lex = (src: string): Token[] => {
             const target = tokens.at(-2);
             return target?.kind === 'var' || target?.kind === ']' || (target?.kind === '}' && target.subscript === true);
         }
-        return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === ')' || last?.kind === 'var'
+        return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === 'qw' || last?.kind === ')' || last?.kind === 'var'
             || last?.kind === ']' || last?.kind === 'array' || last?.kind === 'lastindex' || last?.kind === 'hash'
             || (last?.kind === '}' && last.subscript === true)
             || (last?.kind === 'word' && NAMES.get(last.text)?.kind === 'constant');
@@ -464,9 +466,188 @@ export const lex = (src: string): Token[] => {
         push({ kind: 'str', text, value: text, pos: start, bare: true });
     };
 
+    // ---- step 16a: `q`, `qq`, `qw` and heredocs (D121 to D123)
+
+    // Where perl's string ends, the opening bracket just before `from`:
+    // brackets of its kind nest, and a backslash takes the character
+    // after it with it. perl finds the end first and reads what is
+    // between after, so this does too.
+    const closing = (from: number, open: string, close: string, start: Pos, shown: string): number => {
+        let depth = 1;
+        for (let k = from; k < src.length; k++) {
+            const ch = src[k]!;
+            if (ch === '\\') k += 1;
+            else if (ch === open) depth += 1;
+            else if (ch === close && --depth === 0) return k;
+        }
+        return refuse(`${shown} that never ends: it begins here`, start);
+    };
+
+    // The characters from here to `end`, as a string. With `interpolate`
+    // they are a double-quoted string's, its escapes and its variables
+    // exactly (D43, D91 to D99); otherwise each is itself, but that a
+    // backslash before one of `backslashed` is taken away. `indent` is
+    // what a `<<~` heredoc takes off the start of each line. `brackets`:
+    // a `qq`'s own, before which perl takes a backslash away before it
+    // interpolates, so that `qq[$x\[0\]]` is an element (T278).
+    const body = (end: number, interpolate: boolean, backslashed: string, indent: string, brackets = ''): { value: string; pieces?: Piece[] } => {
+        let value = '';
+        const pieces: Piece[] = [];
+        let lineStart = true;
+        const inside = (): void => {
+            if (i > end) refuse('what stands in this string runs past its end: perl ends the string first, and does not compile the rest', pos());
+        };
+        while (i < end) {
+            if (lineStart && indent !== '') {
+                lineStart = false;
+                if (src.startsWith(indent, i)) {
+                    for (let n = 0; n < indent.length; n++) take();
+                    continue;
+                }
+                if (at() !== '\n') refuse("a line of a <<~ heredoc that does not begin with the blanks before its terminator: perl dies (T263)", pos());
+            }
+            const where = pos();
+            const c = take(true);
+            lineStart = c === '\n';
+            if (interpolate && (c === '$' || c === '@')) {
+                if (value !== '') pieces.push({ kind: 'text', value });
+                value = '';
+                pieces.push(variable(c, where));
+                inside();
+            } else if (c === '\\' && interpolate) {
+                if (brackets.includes(at())) refuse(`a backslash before '${at()}' in a qq with that bracket: perl takes it away before it reads the variables, so that what follows can go on with one (T278); write the string with other brackets`, where);
+                value += escape(where);
+                inside();
+            } else if (c === '\\' && i < end && backslashed.includes(at())) {
+                value += take(true);
+            } else {
+                value += c;
+            }
+        }
+        if (pieces.length === 0) return { value };
+        if (value !== '') pieces.push({ kind: 'text', value });
+        return { value: '', pieces };
+    };
+
+    // `q(...)`, `qq(...)` and `qw(...)`, with any of the four brackets
+    // hard against the word (D121); the word is next.
+    const BRACKETS: Readonly<Record<string, string>> = { '(': ')', '[': ']', '{': '}', '<': '>' };
+    const quoteLike = (start: Pos): void => {
+        const from = i;
+        const word = run(isWord);
+        const open = at();
+        const close = BRACKETS[open];
+        if (close === undefined) {
+            refuse(`${word} takes a bracket hard against it, and no other delimiter: ${word}(...), ${word}[...], ${word}{...} or ${word}<...> (D121)`, start);
+        }
+        const end = closing(i + 1, open, close, start, `${word}${open}...${close}`);
+        take();
+        if (word === 'qw') {
+            // The words between blanks (D122). perl warns of a comma and
+            // a `#` in one, and a backslash there is taken away before a
+            // bracket and kept anywhere else (T261).
+            const words: string[] = [];
+            let w = '';
+            while (i < end) {
+                const where = pos();
+                const ch = take(true);
+                if (isBlank(ch)) {
+                    if (w !== '') words.push(w);
+                    w = '';
+                    continue;
+                }
+                if (ch === ',') refuse('a comma in qw(...): perl warns that it may be meant to separate the words, and keeps it in one', where);
+                if (ch === '#') refuse("a '#' in qw(...): perl warns that it may be meant for a comment, and keeps it in a word", where);
+                if (ch === '\\') refuse('a backslash in qw(...): perl keeps it, or takes it away before a bracket (T261); write the list in quotes', where);
+                w += ch;
+            }
+            if (w !== '') words.push(w);
+            take();
+            push({ kind: 'qw', text: src.slice(from, i), words, pos: start });
+            return;
+        }
+        const read = body(end, word === 'qq', word === 'q' ? '\\' + open + close : '', '', word === 'qq' ? open + close : '');
+        take();
+        push(read.pieces === undefined
+            ? { kind: 'str', text: src.slice(from, i), value: read.value, pos: start }
+            : { kind: 'str', text: src.slice(from, i), value: '', pos: start, pieces: read.pieces });
+    };
+
+    // A heredoc waiting for the end of its line, and where the lexer goes
+    // on from when it gets there: past the body and its terminator.
+    let heredoc: { line: number; resume: number; resumeLine: number; at: Pos } | undefined;
+
+    // `<<"END"`, `<<END`, `<<'END'`, each with `~` or without (D123); the
+    // `<<` is next. The body is read now, and skipped when the line ends.
+    const hereDoc = (start: Pos): void => {
+        const from = i;
+        take();
+        take();
+        const squiggle = at() === '~';
+        if (squiggle) take();
+        const lead = `<<${squiggle ? '~' : ''}`;
+        let quote = '';
+        if (at() === '"' || at() === "'") quote = take();
+        if (!isWordStart(at())) {
+            refuse(isBlank(at()) || at() === ''
+                ? `a blank after '${lead}${quote}': a heredoc's terminator is a word hard against it, ${lead}"END"`
+                : `a heredoc's terminator is a word, a letter or '_' first: ${lead}"END"`, start);
+        }
+        const word = run(isWord);
+        if (quote !== '') {
+            if (at() !== quote) refuse(`a heredoc's terminator is a word between its quotes: ${lead}${quote}END${quote}`, start);
+            take();
+        }
+        if (heredoc !== undefined) refuse('a second heredoc on one line: write each on a line of its own', start);
+        const newline = src.indexOf('\n', i);
+        const never = (): never => refuse(`a heredoc that never ends: no line is ${word} alone${squiggle ? ', after blanks' : ''}`, start);
+        if (newline < 0) never();
+        // The terminator's line: the word alone, or with `~` after blanks.
+        let k = newline + 1;
+        let indent = '';
+        let bodyEnd = -1;
+        let lineEnd = 0;
+        while (k < src.length) {
+            const e = src.indexOf('\n', k);
+            lineEnd = e < 0 ? src.length : e;
+            const text = src.slice(k, lineEnd);
+            const blanks = squiggle ? text.length - text.replace(/^[ \t]*/, '').length : 0;
+            if (text.slice(blanks) === word) {
+                indent = text.slice(0, blanks);
+                bodyEnd = k;
+                break;
+            }
+            k = lineEnd + 1;
+        }
+        if (bodyEnd < 0) never();
+        const text = src.slice(from, i);
+        const [atI, atLine, atCol] = [i, line, col];
+        i = newline + 1;
+        line = atLine + 1;
+        col = 1;
+        const read = body(bodyEnd, quote !== "'", '', indent);
+        const resumeLine = line + 1;
+        [i, line, col] = [atI, atLine, atCol];
+        heredoc = { line, resume: Math.min(lineEnd + 1, src.length), resumeLine, at: start };
+        push(read.pieces === undefined
+            ? { kind: 'str', text, value: read.value, pos: start }
+            : { kind: 'str', text, value: '', pos: start, pieces: read.pieces });
+    };
+
     while (i < src.length) {
         const c = at();
         const start = pos();
+        // A heredoc's line ends here, and the lexer goes on past its body
+        // (D123); what went on past the end of the line hid the body from
+        // perl, or moved it (T264).
+        if (heredoc !== undefined && line !== heredoc.line) {
+            refuse('this goes on past the end of the line a heredoc stands on: perl reads the body after it, or does not find it (T264)', heredoc.at);
+        }
+        if (heredoc !== undefined && c === '\n') {
+            [i, line, col] = [heredoc.resume, heredoc.resumeLine, 1];
+            heredoc = undefined;
+            continue;
+        }
         if (isBlank(c)) {
             take();
         } else if (c === '#') {
@@ -514,6 +695,12 @@ export const lex = (src: string): Token[] => {
             if (at() === '{') refuse(`%${name}{...} is a slice of keys and values, and not in the language`, start);
             if (at() === '[') refuse(`%${name}[...] is a slice of indexes and values, and not in the language`, start);
             push({ kind: 'hash', text: '%' + name, name, pos: start });
+        } else if (isWordStart(c) && !afterValue() && ['q', 'qq', 'qw'].includes(src.slice(i, wordEnd(i)))
+            && !(tokens.at(-1)?.kind === 'word' && NAMES.get(tokens.at(-1)!.text)?.kind === 'sub')) {
+            // (`sub q(...)` names a sub, which the parser refuses: T28.)
+            quoteLike(start);
+        } else if (c === '<' && src[i + 1] === '<' && !afterValue()) {
+            hereDoc(start);
         } else if (isWordStart(c)) {
             const operator = afterValue();
             let text = run(isWord);

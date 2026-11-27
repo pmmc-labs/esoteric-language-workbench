@@ -1,0 +1,2 @@
+t/2638-quote-use-open-qw.pl:4:1: 'use open' is written: use open ':std', ':encoding(UTF-8)';
+exit: 1

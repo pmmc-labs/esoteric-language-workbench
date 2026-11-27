@@ -296,14 +296,52 @@ OWNERS = ('my', 'state', 'keys', 'values', 'each', 'exists', 'delete')
 def strip_strings_and_comments(text):
     """The program with its quoted strings emptied and its comments gone,
     so that a `%s` in a format or a `keys` in a sentence isn't read as
-    code. Heredocs, `q()` and patterns are left as they are, which mostly
-    adds rejections; a `#` inside one is taken for a comment, and hides
-    the rest of its line."""
+    code. `q`, `qq` and `qw` with brackets, and heredocs, are emptied too
+    (step 16a), their lines kept; patterns are left as they are, which
+    mostly adds rejections, and a `#` inside one is taken for a comment,
+    and hides the rest of its line."""
     out = []
     i = 0
+    # Step 16a: `q`, `qq` and `qw` with a bracket, and heredocs, are
+    # strings too (D121, D123). A heredoc's body is taken out when its
+    # line ends.
+    pending = []
+    pairs = {'(': ')', '[': ']', '{': '}', '<': '>'}
     while i < len(text):
         c = text[i]
-        if c in '"\'':
+        quote_like = re.match(r'(qq|qw|q)([(\[{<])', text[i:]) if (i == 0 or not (text[i - 1].isalnum() or text[i - 1] in '_$@%')) else None
+        here = re.match(r'<<(~?)(["\']?)([A-Za-z_]\w*)\2', text[i:])
+        if quote_like:
+            open_, close = quote_like.group(2), pairs[quote_like.group(2)]
+            j, depth = i + len(quote_like.group(0)), 1
+            while j < len(text) and depth:
+                if text[j] == '\\':
+                    j += 1
+                elif text[j] == open_:
+                    depth += 1
+                elif text[j] == close:
+                    depth -= 1
+                j += 1
+            out.append('()' if quote_like.group(1) == 'qw' else "''")
+            i = j
+        elif here:
+            pending.append((here.group(1) == '~', here.group(3)))
+            out.append("''")
+            i += len(here.group(0))
+        elif c == '\n' and pending:
+            out.append(c)
+            i += 1
+            for squiggle, word in pending:
+                while i < len(text):
+                    end = text.find('\n', i)
+                    end = len(text) if end < 0 else end
+                    line = text[i:end]
+                    i = end + 1
+                    out.append('\n')
+                    if (line.strip(' \t') if squiggle else line) == word:
+                        break
+            pending = []
+        elif c in '"\'':
             j = i + 1
             while j < len(text) and text[j] != c:
                 j += 2 if text[j] == '\\' else 1

@@ -533,6 +533,18 @@ export const parse = (tokens: readonly Token[]): Program => {
             return { kind: 'str', text: t.text, value: t.value, pos: t.pos };
         }
         if (t.kind === 'hash') return { kind: 'array', name: t.name, hash: true, pos: t.pos };
+        if (t.kind === 'qw') {
+            // `qw(a b)` is `('a', 'b')`, a bracketed list (step 16a, D122;
+            // T260), and may be sliced as one.
+            const items: Expr[] = t.words.map(w => ({ kind: 'str', text: `'${w}'`, value: w, pos: t.pos }));
+            const inner: Expr = items.length === 1 ? { ...items[0]!, bracketed: true } : { kind: 'list', items, pos: t.pos, bracketed: true };
+            if (peek().kind !== '[') return inner;
+            const open = next();
+            const indexes = itemsTo(']');
+            if (indexes.length === 0) refuse('a slice with no index', open.pos);
+            if (peek().kind === '[') refuse('an element of an element: an array of arrays is not in the language yet', peek().pos);
+            return { kind: 'slice', items, indexes, pos: open.pos };
+        }
         if (t.kind === '(') {
             // A list, if a comma stands in the brackets or nothing does;
             // otherwise an expression, grouped. And either may be sliced.
