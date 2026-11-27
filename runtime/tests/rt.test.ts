@@ -449,3 +449,23 @@ test('a reference where a number or a string is wanted is a fault, at every oper
         }
     }
 });
+// Step 15 (D141): a die unwinds frames, freezes and a sort by hand, under
+// a collection at every allocation and poison.
+test('a die puts back the frames, the freezes and the sorts a try had open', () => {
+    const knobs = { CURLY_GC_STRESS: '1', CURLY_GC_POISON: '1' };
+    const before = 'before: 1 frames, deep 1088, sorts none, 1 freezes, @a 1, %h 0, tries none\n';
+    assert.deepEqual(run('unwind', 'unwind', knobs), { status: 0, output: before
+        + 'at the die: 5 frames, deep 5312, sorts some, 6 freezes, @a 5, %h 1, tries open\n'
+        + 'caught: 1 frames, deep 1088, sorts none, 1 freezes, @a 1, %h 0, tries none\n'
+        + 'msg at unwind.pl line 9.\n'
+        + 'after: 1 frames, deep 1088, sorts none, 0 freezes, @a 0, %h 0, tries none\n' });
+    assert.deepEqual(run('unwind', 'nested', knobs), { status: 0, output: before
+        + 'at the die: 3 frames, deep 3200, sorts some, 4 freezes, @a 3, %h 1, tries open\n'
+        + 'inner caught: 1 frames, deep 1088, sorts none, 1 freezes, @a 1, %h 0, tries open\n'
+        + 'outer caught: 1 frames, deep 1088, sorts none, 1 freezes, @a 1, %h 0, tries none\n'
+        + 'msg\n' });
+    assert.deepEqual(run('unwind', 'uncaught', knobs), { status: 255, output: before
+        + 'at the die: 4 frames, deep 4256, sorts some, 4 freezes, @a 3, %h 1, tries none\n'
+        + 'msg at unwind.pl line 9.\n' });
+});
+

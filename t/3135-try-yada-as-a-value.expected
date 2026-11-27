@@ -1,0 +1,2 @@
+t/3135-try-yada-as-a-value.pl:4:9: '...' is a statement alone, which dies: perl does not compile it anywhere else
+exit: 1

@@ -1,0 +1,2 @@
+t/3104-try-die-tested-by-a-modifier.pl:4:10: a die that is tested: perl warns of a precedence problem, and a die is never worth anything
+exit: 1

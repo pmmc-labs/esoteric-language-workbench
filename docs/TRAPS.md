@@ -643,6 +643,47 @@ programs were run to write the proposal. Each row is in
 |---|---|---|---|---|
 | T257 | `sub f($n) { my @x = (1) x $n } say f(3) ? "true" : "false";`; and a sub that ends in `my ($p, $q) = (7, 8)`, `@a = (5, 6)`, `($g, $h) = (1, 2, 3)`, `my %x = (a => 1)`, `@h{"p", "q"} = (1, 2)`, `@a[0, 1] = (8, 9)`, `@a = ()`, its value wanted | `true`; the count of the right side, 3, 2, 2, 3, 2, 2, 2, 0: the compiler gave undef, and printed `false` (WRONG since step 9) | 13a | Fault: such an ending has no value, as D78 says (`f has no value`), where the value is used |
 
+## Found proposing step 15
+
+T53, T65, T70 and T74 are this step's from before. About 260
+programs were run to write the proposal. Each row is in
+`briefs/claims.py`, where the program is `claim.pl` and its first
+line is `use v5.42;`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T300 | `die;`, `die "";`, `die false;`, `die "", "";`, `my @a; die @a;`; and `die "a", @a, 1.5, true` with `@a = (1, 2)` | `Died at FILE line N.` for each of the first five; `a121.51 at FILE line N.` | 15 | Agree: the list joined with nothing between, each value as `.` makes it a string, and `Died` for an empty message |
+| T301 | `die "a\nb";`; `die "x\n\n";`; `die 0;` | `a` newline `b at FILE line N.`; `x` and two newlines; `0 at FILE line N.` | 15 | Agree: ` at FILE line N.` when the message does not *end* in a newline |
+| T302 | A `die` in a statement over several lines: after `//` on the next line, in a list's second line, in a `map` block's second statement and in its one statement over two lines, in an `elsif`'s and a `while`'s test, a `for`'s third part, a default, a sub called from a two-line `say`, a modifier's test | The line the innermost statement starts on, every time; a test's, the line of its `if`, `elsif` or `while`; a `for`'s parts, the `for`'s | 15 | Agree: D34's line, which the generated code already stores |
+| T303 | `die("x") . "y"`; `if (die "u")`; `say 1 if die "q"`; `die ("a") . "b"`; but `(die "x") \|\| 1`, `until (die "x")` and `1 + ($u // die "undef\n")` | `Possible precedence issue with control flow operator (die)`, for the first four, and `a` from the fourth: the brackets are all of `die`'s arguments; nothing for the last three | 15 | Refuse a `die` that is tested or is the left operand of any operator, in brackets or not (D146) |
+| T304 | `return` in a `try` in a sub; `next` and `last` in a `try` in a loop, with a label too; `last` in a `catch` | The sub returns; the loop goes on or ends, in silence | 15 | Agree: the `try` is closed on the way out, by the code that gives back a loop's freezes (D141) |
+| T305 | A `die` in a `catch` inside a `try`; `die $e` again; `die;` alone in a `catch` | The outer `catch` has `mid: in`; the message unchanged; `Died at FILE line N.`, not perl's `...propagated`, since `$@` is empty | 15 | Agree |
+| T306 | `try { my $x = 1 / 0 } catch ($e) { print "caught: $e" }` | `caught: Illegal division by zero at FILE line N.` | 15 | Fault (D13): the language's faults are not catchable |
+| T307 | An uncaught `die "caf\x{e9}"`; `die "\x{263a}"`; the same with `use open`; `die "\x{fdd0}"` with `use open`; `warn "\x{263a}"` | One byte E9; `Wide character in die` and the UTF-8; the UTF-8 alone; `Unicode non-character U+FDD0`; `Wide character in warn` | 15 | Fault as `say` does: past ASCII without `use open`, and a noncharacter |
+| T308 | `@b = sort { die ... if ++$n == $k; $a <=> $b } @b` caught, for every `$k` from 1 to 20; `@a = map { die ... } @a` | `@b` and `@a` as they were, every time: perl sorts in place into a buffer of its own | 15 | Agree: the runtime sorts a copy and stores it at the end |
+| T309 | `$h{x} .= d()` and `$a[3] += d()` with `d` dying, caught; and `push`, a list assignment, `%h = LIST`, `splice`, `@s = LIST` with `d()` in the list | `made`, and 4; and nothing changed by the rest | 15 | Agree: D80's orders, the element made before the right side |
+| T310 | `my $e = 1; try { die } catch ($e) { my $e = 2; say $e }`; `catch ($e) { $e = "c" }`; `catch ($_)` | `2`, no warning; `c`; the outer `$e` is 1 after both; `$_` does not compile | 15 | Agree: the catch's variable is a scope round its block; `$a`, `$b`, `$_` refused (D55) |
+| T311 | `# line 0`; `#line 7 "a b.pl"`; `# line 100 other.pl`; `#` tab `line` tab `100`; but an indented one, `# line 100x`, `# LINE 100`, one after a statement, one in a string | `x.` with no place at all; `at a b.pl line 7.`; `at other.pl line 100.`; `line 100`; the rest are comments | 15 | Refuse (D147): a line whose first character is `#`, blanks, `line`, blanks and a digit |
+| T312 | `try { die "x\n" } catch ($e) { print "[$@]" } say "[$@]";` | `[][]` | 15 | Nothing: `$@` is not in the language (D20) |
+| T313 | `try { } catch ($e) { } finally { }`; `{ defer { say "d" } say "b" }` | `try/catch/finally is experimental`; does not compile | 15 | Refuse both (D144) |
+| T314 | `my $r = warn "w\n"; say $r;`; `warn;`; `warn "";`; `warn "a", "b";`; `warn $u` with `$u` undef; `print STDERR`, `say STDERR` with a list | `1`; `Warning: something's wrong at FILE line N.` twice; `ab at FILE line N.`; `Use of uninitialized value $u in warn`; on stderr, in order | 15 | Agree (15b), and fault for the undef (D48) |
+| T315 | `... if 1;`; `my $x = ...;`; `sub f() { ... } f();` | Do not compile; do not compile; `Unimplemented at FILE line N.` | 15 | Agree, as a statement alone (D145) |
+
+## Found by the review of step 15
+
+The review (an independent session, given the proposal and perl 5.42;
+its report is summarised in `PLAN.md`, step 15, "What the review
+found") found three ways to be WRONG and two gaps. Each row is in
+`briefs/claims.py`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T316 | A `die` in a `while`'s or an `until`'s test, after the block has run: `while ($i < 2 \|\| die "w") { $i++; say "body"; say "more"; }` over five lines | `w at FILE line 6.`: the last statement the block ran, a nested block counting as the statement that opens it; the loop's line after a `next`, or the first time. T124's kin | 15 | Refuse a `die` or a `warn` in a `while`'s or an `until`'s test whose message is not written to end in a newline (D150) |
+| T317 | A statement over several lines that begins with `(` or `@a`, or has a word alone as a hash key in it: `(` newline `$x,` newline `$y)` newline `= (1, die "b");`, `$h{k} =` newline `die "a";`, `my $v = 1 +` newline `$h{k} +` newline `die "c";` | The line after the statement's first, or its last: the line perl's lexer had reached. `%h` newline `= (1, die "c")` gives the first | 15 | Refuse a `die` or a `warn` whose message is not written to end in a newline in a statement, a test, a loop's header or a default over more than one line (D150) |
+| T318 | `sub f($x,` newline `$y = die "default")`, called from a statement over two lines | `default at FILE line 3.`: the parameter's line, not the call's | 15 | Agree: a default's line is its parameter's, which the generated code stores |
+| T319 | `my $s = "1e-310"; my $v = $s + 0;` (or `10 ** -400`), a `die` caught, a `say`, then an uncaught `die "x\n"` | `out`, `x`, and **exit 34**: the read of the string set errno to ERANGE, and perl exits with `$!`. A literal that underflows is read as perl compiles, and leaves 255 | 15 | Fault, at an uncaught `die` after a read of a string or a `**` underflowed (D151); D12's reason for not following `$!`, "every system call", was too narrow |
+| T320 | `say STDERR ("x"), "y";` | `xy`: the brackets are not the whole list | 15 | Refuse brackets of its own after `STDERR` (15b), as T76 and T100 have it for `say` |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only
@@ -707,7 +748,12 @@ programs were run to write the proposal. Each row is in
   and each has a fixture in `t/checks/`. What is left:
   - A `dies` test in which perl also warns, or which ends with `exit
     255` and no `die`, is accepted: perl's stderr is the `.expected`,
-    whatever is in it. Step 15, with `die` and `warn`.
+    whatever is in it. Step 15, with `die` and `warn`. **Closed at
+    step 15** (D149): perl is run once more with every warning that is
+    not the program's own `warn` marked (`t/oracle/Warned.pm`, which
+    overrides `warn` to tell the two apart), and `t/checks/dies-perl-warns`
+    goes red if the mark is not looked for. One that exits 255 without
+    a `die` would need `exit`, which is step 21's.
   - A test that writes a file leaves it for the next of perl's nine
     runs (one to compile, eight seeds), so the check fails it the
     first time, blaming the seed, and passes it ever after. Step 21:

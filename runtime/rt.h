@@ -5,6 +5,7 @@
 #define RT_H
 #include <stddef.h>
 #include <stdint.h>
+#include <setjmp.h>
 
 // On a local the generated C declares and a program may never read: a
 // variable that is only ever set, the value of `$x++;`.
@@ -150,6 +151,16 @@ typedef struct rt_ctx {
     rt_value *shared;       // the file's variables, which a sub reaches through here
     uint64_t deep;          // what the open frames count for, against the limit on recursion
     struct rt_sort *sorts;  // the sorts that are under way, the newest first
+    // Step 15 (unwind.c): the `try`s that are open, the newest first; every
+    // freeze held, in the order made; and what a `die` threw, on its way
+    // to a `catch`.
+    struct rt_try *tries;
+    rt_array **frozen;
+    uint64_t frozen_count, frozen_room;
+    rt_value thrown;
+    // A string read as a number, or a `**`, underflowed: perl's errno is
+    // ERANGE from then on, and an uncaught `die` exits with it (T319, D151).
+    uint64_t underflowed;
     struct rt_block *heap;  // every string made and not yet collected
     struct rt_block *dead;  // under poison, the collected: kept, never handed out again
     uint64_t held;          // the bytes of both, headers and all: what the cap is on
@@ -449,6 +460,31 @@ rt_value rt_ref(rt_ctx *cx, rt_value v);
 void rt_frozen_add(rt_ctx *cx, rt_value frozen, rt_value container);
 void rt_freeze_all(rt_ctx *cx, rt_value frozen);
 void rt_thaw_all(rt_ctx *cx, rt_value frozen);
+// `die`, `try` and `catch` (step 15; D141, D142; unwind.c). A `try` in
+// the generated code is `rt_try_begin`, then `if (setjmp(t.jump) == 0)`
+// round its block, which ends with `rt_try_end`, as does every way out of
+// it by `return`, `last` or `next`; and on the jump, the catch's variable
+// is `rt_caught`. `rt_die` makes perl's message of its list and throws
+// it; `rt_throw` throws a value, to the newest `try` or, with none open,
+// out of the program: the message on stderr and exit status 255 (D12).
+typedef struct rt_try {
+    struct rt_try *outer;
+    rt_frame *frames;
+    uint64_t deep;
+    struct rt_sort *sorts;
+    uint64_t frozen;
+    jmp_buf jump;
+} rt_try;
+void rt_try_begin(rt_ctx *cx, rt_try *t);
+void rt_try_end(rt_ctx *cx, rt_try *t);
+rt_value rt_caught(rt_ctx *cx);
+void rt_throw(rt_ctx *cx, rt_value v) __attribute__((noreturn));
+void rt_die(rt_ctx *cx, rt_value list) __attribute__((noreturn));
+// `warn` (15b): the message made as a `die`'s is, on stderr; `true`. And
+// `say STDERR LIST`, `print STDERR LIST`.
+rt_value rt_warn(rt_ctx *cx, rt_value list);
+void rt_say_err_list(rt_ctx *cx, rt_value list);
+void rt_print_err_list(rt_ctx *cx, rt_value list);
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

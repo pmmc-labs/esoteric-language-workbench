@@ -1,0 +1,16 @@
+caught at 1: odd 1
+
+caught at 1: odd 1
+<2
+top: rethrown at 3: odd 3
+caught at 4: rethrown at 3: odd 3
+
+caught at 5: odd 5
+
+caught at 5: odd 5
+<6
+caught at 7: odd 7
+
+1 400 sunk
+2 400 sunk
+3 400 sunk

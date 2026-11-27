@@ -1,0 +1,55 @@
+[plain at t/3016-die-messages.pl line 3.
+]
+[with newline
+]
+[two
+lines at t/3016-die-messages.pl line 5.
+]
+[a1b2.5 at t/3016-die-messages.pl line 6.
+]
+[Died at t/3016-die-messages.pl line 7.
+]
+[Died at t/3016-die-messages.pl line 8.
+]
+[Died at t/3016-die-messages.pl line 9.
+]
+[1! at t/3016-die-messages.pl line 10.
+]
+[0 at t/3016-die-messages.pl line 11.
+]
+[1e+21 at t/3016-die-messages.pl line 12.
+]
+[-7
+]
+[end
+]
+[end
+]
+[a at t/3016-die-messages.pl line 16.
+]
+[Died at t/3016-die-messages.pl line 18.
+]
+[ab at t/3016-die-messages.pl line 19.
+]
+[ab
+]
+[n=3 at t/3016-die-messages.pl line 21.
+]
+[3
+]
+[6x at t/3016-die-messages.pl line 23.
+]
+[1.5 at t/3016-die-messages.pl line 24.
+]
+[0.3 at t/3016-die-messages.pl line 25.
+]
+[-3 at t/3016-die-messages.pl line 26.
+]
+[a b at t/3016-die-messages.pl line 27.
+]
+[a-b! at t/3016-die-messages.pl line 28.
+]
+Unimplemented at t/3016-die-messages.pl line 29.
+inner
+changed
+outer

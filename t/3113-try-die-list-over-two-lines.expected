@@ -1,0 +1,2 @@
+t/3113-try-die-list-over-two-lines.pl:4:1: a die in a statement, a test or a header over more than one line: perl names a line of its own choosing there, and the message would carry it; put it on one line, or end the message in a newline
+exit: 1

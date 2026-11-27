@@ -1,0 +1,3 @@
+before
+fault: a reference where a string is wanted at t/3803-fault-die-reference-uncaught.pl line 6.
+exit: 1

@@ -1,0 +1,2 @@
+t/3130-try-catch-alone.pl:4:1: catch without a try before it
+exit: 1

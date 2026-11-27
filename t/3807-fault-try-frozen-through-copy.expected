@@ -1,0 +1,2 @@
+fault: an array was changed while a foreach is over it at t/3807-fault-try-frozen-through-copy.pl line 7.
+exit: 1

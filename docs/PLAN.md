@@ -4952,19 +4952,423 @@ loop has ended; `for my $x (@list) { push @subs, sub { $x } }` is too
 common an idiom to leave refused, so this step either gives it perl's
 meaning or finds the fault that makes a copy safe). Traps: T11.
 
-### 15. `die`, `try`, `catch`
+### 15. `die`, `try`, `catch` (done)
 
-Referee: perl. Size: large.
+Referee: perl. Size: large (the builder, Fable 5.2, agrees: the
+language is small, the unwinding touches every way out of a block,
+and the checks gain a kind).
 
-A `die` with a string (and perl's ` at FILE line N.` when there's no
-newline, byte for byte) or with an object; `try` and `catch`; an
-uncaught `die` (D12, tests of kind `dies`); `warn`, and how a test of
-it is checked (D10). Decides: how unwinding is compiled
-(`setjmp` and the shadow stack, or a test after each call); `finally`
-and `defer`; `...`. `return` inside `try` returns from the sub, so
-unwinding can't be one mechanism shared with `die`. Confirms D13 with
-tests of what `try` does not catch. Which line a `die` reports, and a
-comment that changes it (T74). Traps: T53, T65, T70, T74.
+**Proposed 2026-11-27, by Fable 5.2, while steps 13 and 14 are built
+in another tree and step 16 in a third. Stevan, before it was
+written: "do not ask me questions, I will only agree with your
+recommendations anyway", so each question is answered with its
+recommendation, as D140 to D149 (and D150, D151 from its review), his to overturn.** The outline this
+replaces said: a `die` with a string (and perl's ` at FILE line N.`
+when there's no newline, byte for byte) or with an object; `try` and
+`catch`; an uncaught `die` (D12, tests of kind `dies`); `warn`, and
+how a test of it is checked (D10); how unwinding is compiled;
+`finally` and `defer`; `...`; that `return` inside `try` returns from
+the sub; D13 confirmed with tests of what `try` does not catch; which
+line a `die` reports, and a comment that changes it (T74). Traps:
+T53, T65, T70, T74, and T300 to T315, found writing this; their rows
+are in `briefs/claims.py`, all run under 5.42.0. About 260 programs
+were run.
+
+**Pulled ahead of 13 and 14**, so nothing here leans on references,
+closures, classes or `sprintf`. The value a `die` throws is any value
+in the runtime, so that a reference or an object drops in when those
+steps merge; until then a `die` given one faults (D142).
+
+**The census**: 19 probes wait for this step by their first refusal
+(17 for `die`, one each for `warn` and `try`). Most of them use
+`eval`, which D20 cut, so they will move to `by-design/`; perhaps
+three come through. The language gains far more than the census
+shows: `die "usage\n" unless ...` is how a program stops.
+
+#### The picture
+
+**A `die` is a value thrown to the nearest `try` that is open, or out
+of the program.** Everything between is put back as it was when the
+`try` began: the frames that were opened, the arrays and hashes that
+loops froze, the sorts that were under way. A fault is not a `die`
+(D13) and goes straight past every `try`.
+
+The runtime already keeps everything a `die` must undo in the
+context, as lists: the frames (D66), the sorts under way (step 10c).
+The freezes are counts on the containers; they become a stack in the
+context too, one entry a freeze. **So a `try` is three numbers and a
+`setjmp`**: how many frames, sorts and freezes were open, and where
+to come back to. A `die` gives back every freeze above the mark,
+frees every sort above it, drops the frames, and `longjmp`s. Nothing
+runs per call, and the generated code is changed only where a `try`
+stands. What leaves a `try` by its own way, `return`, `last` and
+`next`, closes it on the way out exactly as it gives back a loop's
+freezes today: the code generator's list of what to do on every way
+out gains one kind of entry.
+
+#### The language at step 15
+
+**15a. `die`, `try` and `catch`.**
+
+- **`die LIST`** stops the program, or the `try` round it. Its
+  message is the list's values joined with nothing between, each
+  made a string as `.` makes one (an undef is D48's fault, a whole
+  Num from 10^15 D36's). An empty message, from `die;`, `die "";`,
+  `die false;` or an empty array, is `Died`. **If the message does not
+  end in a newline, ` at FILE line N.` and a newline are added**, byte
+  for byte as perl adds them (T300, T301): FILE is the path the
+  program was compiled by, which is the path perl is given (D10), and
+  N is the line the statement starts on (D34), which is perl's line
+  in every shape run (T302): over several lines, in a test, in a
+  `map`'s block, in a default.
+- **An uncaught `die`** writes the message to stderr, after
+  everything the program printed, and exits 255 (D12): a test of kind
+  `dies`. The message is printed as `say` prints: a character past
+  ASCII needs `use open` and a noncharacter is a fault (T307).
+- **`die` is a list operator**, with brackets or without, and a value
+  wherever a value may stand: `my $v = $h{$k} // die "no $k\n";`,
+  `$ok ? $x : die("bad")`, an argument. It is a statement too, and
+  takes an `if` or an `unless`. **It is never tested and never the left
+  operand of an operator** (D146): perl warns `Possible precedence
+  issue with control flow operator` of `die(...) . "x"`, `if (die
+  ...)`, `STATEMENT if die ...` (T303). `$x or die ...;` as a
+  statement is refused as every statement joined by a word operator
+  is (D56): `die ... unless $x;` says it.
+- **`try BLOCK catch ($e) BLOCK`**, a statement. The block runs; if a
+  `die` reaches it, everything the block had open is put back and
+  the catch block runs with `$e` holding what was thrown: the message,
+  ` at FILE line N.` and all. `$e` is a new variable each time, seen
+  in the catch block, which may assign it; a `my $e` inside the block
+  is a second variable, as in perl (T310). `$a`, `$b` and `$_` are
+  refused for it (D55). Either block may be empty. A `try` is no
+  loop, and takes no label.
+- **`return`, `last` and `next` in a `try` or a `catch` do what they
+  do anywhere** (T304): `return` returns from the sub, and `last` and
+  `next` go to their loop, in silence under perl 5.42. The `try` is
+  closed on the way out.
+- **A die in a `catch` goes to the `try` further out**, and `die $e`
+  throws the message again unchanged, since it ends in a newline
+  (T305). `try` nests.
+- **What a `try` catches is a `die`, and nothing else** (D13): a
+  fault, `division by zero` or `recursion too deep` or any other, goes
+  past it and stops the program, where perl runs the `catch` (T306).
+- **A sub that ends in a `try` has no value** (D18, T65): calling it
+  for its value is the fault `f has no value`, unless every way
+  through the `try` and the `catch` ends in a `return`. perl gives the
+  value of the block's last statement.
+- **`...`**, a statement alone, is `die "Unimplemented"` (T70, D145):
+  `Unimplemented at FILE line N.`. perl refuses it anywhere else, with
+  a modifier too.
+- **What is put back** after a `die` is what the program could see
+  as half done, and perl agrees with each (T308, T309): a list
+  assignment, `@a = LIST`, `push`, `splice` and `%h = LIST` change
+  nothing when their list dies; `@a = sort { ... } @a` leaves `@a` as
+  it was; but `$h{k} .= f()` and `$a[3] += f()` have made the element
+  before `f` dies (D80's order), as perl has.
+- **A comment perl reads as a line directive is refused** (T74,
+  D147): a line whose first character is `#`, then blanks, the word
+  `line`, blanks and a digit. perl takes the line and file a `die`
+  names from it (`# line 0` drops ` at FILE line N` altogether).
+- **Refused**: `catch` with no variable (T53, perl refuses it too), a
+  `try` with no `catch`, two `catch`es, `try` as a value (perl
+  refuses each); `finally` and `defer` (D144: perl 5.42 warns that
+  `finally` is experimental, and has no `defer` without a `use
+  feature` the language doesn't take); `eval` stays cut (D20).
+
+**15b. `warn` and stderr.**
+
+- **`warn LIST`** writes a message to stderr made as a `die`'s is
+  (`Warning: something's wrong` when it is empty), and the program
+  goes on; its value is `true`. The same rules for printing past
+  ASCII as `say`'s (T307).
+- **`say STDERR LIST;` and `print STDERR LIST;`**: `say` and `print`
+  to stderr. The word `STDERR`, a blank, and a list that is not in
+  brackets of its own. No other handle, and no `{STDERR}`.
+- **How a test of stderr is checked** (D148, D149): the golden tests
+  keep stdout and stderr apart and compare stdout, then stderr, which
+  is how the oracle has always written a `dies` test; a test whose
+  program writes to stderr and ends normally is of a new kind,
+  **`warns`**, whose `.expected` is perl's stdout, then its stderr,
+  then the exit status if it is not 0. For `warns` and `dies` the
+  check runs perl once more with every warning that does not come
+  from the program's own `warn` marked, and fails the test if perl
+  wrote one: that closes the hole "The checks themselves" left open
+  for step 15 (a `dies` test in which perl also warns). A `fault`
+  test's warnings must be the start of perl's stderr, as its stdout
+  is of perl's stdout.
+
+#### What perl does that the obvious build gets wrong
+
+- **` at FILE line N.` is added when the message does not end in a
+  newline**, which is not the same as "has no newline": `die
+  "a\nb"` gets it (T301). An empty message is `Died`, from
+  `die ""`, `die false` and an empty array (T300).
+- **`return` in a `try` returns from the sub** (T304), which an
+  `eval`-shaped build would get wrong; and so a `try` can't be one
+  mechanism with the `die` that unwinds through it.
+- **A `die` named first, or in brackets before an operator, warns**
+  (T303), and the brackets after `die ` are all its arguments: `die
+  ("a") . "b"` dies with `a`.
+- **A `die` in a sort block leaves an in-place sort's array as it
+  was** (T308): perl sorts a copy and stores it at the end, and so
+  does this runtime.
+- **`$h{k} .= f()` makes the key when `f` dies** (T309): D80's order,
+  seen for the first time from inside a program that carries on.
+- **`# line N "file"`** changes the file and line a `die` reports
+  (T74); `# line 0` takes ` at ... line` away (T311).
+- **The message goes to stderr by perl's layers** (T307): `é` is one
+  byte without `use open`, and `☺` a warning.
+- **perl's `$@` is empty in a `catch`** (T312): not in the language
+  (D20), and nothing changes.
+
+#### The decisions, each the recommendation
+
+- **D140: two sub-steps**, 15a (`die`, `try`, `catch`, `...`, the
+  unwinding, T74) and 15b (`warn`, stderr, the `warns` kind), each
+  green and committed. Rejected: one step; `warn` left for a later
+  step (it is the one thing a program can say on stderr, and the
+  check's hole is this step's to close).
+- **D141: unwinding is `setjmp` and `longjmp`**, a `try` recording
+  how many frames, sorts and freezes are open and a `die` putting
+  each back. It works because the runtime never calls generated code
+  (D83) and everything a `die` must undo is in the context: the cost
+  is at `try` alone, and nothing changes for a program with none.
+  Rejected: **a test after every call** (a branch at every call in
+  every program, and at each one a path out through every loop,
+  `map`, `grep` and sort round it: the largest change the code
+  generator could have, for a feature most programs use twice);
+  C++'s exceptions or unwinding tables (the runtime is C, D3).
+  `return`, `last` and `next` leave a `try` by a `goto`, closing it
+  on the way, so they are not a `die` and need no `longjmp`. What it
+  costs: a C local changed inside a `try` and read after a `die` is
+  indeterminate to C, so the generated code keeps nothing there (the
+  variables are frame slots, in memory, as they always were), and the
+  thrown value is handed over in the context.
+- **D142: what a `die` throws is a value**, a string today: the
+  message as perl makes it, ` at FILE line N.` by D34's line. The
+  runtime takes the list and makes the message, so that when
+  references and objects merge (steps 13 and 17) a list of one
+  reference can be thrown as itself, as perl throws it; **until
+  then a `die` given a reference faults** (`a die with a reference:
+  not in the language yet`). Rejected: making the message in the
+  generated code (it would have to change when objects come).
+- **D143: `try` and `catch` as perl 5.42 has them**, a statement,
+  `catch ($e)` always (T53), `return`, `last` and `next` as anywhere
+  (T304), a fault never caught (D13), and a sub that ends in one with
+  no value (D18, T65). Rejected: `try` as a value (perl refuses it).
+- **D144: `finally` and `defer` stay Later**, refused. perl 5.42
+  warns of `finally` (experimental), so it would need a pragma D16
+  doesn't have, and `defer` is not perl at all without `use feature
+  'defer'`. Their use is cleanup, and memory is collected: revisit at
+  step 21, with files. Rejected: taking `finally` under `no warnings
+  'experimental::try'` (a second experimental pragma, for a block
+  nothing yet needs).
+- **D145: `...` is a statement, and a `die "Unimplemented"`**, as
+  perl has it (T70). Rejected: refusing it (it costs one line).
+- **D146: `die` is never tested and never a left operand**, a
+  refusal; stricter than perl, which is silent for `(die ...) || 1`
+  and `until (die ...)`, neither of which means anything. And `$x or
+  die ...;` is refused as D56 has it. Rejected: allowing `or die` as a
+  statement (a second spelling of `unless`; with files at step 21 it
+  may be worth it, and it changes no program that compiles now).
+- **D147: a line directive is refused** (T74). Rejected: agreeing
+  (a second file name in a program, and every fault's line moved
+  too); refusing only perl's exact shape (quotes, `line 0`, and
+  where a directive inside a statement takes effect).
+- **D148: the text of a `die` and a `warn` is perl's, byte for
+  byte**, since a program can catch a message and print it on stdout;
+  and stderr, which D12 left the language's own, is compared for a
+  `dies` and a `warns` test. A fault's text stays the language's.
+- **D149: the `warns` kind**, and stdout and stderr kept apart in
+  the golden tests (stdout first, as `dies` has always been
+  written). Rejected: allowing stderr in a `same` test (D10's
+  empty-stderr rule is what makes a warning of perl's visible);
+  `t/run.sh` going on mixing the two streams (the order would be the
+  buffers', not the program's).
+
+#### Tests
+
+A model, `t/models/die.py`, in which Python's `try`/`except` is the
+model of `try`/`catch`: programs that `die` at a depth through subs,
+loops over arrays and hashes, `map`, `grep` and `sort` blocks, nested
+`try`s, a `catch` that dies or throws again, `return`, `last` and
+`next` out of a `try`, and then use what was frozen or opened, with
+the output worked out by the model; the oracle check holds perl to
+it. By hand: `dies` tests for each way a message is made and for an
+uncaught `die` from a sub, a block and a `catch`; a fault test for
+each fault, among them every fault going through a `try` (D13), an
+undef in a `die`'s list, a character past ASCII in an uncaught
+message without `use open`, and `recursion too deep` inside a `try`;
+refusals from a table (`briefs/step15-refusals.py`). Every golden
+test runs with a collection at every allocation and poison, so a
+root that a `die` loses is `internal:` the first time; and a C test,
+`runtime/tests/unwind.c`, unwinds through frames, freezes and a sort
+by hand. 15b: `warns` tests from perl, and fixtures in `t/checks/`
+for the new rule, each one failing in its own way.
+
+#### How it moves the other files
+
+`SURFACE.md`: `die`, `try`, `catch` and `...` to In (15); `warn`,
+`print STDERR` and `say STDERR` to In (15b); `finally` and `defer`
+stay Later, with D144; the line directive becomes Cut, D147.
+`DIFFERENCES.md` gains rows: `finally` and `defer` (idiom, rarely,
+errors); a fault is not caught by `try` (it is already said, D13; now
+with a program); `die` tested or first (accident, rarely, errors);
+`$x or die` as a statement (habit, sometimes, errors: a guess, until
+files make it common); the line directive (accident, rarely,
+layout); and "Errors" leaves "Decided, not built". The census: its
+`later 15` rows go, and the account says where each probe went.
+
+#### What the review found
+
+An independent session was given this proposal and perl 5.42, and
+nothing else of this tree, and asked for a program the proposal
+would run, not fault, and print differently from perl. Its report
+was handed back as text (the builder had no tool to give it the
+tree, and saved its findings here and in `TRAPS.md`, T316 to T320;
+the report itself is in that session's transcript). Three ways to
+be WRONG, two gaps, and a list of what held; each is answered by
+agreeing, faulting or refusing, as the working rules order:
+
+1. **A `die` in a `while`'s or `until`'s test names the last
+   statement the block ran**, not the loop's line, after the first
+   time (T316, T124's kin). D34's line is the language's own for a
+   fault, but a `die`'s line is in a message a program prints.
+   **Refused** (D150), unless the message is written to end in a
+   newline, when there is no line in it.
+2. **A statement over several lines has a line of perl's lexer's
+   choosing** (T317): one that begins with `(` or `@a`, or that has a
+   word alone in a hash's braces anywhere in it, names a later line.
+   **Refused** the same way (D150): a `die` or `warn` whose message
+   is not written to end in a newline may not stand in a statement,
+   a test, a loop's header or a default over more than one line.
+   Only the innermost statement counts: a `die` in a block's own
+   statement, a sub or a `map`'s block is judged by that statement.
+3. **An uncaught `die` exits with perl's errno**, which a string read
+   as a number or a `**` that underflows sets to ERANGE: exit 34
+   (T319). **A fault** at the uncaught `die` after such an underflow
+   (D151); D12's reason for not following `$!` was too narrow.
+4. **A default names its parameter's line** (T318): the generated
+   code already stores it; now tested.
+5. **The line directive with no blank after `#`** is perl's too: the
+   rule was written "blanks" and built as "any blanks, none
+   included"; tested.
+6. Stated now: `!die` and `-die`, which perl takes in silence, are
+   not tests, and are in; every assigning operator makes its element
+   before its right side dies, `//=` and `||=` too (claim
+   `15-defined-or`); the faults for printing past ASCII are where the
+   message is written, an uncaught `die` or a `warn`, and never a
+   caught `$e`; `say STDERR ("x"), "y"` prints `xy` (T320), and
+   brackets of its own after `STDERR` are refused; `die`'s arguments
+   are a list, `map`, `grep`, `sort` and `reverse` in it (claim
+   `15-list`); a sub that ends in `try` is idiomatic in 5.40 code, and
+   `DIFFERENCES.md` gets a row for its fault.
+
+What held, by the reviewer's runs: every message shape, numbers in
+messages, the state after a caught `die` over every container
+operation tried (an in-place sort over 11 lengths, 30 seeds and dies
+at comparisons 0 to 40), `return`, `last` and `next` out of `try` and
+`catch`, `$@` empty after a `try`, the exit status 255 otherwise,
+`warn`'s value and messages.
+
+#### 15, as built
+
+Built 2026-11-27 by Fable 5.2, 15a and 15b together, in a tree of its
+own while steps 13 and 14 were built in another and 16 in a third; all
+of it as proposed and as the review amended it (D140 to D151).
+
+**In the runtime**, `runtime/unwind.c`, included by rt.c as sort.c and
+hash.c are. A `try` is an `rt_try` on the C stack of the function it is
+in: `rt_try_begin` notes the newest frame, the depth, the newest sort
+and how many freezes are held, and links it into the context; the
+generated code `setjmp`s; `rt_try_end` unlinks it. `rt_throw` with no
+`try` open writes the message (after `say`'s checks for what may be
+printed) and exits 255, or faults after an underflow (D151, the
+context's `underflowed`, set by the read of a string as a number and by
+`**`); with one, it gives back every freeze above the mark (the count on
+the container, and the entry on the context's new stack of freezes, which
+`rt_freeze` and `rt_thaw` keep), frees every sort above it
+(`sorts_release_to`, sort.c's one addition), puts the frames and the
+depth back, unlinks the `try`, leaves the value in the context and
+`longjmp`s. `rt_caught` hands it to the catch's variable before anything
+can allocate. `rt_die` and `rt_warn` make perl's message of a list in one
+allocation (`message`), and refuse a value that is not a scalar, for the
+references and objects to come (D142). `rt_say_err_list` and
+`rt_print_err_list` are `say STDERR` and `print STDERR`. rt.h gained the
+`rt_try` struct, `<setjmp.h>`, five fields of the context and eight
+functions; rt.c four one-line hooks. **What a merge with 13 and 14 must
+see**: a new kind of value reaches `message` and faults until it is
+decided what a `die` of a reference throws (D142); a new collector that
+walks from the frames needs nothing, since nothing a `die` puts back is
+a root but the frames, and the thrown value is in a slot before anything
+allocates.
+
+**In the compiler**: `die` and `warn` are list operators in the table
+(`listop`), so every walk that knows `join` knows them; `try`, `catch`,
+`...` and `STDERR` are rows of their own. The tree has one new statement,
+`try` (its body, its variable as a `my`, its handler), and `say` and
+`print` an `stderr` flag. The parser reads `try`, its one `catch`, `...`
+alone, `STDERR`, and keeps a stack of **units** (a statement with its
+modifier, a test, a loop's header, a default): each `die` and `warn` is
+noted in the innermost, and one whose message is not written to end in a
+newline is refused in a unit over more than one line, or anywhere in a
+`while`'s or an `until`'s test (D150). The resolver gives the catch's
+variable a scope round the catch's block; the checker refuses a `die`
+tested or first (D146) and walks a `try`'s blocks in all four of its
+walks; `shapes.ts` finds a `return` in a `try`. The code generator writes
+a `try` as above, and puts an entry in the list of what every way out
+does (`open`, which held a loop's thaws), so that `return`, `last` and
+`next` close the `try` they leave, exactly as they give back a loop's
+freezes: an entry no loop's number matches. The lexer refuses a line
+directive (D147) and lets `...` through where a value may begin.
+
+**The checks**: `t/run.sh` keeps stdout and stderr apart and prints
+stdout first; the `warns` kind (D149); for `dies` and `warns`, a run of
+perl with `t/oracle/Warned.pm`, which overrides `warn` and marks every
+other warning, closes the hole "The checks themselves" kept for this
+step; a fault test's stderr before the fault must be the start of
+perl's. Eight fixtures in `t/checks/`, 63 in all. The census judges a
+`die` and a `warn` by perl's stderr too (six more of its own tests, 39).
+
+**Tests**: 3000 to 3004 by hand, from perl; 3010 to 3016 from
+`t/models/die.py`, in which Python's `try` is the model; 3050 to 3065
+`dies`, from perl; 3080 to 3095 faults by hand, every fault of the step
+and five that go through a `try` (D13); 3100 to 3148 refusals from
+`briefs/step15-refusals.py`; 3200 to 3203 `warns`, from perl; and
+`runtime/tests/unwind.c`, which unwinds through frames, freezes and a
+sort by hand, under stress and poison. 1,350 golden tests and 149 unit
+tests in all; 941 statements about perl. 008's expected moved: its `#
+line 1` is now refused before its `#!` line is.
+
+**Broken on purpose** (`briefs/step15-mutations.py`): 52 of 58 caught
+the first time. Five holes closed: a message whose last value is empty
+(3016), a `try` that ends with no `die` left open (3004), what is in a
+`try`'s blocks unchecked (3146, 3147), D69 blind inside a `try` (3148),
+and a `return` of a list in a `try` not making its sub one that gives
+lists (3004). One cannot be seen: which of two entries for the same
+container a thaw takes from the stack of freezes, since the entries are
+the same pointer.
+
+**What was left out, on purpose**: `finally` and `defer` (D144), `eval`
+(D20), `$@`, a `die` of a reference or an object (steps 13 and 17), any
+handle but `STDERR`, `exit` (step 21), and `X or die` as a statement
+(D146), which step 21 may want with `open`.
+
+**The census** (`make census`, rerun): of the 19 probes that waited for step 15, 17 use `eval`, which D20 cut, and moved to `by-design/` (2,334 there now, with the one below); `warn` alone came through (`io8`), and one that printed to `STDERR` (`bl-h2`), which had waited for step 21; `rl-q5`, the one probe with a `try`, is refused for its `no warnings;`. One probe with a `# line` directive is refused by design now (D147). **1,021 SAME, 124 LOUD, 1 UNJUDGED, no WRONG**, and no probe left SAME.
+
+#### 15 merged with 13a
+
+Merged 2026-11-27 into the tree that had built 13a. The code merged
+without a conflict of meaning: the lexer's arrow and backslash and its
+`...` sit one after the other; rt.c includes `ref.c` and `unwind.c`;
+13a's `rt_freeze_all` and `rt_thaw_all` go through `rt_freeze` and
+`rt_thaw`, so a `die` gives back what a chain in a loop's list froze.
+**A `die` of a reference is in** (D142's note): one value that is a
+reference is thrown as itself, as `pp_die` throws a list of one, and a
+`catch` gets the container; uncaught, and among several values or in a
+`warn`, it is D112's fault, where perl writes an address. D109's walk
+sees a store through a reference in a `try` or a `catch` of a sub it
+calls (3809, 3810). Tests 3800 to 3810.
 
 ### 16. Strings, the rest
 

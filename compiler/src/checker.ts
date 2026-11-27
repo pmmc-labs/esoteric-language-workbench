@@ -488,6 +488,17 @@ const checkSliceOfOne = (e: Expr): void => {
         : `@${e.name}[...] with one index: perl warns that it is better written $${e.name}[...]`, e.pos);
 };
 
+// A `die` that is tested, or the left operand of an operator: perl warns
+// `Possible precedence issue with control flow operator` of most of them,
+// and none means anything (T303, D146). Through brackets and a unary plus.
+const isDie = (e: Expr): boolean => {
+    const p = plain(e);
+    return p.kind === 'listop' && p.op === 'die';
+};
+const notTested = (e: Expr): void => {
+    if (isDie(e)) refuse('a die that is tested: perl warns of a precedence problem, and a die is never worth anything', plain(e).pos);
+};
+
 // Everything that is checked of an expression wherever it stands.
 // `my`: whether a `my` may stand here (D56, D21): at the head of a
 // statement, or in the test of an `if`, and in neither under an operand
@@ -496,6 +507,8 @@ const checkSliceOfOne = (e: Expr): void => {
 // an assignment of a list or to an array may stand (D78).
 const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = false): void => {
     checkLiteral(e);
+    if (e.kind === 'binary' && isDie(e.left)) refuse(`a die on the left of '${e.op}': perl warns of a precedence problem, and a die is never worth anything`, plain(e.left).pos);
+    if (e.kind === 'ternary') notTested(e.test);
     checkConcat(w, e);
     if (ctx === 'scalar') checkOneValue(w, e);
     if ((e.kind === 'my' || e.kind === 'myarray' || (e.kind === 'list' && e.my)) && !my) {
@@ -754,7 +767,9 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
             || (s.expr.kind === 'hashop' && s.expr.op === 'delete')
             // A `map` or a `grep` may be one, for what its block does: perl
             // does not warn of it (D87).
-            || s.expr.kind === 'binder';
+            || s.expr.kind === 'binder'
+            // `die` and `warn` are done for what they do (step 15).
+            || (s.expr.kind === 'listop' && (s.expr.op === 'die' || s.expr.op === 'warn'));
         // (perl is silent about `exists $h{k};` and `keys %h;`, which
         // sets `each`'s place back: nothing, here.)
         if (!does && !last && s.expr.kind === 'hashop') refuse('this statement only has a value, and nothing is done with it', s.pos);
@@ -782,6 +797,7 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     case 'block': return s.body.forEach(b => checkStmt(w, b));
     case 'if':
         for (const arm of s.arms) {
+            notTested(arm.test);
             tested(arm.test);
             checkExpr(w, arm.test, !s.modifier);
             arm.body.forEach(b => checkStmt(w, b, s.modifier === true));
@@ -790,12 +806,14 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     // A loop's test is a test as an `if`'s is (D53, D62), and a `my` under
     // a `while` modifier is as one under `if` (T119).
     case 'while':
+        notTested(s.test);
         tested(s.test);
         checkExpr(w, s.test, !s.modifier);
         return s.body.forEach(b => checkStmt(w, b, s.modifier === true));
     case 'for':
         s.first.forEach(e => checkPart(w, e, true));
         if (s.test) {
+            notTested(s.test);
             tested(s.test);
             checkExpr(w, s.test, false);
         }
@@ -807,6 +825,10 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
         return s.body.forEach(b => checkStmt(w, b, s.modifier === true));
     // Which loop it is for is the resolver's to say.
     case 'jump': return;
+    // A `try`'s blocks are blocks (D143).
+    case 'try':
+        s.body.forEach(b => checkStmt(w, b));
+        return s.handler.forEach(b => checkStmt(w, b));
     // A list, to a call that wants one (D18): the fault for a call that
     // wants one value is the runtime's.
     case 'return': return s.value === undefined ? undefined : checkExpr(w, s.value, false, 'list');
@@ -839,6 +861,9 @@ const expressions = (s: Stmt, f: (e: Expr) => void): void => {
         s.items.forEach(f);
         return s.body.forEach(b => expressions(b, f));
     case 'sub': return s.body.forEach(b => expressions(b, f));
+    case 'try':
+        s.body.forEach(b => expressions(b, f));
+        return s.handler.forEach(b => expressions(b, f));
     default: return;
     }
 };
@@ -906,6 +931,9 @@ const changedBy = (names: Resolution): ReadonlySet<number>[] => {
         case 'foreach':
             s.items.forEach(e => expr(e, fn));
             return s.body.forEach(b => stmt(b, fn));
+        case 'try':
+            s.body.forEach(b => stmt(b, fn));
+            return s.handler.forEach(b => stmt(b, fn));
         default: return;
         }
     };

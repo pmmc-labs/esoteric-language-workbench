@@ -1,0 +1,12 @@
+1: plain at t/3000-try-catch.pl line 4.
+2: with newline
+no die
+caught too small: 1
+2 0
+inner
+changed
+outer
+3: from a sub at t/3000-try-catch.pl line 23.
+v is 0
+not at t/3000-try-catch.pl line 28.
+end

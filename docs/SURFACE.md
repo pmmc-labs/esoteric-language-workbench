@@ -36,7 +36,7 @@ comparison: *in*, *out*, or *n/a*.
 | `use utf8`, `use experimental '...'` | In | 3, 17 | in | D16. On a line before the first character past ASCII, a comment's included (T73) |
 | A line that starts `#!`, the first or any other | Cut | | | D33: perl takes switches from it when it is line 1, and a `# line 1` comment makes any line that (T72). After code on its line: a comment |
 | A version literal hard against a comment, `use v5.42#c` | Cut | | | perl then asks for a module called `v5` (T75) |
-| A comment that is a line directive, `# line 100 "file"` | Later | 15 | | T74: it changes the line and file a `die` reports |
+| A comment that is a line directive, `# line 100 "file"` | Cut | | | D147, T74, T311: it changes the line and file a `die` reports. A line whose first character is `#`, then blanks, `line`, blanks and a digit |
 | A carriage return, a form feed, any other control character; ^D or ^Z | Cut | | | perl takes the first two for white space, and ends the program at either of the last. Windows line endings are converted first |
 | `use Module;` of the program's own | Later | 18 | in | Compile time only |
 | `use Module qw(names)`, `Exporter` | Later | 18 | in | To be proposed |
@@ -120,20 +120,20 @@ comparison: *in*, *out*, or *n/a*.
 | `(...) x N` as an argument, after `return`, or as a sub's last statement | In | 9, 10 | | T143, D87: a list, as it is to perl, and list-shaped for D18 |
 | Ending a sub in `if`, `unless`, a loop, a block, a statement with a modifier or `try`, and using its value | Fault | 8 | | D18, T145: perl returns the condition, or the `try`'s value |
 | `wantarray` | Cut | | in | D18 |
-| `die`, `try`, `catch` | In | 15 | in | |
-| `finally`, `defer` | Later | 15 | out | Experimental in 5.42; to be proposed |
+| `die`, `try`, `catch` | In | 15 | in | D141 to D143: perl's message byte for byte, `catch ($e)` always, `return`, `last` and `next` as anywhere; a fault is not caught (D13). `die` never tested or a left operand, and `X or die` as a statement refused (D146); a message with a line in it not in a statement over several lines or a `while`'s test (D150); an uncaught `die` after an underflow faults (D151) |
+| `finally`, `defer` | Later | 21 | out | D144, T313: perl 5.42 warns that `finally` is experimental, and has no `defer` without `use feature`; with files |
 | `eval BLOCK`, `$@` | Cut | | out | D20: `try` |
 | `eval STRING` | Cut | | out | D20 |
 | `do BLOCK` | Later | 5 | | Small; when wanted |
 | `do BLOCK while COND` | Later | | | D58: left out at step 6, for the step that takes `do BLOCK`. It runs the block first, and is not a loop to perl: `last` in it leaves the loop round it (T64) |
-| `...` as a statement | Later | 15 | | It is a `die` |
+| `...` as a statement | In | 15 | | D145: `die "Unimplemented"`; alone, with no modifier, as perl has it (T315) |
 | `given`, `when`, smartmatch | Cut | | | Not on under `use v5.42` either |
 | `exit` | In | 21 | | |
 | `say;`, `print;` with no argument | Cut | | | D85: `$_` is always written |
 | A builtin's brackets and then an operator, `say (1 + 2) * 3;` | Cut | | | D21, T25: perl prints 3 |
 | `say (...)` after one space, not ending on its line, or with a bracket in a string or a comment that perl's count of them trips on | Cut | | | T76, T100: perl warns. `say(...)`, hard against, may run over lines |
 | `(LIST) x N`, a list repeated, where a list is wanted | In | 9 | | D80, T101. After `return` and as a sub's last statement too, from step 10 (T143); a comma list on the left of `x` where one value is wanted: Cut (T168) |
-| `print STDERR ...`, `say STDERR ...` | In | 15 | | With `warn` |
+| `print STDERR ...`, `say STDERR ...` | In | 15 | | 15b, with `warn`: `STDERR` and a list not in brackets of its own (T320); no other handle |
 | `1;` ending a module | In | 18 | | Not needed under `use v5.42`; harmless |
 
 ## Operators
@@ -285,7 +285,7 @@ Opal's notation, `docs/BUILTINS.md`.
 | `abs`, `int`, `sqrt`, `sin`, `cos`, `atan2`, `exp`, `log`, `hex`, `oct` | In | 22 |
 | `rand`, `srand`, `time`, `localtime`, `gmtime`, `sleep` | Later | 22 |
 | `split`, `m//`, `s///`, `tr///`, `qr//`, `quotemeta` | In | 19, 20 |
-| `die`, `warn` | In | 15 |
+| `die`, `warn` | In | 15 | D142, D148: list operators; `warn` is `true`. One reference alone is thrown as itself; uncaught, among several values, or in a `warn`, D112's fault |
 | `open` with three arguments, `close`, `readline` and `<$fh>`, `eof`, `print {$fh}`, `binmode`, `opendir` and the directory calls, `unlink`, `rename`, `mkdir`, `stat` | Later | 21 |
 | `@ARGV`, `%ENV`, `$0`, `$!` in a message | Later | 21 |
 | `system`, backticks, `exec`, `fork`, `wait`, `kill` | Later | a library, when proposed |

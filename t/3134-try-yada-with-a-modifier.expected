@@ -1,0 +1,2 @@
+t/3134-try-yada-with-a-modifier.pl:4:5: '...' is a statement alone: perl does not compile anything after it but ';'
+exit: 1

@@ -1,0 +1,14 @@
+at 1 2
+at 2 2
+at 3 2
+none
+1 2 3 1 2 3
+a=1,b=2,k1=1,k2=2,k3=3
+cmp 1
+cmp 2
+cmp 3
+cmp 4
+cmp 5
+1 3 5 8
+grep
+1 3 5 8 9

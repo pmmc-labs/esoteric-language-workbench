@@ -490,11 +490,27 @@ test("a line that starts '#!', the first or any other (T72)", () => {
     refused('#!', message, 1, 1);
     refused(' \t#!perl', message, 1, 3);
     refused('\n#!/usr/bin/perl -n\nuse v5.42;', message, 2, 1);
-    refused('use v5.42;\n# line 1\n  #!perl -n\nsay 2;', message, 3, 3);
+    refused('use v5.42;\n  # line 1\n  #!perl -n\nsay 2;', message, 3, 3);
     refused('use v5.42;\nsay\n#!perl\n1;', message, 3, 1);
     // After a token on its line, or after another `#`, it is a comment.
     assert.equal(lex('use v5.42; #!perl -n').length, 4);
     assert.equal(lex('# !perl -n\n# #!perl -n\n##!').length, 1);
+});
+
+// Step 15: a comment perl reads as a line directive (T74, T311, D147).
+test('a line directive is refused, and comments like one are not', () => {
+    const message = "a comment that begins its line '# line' and a number is a line directive, to perl, which changes the line and the file a die names: reword it";
+    refused('use v5.42;\n# line 100 "other.pl"\nsay 1;', message, 2, 1);
+    refused('use v5.42;\n#line 7\nsay 1;', message, 2, 1);
+    refused('use v5.42;\n#\tline\t0\nsay 1;', message, 2, 1);
+    refused('use v5.42;\n# line 100x\nsay 1;', message, 2, 1);
+    assert.equal(lex('use v5.42;\n  # line 100\n# LINE 100\n# line up\nsay 1; # line 100\n').length, 7);
+});
+
+// `...` is a statement where a value may begin, and perl's other range
+// after a value (D145).
+test('... after a value is not in the language', () => {
+    refused('use v5.42; my $x = 1 ... 2;', "'...' is not in the language yet", 1, 22);
 });
 
 // Step 12a: hashes.

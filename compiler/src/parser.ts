@@ -43,6 +43,35 @@ export const parse = (tokens: readonly Token[]): Program => {
     // the top level, and a `return` in a sub (D72).
     let depth = 0;
     let inSub = false;
+    // Step 15 (D150): the `die`s and `warn`s read in each unit that names
+    // a line of its own to perl (a statement, a test, a loop's header, a
+    // default), the innermost last. perl's line for a unit over several
+    // lines is its lexer's (T317), and for a `while`'s test the last
+    // statement its block ran (T316): so a message that would carry the
+    // line may not be made in either.
+    const units: Expr[][] = [];
+    // A message that ends in a newline written as such carries no line.
+    const endsInNewline = (d: Expr): boolean => {
+        if (d.kind !== 'listop') return false;
+        const last = d.args.at(-1);
+        const text = last?.kind === 'str' ? last.value : last?.kind === 'interp' && last.parts.at(-1)?.kind === 'str' ? (last.parts.at(-1) as { value: string }).value : '';
+        return text.endsWith('\n');
+    };
+    // Where token `t` ends: a string may hold the ends of lines.
+    const lastLine = (t: Token): number => t.pos.line + (t.text.match(/\n/g)?.length ?? 0);
+    const unit = <T>(from: Pos, read: () => T, loopTest = false): T => {
+        units.push([]);
+        const made = read();
+        const found = units.pop()!;
+        const to = lastLine(tokens[i - 1]!);
+        for (const d of found) {
+            if (endsInNewline(d)) continue;
+            const word = d.kind === 'listop' ? d.op : 'die';
+            if (loopTest) refuse(`a ${word} in the test of a while or an until: perl names the line of the last statement the loop's block ran, and the message would carry it; end the message in a newline, or work the test out in the block`, d.pos);
+            if (to !== from.line) refuse(`a ${word} in a statement, a test or a header over more than one line: perl names a line of its own choosing there, and the message would carry it; put it on one line, or end the message in a newline`, d.pos);
+        }
+        return made;
+    };
 
     // Whether token `k + 1` is hard against token `k`, a word.
     const touching = (k: number): boolean => {
@@ -511,8 +540,13 @@ export const parse = (tokens: readonly Token[]): Program => {
             const t = peek();
             args = ends(t) || t.kind === ')' || t.kind === ']' || t.kind === ',' || t.kind === 'eof' || isModifier(t) ? [] : list();
         }
-        if (args.length === 0) refuse(head.text === 'join' ? 'join needs a separator: join(SEP, LIST)' : `${head.text} of nothing`, head.pos);
-        return { kind: 'listop', op: head.text, args, pos: head.pos };
+        // `die;` and `warn;` say `Died` and `Warning: something's wrong`
+        // (T300, T314).
+        const empty = head.text === 'die' || head.text === 'warn';
+        if (args.length === 0 && !empty) refuse(head.text === 'join' ? 'join needs a separator: join(SEP, LIST)' : `${head.text} of nothing`, head.pos);
+        const made: Expr = { kind: 'listop', op: head.text, args, pos: head.pos };
+        if (empty) units.at(-1)?.push(made);
+        return made;
     };
 
     // A call of one of the program's subs, its name just read and a
@@ -705,6 +739,9 @@ export const parse = (tokens: readonly Token[]): Program => {
             return refuse(`${t.text} is a statement, not a value: write '${t.text} if ...;' or '${t.text} unless ...;'`, t.pos);
         }
         if (name?.kind === 'sub') return refuse('a sub with no name, as a value, is not in the language yet', t.pos);
+        // perl refuses each of these where a value stands (T315, D143).
+        if (name?.kind === 'try' || name?.kind === 'catch') return refuse(`${t.text} is a statement, not a value: perl does not compile it here`, t.pos);
+        if (t.kind === 'op' && NAMES.get(t.text)?.kind === 'yada') return refuse("'...' is a statement alone, which dies: perl does not compile it anywhere else", t.pos);
         if (callable(t)) {
             if (peek().kind === '(') return stepAfter(chained(invoke(t)));
             return refuse(`'${t.text}' is not in the language; a call of a sub of the program's has brackets: ${t.text}(...)`, t.pos);
@@ -854,6 +891,10 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (after.kind === 'op' && infixOp(after.text) && then !== undefined && (thenKind === 'jump' || thenKind === 'return')) {
             refuse(`${then.text} is a statement, not a value: write '${then.text} if ...;' or '${then.text} unless ...;'`, then.pos);
         }
+        // `$x or die ...;` (D146): `die ... unless $x;` says it.
+        if (after.kind === 'op' && infixOp(after.text) && then?.kind === 'word' && then.text === 'die') {
+            refuse(`'${after.text} die' after a statement: a statement is not joined by a word operator here (D56); write die ... ${after.text === 'or' ? 'unless' : 'if'} ...;`, after.pos);
+        }
         if (after.kind === 'op' && infixOp(after.text)) {
             refuse(`'${after.text}' after a statement joins it to what follows, to perl, which binds '${after.text}' more loosely than '=': write it as an if`, after.pos);
         }
@@ -884,7 +925,7 @@ export const parse = (tokens: readonly Token[]): Program => {
     const arm = (head: Token, negate: boolean): Arm => {
         const open = next();
         if (open.kind !== '(') unexpected(open, `'(' after ${head.text}`);
-        const test = bracketed();
+        const test = unit(head.pos, bracketed);
         return negate ? { test, negate, body: block(), pos: head.pos } : { test, body: block(), pos: head.pos };
     };
 
@@ -917,13 +958,24 @@ export const parse = (tokens: readonly Token[]): Program => {
         }
         if (name?.kind === 'statement') {
             next();
+            // `say STDERR LIST;` (15b): the one file handle, a blank, and
+            // a list that is not in brackets of its own.
+            const handle = peek();
+            const stderr = handle.kind === 'word' && NAMES.get(handle.text)?.kind === 'handle';
+            if (stderr) {
+                next();
+                const after = peek();
+                if (ends(after) || isModifier(after)) refuse(`${head.text} ${handle.text} with nothing to print: perl prints $_`, after.pos);
+                if (after.kind === '(') refuse(`${head.text} ${handle.text} (...): write the list without brackets of its own, ${head.text} ${handle.text} ...;`, after.pos);
+                if (touching(i - 2)) refuse(`${head.text}${handle.text}: a blank between ${head.text} and ${handle.text}`, handle.pos);
+            }
             const args = argument(head);
             const after = peek();
             if (after.kind === ',') refuse(`',' after ${head.text}'s argument: a list is not in the language yet`, after.pos);
             if (after.kind === 'op' && infixOp(after.text)) {
                 refuse(`'${after.text}' after ${head.text}'s argument: it binds more loosely than ${head.text} does, and joins what ${head.text} returns, to perl; bracket the argument, ${head.text}(... ${after.text} ...)`, after.pos);
             }
-            return { kind: 'call', name: head.text, args, pos: head.pos };
+            return stderr ? { kind: 'call', name: head.text, args, stderr: true, pos: head.pos } : { kind: 'call', name: head.text, args, pos: head.pos };
         }
         if (name?.kind === 'elsif' || name?.kind === 'else') return refuse(`${head.text} without an if before it`, head.pos);
         // `last;`, `next NAME;`, and nothing else after either but an
@@ -984,7 +1036,7 @@ export const parse = (tokens: readonly Token[]): Program => {
             if (paren.kind !== '(') unexpected(paren, `'(' after ${head.text} my $${v.name}`);
             // perl does not compile it (T155).
             if (peek().kind === ')') refuse(`${head.text} my $${v.name} () is a loop over nothing, and perl does not compile it`, paren.pos);
-            const items = itemsTo(')');
+            const items = unit(head.pos, () => itemsTo(')'));
             const body = block();
             return { kind: 'foreach', var: { kind: 'my', name: own(v), pos: open.pos }, items, body, pos: head.pos, ...(label ? { label } : {}) };
         }
@@ -997,7 +1049,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (name?.kind === 'while') {
             // `while ()` is `while (1)` to perl, and `until ()` nothing (T123).
             if (peek().kind === ')' && !name.until) refuse("while () is while (1), to perl: say that, or for (;;)", open.pos);
-            const test = bracketed();
+            const test = unit(head.pos, bracketed, true);
             const body = block();
             return { kind: 'while', test, body, pos: head.pos, ...(name.until ? { negate: true as const } : {}), ...(label ? { label } : {}) };
         }
@@ -1016,17 +1068,19 @@ export const parse = (tokens: readonly Token[]): Program => {
         if (semicolons === 0) {
             // `for (LIST) { }`: a loop over a list, with `$_` (step 10b).
             if (peek().kind === ')') refuse(`${head.text} () is a loop over nothing, and perl does not compile it`, open.pos);
-            const items = itemsTo(')');
+            const items = unit(head.pos, () => itemsTo(')'));
             const body = block();
             return { kind: 'foreach', var: { kind: 'my', name: '_', pos: head.pos }, items, body, pos: head.pos, ...(label ? { label } : {}) };
         }
         // To perl `foreach` is `for`, with three parts too (T122).
         if (name?.kind === 'for' && name.each) refuse('foreach is the loop over a list here, foreach my $x (...): the loop of three parts is spelled for', head.pos);
-        const first = part(';');
-        let test: Expr | undefined;
-        if (peek().kind !== ';') test = expression(Infinity);
-        semicolon();
-        const each = part(')');
+        const [first, test, each] = unit(head.pos, (): [Expr[], Expr | undefined, Expr[]] => {
+            const first = part(';');
+            let test: Expr | undefined;
+            if (peek().kind !== ';') test = expression(Infinity);
+            semicolon();
+            return [first, test, part(')')];
+        });
         const body = block();
         return { kind: 'for', first, each, body, pos: head.pos, ...(test ? { test } : {}), ...(label ? { label } : {}) };
     };
@@ -1111,7 +1165,7 @@ export const parse = (tokens: readonly Token[]): Program => {
                     if (peek().kind !== ',' && peek().kind !== ')') {
                         const outer = inList;
                         inList = true;
-                        param = { ...param, default: expression(COMMA_ROW) };
+                        param = { ...param, default: unit(v.pos, () => expression(COMMA_ROW)) };
                         inList = outer;
                     } else if (v.name !== '') {
                         refuse(`'${assign.text}' with no default after it: perl refuses it`, assign.pos);
@@ -1163,6 +1217,40 @@ export const parse = (tokens: readonly Token[]): Program => {
             return loop({ name: head.text, pos: head.pos });
         }
         if (name?.kind === 'while' || name?.kind === 'for') return loop(undefined);
+        // `try { } catch ($e) { }` (step 15; D143). perl wants the catch
+        // and its variable (T53), takes one catch, and warns of `finally`
+        // (T313, D144).
+        if (name?.kind === 'try') {
+            next();
+            if (peek().kind !== '{') unexpected(peek(), "'{' after try");
+            const body = block();
+            const word = peek();
+            if (word.kind !== 'word' || NAMES.get(word.text)?.kind !== 'catch') return refuse('a try has a catch after its block: perl refuses it without one', word.pos);
+            next();
+            const open = next();
+            if (open.kind !== '(') return refuse(`catch is followed by its variable in brackets, catch ($e): perl refuses it without (T53)`, open.pos);
+            const v = next();
+            if (v.kind !== 'var' || v.name === '') return refuse(`the variable of a catch is a scalar, catch ($e), found ${show(v)}`, v.pos);
+            if (peek().kind === '[' || peek().kind === '{') unexpected(peek(), "')'");
+            const shut = next();
+            if (shut.kind !== ')') unexpected(shut, "')'");
+            if (peek().kind !== '{') unexpected(peek(), "'{' after catch (...)");
+            const handler = block();
+            const more = peek();
+            if (more.kind === 'word' && NAMES.get(more.text)?.kind === 'catch') refuse('a second catch: perl takes one', more.pos);
+            if (more.kind === 'word' && more.text === 'finally') refuse('finally: perl 5.42 warns that it is experimental, and it is not in the language (D144)', more.pos);
+            return { kind: 'try', body, var: { kind: 'my', name: own(v), pos: v.pos }, handler, pos: head.pos };
+        }
+        if (name?.kind === 'catch') return refuse('catch without a try before it', head.pos);
+        // `...` (D145): a statement alone, and perl takes no modifier
+        // after it (T315).
+        if (head.kind === 'op' && NAMES.get(head.text)?.kind === 'yada') {
+            next();
+            const after = peek();
+            if (!ends(after)) return refuse("'...' is a statement alone: perl does not compile anything after it but ';'", after.pos);
+            ending();
+            return { kind: 'do', expr: { kind: 'listop', op: 'die', args: [{ kind: 'str', text: '"Unimplemented"', value: 'Unimplemented', pos: head.pos }], pos: head.pos }, pos: head.pos };
+        }
         if (name?.kind === 'if') {
             next();
             const arms = [arm(head, name.unless === true)];
@@ -1183,6 +1271,12 @@ export const parse = (tokens: readonly Token[]): Program => {
             }
             return otherwise === undefined ? { kind: 'if', arms, pos: head.pos } : { kind: 'if', arms, otherwise, pos: head.pos };
         }
+        return unit(head.pos, () => modified(head));
+    };
+
+    // A statement that is not a block, a loop, an `if` or a `try`, and
+    // the modifier after it if it has one.
+    const modified = (head: Token): Stmt => {
         const inner = simple();
         // `STATEMENT if TEST;`, `unless`, `while`, `until`
         const word = peek();

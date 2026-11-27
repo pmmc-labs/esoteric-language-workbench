@@ -85,6 +85,11 @@ input), and there are ways to make perl take a later line for the
 first, so no line may start that way. After a statement on its line,
 `say 42; #!`, it is an ordinary comment.
 
+Nor may a line start `# line` and a number (`#line 100 "other.pl"`,
+with any blanks or none after the `#`): perl reads that as a line
+directive, which changes the line and the file a `die` names. Indented,
+or with words between, it is a comment, as to perl.
+
 ## Statements
 
 Every statement ends with a semicolon, and there is no empty
@@ -2208,6 +2213,125 @@ Still to come: the whole container through a reference, `$r->@*`,
 `\$x` and `$r->$*` (step 13c); a reference in a string, `"$r->[0]"`
 (step 13d).
 
+## die, try and catch
+
+A program stops itself with `die`:
+
+    die "usage: count FILE\n" unless $ok;
+
+**`die LIST`** makes a message of its list, the values joined with
+nothing between, each made a string as `.` makes one, and throws it.
+If nothing catches it, the program writes the message to stderr,
+after everything it printed, and exits with status 255.
+
+If the message does not end in a newline, `die` adds where it was:
+` at FILE line N.` and a newline, where FILE is the path the program
+was compiled by and N the line the `die`'s statement is on:
+
+    die "no such user";      # no such user at count.pl line 12.
+    die "no such user\n";    # no such user
+
+A message that is empty, from `die;`, `die "";`, `die false;` or an
+empty array, is `Died`. An undef in the list is a fault, `undef where
+a string is wanted`, and so is a whole number from 10^15 written as a
+float, as everywhere a number is made a string.
+
+**`die` given one value that is a reference throws the reference
+itself**, and the `catch` gets the very container:
+
+    try { die { code => 404, path => $path } }
+    catch ($e) { say "not found: ", $e->{path} if $e->{code} == 404 }
+
+Uncaught, perl writes the reference's address, so that is a fault, `a
+reference where a string is wanted`; so is a reference among several
+values of a `die`, or in a `warn`, which perl makes a string.
+
+`die` is a value wherever a value may stand, with brackets or without:
+
+    my $port = $opt{port} // die "no port\n";
+    my $sign = $n > 0 ? "+" : $n < 0 ? "-" : die("zero\n");
+
+It is never tested, and never the left operand of an operator:
+`if (die ...)`, `say "x" if die ...;` and `die("a") . "b"` are refused,
+since perl warns that none of them means what it looks like. Nor does
+a word operator join it to a statement: `$ok or die "...";` is
+refused, and `die "..." unless $ok;` says it.
+
+**Where the line goes into the message, the statement is on one
+line.** perl's own idea of which line a statement is on is not always
+the line it starts on: for a statement over several lines it may be a
+later one, and for a `while`'s test it is the last statement the
+loop's block ran. So a `die` whose message is not written to end in a
+newline may not stand in a statement, a test, a loop's header or a
+sub's default that is over more than one line, nor in the test of a
+`while` or an `until`. A message written to end in a newline carries
+no line, and may stand anywhere:
+
+    die "the file ", $name,
+        " is empty\n";       # fine: the last string ends in a newline
+
+A `die` in a block, or in a sub, is in a statement of its own, and
+only that statement's lines count.
+
+`...` alone as a statement is a `die` with the message
+`Unimplemented`: a sub not yet written can say so.
+
+### try and catch
+
+    try {
+        my $n = parse($text);
+        say "read $n";
+    }
+    catch ($e) {
+        print "could not read it: $e";
+    }
+
+The first block runs. If a `die` happens in it, however deep in the
+subs it calls, the rest of the block is left, and the second block
+runs with `$e` holding the message, ` at FILE line N.` and all. If no
+`die` happens, the second block doesn't run.
+
+`$e` is the catch's own variable, new each time, and the block may
+assign it. Any name will do but `$a`, `$b` and `$_`. Either block may
+be empty: `catch ($e) { }` ignores what was thrown. A `try` is a
+statement, and has a `catch` always; it is not a value, and takes no
+label.
+
+**Everything the block had open is put back**: a loop over an array
+that the `die` left has ended, and the array may be changed again; a
+`sort` or a `map` that it left is over. What the statement that died
+had already done stays done, as in perl: a list assignment, `push`,
+`splice` and `@a = LIST` change nothing when their list dies, but
+`$h{k} .= f()` has made `$h{k}` before `f` dies, as every assigning
+operator makes its element first.
+
+`return` in a `try` or a `catch` returns from the sub, and `last` and
+`next` go to their loop, as anywhere else. A `die` in a `catch` goes
+to the `try` round this one, or out of the program, and `die $e`
+throws the message again as it was.
+
+A sub that ends in a `try` has no value, as a sub that ends in an `if`
+has none: calling it for its value is the fault `f has no value`,
+unless every way through it ends in a `return`.
+
+**What a `try` catches is a `die`, and nothing else.** A fault, such
+as `division by zero`, is not a `die`: it goes past every `try` and
+stops the program, where perl would run the `catch` with its own
+message. `finally` and `defer` are not in the language.
+
+### warn, and stderr
+
+**`warn LIST`** writes a message made as a `die`'s is to stderr, and
+the program goes on; an empty message is `Warning: something's wrong`.
+Its value is `true`.
+
+    warn "skipping line $n\n" if $line eq "";
+
+`say STDERR LIST;` and `print STDERR LIST;` print to stderr as `say`
+and `print` print to stdout. `STDERR` is the one file handle, and its
+list is not in brackets of its own. What goes to stderr follows
+`say`'s rules for characters past ASCII: it needs `use open`.
+
 ## Memory
 
 A program doesn't manage memory. A string the program can no longer
@@ -2249,6 +2373,12 @@ fault can't be caught, and nothing the program would have printed
 after it is printed. What a faulting program does print is always the
 beginning of what perl prints for the same file: the language stops
 early, and loudly, and never says anything perl wouldn't.
+
+An uncaught `die` stops it too ("die, try and catch", above):
+whatever it had printed, then the message on stderr, and exit status
+255. perl exits with the status of `$!` there when it is set, which a
+string read as a number that underflows sets; after one, an uncaught
+`die` is the fault `an uncaught die after a number underflowed`.
 
 A line that begins `internal:`, with exit status 2, is something else:
 a mistake in the compiler or the runtime that was caught as the

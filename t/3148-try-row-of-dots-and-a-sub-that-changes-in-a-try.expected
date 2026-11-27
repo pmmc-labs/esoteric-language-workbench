@@ -1,0 +1,2 @@
+t/3148-try-row-of-dots-and-a-sub-that-changes-in-a-try.pl:6:10: a later piece of a concatenation calls ch, which can change $x, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the call a statement of its own
+exit: 1

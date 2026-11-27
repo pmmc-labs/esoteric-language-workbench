@@ -1,0 +1,2 @@
+t/3122-try-catch-with-no-variable.pl:4:25: catch is followed by its variable in brackets, catch ($e): perl refuses it without (T53)
+exit: 1

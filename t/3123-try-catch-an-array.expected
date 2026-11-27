@@ -1,0 +1,2 @@
+t/3123-try-catch-an-array.pl:4:26: the variable of a catch is a scalar, catch ($e), found '@e'
+exit: 1

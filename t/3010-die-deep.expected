@@ -1,0 +1,19 @@
+caught: at depth 0
+caught: deep0 at t/3010-die-deep.pl line 4.
+caught: at depth 1
+caught: deep1 at t/3010-die-deep.pl line 4.
+caught: at depth 2
+caught: deep2 at t/3010-die-deep.pl line 4.
+caught: at depth 5
+caught: deep5 at t/3010-die-deep.pl line 4.
+caught: at depth 40
+caught: deep40 at t/3010-die-deep.pl line 4.
+caught: at depth 300
+caught: deep300 at t/3010-die-deep.pl line 4.
+caught: at depth 3
+caught: deep3 at t/3010-die-deep.pl line 4.
+caught: at depth 0
+caught: deep0 at t/3010-die-deep.pl line 4.
+caught: at depth 120
+caught: deep120 at t/3010-die-deep.pl line 4.
+and a call that returns: 50

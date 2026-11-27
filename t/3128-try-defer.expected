@@ -1,0 +1,2 @@
+t/3128-try-defer.pl:4:3: 'defer' is not in the language
+exit: 1

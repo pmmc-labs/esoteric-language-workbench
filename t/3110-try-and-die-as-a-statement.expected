@@ -1,0 +1,2 @@
+t/3110-try-and-die-as-a-statement.pl:5:4: 'and die' after a statement: a statement is not joined by a word operator here (D56); write die ... if ...;
+exit: 1

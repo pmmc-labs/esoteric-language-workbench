@@ -151,7 +151,8 @@ export type Use = { kind: 'use'; version: string; pos: Pos };
 export type Pragma = { kind: 'pragma'; name: string; args: readonly Expr[]; pos: Pos };
 
 // A builtin that is a statement, `say` and `print`, and its arguments.
-export type Call = { kind: 'call'; name: string; args: readonly Expr[]; pos: Pos };
+// With `stderr`, `say STDERR LIST;` (15b).
+export type Call = { kind: 'call'; name: string; args: readonly Expr[]; stderr?: true; pos: Pos };
 
 // An expression as a statement: an assignment, a `++` or `--`, a `my`.
 export type Do = { kind: 'do'; expr: Expr; pos: Pos };
@@ -202,8 +203,13 @@ export type Sub = { kind: 'sub'; name: string; params: readonly Param[]; body: r
 // `return;` and `return value;`.
 export type Return = { kind: 'return'; value?: Expr; pos: Pos };
 
+// `try { body } catch ($var) { handler }` (step 15; D143): `var` is the
+// catch's variable, as a declaration, new each time a `die` is caught.
+// `pos` is the word `try`'s.
+export type Try = { kind: 'try'; body: readonly Stmt[]; var: My; handler: readonly Stmt[]; pos: Pos };
+
 export type Loop = While | For | Foreach;
-export type Stmt = Use | Pragma | Call | Do | Block | If | While | For | Foreach | Jump | Sub | Return;
+export type Stmt = Use | Pragma | Call | Do | Block | If | While | For | Foreach | Jump | Sub | Return | Try;
 
 // `end` is where the file ends, for a diagnostic about what isn't there.
 export type Program = { kind: 'program'; body: readonly Stmt[]; end: Pos };

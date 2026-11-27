@@ -1,0 +1,2 @@
+t/3141-try-warn-over-two-lines.pl:6:3: a warn in a statement, a test or a header over more than one line: perl names a line of its own choosing there, and the message would carry it; put it on one line, or end the message in a newline
+exit: 1

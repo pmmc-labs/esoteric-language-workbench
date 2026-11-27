@@ -1,0 +1,3 @@
+caught ARRAY
+fault: a reference where a string is wanted at t/3806-fault-caught-reference-as-string.pl line 4.
+exit: 1

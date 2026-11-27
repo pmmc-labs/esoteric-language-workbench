@@ -12,7 +12,9 @@ import.py says where they came from). It is compiled, run with the knobs
 every test runs with, and held to what perl 5.42 prints for it, run plain
 under eight hash seeds. Its verdict:
 
-    SAME      it prints what perl prints, and perl says nothing more
+    SAME      it prints what perl prints, and perl says nothing more; or,
+              from step 15, it dies or warns with perl's status and
+              stdout and writes what perl writes on stderr (D148)
     WARNS     it prints what perl prints, and perl warns: no agreement
               (D15), and a place to look
     LOUD      it faults, having printed the start of what perl prints
@@ -137,8 +139,7 @@ REASONS = [
     (r"\(step 17\)", 'later', '17'),
     (r"^a sub with no name, as a value", 'later', '14'),
     (r"^'&' is not in the language yet", 'later', '14'),
-    (r"^'(die|warn|try|catch)' is not in the language$", 'later', '15'),
-    (r"^expected a value, found '(die|warn)'$", 'later', '15'),
+    # (Step 15's rows went with it: `die`, `warn`, `try`, `catch`.)
     (r"^expected a value, found '(sprintf|qw|q|qq|ucfirst|lcfirst|rindex|join|reverse|sprintf|chomp|abs|int|sqrt)'$", 'later', '16'),
     (r"^'(printf|chomp|qw|q|qq)' is not in the language$", 'later', '16'),
     (r"^'<<' is not in the language yet", 'later', '16'),
@@ -149,7 +150,13 @@ REASONS = [
     (r"^'(s|m|tr|y|split)' is not in the language$", 'later', '19'),
     (r"^expected a value, found '(split|m|s|tr)'$", 'later', '19'),
     (r"^expected a value, found '(time|localtime|gmtime|rand)'$", 'later', '22'),
-    (r"^expected a value, found '(STDERR|STDOUT|STDIN|open)'$", 'later', '21'),
+    (r"^expected a value, found '(STDOUT|STDIN|open)'$", 'later', '21'),
+    (r"^'(finally|defer)' is not in the language|^finally: perl 5.42 warns", 'later', '21'),
+    (r"^'exit' is not in the language$", 'later', '21'),
+    (r"is a line directive, to perl", 'design', 'D147'),
+    (r"^a die (on the left|that is tested)", 'design', 'D146'),
+    (r"^'(or|and) die' after a statement", 'design', 'D146'),
+    (r"^a (die|warn) in (a statement, a test|the test of a while)", 'design', 'D150'),
 ]
 REASONS = [(re.compile(pattern), kind, ref) for pattern, kind, ref in REASONS]
 
@@ -181,6 +188,19 @@ def judge(perl, ours):
         if out.startswith(mine):
             return 'LOUD', re.sub(rb' at \S+ line (\d+)\.\n$', rb' at line \1', said[7:]).decode('utf-8', 'replace')
         return 'WRONG', f'it faults after printing what perl does not: {clip(mine)!r}, where perl prints {clip(out)!r}'
+    # An uncaught `die`, or a `warn` (step 15; D148): perl's status and
+    # stdout, and perl's stderr too, which may hold more, a warning of
+    # perl's own: WARNS.
+    if (code == 255 or (code == 0 and said)) and not said.startswith((b'internal: ', b'fault: ')):
+        if status != code:
+            return 'WRONG', f'it exits {code}, and perl {status}: {clip(said)!r}'
+        if mine != out:
+            return 'WRONG', f'it prints {clip(mine)!r}, and perl {clip(out)!r}'
+        if said == err:
+            return 'SAME', ''
+        if len(err) > len(said):
+            return 'WARNS', clip(re.sub(rb' at \S+ line (\d+)\.', rb' at line \1.', err.split(b'\n')[0]))
+        return 'WRONG', f'it writes {clip(said)!r} on stderr, and perl {clip(err)!r}'
     if code != 0 or said:
         return 'WRONG', f'it breaks: exit {code}, {clip(said)!r}'
     if status != 0:
@@ -357,6 +377,13 @@ def self_test():
         ('WRONG', clean, (-11, b'1\n2\n', b'')),
         ('WRONG', clean, (0, b'1\n2\n', b'something on stderr\n')),
         ('WRONG', [(255, b'1\n2\n', b'Died at t/x.pl line 3.\n')] * 8, ok),
+        # Step 15: a die and a warn, with perl's stderr.
+        ('SAME', [(255, b'1\n', b'x at t/x.pl line 3.\n')] * 8, (255, b'1\n', b'x at t/x.pl line 3.\n')),
+        ('SAME', [(0, b'1\n', b'w\n')] * 8, (0, b'1\n', b'w\n')),
+        ('WRONG', [(255, b'1\n', b'x at t/x.pl line 3.\n')] * 8, (255, b'1\n', b'x at t/x.pl line 4.\n')),
+        ('WRONG', [(34, b'1\n', b'x\n')] * 8, (255, b'1\n', b'x\n')),
+        ('WRONG', [(255, b'1\n2\n', b'x\n')] * 8, (255, b'1\n', b'x\n')),
+        ('WARNS', [(255, b'', b'Use of uninitialized value in die at t/x.pl line 3.\nx\n')] * 8, (255, b'', b'x\n')),
         ('UNJUDGED', clean[:7] + [(0, b'2\n1\n', b'')], ok),
         ('UNJUDGED', clean[:7] + [None], ok),
         ('UNJUDGED', clean[:7] + [(0, b'2\n1\n', b'')], (0, b'9\n', b'')),

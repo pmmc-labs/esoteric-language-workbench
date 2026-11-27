@@ -1,0 +1,14 @@
+start
+warn gave 1
+2
+end
+plain at t/3200-warns.pl line 5.
+with newline
+Warning: something's wrong at t/3200-warns.pl line 7.
+Warning: something's wrong at t/3200-warns.pl line 8.
+Warning: something's wrong at t/3200-warns.pl line 10.
+a12.51 at t/3200-warns.pl line 11.
+valued
+in a sum
+round 1
+round 3

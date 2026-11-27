@@ -1,6 +1,7 @@
 // The core: the context, values as strings and as numbers, the operators,
 // printing, faults. A compiled program prints to stdout and exits 0; a
 // fault goes to stderr and exits 1.
+#include <errno.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
@@ -69,9 +70,15 @@ static void free_list(rt_block *list) {
 }
 
 static void sorts_release(rt_ctx *cx);
+// unwind.c's (step 15): the freezes as a stack, for a `die` to give back.
+static void sorts_release_to(rt_ctx *cx, struct rt_sort *keep);
+static void unwind_frozen(rt_ctx *cx, rt_array *a);
+static void unwind_thawed(rt_ctx *cx, rt_array *a);
+static void unwind_release(rt_ctx *cx);
 
 static void release(rt_ctx *cx) {
     sorts_release(cx);
+    unwind_release(cx);
     free_list(cx->heap);
     free_list(cx->dead);
     cx->heap = NULL;
@@ -525,8 +532,14 @@ static number from_string(rt_ctx *cx, const rt_str *s) {
     // (docs/briefs/step2-literals.py). The text from `start` to `stop` is
     // all it can take: a blank or the string's last NUL comes next.
     char *read_to;
+    errno = 0;
     double x = strtod(start, &read_to);
     if (read_to != stop) rt_fault(cx, "not a numeric string");
+    // perl's own read of it sets errno, which an uncaught `die` exits
+    // with (T319, D151): noted, for `rt_throw`.
+    int nonzero = 0;
+    for (const char *d = first; d < stop && *d != 'e' && *d != 'E'; d++) nonzero |= *d >= '1' && *d <= '9';
+    if (errno == ERANGE || (x != 0.0 && fpclassify(x) == FP_SUBNORMAL) || (x == 0.0 && nonzero)) cx->underflowed = 1;
     if (isinf(x)) rt_fault(cx, "float overflow");
     int whole = x == trunc(x);
     if (exponent && whole && fabs(x) < TWO_53) {
@@ -823,7 +836,11 @@ rt_value rt_pow(rt_ctx *cx, rt_value a, rt_value b) {
             }
         }
     }
-    return num(cx, pow(as_double(left), as_double(right)));
+    errno = 0;
+    double r = pow(as_double(left), as_double(right));
+    // As a string's read does (T319, D151).
+    if (errno == ERANGE || (r != 0.0 && fpclassify(r) == FP_SUBNORMAL) || (r == 0.0 && as_double(left) != 0.0)) cx->underflowed = 1;
+    return num(cx, r);
 }
 
 // 0 - x overflows for the one Int that has no negation, -2^63. A Num's
@@ -1246,12 +1263,15 @@ static rt_array *container_of(rt_ctx *cx, rt_value v) {
 }
 
 void rt_freeze(rt_ctx *cx, rt_value array) {
-    container_of(cx, array)->frozen += 1;
+    rt_array *a = container_of(cx, array);
+    unwind_frozen(cx, a);
+    a->frozen += 1;
 }
 
 void rt_thaw(rt_ctx *cx, rt_value array) {
     rt_array *a = container_of(cx, array);
     if (a->frozen == 0) rt_internal(cx, "an array that no foreach is over was given back");
+    unwind_thawed(cx, a);
     a->frozen -= 1;
 }
 
@@ -1678,3 +1698,4 @@ void rt_internal(rt_ctx *cx, const char *what) {
 #include "sort.c"
 #include "hash.c"
 #include "ref.c"
+#include "unwind.c"

@@ -1,0 +1,2 @@
+t/3126-try-two-catches.pl:4:41: a second catch: perl takes one
+exit: 1

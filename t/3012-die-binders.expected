@@ -1,0 +1,26 @@
+map 16
+grep 16
+sort
+3 7 16 23 24 26 6
+map 9
+grep 9
+sort
+3 9 10 27 4
+map 23
+grep 23
+sort
+2 4 18 23 29 5
+map 20
+grep 20
+sort
+5 10 13 15 20 27 6
+map 16
+grep 16
+sort
+5 11 12 15 16 22 27 28 8
+map 9
+grep 9
+sort
+5 3 5 6 9 13 14 15 25 9
+0 0 2
+3

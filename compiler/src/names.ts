@@ -59,7 +59,14 @@ export type Name =
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
-    | { kind: 'function'; min: number; rt: readonly string[] };
+    | { kind: 'function'; min: number; rt: readonly string[] }
+    // Step 15 (D143, D145, 15b): `try BLOCK catch ($e) BLOCK`; `...`, a
+    // statement alone that dies; and `STDERR`, the one file handle, after
+    // `say` or `print`, whose `err` is the runtime function then.
+    | { kind: 'try' }
+    | { kind: 'catch' }
+    | { kind: 'yada' }
+    | { kind: 'handle'; say: string; print: string };
 
 export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['use', { kind: 'use' }],
@@ -106,6 +113,14 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['exists', { kind: 'hashop', shape: 'elem' }],
     ['delete', { kind: 'hashop', shape: 'elem' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
+    // Step 15: `die` and `warn` are list operators, with brackets or
+    // without (D142, D146).
+    ['die', { kind: 'listop', rt: 'rt_die' }],
+    ['warn', { kind: 'listop', rt: 'rt_warn' }],
+    ['try', { kind: 'try' }],
+    ['catch', { kind: 'catch' }],
+    ['...', { kind: 'yada' }],
+    ['STDERR', { kind: 'handle', say: 'rt_say_err_list', print: 'rt_print_err_list' }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
 ]);
 

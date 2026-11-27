@@ -55,6 +55,9 @@ const returned = (s: Sub): Expr[] => {
             if (t.value) found.push(t.value);
             return;
         case 'block': case 'while': case 'for': case 'foreach': return t.body.forEach(walk);
+        case 'try':
+            t.body.forEach(walk);
+            return t.handler.forEach(walk);
         case 'if':
             t.arms.forEach(arm => arm.body.forEach(walk));
             return t.otherwise?.forEach(walk);

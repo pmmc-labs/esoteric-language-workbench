@@ -473,6 +473,21 @@ export const resolve = (program: Program): Resolution => {
             jumps.set(s, loops.get(nearest.loop)!);
             return;
         }
+        // A `try` is no loop (T304): its block is a scope, and the catch's
+        // variable is in a scope round the catch's block, so that a `my` of
+        // its name there is a second variable, as in perl (T310).
+        case 'try': {
+            inner(s.body);
+            scopes.push(new Map());
+            of.set(s.var, names.length);
+            isArray.push(false);
+            isHash.push(false);
+            names.push(s.var.name);
+            declare(s.var);
+            inner(s.handler);
+            close();
+            return;
+        }
         case 'if':
             // A modifier's statement is in the scope it stands in, and is
             // written before its test; an `if` with blocks is a scope of

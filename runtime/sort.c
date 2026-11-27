@@ -104,6 +104,16 @@ void rt_sort_end(rt_ctx *cx, rt_sort *s, rt_value into) {
     free(s);
 }
 
+// Every sort opened after `keep` (step 15): a `die` is leaving them.
+static void sorts_release_to(rt_ctx *cx, rt_sort *keep) {
+    while (cx->sorts != NULL && cx->sorts != keep) {
+        rt_sort *s = cx->sorts;
+        cx->sorts = s->outer;
+        free(s->cells[0]);
+        free(s);
+    }
+}
+
 // Every sort that a fault left open: the program is stopping.
 static void sorts_release(rt_ctx *cx) {
     while (cx->sorts != NULL) {

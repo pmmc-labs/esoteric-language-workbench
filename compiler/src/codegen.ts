@@ -514,6 +514,14 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     // `join`: the separator, which is read when the list has been built
     // (T186), and the list.
     case 'listop': {
+        // `die LIST` (D142): the runtime makes the message of the list and
+        // throws it; nothing after it runs. `warn LIST` is `true`.
+        if (e.op === 'die' || e.op === 'warn') {
+            const values = genList(e.args, b);
+            if (e.op === 'warn') return temp(b, `rt_warn(cx, ${values.c})`);
+            b.lines.push(`rt_die(cx, ${values.c});`);
+            return { c: 'rt_undef()', place: false };
+        }
         if (e.op !== 'join') throw new Error(`${e.op} where one value is wanted`);
         const sep = genExpr(e.args[0]!, b);
         const kept = sep.place ? sep : temp(b, sep.c);
@@ -827,10 +835,13 @@ const genStmt = (s: Stmt, out: Out): string[] => {
     case 'call': {
         const name = NAMES.get(s.name);
         if (name?.kind !== 'statement') throw new Error(`no runtime function for ${s.name}`);
+        // `say STDERR LIST` (15b).
+        const handle = NAMES.get('STDERR');
+        const rt = s.stderr && handle?.kind === 'handle' ? (s.name === 'say' ? handle.say : handle.print) : name.rt;
         // A block of its own keeps each statement's temporaries out of the
         // next one's way: a C compiler is slow over ten thousand locals in
         // one scope.
-        return ['{', ...indent(genListWhole(s.args, s.pos.line, out, c => [`${name.rt}(cx, ${c});`]).code), '}'];
+        return ['{', ...indent(genListWhole(s.args, s.pos.line, out, c => [`${rt}(cx, ${c});`]).code), '}'];
     }
     // The variables an expression statement declares are the enclosing
     // block's, and come before the C block its temporaries are in.
@@ -937,6 +948,36 @@ const genStmt = (s: Stmt, out: Out): string[] => {
     }
     // A sub is a function of its own, written by `genSub`.
     case 'sub': return [];
+    // `try { } catch ($e) { }` (step 15; D141). The runtime notes what is
+    // open and the code `setjmp`s; a `die` puts it all back and comes back
+    // here with 1. Every way out of the block closes the `try` on the way,
+    // as it gives back a loop's freezes: the block's end, and a `return`,
+    // `last` or `next`, which find it in `open` (an entry no loop's `id`
+    // matches). On the jump the `try` is closed already, and the catch's
+    // variable is what was thrown, before anything can allocate.
+    case 'try': {
+        const t = `try_${s.pos.line}_${s.pos.col}`;
+        const id = out.names.of.get(s.var);
+        if (id === undefined) throw new Error('a catch was not resolved');
+        const v = `${out.names.owner[id] === out.fn ? 'f' : 'g'}[${out.names.slots[id]}]`;
+        out.open.push({ id: -1, thaws: [`rt_try_end(cx, &${t});`] });
+        const body = s.body.flatMap(b => genStmt(b, out));
+        out.open.pop();
+        const handler = s.handler.flatMap(b => genStmt(b, out));
+        return [
+            '{',
+            ...indent([
+                `rt_try ${t};`,
+                `rt_try_begin(cx, &${t});`,
+                `if (setjmp(${t}.jump) == 0) {`,
+                ...indent(['{', ...indent(body), '}', `rt_try_end(cx, &${t});`]),
+                '} else {',
+                ...indent([`${v} = rt_caught(cx); // $${s.var.name}`, '{', ...indent(handler), '}']),
+                '}',
+            ]),
+            '}',
+        ];
+    }
     // The value into the C local that is returned, and out by the one
     // way there is. `return;` is undef to a scalar, and to a list it is
     // nothing at all, which the language can't yet say (D71).

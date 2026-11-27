@@ -1,0 +1,2 @@
+t/3106-try-die-tested-by-until.pl:4:8: a die that is tested: perl warns of a precedence problem, and a die is never worth anything
+exit: 1

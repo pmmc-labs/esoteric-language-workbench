@@ -1,0 +1,8 @@
+good 2
+good 4
+checking 1
+caught: bad 1
+checking 2
+checking 3
+caught: bad 3
+checking 4
