@@ -6127,6 +6127,19 @@ would run as written, 1 with small edits, 7 are held only by `use
 overload`, and 10 by something cut. All 57 are `class`es, so none
 runs before step 17.
 
+**Where it stands, 2026-11-27.** Since the plan was written, steps
+12 (hashes), 13a (references to arrays and hashes, and elements
+through them), 15 (`die`, `try`, `catch`) and 16 (`qw`, `sprintf`)
+are built, and step 14 is proposed. Tried against the compiler that
+day: `sprintf`, `try` and `catch`, `map` and `grep` with blocks, and
+`ref($x) eq "ARRAY"` run; refused still are `use experimental qw[
+class ]` (step 17's to take), `$f->(...)` and `sub (...) { }` as a
+value (14), `->@*` (13b), `__END__`. **D108 has decided `@$x`, `%$x`
+and `$$x`: cut**, so their 116 uses in 6 of these modules are edits
+to `->@*` and `->%*`, which perl takes too. Still to build for the
+port, then: 13b to 13d, 14, 17, 18, and for the last nine modules 21
+and 22; one file wants 19.
+
 **What remains, in the order it is needed.**
 
 1. *Steps to build*, by how many of the 57 modules need each: 17,
@@ -6142,9 +6155,22 @@ runs before step 17.
    - **Overloading** (17): 9 modules. Seven want only `""`, how an
      object prints; `Tensor` and `Scalar` want arithmetic and
      comparison. A proposal that took `""` alone would free seven.
-   - **`@$x`, `%$x`, `$$x`** (13): 116 uses in 6 modules. The surface
-     has them Later, with a note that step 13 proposes cutting them;
-     this is the evidence against, or 116 edits to `->@*`.
+   - **`@$x`, `%$x`, `$$x`** (13): 116 uses in 6 modules. *Decided
+     since, D108: cut.* 116 edits to `->@*`; D108 says the spelling
+     can come in later, and this is a count for that day.
+   - **What an object is made of** (17). *Raised by Stevan,
+     2026-11-27, not decided*: a class whose object is one value and
+     nothing else, a code reference for the seven of `functional/`,
+     a number for `Scalar`, kept as that value and not as a block of
+     fields. 13 of the 57 classes have one field and no parent, and
+     the seven of `functional/` and `Option` never assign theirs.
+     perl 5.42 has no such thing to write (`class F :repr(CODE)` is
+     `Unrecognized class attribute repr`), and an object there is
+     one thing whatever it holds: two `Function`s made from one
+     closure are `!=` to each other, and `$o->(1)` on one is `Not a
+     CODE reference`. So it is either something a program cannot
+     see, with a fault where it would show, or an exception to D2;
+     step 17's proposal says which.
    - **How a module is found** (18): grey-static is loaded by its
      loader, which sets the paths; the port needs plain `use
      Stream;` and a rule for where `Stream.pm` is.
