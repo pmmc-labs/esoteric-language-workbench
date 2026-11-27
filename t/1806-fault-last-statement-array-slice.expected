@@ -1,0 +1,3 @@
+void
+fault: f has no value: it does not end in a return or an expression at t/1806-fault-last-statement-array-slice.pl line 6.
+exit: 1

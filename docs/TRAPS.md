@@ -629,6 +629,12 @@ programs were run to write the proposal. Each row is in
 | T255 | `my $r = g(); $r->$* = 7; my $x; say $x;` with `sub g() { return \$x }` | `7` | 13 | A file's variable has one cell from the start |
 | T256 | `defined $r->@*` | Does not compile | 13 | Refuse, as `defined(@a)` |
 
+## Found by the review of step 14
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T257 | `sub f($n) { my @x = (1) x $n } say f(3) ? "true" : "false";`; and a sub that ends in `my ($p, $q) = (7, 8)`, `@a = (5, 6)`, `($g, $h) = (1, 2, 3)`, `my %x = (a => 1)`, `@h{"p", "q"} = (1, 2)`, `@a[0, 1] = (8, 9)`, `@a = ()`, its value wanted | `true`; the count of the right side, 3, 2, 2, 3, 2, 2, 2, 0: the compiler gave undef, and printed `false` (WRONG since step 9) | 13a | Fault: such an ending has no value, as D78 says (`f has no value`), where the value is used |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

@@ -1,0 +1,3 @@
+void
+fault: f has no value: it does not end in a return or an expression at t/1800-fault-last-statement-my-array-repeated.pl line 6.
+exit: 1

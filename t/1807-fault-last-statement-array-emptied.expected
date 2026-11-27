@@ -1,0 +1,3 @@
+void
+fault: f has no value: it does not end in a return or an expression at t/1807-fault-last-statement-array-emptied.pl line 6.
+exit: 1

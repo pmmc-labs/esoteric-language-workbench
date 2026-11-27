@@ -853,10 +853,18 @@ const genSub = (s: Sub, fn: number, strings: string[], names: Resolution): strin
         }
     }
     const last = s.body.at(-1);
-    const before = last?.kind === 'do' ? s.body.slice(0, -1) : s.body;
+    // An assignment of a list, or to an array or a hash, is a statement
+    // and has no value (D78): perl gives the count of its right side to a
+    // call that wants one value, and the language has no count to give
+    // (T257). So it ends a sub as an `if` does.
+    const listAssigned = last?.kind === 'do' && (last.expr.kind === 'listassign'
+        || (last.expr.kind === 'assign' && (last.expr.target.kind === 'array' || last.expr.target.kind === 'myarray')));
+    const before = last?.kind === 'do' && !listAssigned ? s.body.slice(0, -1) : s.body;
     lines.push(...before.flatMap(t => genStmt(t, out)));
     if (last === undefined) {
         lines.push('if (want == RT_LIST) r = rt_absent();');
+    } else if (listAssigned) {
+        lines.push(`if (want != RT_VOID) {`, `    cx->line = ${last.pos.line};`, `    rt_fault_sub(cx, ${name}, RT_NO_VALUE);`, '}');
     } else if (last.kind === 'do' && listy(last.expr)) {
         lines.push('{', ...indent(genGiven(last.expr, last.pos.line, out, [])), '}');
     } else if (last.kind === 'do') {
