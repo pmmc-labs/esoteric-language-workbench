@@ -378,7 +378,7 @@ full when its step is, and its rows join the sections above then.
   of an expression may not store through a reference when an earlier
   part read through one (D109). No code in a string, `"@{[ ... ]}"`
   (D111). Where perl guesses between a block and a hash, a refusal
-  (D113). The rows join the sections above as 13a to 13d are built
+  (D113); what its review changed is D114. The rows join the sections above as 13a to 13d are built
   (D106).
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).

@@ -614,6 +614,21 @@ programs were run to write the proposal. Each row is in
 | T247 | In a string: `$r->[0]$r->[1]`, `$r->[$i+1]`, `$r->@*`, `$r->$#*`, `@{$r}`, `$r ->[0]`, `$r->`, `$r->foo`, `%$r`, `email@$r`; `$r->[0]->[1]`; `$r->[0]{x`; `$$r[0]` with a scalar's reference; `@{[ ... ]}` | Elements; perl takes an expression; the array, its last index, the array; text for the next four; interpolated; a second subscript, and dies; does not compile; an element, and dies; code | 13 | D111: a chain goes on, by shapes; no code in a string |
 | T248 | `my $r; $r->{a}{b}[2] = 1;`; `$$s = 5`; `$t->[0]++`; `push $u->@*, 1`; `$v->@* = (1, 2)`; `push $a[2]->@*, 1`; `$h{y}{z} //= 4`; `($o->[0], $o->[1]) = (1, 2)` | Each makes every container on the way | 13 | Agree |
 
+## Found by the review of step 13
+
+`briefs/step13-review/`: 315 programs. Each row is in `briefs/claims.py`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T249 | `my $r; for my $v ($r, $r) { say defined $v ? "d" : "u"; push $r->@*, 1 }`; `my @l = ($cfg, get());` where `get` stores `$cfg->{x}`; `($q->[0], $x) = ($q, 1);` | `u`, `d`; the hash; an array stored in itself: making a hop assigns the variable | 13 | A chain store changes its head, in every walk (D114) |
+| T250 | `for my $x (@l) { $x->[0] = 1 }` over undefs; `$_->{n} = 1 for @m`; over `values %h`; `sub f($p) { $p->[0] = 1 }` handed an undef | The list's own elements become references; the caller's undef stays | 13 | Fault: a store through a read-only variable that holds undef; a parameter makes, in its copy |
+| T251 | `map { $r = [7, 8, 9]; $_ * 10 } $r->@*`; `for my $x ($r->@*, 0) { $r = [7, 8, 9]; ... }`; `for my $x ($a[0][0], $a[0][1]) { $a[0] = [8, 9]; ... }` | `Attempt to free unreferenced scalar` and wrong values; `Use of freed value in iteration`, twice | 13 | D77 for every scalar a chain in the list reads through; every container along the chain frozen |
+| T252 | `f()->[0] = 5` with `f` giving undef; `($r \|\| $s)->[0] = 5`; `($c ? $r : $s)->[0] = 5` | Dies; dies; makes `$r` | 13 | Only a variable or an element is made; a fault otherwise |
+| T253 | In a string: `${ $r }->[0]`; `$r->$*[0]`, `$r->$*->[0]`, `$s->@*[0]`, `$s->$#*[0]` | Reads on, and dies; text after each postfix form | 13 | Refuse a subscript after either |
+| T254 | `say({ $k => 1 }->{a});`; `keys %{ {} }`; `@{true}` beside `my @true` | A syntax error; `Unmatched right curly bracket`; the array `@true` | 13 | Refuse `{` first in `say(`, `print(` and a dereference's braces; refuse a word alone there |
+| T255 | `my $r = g(); $r->$* = 7; my $x; say $x;` with `sub g() { return \$x }` | `7` | 13 | A file's variable has one cell from the start |
+| T256 | `defined $r->@*` | Does not compile | 13 | Refuse, as `defined(@a)` |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

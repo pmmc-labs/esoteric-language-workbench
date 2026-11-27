@@ -1,0 +1,110 @@
+### for-sort-replace
+my $r = [3, 1, 2];
+for my $x (sort { $a <=> $b } $r->@*) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-grep-replace
+my $r = [1, 2, 3];
+for my $x (grep { 1 } $r->@*) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-reverse-replace
+my $r = [1, 2, 3];
+for my $x (reverse $r->@*) { $r = [7, 8, 9]; say $x; }
+--- perl:
+3
+2
+1
+[exit 0]
+
+### for-slice-replace
+my $r = [1, 2, 3];
+for my $x ($r->@[0, 1]) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-elem-chain-single-replace
+my $r = [[1, 2]];
+for my $x ($r->[0]->@*) { $r->[0] = [8, 9]; say $x; }
+--- perl:
+1
+2
+[exit 0]
+
+### for-elems-replace
+my $r = [1, 2];
+for my $x ($r->[0], $r->[1]) { $r = [7, 8]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-hash-values-named-single
+my %h = (a => 1, b => 1);
+my $r = \%h;
+for my $v (values $r->%*) { $r = {}; say $v; }
+--- perl:
+1
+1
+[exit 0]
+
+### for-map-replace
+my $r = [1, 2, 3];
+for my $x (map { $_ } $r->@*) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+2
+3
+[exit 0]
+
+### for-call-returning-elems
+my $r = [1, 2, 3];
+sub all() { return $r->@*; }
+for my $x (all()) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+2
+3
+[exit 0]
+
+### for-scalar-deref-replace
+my $x = 1; my $y = 2; my $r = \$x;
+for my $v ($r->$*, 0) { $r = \$y; say $v; }
+--- perl:
+1
+0
+[exit 0]
+
+### for-scalar-deref-freed
+sub mk() { my $t = 5; return \$t; }
+my $r = mk();
+for my $v ($r->$*, 0) { $r = mk(); say $v; }
+--- perl:
+5
+0
+[exit 0]
+
+### for-hash-elem-deref-delete
+my %h = (a => [1, 2]);
+for my $x ($h{a}[0], $h{a}[1]) { delete $h{a}; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-named-array-elems-of-refs
+my @a = ([1, 2]);
+for my $x ($a[0][0], $a[0][1]) { $a[0] = [8, 9]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+

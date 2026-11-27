@@ -1,0 +1,91 @@
+### braces-name-then-bracket
+my $x = "s"; my @x = (7); say "<${x}[0]>";
+--- perl:
+<s[0]>
+[exit 0]
+
+### braces-name-then-arrow
+my $x = [5]; say "<${x}->[0]>";
+--- perl:
+<ARRAY(0x55d720be67c8)->[0]>
+[exit 0]
+
+### braces-name-then-brace
+my $x = "s"; my %x = (a => 7); say "<${x}{a}>";
+--- perl:
+<s{a}>
+[exit 0]
+
+### elem-then-arrow-at
+my @a = ([1, 2]); say "<$a[0]->@*>";
+--- perl:
+<1 2>
+[exit 0]
+
+### helem-chain-arrow-dollar
+my %h = (a => \5); say "<$h{a}->$*>";
+--- perl:
+<5>
+[exit 0]
+
+### chain-then-at-star-after-two
+my $r = [[[1, 2]]]; say "<$r->[0][0]->@*>";
+--- perl:
+<1 2>
+[exit 0]
+
+### lastidx-braces-chain-sub
+my $r = [[1, 2]]; say "<$#{ $r->[0] }>";
+--- perl:
+<1>
+[exit 0]
+
+### dollar-braces-chain-then-bracket
+my $x = [9]; my $r = [\$x]; say "<${ $r->[0] }[0]>";
+--- perl:
+stderr: Not an ARRAY reference at - line 2.
+[exit 255]
+
+### dollar-braces-chain-then-arrow
+my $x = [9]; my $r = [\$x]; say "<${ $r->[0] }->[0]>";
+--- perl:
+<9>
+[exit 0]
+
+### at-braces-chain-then-bracket
+my $r = [[5, 6]]; say "<@{ $r->[0] }[1]>";
+--- perl:
+<6>
+[exit 0]
+
+### at-braces-then-brace
+my $r = {a => 5}; say "<@{ $r }{a}>";
+--- perl:
+<5>
+[exit 0]
+
+### at-braces-chain-hash
+my $r = [{a => 5}]; say "<@{ $r->[0] }{a}>";
+--- perl:
+<5>
+[exit 0]
+
+### postfix-slice-then-bracket
+my $r = [5, 6]; say "<$r->@[0][1]>";
+--- perl:
+stderr: syntax error at - line 2, near "]["
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### lastidx-postfix-then-arrow
+my $r = [5, 6]; say "<$r->$#*->[0]>";
+--- perl:
+<1->[0]>
+[exit 0]
+
+### at-star-then-arrow-word
+my $r = [5, 6]; say "<$r->@*->x>";
+--- perl:
+<5 6->x>
+[exit 0]
+

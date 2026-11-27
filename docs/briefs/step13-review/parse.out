@@ -1,0 +1,303 @@
+### p-ref-brace
+my $t = ref {a => 1}; say $t;
+--- perl:
+HASH
+[exit 0]
+
+### p-ref-brace-var
+my $x = "k"; my $t = ref { $x => 1 }; say $t;
+--- perl:
+HASH
+[exit 0]
+
+### p-defined-brace
+say defined {a => 1} ? "y" : "n";
+--- perl:
+y
+[exit 0]
+
+### p-scalar-brace
+my $n = scalar({a => 1}); say ref $n;
+--- perl:
+HASH
+[exit 0]
+
+### p-not-brace
+say !{a => 1} ? "y" : "n";
+--- perl:
+n
+[exit 0]
+
+### p-reverse-brace
+my @l = reverse { a => 1 }; say scalar(@l), " ", ref $l[0];
+--- perl:
+1 HASH
+[exit 0]
+
+### p-reverse-brace-var
+my $x = "a"; my @l = reverse { $x => 1 }; say scalar(@l), " ", ref $l[0];
+--- perl:
+1 HASH
+[exit 0]
+
+### p-join-brace
+my $x = "a"; my $s = join "-", { $x => 1 }; say $s =~ /HASH/ ? "hash" : $s;
+--- perl:
+hash
+[exit 0]
+
+### p-push-brace-var
+my @a; my $x = "a"; push @a, { $x => 1 }; say ref $a[0];
+--- perl:
+HASH
+[exit 0]
+
+### p-unshift-brace-var
+my @a; my $x = "a"; unshift @a, { $x, 1 }; say ref $a[0];
+--- perl:
+HASH
+[exit 0]
+
+### p-return-brace-var
+sub f($x) { return { $x => 1 }; } say ref f("a");
+--- perl:
+HASH
+[exit 0]
+
+### p-return-brace-lc
+sub f($x) { return { lc($x) => 1 }; } say ref f("a");
+--- perl:
+HASH
+[exit 0]
+
+### p-return-brace-empty
+sub f() { return {}; } say ref f();
+--- perl:
+HASH
+[exit 0]
+
+### p-keys-brace
+my $x = "a"; my @k = keys { $x => 1 }->%*; say "@k";
+--- perl:
+a
+[exit 0]
+
+### p-arrow-space
+my $r = [5]; say $r -> [0];
+--- perl:
+5
+[exit 0]
+
+### p-arrow-newline
+my $r = [5]; say $r
+  ->[0];
+--- perl:
+5
+[exit 0]
+
+### p-arrow-at-space
+my $r = [5, 6]; my @x = $r-> @*; say "@x";
+--- perl:
+5 6
+[exit 0]
+
+### p-arrow-at-space-star
+my $r = [5, 6]; my @x = $r->@ *; say "@x";
+--- perl:
+stderr: Array found where operator expected (Missing operator before "@ *"?) at - line 2, near "->@ *"
+stderr: syntax error at - line 2, near "->@ *"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### p-elem-space-elem
+my @a = ([1, 2]); say $a[0] [1];
+--- perl:
+2
+[exit 0]
+
+### p-helem-space-helem
+my %h = (a => {b => 3}); say $h{a} {b};
+--- perl:
+3
+[exit 0]
+
+### p-at-star-bracket
+my $r = [5, 6]; say $r->@*[0];
+--- perl:
+stderr: syntax error at - line 2, near "@*["
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### p-at-star-arrow
+my $r = [[5, 6]]; say $r->@*->[0];
+--- perl:
+stderr: Can't use an array as a reference at - line 2.
+[exit 255]
+
+### p-postfix-chain
+my $r = [[5, [7, 8]]]; say $r->[0]->[1]->@*;
+--- perl:
+78
+[exit 0]
+
+### p-call-bracket
+sub f() { return [5, 6]; } say f()[1];
+--- perl:
+stderr: syntax error at - line 2, near ")["
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### p-listslice-chain
+my @l = ([1, 2]); say +(@l)[0][1];
+--- perl:
+2
+[exit 0]
+
+### p-anon-bracket
+say [5, 6][1];
+--- perl:
+stderr: syntax error at - line 2, near "]["
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### p-anon-arrow
+say [5, 6]->[1];
+--- perl:
+6
+[exit 0]
+
+### p-say-anon
+say [5, 6]->@*;
+--- perl:
+56
+[exit 0]
+
+### p-incr-chain
+my $r = [5]; ++$r->[0]; say $r->[0];
+--- perl:
+6
+[exit 0]
+
+### p-backslash-eq
+my @a; my $r = \@a; say \@a == $r ? "same" : "diff";
+--- perl:
+same
+[exit 0]
+
+### p-backslash-space
+my @a = (1); my $r = \ @a; say $r->[0];
+--- perl:
+1
+[exit 0]
+
+### p-not-backslash
+my @a; say !\@a ? "f" : "t";
+--- perl:
+t
+[exit 0]
+
+### p-dollar-braces-word
+our $true = 7; say ${true};
+--- perl:
+7
+[exit 0]
+
+### p-at-braces-word-strict
+my @x = @{true}; say scalar(@x);
+--- perl:
+stderr: Global symbol "@true" requires explicit package name (did you forget to declare "my @true"?) at - line 2.
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### p-at-braces-undef-word
+my @x = @{ undef }; say scalar(@x);
+--- perl:
+stderr: Ambiguous use of @{undef} resolved to @undef at - line 2.
+stderr: Global symbol "@undef" requires explicit package name (did you forget to declare "my @undef"?) at - line 2.
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### p-at-braces-plus-word
+my @x = @{ +true }; say scalar(@x);
+--- perl:
+stderr: Can't use string ("1") as an ARRAY ref while "strict refs" in use at - line 2.
+[exit 255]
+
+### p-lastidx-braces
+my $r = [1, 2, 3]; say $#{$r}, $#{ $r }, $r->$#* + 1;
+--- perl:
+223
+[exit 0]
+
+### p-lastidx-braces-word
+my @x = (1, 2); say $#{x};
+--- perl:
+1
+stderr: Ambiguous use of @{x} resolved to @x at - line 2.
+[exit 0]
+
+### p-lastidx-braces-space-word
+my @x = (1, 2); say $#{ x };
+--- perl:
+1
+stderr: Ambiguous use of @{x} resolved to @x at - line 2.
+[exit 0]
+
+### p-hash-braces-word
+my %x = (a => 1); my @k = keys %{x}; say "@k";
+--- perl:
+a
+stderr: Ambiguous use of %{x} resolved to %x at - line 2.
+[exit 0]
+
+### p-ternary-brace
+my $c = 1; my $x = "a"; my $h = $c ? { $x => 1 } : [1]; say ref $h;
+--- perl:
+HASH
+[exit 0]
+
+### p-stmt-brace-var-fatcomma
+my $x = "a";
+{ $x => 1 };
+say "ran";
+--- perl:
+ran
+stderr: Useless use of private variable in void context at - line 3.
+[exit 0]
+
+### p-map-plus-brace
+my @l = map { +{ n => $_ } } 1, 2; say ref $l[0];
+--- perl:
+HASH
+[exit 0]
+
+### p-map-bracket-first
+my @l = map { [$_] } 1, 2; say ref $l[0], scalar(@l);
+--- perl:
+ARRAY2
+[exit 0]
+
+### p-map-paren-brace
+my @l = map { ({ n => $_ }) } 1, 2; say ref $l[0], scalar(@l);
+--- perl:
+HASH2
+[exit 0]
+
+### p-map-brace-semicolon
+my @l = map {; "$_" => 1 } 1, 2; say scalar(@l);
+--- perl:
+4
+[exit 0]
+
+### p-sort-brace-anon
+my @l = sort { $a->{n} <=> $b->{n} } ({n => 2}, {n => 1}); say $l[0]{n};
+--- perl:
+1
+[exit 0]
+
+### p-grep-brace-arrow
+my @l = grep { $_->[0] } ([0], [1]); say scalar(@l);
+--- perl:
+1
+[exit 0]
+

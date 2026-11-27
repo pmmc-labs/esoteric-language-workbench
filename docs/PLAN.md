@@ -4729,6 +4729,70 @@ string (low; debugging prints), D109's refusals (a guess: medium,
 sometimes). The census: its table loses step 13's rows and says
 what moved.
 
+#### What the review found
+
+An adversarial review (2026-11-27, a reader who did not write this,
+with perl; `briefs/step13-review/`, 315 programs and `FINDINGS.md`)
+found **three ways to be WRONG**, one place where a builder's guess
+could be, and three shapes perl refuses. No decision was overturned.
+**D114** has what is done about each, the builder's defaults under
+Stevan's standing instruction. Where this section and the text above
+differ, this section is right.
+
+- **Making a hop is a store to whatever held the undef** (T249). To
+  perl `push $r->@*, 1` assigns `$r` when it was undef, and that
+  shows wherever `$r` is read late: `for my $v ($r, $r) { ...; push
+  $r->@*, 1 }` sees `u` then `d`; `my @l = ($cfg, get());` has the
+  hash `get` made. **So in every walk a store through a chain also
+  changes the head of the chain**, the variable or the container
+  the chain starts from, and D76 and D77 then refuse these as they
+  refuse any change. In the runtime making a hop is a store: it
+  checks the freeze.
+- **A store through a loop's variable, `$_`, `$a` or `$b` that holds
+  undef is a fault**, `undef where a reference is wanted` (T250):
+  to perl the variable is the element, and the array it makes lands
+  in the list; a copy has nowhere to put it. Through a parameter it
+  makes, in the copy, as perl does.
+- **A list on perl's stack holds no count** (T251): replace the
+  last reference to an array while `map`, `grep`, `sort`, or a
+  `for` over more than the one array, walks it, and perl prints
+  freed values or dies. **So D77 covers, with no exception, every
+  scalar that a chain in the list of a `for`, `map`, `grep` or
+  `sort` reads through, and every container along such a chain is
+  frozen, not only the last.** This withdraws "assigning to `$r` in
+  the block is allowed" (T237's third program is refused).
+- **Only a variable or an element can be made** (T252): `f()->[0] =
+  5;` with `f` giving undef dies in perl, and so do `($r ||
+  $s)->[0] = 5` and brackets round any value. A store through an
+  undef that is not a variable or an element, at the head of a
+  chain, is D107's fault. `($c ? $r : $s)->[0] = 5` makes `$r` in
+  perl; here the head is no variable and it faults.
+- **In a string, after the braces of `${ }`, `@{ }` and `$#{ }` and
+  after `->$*`, `->@*` and `->$#*`**: `[`, `{`, and `->` before `[
+  { @ $` are refused (T253: after the braces perl reads on, after
+  the postfix forms it stops).
+- **`{` is refused first inside `say(` and `print(`** too, and
+  **first inside the braces of a dereference** (`%{ {} }` does not
+  compile); **a word alone is refused in all four brace forms**,
+  `true`, `false` and `undef` among them (T254).
+- **A file's variable has one cell from the start** (T255): a sub
+  may take `\$x` before the `my` has run, and the `my` stores
+  nothing, as step 8 has it.
+- `defined` and `length` of a whole container through a reference
+  are refused as they are of `@a` (T256). A slice through a
+  reference among a call's arguments faults for what is not there,
+  as 9b's and 12b's do. A number first in a statement's `{` counts
+  as a word in perl's guess; the refusal stands, and its message
+  says so.
+- **What stood**: D109 for names (42 programs: late reads through a
+  sub's return, a literal, an inner array, a shallow copy, `values`,
+  a slice); interpolated strings made where they stand; T230
+  through a reference; D112; 13c's cells; D113 where a value may
+  begin (74 programs); 13d's chains (38); all 18 of the proposal's
+  claims. The order of making is perl's: the right side, then the
+  chain left to right, and an index's call sees the hop before it
+  already made.
+
 ### 14. Closures
 
 Referee: perl. Size: large.

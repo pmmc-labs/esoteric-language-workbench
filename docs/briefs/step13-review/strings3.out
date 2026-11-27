@@ -1,0 +1,80 @@
+### dbraces-arrow-onstring
+my $x = "abc"; my $r = \$x; say "<${ $r }->[0]>";
+--- perl:
+stderr: Can't use string ("abc") as an ARRAY ref while "strict refs" in use at - line 2.
+[exit 255]
+
+### dbraces-arrow-onstring-nospace
+my $x = "abc"; my $r = \$x; say "<${$r}->[0]>";
+--- perl:
+stderr: Can't use string ("abc") as an ARRAY ref while "strict refs" in use at - line 2.
+[exit 255]
+
+### dbraces-arrow-brace-onstring
+my $x = "abc"; my $r = \$x; say "<${ $r }->{k}>";
+--- perl:
+stderr: Can't use string ("abc") as a HASH ref while "strict refs" in use at - line 2.
+[exit 255]
+
+### dbraces-bracket-onstring
+my $x = "abc"; my $r = \$x; say "<${ $r }[0]>";
+--- perl:
+stderr: Not an ARRAY reference at - line 2.
+[exit 255]
+
+### dbraces-brace-onstring
+my $x = "abc"; my $r = \$x; say "<${ $r }{k}>";
+--- perl:
+stderr: Not a HASH reference at - line 2.
+[exit 255]
+
+### lastidx-braces-then-bracket-text
+my $r = [1, 2, 3]; say "<$#{ $r }[x]>";
+--- perl:
+stderr: syntax error at - line 2, near "}["
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### lastidx-braces-then-brace
+my $r = [1, 2, 3]; say "<$#{ $r }{x}>";
+--- perl:
+stderr: syntax error at - line 2, near "}{x"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### lastidx-braces-then-arrow
+my $r = [1, 2, 3]; say "<$#{ $r }->[0]>";
+--- perl:
+stderr: Can't use string ("2") as an ARRAY ref while "strict refs" in use at - line 2.
+[exit 255]
+
+### at-braces-then-arrow
+my $r = [1, 2, 3]; say "<@{ $r }->[0]>";
+--- perl:
+stderr: Can't use an array as a reference at - line 2.
+[exit 255]
+
+### dollar-postfix-then-bracket-string
+my $x = "abc"; my $r = \$x; say "<$r->$*[0]>";
+--- perl:
+<abc[0]>
+[exit 0]
+
+### dollar-postfix-then-arrow-string
+my $x = "abc"; my $r = \$x; say "<$r->$*->[0]>";
+--- perl:
+<abc->[0]>
+[exit 0]
+
+### dbraces-colon
+my $x = "abc"; my $r = \$x; say "<${ $r }::y>";
+--- perl:
+<abc::y>
+[exit 0]
+
+### dbraces-chain-then-bracket-num
+my $x = 7; my $r = [\$x]; say "<${ $r->[0] }[0]>";
+--- perl:
+stderr: Not an ARRAY reference at - line 2.
+[exit 255]
+

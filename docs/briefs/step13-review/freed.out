@@ -1,0 +1,161 @@
+### for-single-replace
+my $r = [1, 2, 3];
+for my $x ($r->@*) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+2
+3
+[exit 0]
+
+### for-list-replace
+my $r = [1, 2, 3];
+for my $x ($r->@*, 0) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-braces-list-replace
+my $r = [1, 2, 3];
+for my $x (@{ $r }, 0) { $r = [7, 8, 9]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### map-replace
+my $r = [1, 2, 3];
+my @m = map { $r = [7, 8, 9]; $_ * 10 } $r->@*;
+say "@m";
+--- perl:
+10 80 90
+stderr: Attempt to free unreferenced scalar: SV 0x55e066481478 at - line 4.
+[exit 0]
+
+### grep-replace
+my $r = [1, 2, 3];
+my @m = grep { $r = [7, 8, 9]; $_ > 1 } $r->@*;
+say "@m";
+--- perl:
+
+stderr: Use of uninitialized value $_ in numeric gt (>) at - line 3.
+stderr: Attempt to free unreferenced scalar: SV 0x55f87f4c2508 at - line 3.
+stderr: Use of uninitialized value $m[0] in join or string at - line 4.
+stderr: Attempt to free unreferenced scalar: SV 0x55f87f4c2478 at - line 4.
+stderr: Attempt to free unreferenced scalar: SV 0x55f87f4c2478.
+[exit 0]
+
+### sort-replace
+my $r = [3, 1, 2];
+my @m = sort { $r = [7, 8, 9]; $a <=> $b } $r->@*;
+say "@m";
+--- perl:
+stderr: Use of uninitialized value $b in numeric comparison (<=>) at - line 3.
+stderr: Attempt to free unreferenced scalar: SV 0x55e698de0478 at - line 3.
+stderr: Bizarre copy of ARRAY in list assignment at - line 3.
+[exit 255]
+
+### for-delete-hash
+my %h = (l => [1, 2, 3]);
+for my $x ($h{l}->@*) { delete $h{l}; say $x; }
+--- perl:
+1
+2
+3
+[exit 0]
+
+### for-delete-hash-list
+my %h = (l => [1, 2, 3]);
+for my $x ($h{l}->@*, 0) { delete $h{l}; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### map-delete-hash
+my %h = (l => [1, 2, 3]);
+my @m = map { delete $h{l}; $_ * 10 } $h{l}->@*;
+say "@m";
+--- perl:
+10 0 0
+stderr: Use of uninitialized value $_ in multiplication (*) at - line 3.
+stderr: Attempt to free unreferenced scalar: SV 0x5637470633e8 at - line 3.
+stderr: Use of uninitialized value $_ in multiplication (*) at - line 3.
+stderr: Attempt to free unreferenced scalar: SV 0x563747063478 at - line 3.
+[exit 0]
+
+### for-hash-clear-list
+my %h = (l => [1, 2, 3]);
+for my $x ($h{l}->@*, 0) { %h = (); say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-hash-replace-elem
+my %h = (l => [1, 2, 3]);
+for my $x ($h{l}->@*, 0) { $h{l} = [7, 8, 9]; say $x; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-elem-chain-replace-outer
+my $r = [[1, 2]];
+for my $x (5, $r->[0][1]) { $r->[0] = [8, 9]; say $x; }
+--- perl:
+5
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### for-elem-chain-replace-outer2
+my $r = [[1, 2]];
+for my $x (5, $r->[0][1]) { $r->[0] = [8, 9]; my @junk = map { [$_] } 1 .. 50; say $x; }
+--- perl:
+5
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### map-values-ref-replace
+my $r = {a => 1, b => 2};
+my @m = map { $r = {}; $_ * 10 } sort { $a <=> $b } values $r->%*;
+say "@m";
+--- perl:
+10 0
+stderr: Use of uninitialized value $_ in multiplication (*) at - line 3.
+stderr: Attempt to free unreferenced scalar: SV 0x55a3d91fe478 at - line 3.
+[exit 0]
+
+### map-values-ref-replace-nosort
+my $r = {a => 1};
+my @m = map { $r = {z => 5}; $_ * 10 } values $r->%*;
+say "@m";
+--- perl:
+10
+[exit 0]
+
+### for-values-ref-replace
+my $r = {a => 1, b => 1};
+for my $v (values $r->%*) { $r = {}; my @junk = map { [$_] } 1 .. 50; say $v; }
+--- perl:
+1
+stderr: Use of freed value in iteration at - line 3.
+[exit 255]
+
+### map-replace-junk
+my $r = [1, 2, 3];
+my @m = map { $r = [7, 8, 9]; my @junk = map { "j$_" } 1 .. 20; $_ } $r->@*;
+say "@m";
+--- perl:
+1 9 8
+stderr: Attempt to free unreferenced scalar: SV 0x55e62adca3e8 at - line 4.
+[exit 0]
+
+### grep-array-of-arrays-replace
+my $r = [[1], [2], [3]];
+my @m = grep { $r = []; my @j = map { [$_ * 100] } 1 .. 20; $_->[0] > 1 } $r->@*;
+say scalar(@m);
+--- perl:
+stderr: free(): double free detected in tcache 2
+[exit -6]
+

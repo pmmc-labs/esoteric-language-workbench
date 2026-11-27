@@ -2022,6 +2022,24 @@ where a statement may begin `{` is a block; what perl guesses at is
 refused** (T243, T116, T175): `+{ ... }` or `return { ... }` says
 a hash.
 
+**D114. What is done about the review of step 13.** *(Builder's
+defaults, Fable 5.2, 2026-11-27, under the same standing
+instruction; `PLAN.md`, step 13, "What the review found".)* A store
+through a chain changes the head of the chain in every walk, since
+making a hop assigns it (T249). A store through a read-only
+variable that holds undef is a fault (T250). D77 covers every scalar
+a chain in a binder's list reads through, and every container along
+the chain is frozen (T251), which withdraws the proposal's "the
+block may assign `$r`". Only a variable or an element is made; any
+other undef at the head of a stored chain faults (T252). In a
+string nothing may be subscripted after a brace form or a postfix
+form (T253). `{` is refused first in `say(`, `print(` and a
+dereference's braces, and a word alone in any brace form (T254). A
+file's variable has one cell from the start (T255). Rejected:
+making the hop in the loop variable's copy (WRONG: perl's lands in
+the list); freezing only the last container of a chain (perl
+prints freed values, T251).
+
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as

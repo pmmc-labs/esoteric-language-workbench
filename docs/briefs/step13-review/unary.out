@@ -1,0 +1,86 @@
+### defined-postfix-array
+my $r = [1]; say defined $r->@* ? "y" : "n";
+--- perl:
+stderr: Can't use 'defined(@array)' (Maybe you should just omit the defined()?) at - line 2.
+[exit 255]
+
+### defined-braces-array
+my $r = [1]; say defined(@{ $r }) ? "y" : "n";
+--- perl:
+stderr: Can't use 'defined(@array)' (Maybe you should just omit the defined()?) at - line 2.
+[exit 255]
+
+### defined-postfix-hash
+my $r = {a => 1}; say defined $r->%* ? "y" : "n";
+--- perl:
+stderr: Can't use 'defined(%hash)' (Maybe you should just omit the defined()?) at - line 2.
+[exit 255]
+
+### length-postfix-array
+my $r = [1, 2, 3]; say length($r->@*);
+--- perl:
+1
+stderr: length() used on @array (did you mean "scalar(@array)"?) at - line 2.
+[exit 0]
+
+### length-braces-hash
+my $r = {a => 1}; say length(%{ $r });
+--- perl:
+1
+stderr: length() used on %hash (did you mean "scalar(keys %hash)"?) at - line 2.
+[exit 0]
+
+### ref-postfix-array
+my $r = [[1]]; say ref($r->@*);
+--- perl:
+
+[exit 0]
+
+### ref-postfix-array-two
+my $r = [[1], 5]; say ref($r->@*);
+--- perl:
+
+[exit 0]
+
+### uc-postfix-array
+my $r = ["a", "b"]; say uc($r->@*);
+--- perl:
+2
+[exit 0]
+
+### chr-postfix-array
+my $r = [65, 66]; say chr($r->@*);
+--- perl:
+
+[exit 0]
+
+### ord-lastidx
+my $r = [65, 66]; say ord($r->$#*);
+--- perl:
+49
+[exit 0]
+
+### ref-slice
+my $r = [[1], 5]; say ref($r->@[0, 1]) || "empty";
+--- perl:
+empty
+[exit 0]
+
+### scalar-slice-postfix
+my $r = [7, 8]; my $x = $r->@[0, 1]; say $x;
+--- perl:
+8
+[exit 0]
+
+### keys-elem-hash
+my $r = {a => {b => 1}}; say scalar(keys $r->{a}->%*);
+--- perl:
+1
+[exit 0]
+
+### ref-keys
+my $r = {a => 1}; say ref(keys $r->%*) || "empty";
+--- perl:
+empty
+[exit 0]
+

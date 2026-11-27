@@ -1,0 +1,97 @@
+### deref-brace-hash-var
+my $k = "a"; my @k = keys %{ { $k => 1 } }; say "@k";
+--- perl:
+a
+[exit 0]
+
+### deref-brace-hash-word
+my @k = keys %{ { a => 1 } }; say "@k";
+--- perl:
+a
+[exit 0]
+
+### deref-brace-hash-lc
+my $k = "A"; my @k = keys %{ { lc($k) => 1 } }; say "@k";
+--- perl:
+a
+[exit 0]
+
+### deref-brace-hash-empty
+my $n = keys %{ {} }; say $n;
+--- perl:
+stderr: Unmatched right curly bracket at - line 2, at end of line
+stderr: syntax error at - line 2, near "%{ {} }"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### deref-at-brace-hash-var
+my $k = "a"; my @l = @{ { $k => 1 } }{a}; say "@l";
+--- perl:
+1
+[exit 0]
+
+### deref-dollar-brace-var
+my $k = "a"; my $x = ${ { $k => \5 } }{a}; say $x;
+--- perl:
+SCALAR(0x56430190f508)
+[exit 0]
+
+### deref-at-bracket
+my @l = @{ [1, 2] }; say "@l";
+--- perl:
+1 2
+[exit 0]
+
+### deref-lastidx-bracket
+say $#{ [1, 2, 3] };
+--- perl:
+2
+[exit 0]
+
+### deref-at-plus-brace-var
+my $k = "a"; my @k = keys %{ +{ $k => 1 } }; say "@k";
+--- perl:
+a
+[exit 0]
+
+### say-paren-brace-var-alone
+my $k = "a"; say({ $k => 1 });
+--- perl:
+stderr: syntax error at - line 2, near "})"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### say-paren-brace-var-comma
+my $k = "a"; say({ $k, 1 });
+--- perl:
+stderr: syntax error at - line 2, near "})"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### print-paren-brace-var
+my $k = "a"; print({ $k => 1 }, "\n");
+--- perl:
+stderr: syntax error at - line 2, near "},"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### say-paren-brace-lc
+my $k = "a"; say({ lc($k) => 1 }->{a});
+--- perl:
+stderr: syntax error at - line 2, near "}->"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### say-paren-spaced-brace
+my $k = "a"; say( { $k => 1 }->{a} );
+--- perl:
+stderr: syntax error at - line 2, near "}->"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### ref-paren-brace-var
+my $k = "a"; say ref({ $k => 1 });
+--- perl:
+HASH
+[exit 0]
+

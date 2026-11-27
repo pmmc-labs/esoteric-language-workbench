@@ -1,0 +1,83 @@
+### inplace-named
+my @a; $a[2] = "c"; $a[0] = "a";
+@a = sort { (defined $a ? $a : "") cmp (defined $b ? $b : "") } @a;
+say scalar(@a);
+--- perl:
+2
+[exit 0]
+
+### inplace-ref-both
+my $r = []; $r->[2] = "c"; $r->[0] = "a";
+$r->@* = sort { (defined $a ? $a : "") cmp (defined $b ? $b : "") } $r->@*;
+say scalar($r->@*);
+--- perl:
+3
+[exit 0]
+
+### inplace-braces-both
+my $r = []; $r->[2] = "c"; $r->[0] = "a";
+@{ $r } = sort { (defined $a ? $a : "") cmp (defined $b ? $b : "") } @{ $r };
+say scalar($r->@*);
+--- perl:
+3
+[exit 0]
+
+### inplace-name-via-ref
+my @a; $a[2] = "c"; $a[0] = "a"; my $r = \@a;
+@a = sort { (defined $a ? $a : "") cmp (defined $b ? $b : "") } $r->@*;
+say scalar(@a);
+--- perl:
+3
+[exit 0]
+
+### inplace-ref-via-name
+my @a; $a[2] = "c"; $a[0] = "a"; my $r = \@a;
+$r->@* = sort { (defined $a ? $a : "") cmp (defined $b ? $b : "") } @a;
+say scalar(@a);
+--- perl:
+3
+[exit 0]
+
+### inplace-two-refs
+my $r = []; $r->[2] = "c"; $r->[0] = "a"; my $s = $r;
+$r->@* = sort { (defined $a ? $a : "") cmp (defined $b ? $b : "") } $s->@*;
+say scalar($r->@*);
+--- perl:
+3
+[exit 0]
+
+### inplace-elem-chain
+my %h = (l => []); $h{l}[2] = "c"; $h{l}[0] = "a";
+$h{l}->@* = sort { (defined $a ? $a : "") cmp (defined $b ? $b : "") } $h{l}->@*;
+say scalar($h{l}->@*);
+--- perl:
+3
+[exit 0]
+
+### inplace-reverse-ref
+my $r = []; $r->[2] = "c"; $r->[0] = "a";
+$r->@* = reverse $r->@*;
+say scalar($r->@*), defined $r->[1] ? "def" : "undef";
+--- perl:
+3undef
+[exit 0]
+
+### inplace-reverse-named
+my @a; $a[2] = "c"; $a[0] = "a";
+@a = reverse @a;
+say scalar(@a), defined $a[1] ? "def" : "undef";
+--- perl:
+3undef
+[exit 0]
+
+### inplace-nonblock-ref
+my $r = ["b", "a"]; $r->[3] = "c";
+$r->@* = sort $r->@*;
+say scalar($r->@*);
+--- perl:
+4
+stderr: Use of uninitialized value in sort at - line 3.
+stderr: Use of uninitialized value in sort at - line 3.
+stderr: Use of uninitialized value in sort at - line 3.
+[exit 0]
+
