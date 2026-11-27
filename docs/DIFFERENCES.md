@@ -380,6 +380,17 @@ full when its step is, and its rows join the sections above then.
   (D111). Where perl guesses between a block and a hash, a refusal
   (D113). The rows join the sections above as 13a to 13d are built
   (D106).
+- **Strings, the rest** (step 16; D120 to D130, proposed and being
+  built in sub-steps). `q`, `qq` and `qw` with a bracket for their
+  delimiter and nothing else (D121); `qw` is a bracketed list (D122);
+  heredocs with a word for the terminator, one on a line (D123).
+  **A format is a literal** (D124), its conversions perl's commonest
+  fifteen (D125), its count checked (D126), its values taken as the
+  language takes them, a fault where perl's conversion is the
+  machine's (D127); `printf` a statement, `sprintf` a value (D128).
+  `ucfirst`, `lcfirst`, `rindex` (D129); `chomp` and `chop` of a
+  scalar variable, as statements, with no value (D130). The rest is
+  16d (D120).
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
 - **Errors** (step 15; D13). `die`, `try`, `catch`.
