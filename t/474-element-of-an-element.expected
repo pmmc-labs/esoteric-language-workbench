@@ -1,2 +1,2 @@
-t/474-element-of-an-element.pl:5:10: an element of an element: an array of arrays is not in the language yet
+fault: not a reference to an array at t/474-element-of-an-element.pl line 6.
 exit: 1

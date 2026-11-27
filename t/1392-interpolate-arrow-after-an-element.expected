@@ -1,2 +1,2 @@
-t/1392-interpolate-arrow-after-an-element.pl:5:11: '->[' hard after $a[0] in a string: a dereference, to perl, and references are not in the language yet (step 13); write $a[0]\->[
+t/1392-interpolate-arrow-after-an-element.pl:5:11: '->[' hard after $a[0] in a string: a dereference, to perl, and a dereference in a string is not in the language yet (step 13d); write $a[0]\->[
 exit: 1

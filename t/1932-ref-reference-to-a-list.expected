@@ -1,0 +1,2 @@
+t/1932-ref-reference-to-a-list.pl:5:9: \ before a list: perl makes a list of a reference to each, which is cut (D110)
+exit: 1

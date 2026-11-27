@@ -921,6 +921,18 @@ CLAIMS = [
     c('T254-word', 'TRAPS; PLAN 13, the review', r"""my @true = (1); say scalar(@{true});""", out='1\n'),
     c('T255', 'TRAPS; PLAN 13, the review', r"""my $r = g(); $r->$* = 7; my $x; say defined $x ? $x : "undef"; sub g() { return \$x }""", out='7\n'),
     c('T256', 'TRAPS; PLAN 13, the review', r"""my $r = [1]; say defined $r->@* ? 1 : 0;""", compiles=False, err='some'),
+    # ---- found building step 13a
+    c('T258', 'TRAPS; PLAN 13a, as built', r"""my $r = [1, 2]; my @l = map { $r = [7]; $_ } ($r->[0], $r->[1]); say "@l";""", exit='nonzero'),
+    c('T259', 'TRAPS; PLAN 13a, as built', r"""my $r = [0]; my @a = (0); my %h; my ($t, $u, $v) = ("t", "u", "v"); my ($x, $z) = ("a", "b"); $t .= ($r->[0] = $x . $z); $u .= ($a[0] = $x . $z); $v .= ($h{k} = $x . $z); say $t, "|", $r->[0], "|", $u, "|", $a[0], "|", $v, "|", $h{k};""", out='tab|ab|uab|ab|vab|ab\n'),
+    c('T340', 'TRAPS; PLAN 13a, as built', r"""say {a => 1}->{a}; say {"a", 2}->{a};""", out='1\n2\n'),
+    c('13a-arrow-blank', 'PLAN 13a, as built', r"""my $h = {a => 1}; say $h-> {a}; my @a = ([1, 2]); say $a[0] [1]; my %g = (x => {y => 3}); say $g{x} {y};""", out='1\n2\n3\n'),
+    c('13a-bracketed-made', 'PLAN 13a, as built', r"""my $r; ($r)->[0] = 5; say ref $r;""", out='ARRAY\n'),
+    c('13a-no-warning', 'PLAN 13a, as built', r"""if (my $r = [1]) { say "y" }""", out='y\n'),
+    c('13a-list-slice-subscript', 'PLAN 13a, as built', r"""my $x = ([1, 2])[0][1]; say $x;""", out='2\n'),
+    c('13a-anon-subscript', 'PLAN 13a, as built', r"""my $x = [1, 2][0];""", compiles=False, err='syntax error'),
+    c('13a-call-chain-step', 'PLAN 13a, as built', r"""my @x = ([1]); sub f() { return $x[0] } ++f()->[0]; say $x[0][0];""", out='2\n'),
+    c('13a-deep-free', 'PLAN 13a, as built', r"""my $l; for (1 .. 1000000) { $l = [$l] } my $n = 0; while (defined $l) { $l = $l->[0]; $n++ } say $n;""", out='1000000\n'),
+    c('13a-list-assign-made', 'PLAN 13a, as built', r"""my $o; ($o->[0], $o->[1]) = (1, 2); say "@$o";""", out='1 2\n'),
     # ---- found by the review of step 14 (D78)
     c('T257', 'TRAPS; DECISIONS D78', r"""sub f($n) { my @x = (1) x $n } say f(3) ? "true" : "false"; my (@a, %h, $g, $h); sub g() { my ($p, $q) = (7, 8) } sub k() { @a = (5, 6) } sub l() { ($g, $h) = (1, 2, 3) } sub m2() { my %x = (a => 1) } sub n() { @h{"p", "q"} = (1, 2) } sub o() { @a[0, 1] = (8, 9) } sub q2() { @a = () } say join ",", scalar(f(3)), scalar(g()), scalar(k()), scalar(l()), scalar(m2()), scalar(n()), scalar(o()), scalar(q2());""", out='true\n3,2,2,3,2,2,2,0\n'),
     # ---- step 12a, as built (D104; LANGUAGE "Hashes")

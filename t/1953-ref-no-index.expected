@@ -1,0 +1,2 @@
+t/1953-ref-no-index.pl:5:9: [] has no index: perl does not compile it
+exit: 1

@@ -1,0 +1,3 @@
+1
+fault: a reference where a string is wanted at t/1882-fault-reference-as-a-string-interpolated.pl line 6.
+exit: 1

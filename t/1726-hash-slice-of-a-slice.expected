@@ -1,2 +1,2 @@
-t/1726-hash-slice-of-a-slice.pl:5:17: an element of an element: a hash of hashes or of arrays is not in the language yet
+t/1726-hash-slice-of-a-slice.pl:5:17: a subscript after a slice: perl takes it for an element of what the slice gives; take the slice into an array first
 exit: 1

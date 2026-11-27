@@ -1,0 +1,2 @@
+t/1961-ref-string-element-of-an-element.pl:5:11: '{' hard after $g{a} in a string: an element of what that holds, to perl, and an element through a reference in a string is not in the language yet (step 13d); write $g{a}\{
+exit: 1

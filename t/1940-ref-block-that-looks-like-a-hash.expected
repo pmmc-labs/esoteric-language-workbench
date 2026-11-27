@@ -1,0 +1,2 @@
+t/1940-ref-block-that-looks-like-a-hash.pl:5:9: a comma after an assignment's right side: perl takes the assignment for the first item of a list; put the list in brackets
+exit: 1

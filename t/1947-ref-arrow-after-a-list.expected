@@ -1,0 +1,2 @@
+t/1947-ref-arrow-after-a-list.pl:4:11: '->' after this: an arrow follows a scalar variable, an element, a call, [ ], { }, or brackets round one value
+exit: 1

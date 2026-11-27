@@ -1,0 +1,2 @@
+t/1938-ref-brace-first-in-say-brackets.pl:5:5: '{' first in say(...): perl does not compile it; write +{ ... } for a new hash
+exit: 1

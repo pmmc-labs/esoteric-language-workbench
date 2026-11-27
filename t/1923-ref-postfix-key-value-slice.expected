@@ -1,0 +1,2 @@
+t/1923-ref-postfix-key-value-slice.pl:5:11: ->%{...: a slice of keys and values is cut (D108)
+exit: 1

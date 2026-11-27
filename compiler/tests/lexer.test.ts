@@ -206,19 +206,19 @@ test('what a string may not hold of a variable, each at its character (D91, D92)
     at('"$h{}"', key, 5);
     at('"$h{a"', key, 5);
     at('"$h{-a}"', key, 5);
-    at('"$h{a}{b}"', "'{' hard after $h{a} in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write $h{a}\\{", 7);
-    at('"$h{a}[0]"', "'[' hard after $h{a} in a string: another index, to perl; write $h{a}\\[", 7);
-    at('"$h{a}->[0]"', "'->[' hard after $h{a} in a string: a dereference, to perl, and references are not in the language yet (step 13); write $h{a}\\->[", 7);
+    at('"$h{a}{b}"', "'{' hard after $h{a} in a string: an element of what that holds, to perl, and an element through a reference in a string is not in the language yet (step 13d); write $h{a}\\{", 7);
+    at('"$h{a}[0]"', "'[' hard after $h{a} in a string: another index, to perl, and an element through a reference in a string is not in the language yet (step 13d); write $h{a}\\[", 7);
+    at('"$h{a}->[0]"', "'->[' hard after $h{a} in a string: a dereference, to perl, and a dereference in a string is not in the language yet (step 13d); write $h{a}\\->[", 7);
     at('"@h{a}"', "'{' hard after @h in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write @{h}{ or @h\\{", 4);
-    at('"$a[0]{k}"', "'{' hard after $a[0] in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write $a[0]\\{", 7);
-    at('"$a[0][1]"', "'[' hard after $a[0] in a string: another index, to perl; write $a[0]\\[", 7);
+    at('"$a[0]{k}"', "'{' hard after $a[0] in a string: an element of what that holds, to perl, and an element through a reference in a string is not in the language yet (step 13d); write $a[0]\\{", 7);
+    at('"$a[0][1]"', "'[' hard after $a[0] in a string: another index, to perl, and an element through a reference in a string is not in the language yet (step 13d); write $a[0]\\[", 7);
     at('"$#a[1]"', "'[' hard after $#a in a string: another index, to perl; write $#a\\[", 5);
-    at('"$x->[0]"', "'->[' hard after $x in a string: a dereference, to perl, and references are not in the language yet (step 13); write $x\\->[", 4);
+    at('"$x->[0]"', "'->[' hard after $x in a string: a dereference, to perl, and a dereference in a string is not in the language yet (step 13d); write $x\\->[", 4);
     at('"${ x }"', 'in a string a name in braces is hard against both of them: ${name}', 2);
     at('"@{a[0, 1]}"', '@{a[...]} in a string: perl warns that it is ambiguous; write @a[...]', 2);
-    at('"${\\ $x}"', '${\\ in a string takes a reference, and references are not in the language yet (step 13)', 2);
-    at('"@{[ $x ]}"', '@{[ in a string takes a reference, and references are not in the language yet (step 13)', 2);
-    at('"$$x"', '$$ in a string takes a reference, and references are not in the language yet (step 13)', 2);
+    at('"${\\ $x}"', '${\\ in a string takes a reference, and a reference in a string is not in the language yet (step 13d)', 2);
+    at('"@{[ $x ]}"', '@{[ in a string takes a reference, and a reference in a string is not in the language yet (step 13d)', 2);
+    at('"$$x"', '$$ in a string takes a reference, and a reference in a string is not in the language yet (step 13d)', 2);
     at('"$$"', "'$' in a double-quoted string begins a variable, and no name is hard against it: write \\$ for the character", 2);
     at('"$#"', "after '$#' in a string comes an array's name, or one in braces: write \\$ for the character", 2);
     at('"@_"', '@_ is not in the language: a sub has a signature (D17)', 2);
@@ -362,7 +362,7 @@ test("the longest of perl's operators is the token, in the language or not (T27)
     refused('say 1 ~~ 2;', "'~~' is not in the language yet", 1, 7);
     refused('say 1 =~ 2;', "'=~' is not in the language yet", 1, 7);
     refused('say 1 !~ 2;', "'!~' is not in the language yet", 1, 7);
-    refused('say 1 -> 2;', "'->' is not in the language yet", 1, 7);
+    refused('say 1 -> 2;', "after '->' comes '[' or '{', hard against it: $r->[0], $r->{k}", 1, 7);
     refused('say 7 <<= 2;', "'<<=' is not in the language yet", 1, 7);
     refused('say 7 |= 2;', "'|=' is not in the language yet", 1, 7);
     refused('say 1 ... 5;', "'...' is not in the language yet", 1, 7);
@@ -389,7 +389,7 @@ test('a variable is a dollar and a name, hard against it (D55)', () => {
     assert.deepEqual(tokens[1], { kind: 'var', text: '$x', name: 'x', pos: { line: 1, col: 4 } });
     const message = "after '$' comes a name: a letter or '_', then letters, digits and '_'";
     refused('say $ x;', message, 1, 5);
-    refused('say ${x};', message, 1, 5);
+    refused('say ${x};', '${ ... }: a scalar through a reference is not in the language yet (step 13c); a variable is written $name', 1, 5);
     refused('say $1;', message, 1, 5);
     refused('say $$;', message, 1, 5);
     refused('say $', message, 1, 5);
@@ -515,7 +515,8 @@ test('a hash, the fat comma, and a word that is a string (T214, T215)', () => {
         ['var $h', '{ {', 'str if', '} }', 'var $h', '{ {', 'str x', '} }', 'var $h', '{ {', 'word x', 'op +', 'int 1', '} }',
             'var $h', '{ {', 'word f', '( (', ') )', '} }', 'var $h', '{ {', 'var $k', '} }', 'eof']);
     const braces = lex('if ($h{a}) { $h{b}{c} }').filter(t => t.kind === '{' || t.kind === '}').map(t => (t.kind === '{' || t.kind === '}') && t.subscript === true);
-    assert.deepEqual(braces, [true, true, false, true, true, false, false, false]);
+    // (A key's brace hard after another key's is a key's too: step 13a.)
+    assert.deepEqual(braces, [true, true, false, true, true, true, true, false]);
     // A blank before the brace: the brace is a block's, and the parser's to refuse.
     assert.deepEqual(kinds('$h {a}'), ['var $h', '{ {', 'word a', '} }', 'eof']);
 });
@@ -533,8 +534,8 @@ test('a word is a string on one line (T223, T224), and what a % may not begin', 
     // (A minus before anything else is a minus.)
     assert.equal(lex('$h{-1} $h{-$x} $h{-bar + 1}').length, 18);
     refused('say %_;', "%_ is perl's own, and not in the language", 1, 5);
-    refused('say %$r;', "'%' before a reference: references are not in the language yet (step 13)", 1, 5);
-    refused('say %{$r};', "'%' before a reference: references are not in the language yet (step 13)", 1, 5);
+    refused('say %$r;', '%$ before a name is cut (D108): a hash through a reference is written $r->%* (step 13b)', 1, 5);
+    refused('say %{$r};', '%{ ... }: a hash through a reference is not in the language yet (step 13b)', 1, 5);
     refused('say %h{"a"};', '%h{...} is a slice of keys and values, and not in the language', 1, 5);
     refused('say %a[0];', '%a[...] is a slice of indexes and values, and not in the language', 1, 5);
     // A slice of a hash (step 12b): the array's token, and the braces a key's.
@@ -544,4 +545,24 @@ test('a word is a string on one line (T223, T224), and what a % may not begin', 
     refused('say %;', "after '%' comes a name: a letter or '_', then letters, digits and '_'", 1, 5);
     refused(`my %${'h'.repeat(252)};`, 'a name of more than 251 characters: perl refuses it as too long', 1, 4);
     refused(`(${'w'.repeat(252)} => 1)`, 'a word of more than 251 characters: perl refuses it as too long', 1, 2);
+});
+
+// Step 13a: which brace is a key's, a new hash's, or a block's (D113), and
+// what an arrow may be followed by.
+test('a brace where a value may begin is a new hash; where a statement may, a block (D113)', () => {
+    const marks = (src: string) => lex(src).filter(t => t.kind === '{' || t.kind === '}')
+        .map(t => ((t.kind === '{' || t.kind === '}') && t.subscript ? 'k' : (t.kind === '{' || t.kind === '}') && t.anon ? 'h' : 'b'));
+    assert.deepEqual(marks('my $r = {a => {b => 1}};'), ['h', 'h', 'h', 'h']);
+    assert.deepEqual(marks('{ my $x = {}; }'), ['b', 'h', 'h', 'b']);
+    assert.deepEqual(marks('$r->{a}{b} = (1, {c => 2});'), ['k', 'k', 'k', 'k', 'h', 'h']);
+    assert.deepEqual(marks('return {}; if ($x) { }'), ['h', 'h', 'b', 'b']);
+    assert.deepEqual(marks('map { +{ n => $_ } } @l;'), ['b', 'h', 'h', 'b']);
+    assert.deepEqual(marks('say ref {};'), ['h', 'h']);
+    // After a new hash, as after any value, `x` repeats and `%` divides.
+    assert.deepEqual(lex('my $x = [1] x 2; my $y = {} % 3;').filter(t => t.kind === 'op').map(t => t.text), ['=', 'x', '=', '%']);
+    refused('$r->foo;', "'->' and a name: a method call, and classes are not in the language yet (step 17)", 1, 3);
+    refused('$r->@*;', '->@*: the whole container through a reference is not in the language yet (step 13b)', 1, 3);
+    refused('$r->$*;', '->$*: a scalar through a reference is not in the language yet (step 13c)', 1, 3);
+    refused('say @$r;', '@$ before a name is cut (D108): an array through a reference is written $r->@* (step 13b)', 1, 5);
+    refused('say $$r[0];', '$$ before a name is cut (D108): an element through a reference is written $r->[...] or $r->{...}, and the scalar $r->$* (step 13c)', 1, 5);
 });

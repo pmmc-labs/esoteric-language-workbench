@@ -1,0 +1,67 @@
+# model: t/models/ref.py
+use v5.42;
+{
+    my $r;
+    $r->{n} += 3;
+    $r->{n} += 4;
+    $r->{m}[0] -= 2;
+    $r->{s}{a} .= "x";
+    $r->{s}->{a} .= "y";
+    $r->{d}{e} //= 4;
+    $r->{d}{e} //= 5;
+    $r->{o}->[1] ||= 6;
+    $r->{o}[1] ||= 7;
+    $r->{o}[0] &&= 8;
+    $r->{o}->[1] &&= 9;
+    $r->{y}{z} &&= 10;
+    $r->{n} *= 3;
+    say(defined($r->{n}) ? $r->{n} : "u");
+    say(defined($r->{m}[0]) ? $r->{m}[0] : "u");
+    say(defined($r->{s}->{a}) ? $r->{s}->{a} : "u");
+    say(defined($r->{d}{e}) ? $r->{d}{e} : "u");
+    say(defined($r->{o}[0]) ? $r->{o}[0] : "u");
+    say(defined($r->{o}->[1]) ? $r->{o}->[1] : "u");
+    say(defined($r->{y}{z}) ? $r->{y}{z} : "u");
+    say(exists($r->{y}{z}) ? 1 : 0);
+    my $v1 = $r->{c}[0]++;
+    say(defined($v1) ? $v1 : "u");
+    my $v2 = ++$r->{c}->[0];
+    say(defined($v2) ? $v2 : "u");
+    my $v3 = $r->{c}[0]--;
+    say(defined($v3) ? $v3 : "u");
+    my $v4 = --$r->{c}[0];
+    say(defined($v4) ? $v4 : "u");
+    my $v5 = $r->{new}->{x}++;
+    say(defined($v5) ? $v5 : "u");
+    my $v6 = $r->{new}{y}--;
+    say(defined($v6) ? $v6 : "u");
+    my $v7 = ++$r->{new2}[3];
+    say(defined($v7) ? $v7 : "u");
+    my $v8 = --$r->{new2}->[2];
+    say(defined($v8) ? $v8 : "u");
+    say(defined($r->{c}[0]) ? $r->{c}[0] : "u");
+    say(defined($r->{new}{x}) ? $r->{new}{x} : "u");
+    say(defined($r->{new}->{y}) ? $r->{new}->{y} : "u");
+    say(defined($r->{new2}[3]) ? $r->{new2}[3] : "u");
+    say(defined($r->{new2}[2]) ? $r->{new2}[2] : "u");
+    say(defined($r->{new2}->[0]) ? $r->{new2}->[0] : "u");
+}
+{
+    my @a;
+    my %h;
+    my $v9 = $a[2]{n}++;
+    say(defined($v9) ? $v9 : "u");
+    my $v10 = ++$a[2]{n};
+    say(defined($v10) ? $v10 : "u");
+    $h{x}->[1] += 5;
+    $h{x}[1] .= "z";
+    my $v11 = --$h{y}{k};
+    say(defined($v11) ? $v11 : "u");
+    say(scalar(@a));
+    say(join(",", sort keys(%h)));
+    say(defined($a[2]->{n}) ? $a[2]->{n} : "u");
+    say(defined($a[0]) ? $a[0] : "u");
+    say(defined($h{x}[1]) ? $h{x}[1] : "u");
+    say(defined($h{x}[0]) ? $h{x}[0] : "u");
+    say(defined($h{y}->{k}) ? $h{y}->{k} : "u");
+}

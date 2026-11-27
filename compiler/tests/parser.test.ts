@@ -725,8 +725,8 @@ test('what a hash may not be written as', () => {
     refused('say $h{};', '$h{} has no key: perl does not compile it', 1, 7);
     refused('say $h{1, 2};', "a comma in a hash's key: perl joins the values into one key", 1, 9);
     refused('say $h{a => 1};', "a comma in a hash's key: perl joins the values into one key", 1, 10);
-    refused('say $h{a}{b};', 'an element of an element: a hash of hashes or of arrays is not in the language yet', 1, 10);
-    refused('say $h{a}[0];', 'an element of an element: a hash of hashes or of arrays is not in the language yet', 1, 10);
+    refused('say $h{a} {b};', "a blank between a subscript and '{': perl takes it for another key; write them hard together, $h{a}{b}", 1, 11);
+    refused('say $h{a} [0];', 'a blank between two subscripts: perl takes it, and reads on; write them hard together, $a[0][1]', 1, 11);
     refused('say $h {a};', "a blank between $h and '{': an element of a hash is written $h{...}", 1, 8);
     refused('++$h {a};', "a blank between $h and '{': an element of a hash is written $h{...}", 1, 6);
     refused('%h += 1;', "'+=' on a hash: a hash is assigned with =", 1, 4);
@@ -739,7 +739,7 @@ test('what a hash may not be written as', () => {
     refused('sub f(%, @r) { }', '% takes every argument that is left, so it is the last parameter: perl refuses one after it', 1, 8);
     refused('say @h{};', 'a slice with no key: perl refuses it', 1, 7);
     refused('say @h {"a", "b"};', "a blank between @h and '{': a slice of a hash is written @h{...}", 1, 8);
-    refused('say @h{"a", "b"}{c};', 'an element of an element: a hash of hashes or of arrays is not in the language yet', 1, 17);
+    refused('say @h{"a", "b"}{c};', 'a subscript after a slice: perl takes it for an element of what the slice gives; take the slice into an array first', 1, 17);
     refused('@h{"a", "b"} += 1;', "'+=' on a slice: a slice is assigned with =", 1, 14);
     refused('@a[0, 1] .= 1;', "'.=' on a slice: a slice is assigned with =", 1, 10);
     refused('say exists @h{"a", "b"};', "exists takes an element of a hash, found '@h': exists $h{...}", 1, 12);

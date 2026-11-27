@@ -1,0 +1,2 @@
+t/1922-ref-postfix-hash-slice.pl:5:11: ->@{...: a slice through a reference is not in the language yet (step 13b)
+exit: 1

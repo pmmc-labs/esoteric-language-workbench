@@ -1,0 +1,2 @@
+t/1982-ref-reach-arguments.pl:8:25: a later part of the arguments of f can change what references reach, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

@@ -1,0 +1,2 @@
+t/1977-ref-reach-map-head-assigned.pl:5:18: this can change $r, which the list of the map it is in names: perl's map walks the variable itself; take the value into a my before the map
+exit: 1

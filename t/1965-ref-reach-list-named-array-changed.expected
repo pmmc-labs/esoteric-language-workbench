@@ -1,0 +1,2 @@
+t/1965-ref-reach-list-named-array-changed.pl:6:21: a later part of say's list can change what references reach, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

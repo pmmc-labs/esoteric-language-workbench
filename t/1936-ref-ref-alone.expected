@@ -1,0 +1,2 @@
+t/1936-ref-ref-alone.pl:5:9: ref needs an argument
+exit: 1

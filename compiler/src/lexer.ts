@@ -29,8 +29,10 @@ export type Token =
     // A hash, `%name` (step 12).
     | { kind: 'hash'; text: string; name: string; pos: Pos }
     // `subscript`: the brace opens or closes the key of a hash's element,
-    // `$h{...}`. A `,` whose text is `=>` is the fat comma.
-    | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}' | '[' | ']'; text: string; pos: Pos; subscript?: true }
+    // `$h{...}`, or of one through a reference, `->{...}` and `$h{a}{...}`.
+    // `anon`: it opens or closes a new hash, `{ LIST }`, where a value may
+    // begin (step 13a; D113). A `,` whose text is `=>` is the fat comma.
+    | { kind: ';' | '(' | ')' | ',' | '?' | ':' | '{' | '}' | '[' | ']'; text: string; pos: Pos; subscript?: true; anon?: true }
     | { kind: 'op'; text: string; pos: Pos }
     | { kind: 'eof'; text: string; pos: Pos };
 
@@ -86,8 +88,9 @@ export const lex = (src: string): Token[] => {
     // How many brackets of a sub's signature are open: there, and nowhere
     // else, a `$` may stand alone, a parameter with no name (D72).
     let signature = 0;
-    // For each brace that is open, whether it opened a hash's key.
-    const braces: boolean[] = [];
+    // For each brace that is open, what it opened: a hash's key, a new
+    // hash, or a block (step 13a).
+    const braces: ('subscript' | 'anon' | 'block')[] = [];
     const at = (): string => src[i] ?? '';
     const pos = (): Pos => ({ line, col });
     const push = (t: Token): void => {
@@ -321,7 +324,7 @@ export const lex = (src: string): Token[] => {
             open = '$#';
         }
         const kind = open === '$' ? 'var' : open === '@' ? 'array' : 'lastindex';
-        const reference = (what: string): never => refuse(`${what} in a string takes a reference, and references are not in the language yet (step 13)`, where);
+        const reference = (what: string): never => refuse(`${what} in a string takes a reference, and a reference in a string is not in the language yet (step 13d)`, where);
         if (at() === '$' && (isWordStart(src[i + 1] ?? '') || src[i + 1] === '{')) reference(open + '$');
         const tooLong = (name: string): void => {
             if (name.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, where);
@@ -380,12 +383,15 @@ export const lex = (src: string): Token[] => {
         if (at() === '{') {
             refuse(piece.kind === 'array'
                 ? `'{' hard after ${shown} in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write ${or('{')}${shown}\\{`
-                : `'{' hard after ${shown} in a string: an element of what that holds, to perl, and references are not in the language yet (step 13); write ${shown}\\{`, pos());
+                : `'{' hard after ${shown} in a string: an element of what that holds, to perl, and an element through a reference in a string is not in the language yet (step 13d); write ${shown}\\{`, pos());
         }
-        if (at() === '[') refuse(`'[' hard after ${shown} in a string: another index, to perl; write ${shown}\\[`, pos());
+        // (After an element it is an element of what that holds, which
+        // step 13d takes; after a slice or `$#a` it stays out.)
+        const deeper = piece.kind === 'elem' || piece.kind === 'helem' ? ', and an element through a reference in a string is not in the language yet (step 13d)' : '';
+        if (at() === '[') refuse(`'[' hard after ${shown} in a string: another index, to perl${deeper}; write ${shown}\\[`, pos());
         const then = src[i + 2] ?? '';
         if (src.startsWith('->', i) && then !== '' && '[{@$'.includes(then)) {
-            refuse(`'->${then}' hard after ${shown} in a string: a dereference, to perl, and references are not in the language yet (step 13); write ${shown}\\->${then}`, pos());
+            refuse(`'->${then}' hard after ${shown} in a string: a dereference, to perl, and a dereference in a string is not in the language yet (step 13d); write ${shown}\\->${then}`, pos());
         }
         const next = src.codePointAt(i) ?? 0;
         if (named && next > 0x7f && line >= utf8From) {
@@ -437,8 +443,28 @@ export const lex = (src: string): Token[] => {
         }
         return last?.kind === 'int' || last?.kind === 'num' || last?.kind === 'str' || last?.kind === ')' || last?.kind === 'var'
             || last?.kind === ']' || last?.kind === 'array' || last?.kind === 'lastindex' || last?.kind === 'hash'
-            || (last?.kind === '}' && last.subscript === true)
+            || (last?.kind === '}' && (last.subscript === true || last.anon === true))
             || (last?.kind === 'word' && NAMES.get(last.text)?.kind === 'constant');
+    };
+
+    // Whether a brace that is no hash's key opens a new hash: where a value
+    // may begin it does, as perl has it, and where a statement may begin it
+    // is a block (D113). After a value it is a block too, which the parser
+    // refuses where it has to (`$x {`). After a word it is a hash only
+    // where the word takes a value: `return`, a named unary operator, a
+    // function, `join` and `reverse`, and `say` and `print`, where the
+    // parser refuses it; after any other word (`map`, `sort`, `else`, a
+    // sub's name) a block.
+    const opensHash = (): boolean => {
+        const last = tokens.at(-1);
+        if (last === undefined || afterValue()) return false;
+        if (last.kind === 'op' || last.kind === '(' || last.kind === '[' || last.kind === ',' || last.kind === '?' || last.kind === ':') return true;
+        if (last.kind === '{') return braces.at(-1) !== 'block';
+        if (last.kind === 'word') {
+            const kind = NAMES.get(last.text)?.kind;
+            return kind === 'return' || kind === 'unary' || kind === 'function' || kind === 'listop' || kind === 'statement';
+        }
+        return false;
     };
 
     // Where the blanks from `k` on end: spaces and tabs, and with `lines`
@@ -506,7 +532,8 @@ export const lex = (src: string): Token[] => {
                 push({ kind: 'hash', text: '%', name: '', pos: start });
                 continue;
             }
-            if (at() === '$' || at() === '{') refuse("'%' before a reference: references are not in the language yet (step 13)", start);
+            if (at() === '$') refuse("%$ before a name is cut (D108): a hash through a reference is written $r->%* (step 13b)", start);
+            if (at() === '{') refuse("%{ ... }: a hash through a reference is not in the language yet (step 13b)", start);
             if (!isWordStart(at())) refuse("after '%' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
             if (name === '_') refuse("%_ is perl's own, and not in the language", start);
@@ -576,12 +603,18 @@ export const lex = (src: string): Token[] => {
             // and warns, and `$# name` not at all.
             if (at() === '#') {
                 take();
+                if (at() === '$') refuse("$#$ before a name is cut (D108): the last index through a reference is written $r->$#* (step 13b)", start);
+                if (at() === '{') refuse("$#{ ... }: the last index through a reference is not in the language yet (step 13b)", start);
                 if (!isWordStart(at())) refuse("after '$#' comes an array's name: $#a is the last index of @a", start);
                 const array = run(isWord);
                 if (array.length > NAME_MAX_LENGTH) refuse(`a name of more than ${NAME_MAX_LENGTH} characters: perl refuses it as too long`, start);
                 push({ kind: 'lastindex', text: '$#' + array, name: array, pos: start });
                 continue;
             }
+            if (at() === '$' && (isWordStart(src[i + 1] ?? '') || src[i + 1] === '{')) {
+                refuse("$$ before a name is cut (D108): an element through a reference is written $r->[...] or $r->{...}, and the scalar $r->$* (step 13c)", start);
+            }
+            if (at() === '{') refuse("${ ... }: a scalar through a reference is not in the language yet (step 13c); a variable is written $name", start);
             if (!isWordStart(at())) refuse("after '$' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
             // `$a[0]` is an element of `@a`, which is a name an array may
@@ -631,6 +664,8 @@ export const lex = (src: string): Token[] => {
                 push({ kind: 'array', text: '@', name: '', pos: start });
                 continue;
             }
+            if (at() === '$') refuse("@$ before a name is cut (D108): an array through a reference is written $r->@* (step 13b)", start);
+            if (at() === '{') refuse("@{ ... }: an array through a reference is not in the language yet (step 13b)", start);
             if (!isWordStart(at())) refuse("after '@' comes a name: a letter or '_', then letters, digits and '_'", start);
             const name = run(isWord);
             if (name === '_') refuse('@_ is not in the language: a sub has a signature (D17)', start);
@@ -644,8 +679,12 @@ export const lex = (src: string): Token[] => {
             // A brace hard after a variable opens a hash's key, `$h{...}`.
             // (perl takes a blank between the two, and the parser refuses
             // it: nothing else a brace could be stands after a variable.)
-            if (c === '{' && (name?.kind === 'var' || name?.kind === 'array') && lastEnd === i) {
-                braces.push(true);
+            // So does one hard after another subscript, or after an arrow
+            // (step 13a): `$h{a}{b}`, `$a[0]{k}`, `$r->{k}`.
+            const keyed = name?.kind === 'var' || name?.kind === 'array' || name?.kind === ']' || (name?.kind === '}' && name.subscript === true)
+                || (name?.kind === 'op' && name.text === '->');
+            if (c === '{' && keyed && lastEnd === i) {
+                braces.push('subscript');
                 push({ kind: '{', text: take(), pos: start, subscript: true });
                 // One word alone in the braces is that string, whatever
                 // the word (T215): on one line with its braces. Across the
@@ -668,10 +707,18 @@ export const lex = (src: string): Token[] => {
                 }
                 continue;
             }
-            if (c === '{') braces.push(false);
-            if (c === '}' && braces.pop() === true) {
-                push({ kind: '}', text: take(), pos: start, subscript: true });
+            if (c === '{' && opensHash()) {
+                braces.push('anon');
+                push({ kind: '{', text: take(), pos: start, anon: true });
                 continue;
+            }
+            if (c === '{') braces.push('block');
+            if (c === '}') {
+                const opened = braces.pop();
+                if (opened === 'subscript' || opened === 'anon') {
+                    push(opened === 'subscript' ? { kind: '}', text: take(), pos: start, subscript: true } : { kind: '}', text: take(), pos: start, anon: true });
+                    continue;
+                }
             }
             push({ kind: c, text: take(), pos: start });
             // `use utf8;` is in force from the next line (T73). Whether it
@@ -689,6 +736,27 @@ export const lex = (src: string): Token[] => {
             const last = tokens.at(-1);
             const between = src.slice(lastEnd, i);
             for (const _ of op) take();
+            // The arrow (step 13a): an element through a reference, its
+            // bracket hard against it. What else perl puts after one is
+            // another sub-step's, or cut.
+            if (op === '->') {
+                const next = at();
+                const two = src.slice(i, i + 2);
+                if (two === '@*' || two === '%*' || src.startsWith('$#*', i)) refuse(`->${src.startsWith('$#*', i) ? '$#*' : two}: the whole container through a reference is not in the language yet (step 13b)`, start);
+                if (two === '@[' || two === '@{') refuse(`->${two}...: a slice through a reference is not in the language yet (step 13b)`, start);
+                if (two === '$*') refuse('->$*: a scalar through a reference is not in the language yet (step 13c)', start);
+                if (two === '%[' || two === '%{') refuse(`->${two}...: a slice of keys and values is cut (D108)`, start);
+                if (next === '(') refuse('->(...): a call through a reference is not in the language yet (step 14)', start);
+                if (isWordStart(next) || next === '$') refuse("'->' and a name: a method call, and classes are not in the language yet (step 17)", start);
+                if (next !== '[' && next !== '{') refuse("after '->' comes '[' or '{', hard against it: $r->[0], $r->{k}", start);
+                push({ kind: 'op', text: op, pos: start });
+                continue;
+            }
+            // A backslash (step 13a): what it may take is the parser's.
+            if (op === '\\') {
+                push({ kind: 'op', text: op, pos: start });
+                continue;
+            }
             if (!prefixOp(op) && !infixOp(op) && !stepOp(op)) refuse(`'${op}' is not in the language yet`, start);
             // `$x =- $y`: perl warns `Reversed -= operator` when a sign is
             // hard after a `=` and a blank follows the sign (T127).

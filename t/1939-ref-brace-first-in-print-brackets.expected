@@ -1,0 +1,2 @@
+t/1939-ref-brace-first-in-print-brackets.pl:4:7: '{' first in print(...): perl does not compile it; write +{ ... } for a new hash
+exit: 1

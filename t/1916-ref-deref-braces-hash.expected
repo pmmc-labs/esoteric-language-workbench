@@ -1,0 +1,2 @@
+t/1916-ref-deref-braces-hash.pl:5:9: %{ ... }: a hash through a reference is not in the language yet (step 13b)
+exit: 1

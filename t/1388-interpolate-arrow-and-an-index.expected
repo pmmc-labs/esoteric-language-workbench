@@ -1,2 +1,2 @@
-t/1388-interpolate-arrow-and-an-index.pl:5:8: '->[' hard after $x in a string: a dereference, to perl, and references are not in the language yet (step 13); write $x\->[
+t/1388-interpolate-arrow-and-an-index.pl:5:8: '->[' hard after $x in a string: a dereference, to perl, and a dereference in a string is not in the language yet (step 13d); write $x\->[
 exit: 1

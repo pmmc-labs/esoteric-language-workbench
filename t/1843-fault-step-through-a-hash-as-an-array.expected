@@ -1,0 +1,3 @@
+1
+fault: not a reference to an array at t/1843-fault-step-through-a-hash-as-an-array.pl line 6.
+exit: 1

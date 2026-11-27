@@ -1,0 +1,2 @@
+t/1963-ref-string-braces.pl:5:6: @{$ in a string takes a reference, and a reference in a string is not in the language yet (step 13d)
+exit: 1

@@ -1,0 +1,2 @@
+t/1962-ref-string-index-of-an-element.pl:5:11: '[' hard after $g[0] in a string: another index, to perl, and an element through a reference in a string is not in the language yet (step 13d); write $g[0]\[
+exit: 1

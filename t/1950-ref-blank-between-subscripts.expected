@@ -1,0 +1,2 @@
+t/1950-ref-blank-between-subscripts.pl:5:11: a blank between two subscripts: perl takes it, and reads on; write them hard together, $a[0][1]
+exit: 1

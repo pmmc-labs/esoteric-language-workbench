@@ -1,0 +1,2 @@
+t/1931-ref-reference-to-a-slice.pl:5:9: \ before a slice: perl makes a list of a reference to each element, which is cut (D110)
+exit: 1

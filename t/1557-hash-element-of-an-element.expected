@@ -1,2 +1,2 @@
-t/1557-hash-element-of-an-element.pl:5:10: an element of an element: a hash of hashes or of arrays is not in the language yet
+fault: not a reference to a hash at t/1557-hash-element-of-an-element.pl line 6.
 exit: 1

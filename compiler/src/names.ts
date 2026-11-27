@@ -71,6 +71,8 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['ord', { kind: 'unary', rt: 'rt_ord' }],
     ['chr', { kind: 'unary', rt: 'rt_chr' }],
     ['defined', { kind: 'unary', rt: 'rt_defined' }],
+    // `ref` (step 13a; D112): ARRAY, HASH, or the empty string.
+    ['ref', { kind: 'unary', rt: 'rt_ref' }],
     ['true', { kind: 'constant', c: 'rt_bool(1)' }],
     ['false', { kind: 'constant', c: 'rt_bool(0)' }],
     ['undef', { kind: 'constant', c: 'rt_undef()', bare: true }],

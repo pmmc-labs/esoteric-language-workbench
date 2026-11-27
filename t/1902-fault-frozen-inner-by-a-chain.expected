@@ -1,0 +1,3 @@
+1
+fault: an array was changed while a foreach is over it at t/1902-fault-frozen-inner-by-a-chain.pl line 8.
+exit: 1

@@ -1,0 +1,3 @@
+1
+fault: undef where a reference is wanted at t/1849-fault-store-through-loop-variable.pl line 7.
+exit: 1

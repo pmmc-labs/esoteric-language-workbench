@@ -1,2 +1,2 @@
-t/1393-interpolate-arrow-after-an-array.pl:5:8: '->[' hard after @a in a string: a dereference, to perl, and references are not in the language yet (step 13); write @a\->[
+t/1393-interpolate-arrow-after-an-array.pl:5:8: '->[' hard after @a in a string: a dereference, to perl, and a dereference in a string is not in the language yet (step 13d); write @a\->[
 exit: 1

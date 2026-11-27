@@ -1,0 +1,3 @@
+1
+fault: undef where a reference is wanted at t/1846-fault-store-through-a-call.pl line 8.
+exit: 1

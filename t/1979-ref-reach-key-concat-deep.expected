@@ -1,0 +1,2 @@
+t/1979-ref-reach-key-concat-deep.pl:6:10: the key changes $k, which the concatenation on the right reads: perl joins its pieces as it stores, after the key is worked out; take the string into a my first
+exit: 1

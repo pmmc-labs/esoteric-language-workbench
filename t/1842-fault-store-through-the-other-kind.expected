@@ -1,0 +1,3 @@
+1
+fault: not a reference to a hash at t/1842-fault-store-through-the-other-kind.pl line 6.
+exit: 1

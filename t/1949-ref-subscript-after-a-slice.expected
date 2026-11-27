@@ -1,0 +1,2 @@
+t/1949-ref-subscript-after-a-slice.pl:4:20: a subscript after a slice: take the element into a my first
+exit: 1

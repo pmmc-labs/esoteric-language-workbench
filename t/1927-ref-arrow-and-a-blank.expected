@@ -1,0 +1,2 @@
+t/1927-ref-arrow-and-a-blank.pl:5:7: after '->' comes '[' or '{', hard against it: $r->[0], $r->{k}
+exit: 1

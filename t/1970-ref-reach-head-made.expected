@@ -1,0 +1,2 @@
+t/1970-ref-reach-head-made.pl:5:23: a later part of this list can change $r, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

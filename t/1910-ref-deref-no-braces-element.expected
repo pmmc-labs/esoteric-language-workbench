@@ -1,0 +1,2 @@
+t/1910-ref-deref-no-braces-element.pl:5:5: $$ before a name is cut (D108): an element through a reference is written $r->[...] or $r->{...}, and the scalar $r->$* (step 13c)
+exit: 1

@@ -1,0 +1,2 @@
+t/1913-ref-deref-no-braces-last-index.pl:5:5: $#$ before a name is cut (D108): the last index through a reference is written $r->$#* (step 13b)
+exit: 1

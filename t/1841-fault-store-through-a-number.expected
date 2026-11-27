@@ -1,0 +1,3 @@
+1
+fault: not a reference to an array at t/1841-fault-store-through-a-number.pl line 6.
+exit: 1

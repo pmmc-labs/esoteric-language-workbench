@@ -1,0 +1,2 @@
+t/1974-ref-reach-made-in-a-list-assignment.pl:5:2: the store makes what $q holds, which the right side has already taken: perl takes it after it is made; take the value into a my first
+exit: 1

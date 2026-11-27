@@ -38,7 +38,28 @@ export type Binary = { kind: 'binary'; op: string; left: Expr; right: Expr; pos:
 // places where perl gives the brackets themselves a meaning (a list
 // against a scalar on the left of `=`, later).
 export type Expr = Int | Num | Str | Interp | Constant | Var | My | Assign | Step | Unary | Binary | Ternary | Apply | Invoke
-    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder | Sort | HashOp;
+    | ArrayVar | MyArray | Elem | LastIndex | List | Slice | ArrayOp | ListAssign | ListOp | Binder | Sort | HashOp
+    | Chain | Anon | Ref;
+
+// An element through a reference (step 13a; D107): `EXPR->[I]` and
+// `EXPR->{K}`, and either one after a subscript with the arrow left out,
+// `$a[0][1]`, `$h{a}{b}`, `$r->[0]{k}`. `head` gives the reference: a
+// scalar variable, an element (of a named array or hash, or another
+// chain), a call, brackets round one value, `[ ]` or `{ }`. With `hash`,
+// `index` is a key. `pos` is the head's.
+// (13b's whole container through a reference, `->@*` and the rest, will
+// be a node of its own, with a `head` as this has.)
+export type Chain = { kind: 'chain'; head: Expr; index: Expr; hash?: true; pos: Pos; bracketed?: true };
+
+// `[ LIST ]`, a new array holding copies of the list's values, and with
+// `hash`, `{ LIST }`, a new hash made from it: a reference to the new
+// container (step 13a). `pos` is the opening bracket's.
+export type Anon = { kind: 'anon'; items: readonly Expr[]; hash?: true; pos: Pos; bracketed?: true };
+
+// `\@a` and `\%h`: a reference to the variable's own container (step
+// 13a; D110). `pos` is the backslash's. (13c's `\$x` will have a `var`
+// for `of`.)
+export type Ref = { kind: 'ref'; of: ArrayVar; pos: Pos; bracketed?: true };
 
 // An array, `@name`, and `my @name`, which declares one (D80).
 // With `hash`, a hash, `%name` and `my %name` (step 12): the same nodes,
@@ -56,7 +77,9 @@ export type Elem = { kind: 'elem'; name: string; index: Expr; hash?: true; pos: 
 // `scalar(%name)` and `scalar` of its keys or values. `pos` is the
 // word's, `at` the hash's.
 // `delete @name{keys}` has `keys`, and gives a list (step 12b).
-export type HashOp = { kind: 'hashop'; op: 'keys' | 'values' | 'exists' | 'delete' | 'count'; name: string; key?: Expr; keys?: readonly Expr[]; pos: Pos; at: Pos; bracketed?: true };
+// `exists EXPR->{K}` and `delete EXPR->{K}` have `chain`, the element
+// through a reference, and no `name` (step 13a).
+export type HashOp = { kind: 'hashop'; op: 'keys' | 'values' | 'exists' | 'delete' | 'count'; name: string; key?: Expr; keys?: readonly Expr[]; chain?: Chain; pos: Pos; at: Pos; bracketed?: true };
 export type LastIndex = { kind: 'lastindex'; name: string; pos: Pos; bracketed?: true };
 
 // A list in brackets: no items, or two and more, or one with a comma
@@ -101,10 +124,10 @@ export type Var = { kind: 'var'; name: string; pos: Pos; bracketed?: true };
 export type My = { kind: 'my'; name: string; pos: Pos; bracketed?: true };
 
 // `$x = E`, `$x += E`: `pos` is the operator's. Its value is the variable.
-export type Assign = { kind: 'assign'; op: string; target: Var | My | Elem | ArrayVar | MyArray; value: Expr; pos: Pos; bracketed?: true };
+export type Assign = { kind: 'assign'; op: string; target: Var | My | Elem | Chain | ArrayVar | MyArray; value: Expr; pos: Pos; bracketed?: true };
 
 // `++$x`, `$x++`, `--$x`, `$x--`: `before` says the operator comes first.
-export type Step = { kind: 'step'; op: string; before: boolean; target: Var | Elem; pos: Pos; bracketed?: true };
+export type Step = { kind: 'step'; op: string; before: boolean; target: Var | Elem | Chain; pos: Pos; bracketed?: true };
 
 // A word that is a value: `true`, `false`, `undef` (D47, D48).
 export type Constant = { kind: 'constant'; name: string; pos: Pos; bracketed?: true };

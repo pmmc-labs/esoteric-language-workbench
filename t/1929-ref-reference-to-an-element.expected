@@ -1,0 +1,2 @@
+t/1929-ref-reference-to-an-element.pl:5:9: \ before an element: a reference to an element is cut (D110); take a reference to the array or the hash
+exit: 1

@@ -1,0 +1,2 @@
+t/1967-ref-reach-concat-sub-stores.pl:9:15: a later piece of a concatenation calls f, which can change what references reach, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the call a statement of its own
+exit: 1

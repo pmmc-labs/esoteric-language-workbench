@@ -14,14 +14,19 @@
 // integer fits whole; both C compilers pass the pair in registers. The
 // union gains a member per kind of value. No tag is 0: memory that was
 // never made a value then faults at the first operator that checks it.
-enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_BOOL = 5, RT_TAG_ARRAY = 6, RT_TAG_ABSENT = 7, RT_TAG_HASH = 8 };
+// A reference (step 13a; D112) is a value of its own: AREF to an array,
+// HREF to a hash, its payload the container's block, `as.a`, the very
+// block an array's or a hash's variable holds. (13c brings one to a
+// scalar, which will point at a cell.)
+enum { RT_TAG_INT = 1, RT_TAG_NUM = 2, RT_TAG_STR = 3, RT_TAG_UNDEF = 4, RT_TAG_BOOL = 5, RT_TAG_ARRAY = 6, RT_TAG_ABSENT = 7, RT_TAG_HASH = 8,
+       RT_TAG_AREF = 9, RT_TAG_HREF = 10 };
 
 // An array (D80): a row of values that grows and shrinks in place, the
 // collector's as a heap string is, with storage of its own. It is what an
 // array variable's slot holds, and what a list is while a statement builds
 // and uses it: a list is an array with no name, in a temporary. An array
-// holds no array yet (step 13). `dead` says it was collected, and nothing
-// may read it.
+// holds no array, but it may hold a reference to one (step 13a). `dead`
+// says it was collected, and nothing may read it.
 typedef struct rt_array {
     uint64_t count;
     uint64_t room;          // how many values `items` has space for
@@ -159,6 +164,13 @@ typedef struct rt_ctx {
     uint64_t stress;        // CURLY_GC_STRESS: a collection at every nth allocation
     uint64_t poison;        // CURLY_GC_POISON: a collected string's memory is kept
     uint64_t cap;           // CURLY_HEAP_CAP: `out of memory` when more would be held
+    // What the collector has reached and not yet walked (step 13a): a
+    // container holds references to others, a chain of them may be as
+    // long as memory allows, and C's stack is not used for it. Kept
+    // between collections, and not counted against the cap.
+    struct rt_array **marks;
+    uint64_t marking;       // how many are on it
+    uint64_t mark_room;     // and how many it has room for
 } rt_ctx;
 
 // Run a compiled program: make its context, call its body, return the
@@ -409,6 +421,34 @@ void rt_sort_in_place(rt_ctx *cx, rt_value list);
 // makes one.
 void rt_list_add_reversed(rt_ctx *cx, rt_value list, rt_value values);
 rt_value rt_join(rt_ctx *cx, rt_value separator, rt_value list);
+
+// References (step 13a; D107, D112; runtime/ref.c). `[ LIST ]` is the
+// list itself, which is a new array, made a reference; `{ LIST }` a new
+// hash assigned from the list, made one; `\@a` and `\%h` the variable's
+// own container. `rt_deref` is what an arrow reads through: the container
+// a reference points at, as the value an array's or a hash's variable
+// holds (`hash` 0 for an array, 1 for a hash), and the fault for undef
+// and for anything that is not that reference. `rt_vivify` is the same
+// for a variable that is stored through: undef there becomes a new
+// container, and the variable a reference to it. `rt_elem_hop` and
+// `rt_helem_hop` go one hop further for a store: the element of a
+// container, made a new container if it is undef or not there (which is a
+// store, and checks the freeze), and the container it points at.
+rt_value rt_aref(rt_ctx *cx, rt_value array);
+rt_value rt_href(rt_ctx *cx, rt_value hash);
+rt_value rt_deref(rt_ctx *cx, rt_value v, int hash);
+rt_value rt_vivify(rt_ctx *cx, rt_value *slot, int hash);
+rt_value rt_elem_hop(rt_ctx *cx, rt_value array, rt_value index, int hash);
+rt_value rt_helem_hop(rt_ctx *cx, rt_value container, rt_value key, int hash);
+// `ref`: ARRAY, HASH, or the empty string.
+rt_value rt_ref(rt_ctx *cx, rt_value v);
+// The containers a chain in the list of a loop, a `map`, a `grep` or a
+// `sort` went through, every one frozen while it runs (D114, T251): each
+// added to a list of its own as the list is built, then all frozen, and
+// all given back on every way out.
+void rt_frozen_add(rt_ctx *cx, rt_value frozen, rt_value container);
+void rt_freeze_all(rt_ctx *cx, rt_value frozen);
+void rt_thaw_all(rt_ctx *cx, rt_value frozen);
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

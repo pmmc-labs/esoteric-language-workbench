@@ -1,0 +1,2 @@
+t/1920-ref-postfix-last-index.pl:5:7: ->$#*: the whole container through a reference is not in the language yet (step 13b)
+exit: 1

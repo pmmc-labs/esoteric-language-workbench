@@ -76,6 +76,9 @@ static void release(rt_ctx *cx) {
     free_list(cx->dead);
     cx->heap = NULL;
     cx->dead = NULL;
+    free(cx->marks);
+    cx->marks = NULL;
+    cx->marking = cx->mark_room = 0;
 }
 
 // A string that is being read. One that was collected is a root the
@@ -108,30 +111,51 @@ void rt_leave(rt_ctx *cx, rt_frame *frame) {
     cx->deep -= weight(frame->count);
 }
 
-static void mark_string(rt_ctx *cx, rt_value v) {
-    if (v.tag == RT_TAG_ARRAY || v.tag == RT_TAG_HASH) rt_internal(cx, "an array holds an array");
-    if (v.tag != RT_TAG_STR) return;
-    if (v.as.s->where == RT_STR_DEAD) rt_internal(cx, "a slot holds a string that was collected");
-    if (v.as.s->where == RT_STR_HEAP) ((rt_block *)v.as.s - 1)->marked |= REACHED;
+// A container reached: marked, and put on the stack of those whose values
+// are still to be walked, unless it was reached before. A reference is
+// what it points at, so a cycle is walked once, and collected like
+// anything else once nothing reaches it (D26).
+static void mark_container(rt_ctx *cx, rt_array *a) {
+    if (a->dead) rt_internal(cx, "a slot holds an array that was collected");
+    rt_block *block = (rt_block *)a - 1;
+    if (block->marked & REACHED) return;
+    block->marked |= REACHED;
+    if (cx->marking == cx->mark_room) {
+        uint64_t room = cx->mark_room < 64 ? 64 : cx->mark_room * 2;
+        rt_array **marks = realloc(cx->marks, room * sizeof(rt_array *));
+        if (marks == NULL) rt_fault(cx, "out of memory");
+        cx->marks = marks;
+        cx->mark_room = room;
+    }
+    cx->marks[cx->marking++] = a;
+}
+
+static void mark(rt_ctx *cx, rt_value v) {
+    switch (v.tag) {
+    case RT_TAG_STR:
+        if (v.as.s->where == RT_STR_DEAD) rt_internal(cx, "a slot holds a string that was collected");
+        if (v.as.s->where == RT_STR_HEAP) ((rt_block *)v.as.s - 1)->marked |= REACHED;
+        return;
+    case RT_TAG_ARRAY: case RT_TAG_HASH: case RT_TAG_AREF: case RT_TAG_HREF:
+        mark_container(cx, v.as.a);
+        return;
+    default:
+        return;
+    }
 }
 
 void rt_collect(rt_ctx *cx) {
     cx->collections += 1;
-    // Mark: every slot of every frame, and through an array to the values
-    // it holds. An array holds no array (step 13 will bring that, and a
-    // stack of what is still to be walked, so that C's is not used).
+    // Mark: every slot of every frame, and from a container to every value
+    // it holds, by a stack of the runtime's own (step 13a): a chain of
+    // references a million long takes no more of C's stack than one.
+    cx->marking = 0;
     for (rt_frame *frame = cx->frames; frame; frame = frame->prev) {
-        for (uint64_t k = 0; k < frame->count; k++) {
-            rt_value v = frame->slots[k];
-            if (v.tag == RT_TAG_ARRAY || v.tag == RT_TAG_HASH) {
-                rt_array *a = v.as.a;
-                if (a->dead) rt_internal(cx, "a slot holds an array that was collected");
-                ((rt_block *)a - 1)->marked |= REACHED;
-                for (uint64_t n = 0; n < a->count; n++) mark_string(cx, a->items[n]);
-                continue;
-            }
-            mark_string(cx, v);
-        }
+        for (uint64_t k = 0; k < frame->count; k++) mark(cx, frame->slots[k]);
+    }
+    while (cx->marking > 0) {
+        rt_array *a = cx->marks[--cx->marking];
+        for (uint64_t n = 0; n < a->count; n++) mark(cx, a->items[n]);
     }
     // Sweep: what was not reached is poisoned, and freed; or, under the
     // poison knob, kept where nothing will be put in its place.
@@ -346,6 +370,8 @@ static const rt_str *to_str(rt_ctx *cx, rt_value v, scratch *number) {
     if (v.tag == RT_TAG_STR) return alive(cx, v.as.s);
     if (v.tag == RT_TAG_BOOL) return v.as.i ? &STR_TRUE : &STR_FALSE;
     if (v.tag == RT_TAG_UNDEF) rt_fault(cx, "undef where a string is wanted");
+    // perl prints an address, in silence (D112, T241).
+    if (v.tag == RT_TAG_AREF || v.tag == RT_TAG_HREF) rt_fault(cx, "a reference where a string is wanted");
     int len = format_number(cx, v, number->bytes);
     number->s.len = (uint64_t)len;
     number->s.chars = (uint64_t)len;
@@ -376,7 +402,7 @@ static void emit_checked(rt_ctx *cx, rt_value v, int newline, int write) {
     char buf[32];
     const char *bytes = buf;
     size_t len;
-    if (v.tag == RT_TAG_STR || v.tag == RT_TAG_BOOL || v.tag == RT_TAG_UNDEF) {
+    if (v.tag == RT_TAG_STR || v.tag == RT_TAG_BOOL || v.tag == RT_TAG_UNDEF || v.tag == RT_TAG_AREF || v.tag == RT_TAG_HREF) {
         scratch none;
         const rt_str *s = to_str(cx, v, &none);
         if (s->len != s->chars) {
@@ -552,6 +578,9 @@ static number numeric(rt_ctx *cx, rt_value v) {
         return x;
     case RT_TAG_UNDEF:
         rt_fault(cx, "undef where a number is wanted");
+    // perl takes the address, in silence (D112, T241).
+    case RT_TAG_AREF: case RT_TAG_HREF:
+        rt_fault(cx, "a reference where a number is wanted");
     default:
         rt_fault(cx, "not a numeric value");
     }
@@ -1086,6 +1115,8 @@ int rt_is_true(rt_ctx *cx, rt_value v) {
         const rt_str *s = alive(cx, v.as.s);
         return !(s->len == 0 || (s->len == 1 && s->bytes[0] == '0'));
     }
+    // A reference is true (D112).
+    case RT_TAG_AREF: case RT_TAG_HREF: return 1;
     default: rt_fault(cx, "not a value");
     }
 }
@@ -1094,8 +1125,14 @@ int rt_is_false(rt_ctx *cx, rt_value v) {
     return !rt_is_true(cx, v);
 }
 
+// One of the kinds of value a scalar holds: a number, a string, undef, a
+// boolean, a reference; no container, and nothing absent.
+static int a_scalar(uint64_t tag) {
+    return (tag >= RT_TAG_INT && tag <= RT_TAG_BOOL) || tag == RT_TAG_AREF || tag == RT_TAG_HREF;
+}
+
 int rt_is_undef(rt_ctx *cx, rt_value v) {
-    if (v.tag < RT_TAG_INT || v.tag > RT_TAG_BOOL) rt_fault(cx, "not a value");
+    if (!a_scalar(v.tag)) rt_fault(cx, "not a value");
     return v.tag == RT_TAG_UNDEF;
 }
 
@@ -1144,8 +1181,24 @@ static int compare_strings(rt_ctx *cx, rt_value a, rt_value b) {
         int c = compare(cx, a, b); \
         return rt_bool(c test 0); \
     }
-COMPARISON(rt_num_eq, compare_numbers, ==)
-COMPARISON(rt_num_ne, compare_numbers, !=)
+// `==` and `!=` between two references say whether they are one
+// container (D112, T241); a reference beside anything else is a fault, by
+// the operands in order.
+static int is_ref(rt_value v) {
+    return v.tag == RT_TAG_AREF || v.tag == RT_TAG_HREF;
+}
+
+rt_value rt_num_eq(rt_ctx *cx, rt_value a, rt_value b) {
+    if (is_ref(a) && is_ref(b)) return rt_bool(a.as.a == b.as.a);
+    int c = compare_numbers(cx, a, b);
+    return rt_bool(c == 0);
+}
+
+rt_value rt_num_ne(rt_ctx *cx, rt_value a, rt_value b) {
+    if (is_ref(a) && is_ref(b)) return rt_bool(a.as.a != b.as.a);
+    int c = compare_numbers(cx, a, b);
+    return rt_bool(c != 0);
+}
 COMPARISON(rt_num_lt, compare_numbers, <)
 COMPARISON(rt_num_gt, compare_numbers, >)
 COMPARISON(rt_num_le, compare_numbers, <=)
@@ -1202,9 +1255,9 @@ void rt_thaw(rt_ctx *cx, rt_value array) {
     a->frozen -= 1;
 }
 
-// A value an array may hold: one of the five kinds, and no array.
+// A value an array may hold: a scalar's, and no array.
 static rt_value scalar(rt_ctx *cx, rt_value v) {
-    if (v.tag < RT_TAG_INT || v.tag > RT_TAG_BOOL) rt_fault(cx, "not a value");
+    if (!a_scalar(v.tag)) rt_fault(cx, "not a value");
     return v;
 }
 
@@ -1624,3 +1677,4 @@ void rt_internal(rt_ctx *cx, const char *what) {
 // perl's merge sort, ported: a file of its own, for its origin (D82).
 #include "sort.c"
 #include "hash.c"
+#include "ref.c"

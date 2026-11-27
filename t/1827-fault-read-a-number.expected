@@ -1,0 +1,3 @@
+1
+fault: not a reference to an array at t/1827-fault-read-a-number.pl line 6.
+exit: 1

@@ -1,0 +1,2 @@
+t/1951-ref-blank-between-keys.pl:5:11: a blank between a subscript and '{': perl takes it for another key; write them hard together, $h{a}{b}
+exit: 1

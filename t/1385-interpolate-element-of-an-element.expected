@@ -1,2 +1,2 @@
-t/1385-interpolate-element-of-an-element.pl:5:11: '[' hard after $a[0] in a string: another index, to perl; write $a[0]\[
+t/1385-interpolate-element-of-an-element.pl:5:11: '[' hard after $a[0] in a string: another index, to perl, and an element through a reference in a string is not in the language yet (step 13d); write $a[0]\[
 exit: 1

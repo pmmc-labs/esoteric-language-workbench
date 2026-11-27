@@ -1,0 +1,2 @@
+t/1942-ref-block-string-and-a-comma.pl:5:1: a block that begins with "$x" and a comma: perl guesses that it is a new hash; write +{ ... } for one, or put the list in brackets
+exit: 1

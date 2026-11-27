@@ -1,2 +1,2 @@
-t/1567-hash-of-a-reference.pl:5:5: '%' before a reference: references are not in the language yet (step 13)
+t/1567-hash-of-a-reference.pl:5:5: %$ before a name is cut (D108): a hash through a reference is written $r->%* (step 13b)
 exit: 1

@@ -411,3 +411,41 @@ test('a slice of a hash stored to and deleted, and of an array stored to (T228)'
 test('a hash as a last parameter is filled from the arguments left, and an odd number is a fault (T226)', () => {
     assert.deepEqual(run('hash', 'on-parameter'), { status: 1, output: "k,a|1,2|2\na|2|1\nfault: an odd number of arguments for f's hash at hash.pl line 1.\n" });
 });
+
+// Step 13a: references (D107, D112, D114).
+test('the collector walks a chain a million deep by a stack of its own, and frees a cycle', () => {
+    assert.deepEqual(run('ref', 'deep'), { status: 0, output: 'a million kept: 1000000 on the heap\n1000000 deep\ndropped: 0 on the heap\n' });
+    assert.deepEqual(run('ref', 'cycle'), { status: 0, output: 'one held: 2 on the heap\nnone held: 0 on the heap\n' });
+    assert.deepEqual(run('ref', 'strings-inside'), { status: 0, output: 'ab7\nkept: 2 on the heap\n' });
+    assert.deepEqual(run('ref', 'hop-key-made-under-stress', { CURLY_GC_STRESS: '1', CURLY_GC_POISON: '1' }), { status: 0, output: '5\n' });
+});
+
+test('what an arrow reads through, and its faults (D107)', () => {
+    assert.deepEqual(run('ref', 'deref'), { status: 0, output: '5\nARRAY\nHASH\n\n\n1\n1\n1\n1\n\n' });
+    const faults: [string, string][] = [['deref-undef', 'undef where a reference is wanted'], ['deref-number', 'not a reference to a hash'],
+        ['deref-string', 'not a reference to an array'], ['deref-other-kind', 'not a reference to an array'],
+        ['deref-other-kind-hash', 'not a reference to a hash'], ['deref-container', 'not a value']];
+    for (const [which, what] of faults) assert.deepEqual(run('ref', which), { status: 1, output: `fault: ${what} at ref.pl line 1.\n` }, which);
+});
+
+test('a store makes what it goes through, and a hop that makes is a store (T248, D114)', () => {
+    assert.deepEqual(run('ref', 'vivify'), { status: 1, output: 'HASH\n3\nfault: not a reference to an array at ref.pl line 1.\n' });
+    assert.deepEqual(run('ref', 'hop'), { status: 1, output: '3\n7\n2\nfault: not a reference to an array at ref.pl line 1.\n' });
+    assert.deepEqual(run('ref', 'hop-frozen'), { status: 1, output: 'fault: an array was changed while a foreach is over it at ref.pl line 1.\n' });
+    assert.deepEqual(run('ref', 'hop-frozen-hash'), { status: 1, output: 'fault: a hash was changed while a foreach is over it at ref.pl line 1.\n' });
+    assert.deepEqual(run('ref', 'hop-frozen-there'), { status: 0, output: 'read\n' });
+    assert.deepEqual(run('ref', 'frozen-through'), { status: 1, output: 'read\nfault: an array was changed while a foreach is over it at ref.pl line 1.\n' });
+    assert.deepEqual(run('ref', 'thawed'), { status: 2, output: '1\ninternal: an array that no foreach is over was given back at ref.pl line 1.\n' });
+});
+
+test('a reference where a number or a string is wanted is a fault, at every operator (D112)', () => {
+    const numbers = ['add', 'add-right', 'sub', 'mul', 'div', 'mod', 'pow', 'neg', 'inc', 'dec', 'add-to', 'lt', 'cmp-num',
+        'eq-num', 'eq-num-right', 'ne-num', 'chr', 'repeat-count', 'substr-offset', 'index', 'range'];
+    const strings = ['concat', 'concat-right', 'concat-to', 'repeat', 'length', 'uc', 'lc', 'ord', 'eq-str', 'cmp-str',
+        'substr', 'index-str', 'say', 'print', 'key', 'key-stored', 'join', 'join-separator', 'say-list', 'sort'];
+    for (const [cases, what] of [[numbers, 'number'], [strings, 'string']] as const) {
+        for (const which of cases) {
+            assert.deepEqual(run('ref', `op-${which}`), { status: 1, output: `2\nfault: a reference where a ${what} is wanted at ref.pl line 1.\n` }, which);
+        }
+    }
+});

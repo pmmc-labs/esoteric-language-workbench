@@ -1,0 +1,2 @@
+t/1952-ref-no-key.pl:5:9: {} has no key: perl does not compile it
+exit: 1

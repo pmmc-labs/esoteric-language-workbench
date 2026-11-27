@@ -1,0 +1,2 @@
+t/1937-ref-brace-first-after-say.pl:4:5: '{' first after say: perl takes it for a block that gives a file handle; write +{ ... } for a new hash
+exit: 1

@@ -1,0 +1,2 @@
+t/1917-ref-deref-braces-last-index.pl:5:5: $#{ ... }: the last index through a reference is not in the language yet (step 13b)
+exit: 1

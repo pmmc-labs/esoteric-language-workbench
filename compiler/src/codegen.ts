@@ -33,7 +33,7 @@
 // (D28: nothing is global). After every call the caller's line is stored
 // again (D34).
 import { NAMES, PRAGMAS, infixOp, prefixOp, stepOp } from './names.ts';
-import type { ArrayOp, Binder, Expr, If, Invoke, Program, Sort, Stmt, Sub } from './ast.ts';
+import type { ArrayOp, Binder, Chain, Expr, If, Invoke, Program, Sort, Stmt, Sub } from './ast.ts';
 import { behind } from './shapes.ts';
 import type { Resolution } from './resolver.ts';
 import { handsOn, shaped } from './shapes.ts';
@@ -69,7 +69,10 @@ export const cString = (text: string): string => {
 // `out` is what the statement is being generated into, for the block of
 // a `map` or a `grep`, whose statements are generated in the middle of it.
 // `inPlace` is a sort that perl would do in place (T187).
-type Code = { vars: string[]; decls: string[]; lines: string[]; temps: number; values: number; out: Out; inPlace?: Expr; strings: string[]; names: Resolution; frame: Frame; fn: number; line: number };
+// `frozen` is the slot of the list a loop's, a `map`'s, a `grep`'s or a
+// `sort`'s own list is being built for, which holds every container an
+// element through a reference in it goes through (step 13a; D114).
+type Code = { vars: string[]; decls: string[]; lines: string[]; temps: number; values: number; out: Out; inPlace?: Expr; frozen?: string; strings: string[]; names: Resolution; frame: Frame; fn: number; line: number };
 
 // What the function being generated needs of its frame: the most
 // temporaries any one statement of it has.
@@ -205,6 +208,11 @@ const addItem = (in_: Expr, list: string, b: Code, strict: Strict): void => {
         const at = genExpr(e.index, b);
         const value = temp(b, `${elem(e)}_strict(cx, ${variable(b, e)}, ${at.c})`);
         b.lines.push(`rt_list_add(cx, ${list}, ${value.c});`);
+    } else if (e.kind === 'chain' && strict === 2) {
+        const { container, last } = genChain(e, b, false);
+        const at = genExpr(last, b);
+        const value = temp(b, `${elem(e)}_strict(cx, ${container}, ${at.c})`);
+        b.lines.push(`rt_list_add(cx, ${list}, ${value.c});`);
     } else {
         // One value, or none: a sub that returned nothing (D79).
         b.lines.push(`rt_list_add(cx, ${list}, ${genExpr(in_, b, 'list').c});`);
@@ -231,8 +239,18 @@ const genBinder = (e: Binder, b: Code, list: string): void => {
     b.decls.push(`int64_t ${at} RT_UNUSED;`);
     // (An element or a slice past the end in the list is a fault, as in a
     // `foreach`: perl would make it, T177.)
+    const outer = b.frozen;
+    const frozen = each.frozen === undefined ? undefined : slot(each.frozen);
+    // (The containers are gathered in a temporary, and put in the slot
+    // once the list is built: a `sort` in the list may use the slot.)
+    b.frozen = frozen === undefined ? undefined : temp(b, 'rt_array_new(cx)').c;
     const source = genList(e.items, b, 2);
-    b.lines.push(`${held} = ${source.c};`, ...each.arrays.map(a => `rt_freeze(cx, ${slot(a)});`));
+    if (frozen !== undefined) b.lines.push(`${frozen} = ${b.frozen};`);
+    // (What the block works out freezes nothing of this list's.)
+    b.frozen = undefined;
+    const freezes = [...each.arrays.map(a => `rt_freeze(cx, ${slot(a)});`), ...(frozen ? [`rt_freeze_all(cx, ${frozen});`] : [])];
+    const thaws = [...each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`), ...(frozen ? [`rt_thaw_all(cx, ${frozen});`] : [])];
+    b.lines.push(`${held} = ${source.c};`, ...freezes);
     b.lines.push(`for (${at} = 0; ${at} < rt_list_length(cx, ${held}); ${at}++) {`, `${it} = rt_list_item(cx, ${held}, ${at}); // $_`);
     const base = b.out.base;
     b.out.base = b.values;
@@ -250,7 +268,8 @@ const genBinder = (e: Binder, b: Code, list: string): void => {
     } else {
         addItem(last.expr, list, b, 0);
     }
-    b.lines.push('}', ...each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`), `cx->line = ${b.line};`);
+    b.lines.push('}', ...thaws, `cx->line = ${b.line};`);
+    b.frozen = outer;
 };
 
 // `sort` (step 10c; D82, D83). The list is built and held as a `map`'s
@@ -262,19 +281,25 @@ const genBinder = (e: Binder, b: Code, list: string): void => {
 // back; and so on until the merge has no more to ask. The runtime calls
 // nothing. The values, in order, are added to `list`.
 const genSort = (e: Sort, b: Code, list: string): void => {
+    const each = b.names.each.get(e);
+    const slot = (decl: number): string => `${b.names.owner[decl] === b.fn ? 'f' : 'g'}[${b.names.slots[decl]}]`;
+    const outer = b.frozen;
+    const frozen = each?.frozen === undefined ? undefined : slot(each.frozen);
+    b.frozen = frozen === undefined ? undefined : temp(b, 'rt_array_new(cx)').c;
     const source = genList(e.items, b, 2);
+    if (frozen !== undefined) b.lines.push(`${frozen} = ${b.frozen};`);
+    b.frozen = undefined;
     if (e.body === undefined) {
         b.lines.push(`rt_sort_strings(cx, ${source.c}, ${list});`);
+        b.frozen = outer;
         return;
     }
-    const each = b.names.each.get(e);
     const last = e.body.at(-1);
     if (each === undefined || last?.kind !== 'do') throw new Error('a sort was not resolved');
-    const slot = (decl: number): string => `${b.names.owner[decl] === b.fn ? 'f' : 'g'}[${b.names.slots[decl]}]`;
     const held = slot(each.list);
     const so = `so${++b.temps}`;
     b.decls.push(`rt_sort *${so} RT_UNUSED;`);
-    b.lines.push(`${held} = ${source.c};`, ...each.arrays.map(a => `rt_freeze(cx, ${slot(a)});`));
+    b.lines.push(`${held} = ${source.c};`, ...each.arrays.map(a => `rt_freeze(cx, ${slot(a)});`), ...(frozen ? [`rt_freeze_all(cx, ${frozen});`] : []));
     if (b.inPlace === e) b.lines.push(`rt_sort_in_place(cx, ${held});`);
     b.lines.push(`${so} = rt_sort_begin(cx, ${held}, ${thrownAway(e) ? 1 : 0});`,
         `while (rt_sort_next(cx, ${so}, &${slot(b.names.of.get(e.a!)!)}, &${slot(b.names.of.get(e.b!)!)})) {`);
@@ -285,7 +310,8 @@ const genSort = (e: Sort, b: Code, list: string): void => {
     b.lines.push(...statements, `cx->line = ${last.pos.line};`);
     const answer = genExpr(last.expr, b);
     b.lines.push(`rt_sort_answer(cx, ${so}, ${answer.c});`, '}', `rt_sort_end(cx, ${so}, ${list});`,
-        ...each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`), `cx->line = ${b.line};`);
+        ...each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`), ...(frozen ? [`rt_thaw_all(cx, ${frozen});`] : []), `cx->line = ${b.line};`);
+    b.frozen = outer;
 };
 
 // The four blocks perl compares without running (`$a <=> $b`, `$b <=> $a`,
@@ -316,19 +342,71 @@ const genSplice = (e: ArrayOp, b: Code, removed: string): void => {
     b.lines.push(`rt_splice(cx, ${removed}, ${variable(b, e)}, ${Math.min(e.args.length, 2)}, ${offset?.c ?? 'rt_undef()'}, ${length?.c ?? 'rt_undef()'}, ${put.c});`);
 };
 
-// A C local for where an element is, once it has been made.
-const index = (b: Code, e: Expr): string => {
-    if (e.kind !== 'elem') throw new Error('not an element');
+// A C local for where an element is, once it has been made: in `array`,
+// a named array's or hash's slot or a container through a reference, at
+// `index`.
+const made = (b: Code, e: Expr, array: string, index: Expr): string => {
     const at = `i${++b.temps}`;
     b.decls.push(`int64_t ${at} RT_UNUSED;`);
-    b.lines.push(`${at} = ${elem(e)}_make(cx, ${variable(b, e)}, ${genExpr(e.index, b).c});`);
+    b.lines.push(`${at} = ${elem(e)}_make(cx, ${array}, ${genExpr(index, b).c});`);
     return at;
 };
 
 // The runtime's functions for an element begin `rt_elem` for an array's
 // and `rt_helem` for a hash's, and are otherwise the same: the element
 // read, made, got, put and stored (T218).
-const elem = (e: Expr): string => (e.kind === 'elem' && e.hash ? 'rt_helem' : 'rt_elem');
+const elem = (e: Expr): string => ((e.kind === 'elem' || e.kind === 'chain') && e.hash ? 'rt_helem' : 'rt_elem');
+
+// An element through a reference (step 13a): the container its last
+// subscript is of, worked out left to right, and that subscript, for the
+// caller to work out when its turn comes. Each hop is read through,
+// `rt_deref` faulting for undef and for what is not the reference wanted
+// (D107). With `store`, each hop is made instead where it is undef or not
+// there (T248): the variable at the head, unless it is read-only (T250),
+// and each element on the way, which is a store (D114); a head that is no
+// variable and no element is only read through, and faults for undef
+// (T252). While a loop's own list is built, every container gone through
+// is kept, to be frozen (D114, T251).
+const genChain = (e: Chain, b: Code, store: boolean): { container: string; last: Expr } => {
+    const links: Chain[] = [];
+    let base: Expr = e;
+    while (base.kind === 'chain') {
+        links.unshift(base);
+        base = base.head;
+    }
+    const subs: { index: Expr; hash: boolean }[] = links.map(c => ({ index: c.index, hash: c.hash === true }));
+    const kept = (c: string): string => {
+        if (b.frozen !== undefined) b.lines.push(`rt_frozen_add(cx, ${b.frozen}, ${c});`);
+        return c;
+    };
+    let container: string;
+    if (base.kind === 'elem') {
+        // `$a[0][1]`: the named array is where the first subscript is.
+        container = variable(b, base);
+        subs.unshift({ index: base.index, hash: base.hash === true });
+    } else {
+        const wanted = subs[0]!.hash ? 1 : 0;
+        const id = base.kind === 'var' ? b.names.of.get(base) : undefined;
+        if (store && base.kind === 'var' && !b.names.readonly.has(id!)) {
+            container = kept(temp(b, `rt_vivify(cx, &${variable(b, base)}, ${wanted})`).c);
+        } else {
+            const head = genExpr(base, b);
+            container = kept(temp(b, `rt_deref(cx, ${head.c}, ${wanted})`).c);
+        }
+    }
+    for (let k = 0; k + 1 < subs.length; k++) {
+        const at = genExpr(subs[k]!.index, b);
+        const wanted = subs[k + 1]!.hash ? 1 : 0;
+        const read = subs[k]!.hash ? 'rt_helem' : 'rt_elem';
+        if (store) {
+            container = kept(temp(b, `${read}_hop(cx, ${container}, ${at.c}, ${wanted})`).c);
+        } else {
+            const v = temp(b, `${read}(cx, ${container}, ${at.c})`);
+            container = kept(temp(b, `rt_deref(cx, ${v.c}, ${wanted})`).c);
+        }
+    }
+    return { container, last: subs.at(-1)!.index };
+};
 
 // The C for an expression's value, once the statements appended to `b`
 // have run. Operands are generated left before right, so that is the
@@ -386,6 +464,13 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     case 'array': return temp(b, `${e.hash ? 'rt_hash_count' : 'rt_count'}(cx, ${variable(b, e)})`);
     // `keys` and `values` where one value is wanted are that count too.
     case 'hashop': {
+        if (e.chain !== undefined) {
+            // `exists` and `delete` through a reference read the chain
+            // through, and make nothing (D107).
+            const { container, last } = genChain(e.chain, b, false);
+            const key = genExpr(last, b);
+            return temp(b, `rt_hash_${e.op}(cx, ${container}, ${key.c})`);
+        }
         if (e.keys !== undefined) {
             // As a statement: what it deleted is not wanted.
             addItem(e, temp(b, 'rt_array_new(cx)').c, b, 0);
@@ -401,6 +486,22 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         const at = genExpr(e.index, b);
         return temp(b, `${elem(e)}(cx, ${variable(b, e)}, ${at.c})`);
     }
+    // Step 13a: an element through a reference, read; a new container,
+    // the list made a reference or a hash made from it; a variable's own
+    // container, made one.
+    case 'chain': {
+        const { container, last } = genChain(e, b, false);
+        const at = genExpr(last, b);
+        return temp(b, `${elem(e)}(cx, ${container}, ${at.c})`);
+    }
+    case 'anon': {
+        const values = genList(e.items, b);
+        if (!e.hash) return temp(b, `rt_aref(cx, ${values.c})`);
+        const made = temp(b, 'rt_hash_new(cx)');
+        b.lines.push(`rt_hash_assign(cx, ${made.c}, ${values.c});`);
+        return temp(b, `rt_href(cx, ${made.c})`);
+    }
+    case 'ref': return temp(b, `${e.of.hash ? 'rt_href' : 'rt_aref'}(cx, ${variable(b, e.of)})`);
     // `(LIST)[N]`, where one value is wanted: that one, or undef.
     case 'slice': return temp(b, `rt_first(cx, ${genList([e], b).c})`);
     case 'sort': throw new Error('sort where one value is wanted');
@@ -450,12 +551,23 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         // variable is copied now, since a target before it may be that
         // variable (`($i, $a[$i]) = (1, 5)` stores at the old `$i`).
         const kept = (v: C): C => (v.place ? temp(b, v.c) : v);
-        const indexes = e.targets.map(t => (t.kind === 'elem' ? kept(genExpr(t.index, b)) : t.kind === 'slice' ? genList(t.indexes, b) : undefined));
+        // A target through a reference has its hops made now, in turn
+        // (step 13a), and is stored where the last one is.
+        const containers: (string | undefined)[] = [];
+        const indexes = e.targets.map((t, n) => {
+            if (t.kind === 'chain') {
+                const { container, last } = genChain(t, b, true);
+                containers[n] = container;
+                return kept(genExpr(last, b));
+            }
+            return t.kind === 'elem' ? kept(genExpr(t.index, b)) : t.kind === 'slice' ? genList(t.indexes, b) : undefined;
+        });
         e.targets.forEach((t, n) => {
             if (t.kind === 'constant') return;
             if (t.kind === 'array' || t.kind === 'myarray') b.lines.push(`${t.hash ? 'rt_hash_rest' : 'rt_array_rest'}(cx, ${variable(b, t)}, ${values.c}, ${n});`);
             else if (t.kind === 'slice') b.lines.push(`${t.hash ? 'rt_hslice_store' : 'rt_slice_store'}(cx, ${variable(b, t)}, ${indexes[n]!.c}, ${values.c});`);
             else if (t.kind === 'elem') b.lines.push(`${elem(t)}_store(cx, ${variable(b, t)}, ${indexes[n]!.c}, rt_list_item(cx, ${values.c}, ${n}));`);
+            else if (t.kind === 'chain') b.lines.push(`${elem(t)}_store(cx, ${containers[n]}, ${indexes[n]!.c}, rt_list_item(cx, ${values.c}, ${n}));`);
             else b.lines.push(`${variable(b, t)} = rt_list_item(cx, ${values.c}, ${n});`);
         });
         return { c: 'rt_undef()', place: false };
@@ -474,18 +586,28 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
             b.lines.push(`${e.target.hash ? 'rt_hash_assign' : 'rt_array_assign'}(cx, ${variable(b, e.target)}, ${values.c});`);
             return { c: 'rt_undef()', place: false };
         }
-        if (e.target.kind === 'elem') {
-            const array = variable(b, e.target);
+        if (e.target.kind === 'elem' || e.target.kind === 'chain') {
+            const target = e.target;
+            // Through a reference (step 13a): the chain for the index, its
+            // hops made, after the right side for `=` and before it for
+            // the rest, as perl has it.
+            const where = (): { array: string; last: Expr } => {
+                if (target.kind === 'elem') return { array: variable(b, target), last: target.index };
+                const { container, last } = genChain(target, b, true);
+                return { array: container, last };
+            };
             // `=`: the right side, then the index, then the store, the
             // right side read then if it is a variable (T158).
             if (op?.rt === undefined && op?.when === undefined) {
                 const value = genExpr(e.value, b);
-                const at = genExpr(e.target.index, b);
-                return temp(b, `${elem(e.target)}_store(cx, ${array}, ${at.c}, ${value.c})`);
+                const { array, last } = where();
+                const at = genExpr(last, b);
+                return temp(b, `${elem(target)}_store(cx, ${array}, ${at.c}, ${value.c})`);
             }
             // The others: the index, the target made, then the right
             // side, then the element read, worked on and stored (T159).
-            const at = index(b, e.target);
+            const { array, last } = where();
+            const at = made(b, target, array, last);
             if (op.when !== undefined) {
                 const was = temp(b, `${elem(e.target)}_get(cx, ${array}, ${at})`);
                 b.lines.push(`if (${op.when}(cx, ${was.c})) {`);
@@ -513,9 +635,10 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     case 'step': {
         const op = stepOp(e.op);
         if (op === undefined) throw new Error(`no runtime function for ${e.op}`);
-        if (e.target.kind === 'elem') {
-            const array = variable(b, e.target);
-            const at = index(b, e.target);
+        if (e.target.kind === 'elem' || e.target.kind === 'chain') {
+            const target = e.target;
+            const { array, last } = target.kind === 'elem' ? { array: variable(b, target), last: target.index } : (({ container, last }) => ({ array: container, last }))(genChain(target, b, true));
+            const at = made(b, target, array, last);
             const held = temp(b, `${elem(e.target)}_get(cx, ${array}, ${at})`);
             const was = e.before || op.before === undefined ? held : temp(b, `${op.before}(cx, ${held.c})`);
             const now = temp(b, `${op.rt}(cx, ${held.c})`);
@@ -777,18 +900,23 @@ const genStmt = (s: Stmt, out: Out): string[] => {
         const x = slot(out.names.of.get(s.var)!);
         const one = s.items.length === 1 ? through(s.items[0]!) : undefined;
         const range = one !== undefined && one.kind === 'binary' && isRange(one) ? one : undefined;
+        const frozen = each.frozen === undefined ? undefined : slot(each.frozen);
+        // (A range's ends are numbers once worked out: nothing to freeze.)
+        b.frozen = frozen === undefined || range ? undefined : temp(b, 'rt_array_new(cx)').c;
         let loop: string[];
         if (range) {
             const from = genExpr(range.left, b);
             const to = genExpr(range.right, b);
             b.lines.push(`go_${id} = rt_range_ends(cx, ${from.c}, ${to.c}, &at_${id}, &end_${id});`);
+            if (frozen !== undefined) b.lines.push(`${frozen} = rt_array_new(cx);`);
             loop = [`if (go_${id}) for (;; at_${id}++) {`, `    ${x} = rt_int(at_${id}); // $${s.var.name}`];
         } else {
             const list = genList(s.items, b, 2);
             b.lines.push(`${slot(each.list)} = ${list.c};`);
+            if (frozen !== undefined) b.lines.push(`${frozen} = ${b.frozen};`);
             loop = [`for (; at_${id} < rt_list_length(cx, ${slot(each.list)}); at_${id}++) {`, `    ${x} = rt_list_item(cx, ${slot(each.list)}, at_${id}); // $${s.var.name}`];
         }
-        const thaws = each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`);
+        const thaws = [...each.arrays.map(a => `rt_thaw(cx, ${slot(a)});`), ...(frozen ? [`rt_thaw_all(cx, ${frozen});`] : [])];
         return [
             '{',
             ...indent([
@@ -797,6 +925,7 @@ const genStmt = (s: Stmt, out: Out): string[] => {
                 `int go_${id} RT_UNUSED = 0;`,
                 ...b.decls, ...b.lines,
                 ...each.arrays.map(a => `rt_freeze(cx, ${slot(a)});`),
+                ...(frozen ? [`rt_freeze_all(cx, ${frozen});`] : []),
                 ...loop,
                 ...indent(['{', ...indent(inLoop(out, id, thaws, s.body)), '}', `next_${id}: RT_UNUSED;`, ...(range ? [`if (at_${id} == end_${id}) break;`] : [])]),
                 '}',

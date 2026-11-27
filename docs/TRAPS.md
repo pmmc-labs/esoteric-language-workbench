@@ -629,6 +629,14 @@ programs were run to write the proposal. Each row is in
 | T255 | `my $r = g(); $r->$* = 7; my $x; say $x;` with `sub g() { return \$x }` | `7` | 13 | A file's variable has one cell from the start |
 | T256 | `defined $r->@*` | Does not compile | 13 | Refuse, as `defined(@a)` |
 
+## Found building step 13a
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T258 | `my $r = [1, 2]; my @l = map { $r = [7]; $_ } ($r->[0], $r->[1]); say "@l";` | A segmentation fault: perl crashes (T251's kin, by `map`'s own list) | 13a | Refused by D77 with D114: the block may not assign what the list reads through. No test asks perl |
+| T259 | `my $r = [0]; my $t = "t"; my ($x, $z) = ("a", "b"); $t .= ($r->[0] = $x . $z); say $t, "\|", $r->[0];`; the same with `$a[0]` and `$h{k}` for the target | `tab\|ab`: the element is assigned, through a reference or not; T129's lost assignment is a variable's alone | 13a | Agree: a chain is no target T129's rule refuses (its rule for an element is stricter than perl, and stays) |
+| T340 | `say {a => 1}->{a};` and `say {"a", 2}->{a};` | `1` and `2`: perl takes these braces for a hash, not the block of a file handle | 13a | Refused all the same (D113): which perl guesses is by what follows the brace, and `+{ ... }` says it |
+
 ## Found by the review of step 14
 
 | | Program | perl prints | Step | Way out |

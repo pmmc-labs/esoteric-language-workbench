@@ -68,13 +68,20 @@ export type Resolution = {
     each: ReadonlyMap<Foreach | Binder | Sort, Each>;
     // The declarations that are a loop's variable or `$_`: read-only (D17).
     readonly: ReadonlySet<number>;
+    // The arrays and hashes whose reference is taken anywhere in the
+    // program, `\@a` or `\%h` (step 13a; D109): what a reference reaches
+    // may be one of them, under any name.
+    taken: ReadonlySet<number>;
 };
 
 // What a `foreach` has beside its variable: `list`, a declaration no
 // program can name, whose slot holds the loop's list while it runs; and
 // `arrays`, every array named anywhere in the list, which the loop
 // freezes (D80, T162).
-export type Each = { list: number; arrays: readonly number[] };
+// And `frozen`, when an element through a reference stands anywhere in
+// the list (step 13a; D114, T251): another such declaration, whose slot
+// holds every container the list went through, which the loop freezes too.
+export type Each = { list: number; arrays: readonly number[]; frozen?: number };
 
 // What is round a statement that perl counts as a loop: a loop, or a
 // bare block, which runs once (T32).
@@ -103,8 +110,10 @@ export const resolve = (program: Program): Resolution => {
         if (!quoted && !counted) naming.forEach(set => set.add(found.get('%' + name)!));
     };
     // The array a node names, looked up as it is met.
-    const array = (e: Expr, name: string): void => {
-        if ((e.kind === 'array' || e.kind === 'elem' || e.kind === 'slice') && e.hash) return hash(e, name);
+    // A reference to it, `\@a`, names nothing (`counted`): the list it
+    // stands in holds the reference, which no change to the array changes.
+    const array = (e: Expr, name: string, counted = false): void => {
+        if ((e.kind === 'array' || e.kind === 'elem' || e.kind === 'slice') && e.hash) return hash(e, name, counted);
         const found = [...scopes].reverse().find(scope => scope.has('@' + name));
         if (found === undefined) {
             // In a string, what was read may not be what was meant.
@@ -116,13 +125,16 @@ export const resolve = (program: Program): Resolution => {
         of.set(e, found.get('@' + name)!);
         // A string is a copy: an array in one is not named by the list
         // the string stands in (T209).
-        if (!quoted) naming.forEach(set => set.add(found.get('@' + name)!));
+        if (!quoted && !counted) naming.forEach(set => set.add(found.get('@' + name)!));
     };
     // Whether what is being read is a piece of a string (step 11a).
     let quoted = false;
     // The arrays named while the list of a `foreach`, a `map` or a `grep`
     // is read: one set for each list that is being read.
     const naming: Set<number>[] = [];
+    // And for each, whether an element through a reference stands in it.
+    const chains: boolean[] = [];
+    const taken = new Set<number>();
     const each = new Map<Foreach | Binder | Sort, Each>();
     const readonly = new Set<number>();
     // The most slots in use since the statement in hand began: a `map`
@@ -209,6 +221,18 @@ export const resolve = (program: Program): Resolution => {
         case 'elem':
             walk(e.index, declared);
             return array(e, e.name);
+        // Step 13a: an element through a reference, its head first; a new
+        // container; a reference to a variable's.
+        case 'chain':
+            walk(e.head, declared);
+            walk(e.index, declared);
+            if (!quoted) chains.fill(true);
+            return;
+        case 'anon': return e.items.forEach(x => walk(x, declared));
+        case 'ref':
+            array(e.of, e.of.name, true);
+            taken.add(of.get(e.of)!);
+            return;
         case 'slice':
             // Its indexes are worked out first (T163).
             e.indexes.forEach(x => walk(x, declared));
@@ -219,6 +243,7 @@ export const resolve = (program: Program): Resolution => {
             e.args.forEach(x => walk(x, declared));
             return array(e, e.name);
         case 'hashop':
+            if (e.chain !== undefined) return walk(e.chain, declared);
             if (e.key !== undefined) walk(e.key, declared);
             e.keys?.forEach(x => walk(x, declared));
             return hash(e, e.name, e.op === 'keys' || e.op === 'count');
@@ -228,11 +253,13 @@ export const resolve = (program: Program): Resolution => {
             // with `$a` and `$b` its own.
             const arrays = new Set<number>();
             naming.push(arrays);
+            chains.push(false);
             e.items.forEach(x => walk(x, declared));
             naming.pop();
+            const chained = chains.pop()!;
             if (e.body === undefined) return;
             scopes.push(new Map());
-            bind(e, [e.a!, e.b!], arrays);
+            bind(e, [e.a!, e.b!], arrays, chained);
             round.push({ wall: 'sort' });
             inner(e.body);
             round.pop();
@@ -244,10 +271,12 @@ export const resolve = (program: Program): Resolution => {
             // the one outside; then the block, in a scope of its own.
             const arrays = new Set<number>();
             naming.push(arrays);
+            chains.push(false);
             e.items.forEach(x => walk(x, declared));
             naming.pop();
+            const chained = chains.pop()!;
             scopes.push(new Map());
-            bind(e, [e.var], arrays);
+            bind(e, [e.var], arrays, chained);
             round.push({ wall: e.op });
             inner(e.body);
             round.pop();
@@ -312,9 +341,10 @@ export const resolve = (program: Program): Resolution => {
     // What a `foreach`, a `map` or a `grep` has in its scope: its list,
     // a declaration no program can name (no name has a blank in it), and
     // its variable.
-    const bind = (binder: Foreach | Binder | Sort, variables: readonly My[], arrays: ReadonlySet<number>): void => {
+    const bind = (binder: Foreach | Binder | Sort, variables: readonly My[], arrays: ReadonlySet<number>, chained: boolean): void => {
         const list: MyArray = { kind: 'myarray', name: 'the list', pos: binder.pos };
-        for (const d of [list, ...variables]) {
+        const frozen: MyArray = { kind: 'myarray', name: 'the frozen', pos: binder.pos };
+        for (const d of [list, ...(chained ? [frozen] : []), ...variables]) {
             of.set(d, names.length);
             isArray.push(d.kind === 'myarray');
             isHash.push(false);
@@ -322,7 +352,7 @@ export const resolve = (program: Program): Resolution => {
             declare(d);
         }
         variables.forEach(v => readonly.add(of.get(v)!));
-        each.set(binder, { list: of.get(list)!, arrays: [...arrays] });
+        each.set(binder, chained ? { list: of.get(list)!, arrays: [...arrays], frozen: of.get(frozen)! } : { list: of.get(list)!, arrays: [...arrays] });
     };
 
     const inner = (body: readonly Stmt[]): void => {
@@ -411,10 +441,12 @@ export const resolve = (program: Program): Resolution => {
             // is not in it.
             const arrays = new Set<number>();
             naming.push(arrays);
+            chains.push(false);
             whole(...s.items);
             naming.pop();
+            const chained = chains.pop()!;
             scopes.push(new Map());
-            bind(s, [s.var], arrays);
+            bind(s, [s.var], arrays, chained);
             round.push({ loop: s });
             inner(s.body);
             round.pop();
@@ -468,5 +500,5 @@ export const resolve = (program: Program): Resolution => {
         if (owner[id] === 0 && !fileSlots.has(id)) slots[id]! += file;
     }
     frames[0] = file + variables;
-    return { of, names, isArray, isHash, slots, owner, frames, file, fileIds: fileSlots, subs, calls, lists: listSubs(subs, calls), loops, jumps, each, readonly };
+    return { of, names, isArray, isHash, slots, owner, frames, file, fileIds: fileSlots, subs, calls, lists: listSubs(subs, calls), loops, jumps, each, readonly, taken };
 };
