@@ -1,0 +1,2 @@
+t/2854-lcfirst-minus.pl:4:13: lcfirst -: perl warns that this is ambiguous: write lcfirst(-...)
+exit: 1

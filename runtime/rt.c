@@ -1625,3 +1625,4 @@ void rt_internal(rt_ctx *cx, const char *what) {
 #include "sort.c"
 #include "hash.c"
 #include "format.c"
+#include "strfn.c"

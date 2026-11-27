@@ -644,6 +644,52 @@ below a whole number, `"1.99999999999999999"`, here and as a count or
 for `chr`: its nearest double is 2, and perl cuts it to 1 or to 2 by
 what was done with the string before.
 
+### ucfirst, lcfirst and rindex
+
+`ucfirst` and `lcfirst` change the first character of a string, if it
+is an ASCII letter, to a capital or a small letter; a first character
+past ASCII is a fault, as it is for `uc` and `lc`. They are written as
+`uc` and `lc` are, with brackets or without, and without them take
+everything up to what binds more loosely than the dot:
+
+    say ucfirst "hello";       # Hello
+    say lcfirst("ABC");        # aBC
+
+`rindex(STRING, PIECE)` is the position where the piece last begins,
+or -1, and `rindex(STRING, PIECE, POSITION)` the last place it begins
+that it can end by the position plus its own length, as perl has it.
+So a position below zero finds nothing but the empty piece:
+
+    say rindex("abcabc", "b");      # 4
+    say rindex("abcabc", "b", 3);   # 1
+    say rindex("abc", "a", -1);     # -1
+
+It is always written with brackets. A position so large that the sum
+passes the largest Int is a fault: perl has two answers there.
+
+### chomp and chop
+
+`chomp($line);` takes a newline off the end of a variable's string, if
+it ends in one, and `chop($line);` takes off its last character,
+whatever it is. They are statements, on one scalar variable, with
+brackets or without:
+
+    my $line = "text\n";
+    chomp $line;              # text
+    chop $line;               # tex
+
+A variable that holds a number is left alone by `chomp` (a number's
+string never ends in a newline, and perl keeps the number); `chop`
+makes it a string first, as `.` would, so `chop` of 1.5 is `1.`. An
+undef is a fault.
+
+**Their values are not in the language**: perl gives how many
+characters `chomp` took and the character `chop` took, and a change in
+the middle of an expression is what the language keeps out. So `my $n
+= chomp($s);`, `if (chomp $s)`, `chomp(my $x = ...)`, and `chomp` of
+an array, a hash, an element, `$_` or two variables are refused. A
+loop's variable can't be chomped either: it is read-only.
+
 ### sprintf and printf
 
 `sprintf(FORMAT, LIST)` makes a string from a format and values, and

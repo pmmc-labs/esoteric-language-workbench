@@ -1,0 +1,2 @@
+fault: undef where a string is wanted at t/2823-fault-chop-undef.pl line 5.
+exit: 1

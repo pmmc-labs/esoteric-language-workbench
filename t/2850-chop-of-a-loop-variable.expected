@@ -1,0 +1,2 @@
+t/2850-chop-of-a-loop-variable.pl:5:18: $x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
+exit: 1

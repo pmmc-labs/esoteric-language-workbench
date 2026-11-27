@@ -1,0 +1,2 @@
+fault: lcfirst of a character past ASCII at t/2821-fault-lcfirst-past-ascii.pl line 6.
+exit: 1

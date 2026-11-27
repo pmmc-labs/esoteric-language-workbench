@@ -412,6 +412,13 @@ rt_value rt_join(rt_ctx *cx, rt_value separator, rt_value list);
 // runtime/format.c (step 16b): the list is the format and its values.
 rt_value rt_sprintf(rt_ctx *cx, rt_value list);
 void rt_printf(rt_ctx *cx, rt_value list);
+// runtime/strfn.c (step 16c).
+rt_value rt_ucfirst(rt_ctx *cx, rt_value a);
+rt_value rt_lcfirst(rt_ctx *cx, rt_value a);
+rt_value rt_rindex2(rt_ctx *cx, rt_value a, rt_value b);
+rt_value rt_rindex3(rt_ctx *cx, rt_value a, rt_value b, rt_value position);
+rt_value rt_chomp(rt_ctx *cx, rt_value a);
+rt_value rt_chop(rt_ctx *cx, rt_value a);
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

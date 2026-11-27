@@ -59,7 +59,10 @@ export type Name =
     // A builtin whose arguments are in brackets, always (D41): `min` to
     // `min + rt.length - 1` of them, each count with a runtime function
     // of its own.
-    | { kind: 'function'; min: number; rt: readonly string[] };
+    | { kind: 'function'; min: number; rt: readonly string[] }
+    // `chomp` and `chop` (step 16c, D130): a statement on one scalar
+    // variable, built as the variable assigned what `rt` makes of it.
+    | { kind: 'changer'; rt: string };
 
 export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['use', { kind: 'use' }],
@@ -72,6 +75,8 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['length', { kind: 'unary', rt: 'rt_length' }],
     ['uc', { kind: 'unary', rt: 'rt_uc' }],
     ['lc', { kind: 'unary', rt: 'rt_lc' }],
+    ['ucfirst', { kind: 'unary', rt: 'rt_ucfirst' }],
+    ['lcfirst', { kind: 'unary', rt: 'rt_lcfirst' }],
     ['ord', { kind: 'unary', rt: 'rt_ord' }],
     ['chr', { kind: 'unary', rt: 'rt_chr' }],
     ['defined', { kind: 'unary', rt: 'rt_defined' }],
@@ -110,6 +115,9 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['delete', { kind: 'hashop', shape: 'elem' }],
     ['substr', { kind: 'function', min: 2, rt: ['rt_substr2', 'rt_substr3'] }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
+    ['rindex', { kind: 'function', min: 2, rt: ['rt_rindex2', 'rt_rindex3'] }],
+    ['chomp', { kind: 'changer', rt: 'rt_chomp' }],
+    ['chop', { kind: 'changer', rt: 'rt_chop' }],
 ]);
 
 // Every word perl 5.42 gives a meaning to: its own keyword table, whole
