@@ -1,0 +1,10 @@
+--- perl:
+true
+def
+yes
+[exit 0]
+--- curly:
+false
+undef
+no
+[exit 0]

@@ -1,0 +1,357 @@
+### say-sub-call
+say sub { 3 }->();
+--- perl:
+3
+[exit 0]
+
+### print-sub
+print sub { 1 }; print "\n";
+--- perl:
+CODE(0x55c9c08083d0)
+[exit 0]
+
+### stmt-start-sub-call
+sub { say "ran" }->();
+--- perl:
+ran
+[exit 0]
+
+### stmt-start-sub-call-semicolon
+sub { say "ran" }->(); say "after";
+--- perl:
+ran
+after
+[exit 0]
+
+### sub-then-bracket
+my $f = sub { [1, 2] }->()[1]; say $f;
+--- perl:
+2
+[exit 0]
+
+### call-then-index-noarrow
+my $f = sub { [5, 6] }; say $f->()[1];
+--- perl:
+6
+[exit 0]
+
+### call-then-key-noarrow
+my $f = sub { { k => 7 } }; say $f->(){k};
+--- perl:
+7
+[exit 0]
+
+### call-then-key-plus
+my $f = sub { +{ k => 7 } }; say $f->(){k};
+--- perl:
+7
+[exit 0]
+
+### sub-returning-hash-word-first
+my $f = sub { { a => 1 } }; say ref($f->()) || "plain:" . join(",", $f->());
+--- perl:
+HASH
+[exit 0]
+
+### sub-returning-hash-scalar-first
+my $x = "a"; my $f = sub { { $x => 1 } }; my @r = $f->(); say scalar(@r), ref($r[0]) || "plain";
+--- perl:
+2plain
+[exit 0]
+
+### elem-call-noarrow
+my @r = (sub { 8 }); say $r[0]();
+--- perl:
+8
+[exit 0]
+
+### ref-elem-call-noarrow
+my $r = [sub { 9 }]; say $r->[0]();
+--- perl:
+9
+[exit 0]
+
+### hash-call-noarrow
+my %h = (k => sub ($x) { $x * 2 }); say $h{k}(4);
+--- perl:
+8
+[exit 0]
+
+### var-bracket
+my $f = sub { 1 }; say $f(1);
+--- perl:
+stderr: Not a GLOB reference at - line 2.
+[exit 255]
+
+### var-space-bracket
+my $f = sub { 1 }; say $f (1);
+--- perl:
+stderr: Not a GLOB reference at - line 2.
+[exit 255]
+
+### arrow-space
+my $f = sub ($x) { $x }; say $f-> (5);
+--- perl:
+5
+[exit 0]
+
+### arrow-newline
+my $f = sub ($x) { $x }; say $f
+  ->(6);
+--- perl:
+6
+[exit 0]
+
+### arrow-paren-newline
+my $f = sub ($x) { $x }; say $f->
+(7);
+--- perl:
+7
+[exit 0]
+
+### ampersand-call
+my $f = sub { 2 }; say &$f();
+--- perl:
+2
+[exit 0]
+
+### ampersand-brace
+my $f = sub { 2 }; say &{$f}();
+--- perl:
+2
+[exit 0]
+
+### ampersand-postfix
+my $f = sub { 2 }; say $f->&*;
+--- perl:
+2
+[exit 0]
+
+### ref-name-call
+sub nm($x) { $x + 1 } my $r = \&nm(1); say ref($r), " ", $r->$*;
+--- perl:
+SCALAR 2
+[exit 0]
+
+### ref-name-call-space
+sub nm2($x) { $x + 1 } my $r = \&nm2 (1); say ref($r);
+--- perl:
+SCALAR
+[exit 0]
+
+### ref-name-noargs
+sub nm3() { 5 } my $r = \&nm3; say $r->();
+--- perl:
+5
+[exit 0]
+
+### ref-undefined-name
+my $r = \&nosuch; say ref($r); say defined &nosuch ? "d" : "u";
+--- perl:
+CODE
+u
+[exit 0]
+
+### ref-name-before-defined
+my $r = \&later; sub later() { 4 } say $r->();
+--- perl:
+4
+[exit 0]
+
+### ref-deref-var
+my $f = sub { 3 }; my $r = \&$f; say $r == $f ? "same" : "diff";
+--- perl:
+same
+[exit 0]
+
+### ref-string
+sub nm4() { 1 } my $r = \&{"nm4"}; say $r->();
+--- perl:
+1
+[exit 0]
+
+### current-sub-outside
+say defined __SUB__ ? "def" : "undef";
+--- perl:
+undef
+[exit 0]
+
+### current-sub-named
+sub nm5() { return __SUB__ } say nm5() == \&nm5 ? "same" : "diff";
+--- perl:
+same
+[exit 0]
+
+### current-sub-in-map
+my $f = sub { my @l = map { __SUB__ } 1; return $l[0] }; say $f->() == $f ? "same" : "diff";
+--- perl:
+same
+[exit 0]
+
+### current-sub-in-sort
+my $f = sub { my $s; my @l = sort { $s = __SUB__; $a <=> $b } 2, 1; return $s }; say $f->() == $f ? "same" : "diff";
+--- perl:
+same
+[exit 0]
+
+### current-sub-in-grep
+my $f = sub { my @l = grep { __SUB__ } 1; return scalar(@l) }; say $f->();
+--- perl:
+1
+[exit 0]
+
+### proto-dollar
+my $f = sub ($) { 1 }; say $f->(9);
+--- perl:
+1
+[exit 0]
+
+### proto-dollar-dollar
+my $f = sub ($$) { 1 }; say $f->(9, 8);
+--- perl:
+stderr: Illegal character following sigil in a subroutine signature at - line 2, near "($"
+stderr: syntax error at - line 2, near "$$) "
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### sig-placeholder-default
+my $f = sub ($x, $y = 1, @) { $x + $y }; say $f->(1, 2, 3, 4);
+--- perl:
+3
+[exit 0]
+
+### sig-at-underscore
+my $f = sub (@_) { 1 }; say $f->();
+--- perl:
+stderr: Can't use global @_ in subroutine signature at - line 2, near "(@_"
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### attr
+my $f = sub :prototype($) { 1 }; say $f->(1);
+--- perl:
+1
+[exit 0]
+
+### attr-lvalue
+my $x = 1; my $f = sub :lvalue { $x }; $f->() = 5; say $x;
+--- perl:
+5
+[exit 0]
+
+### named-sub-no-sig-stmt
+sub name { 1 } say name();
+--- perl:
+1
+[exit 0]
+
+### sub-paren-named
+sub name2 ($x) { $x } say name2(3);
+--- perl:
+3
+[exit 0]
+
+### anon-sig-param-shadows
+my $x = 1; my $f = sub ($x) { $x + 1 }; say $f->(10);
+--- perl:
+11
+[exit 0]
+
+### anon-my-shadows
+my $x = 1; my $f = sub { my $x = $x + 1; $x }; say $f->(), $x;
+--- perl:
+21
+[exit 0]
+
+### return-in-map-in-anon
+my $f = sub { my @l = map { return 5 } 1, 2; 9 }; say $f->();
+--- perl:
+5
+[exit 0]
+
+### last-in-map-in-anon-own-loop
+my $f = sub { my $n = 0; for my $i (1..3) { my @l = map { last if $i == 2; $_ } 1; $n++ } return $n }; say $f->();
+--- perl:
+1
+[exit 0]
+
+### next-in-anon-to-own-loop
+my $f = sub { my $n = 0; for my $i (1..3) { next if $i == 2; $n++ } return $n }; say $f->();
+--- perl:
+2
+[exit 0]
+
+### last-crossing-sub-in-sort
+my @l; for my $i (1..3) { @l = sort { last } 2, 1; say $i } say "done";
+--- perl:
+stderr: Exiting pseudo-block via last at - line 2.
+stderr: Can't "last" outside a loop block at - line 2.
+[exit 255]
+
+### anon-hash-of-subs
+my %d = (inc => sub ($n) { $n + 1 }, dec => sub ($n) { $n - 1 }); say $d{inc}->(1), $d{dec}->(1);
+--- perl:
+20
+[exit 0]
+
+### sub-in-list-comma
+my @l = (sub { 1 }, sub { 2 }); say scalar(@l);
+--- perl:
+2
+[exit 0]
+
+### sub-then-x
+my @l = (sub { 1 }) x 2; say $l[0] == $l[1] ? "same" : "diff";
+--- perl:
+same
+[exit 0]
+
+### double-call
+my $f = sub { sub { 3 } }; say $f->()->(), $f->()();
+--- perl:
+33
+[exit 0]
+
+### block-stmt-sub-word
+my $f = sub { sub { 1 } }; say ref($f->());
+--- perl:
+CODE
+[exit 0]
+
+### say-paren-sub
+say(sub { 4 }->());
+--- perl:
+4
+[exit 0]
+
+### ternary-subs
+my $f = 1 ? sub { "a" } : sub { "b" }; say $f->();
+--- perl:
+a
+[exit 0]
+
+### or-sub
+my $g; my $f = $g || sub { "dflt" }; say $f->();
+--- perl:
+dflt
+[exit 0]
+
+### sub-call-wrongcount
+my $f = sub ($x) { $x }; say $f->();
+--- perl:
+stderr: Too few arguments for subroutine 'main::__ANON__' (got 0; expected 1) at - line 2.
+[exit 255]
+
+### arrow-call-on-call
+sub mk() { return sub { 11 } } say mk()->();
+--- perl:
+11
+[exit 0]
+
+### arrow-call-on-call-noarrow
+sub mk2() { return sub { 12 } } say mk2()();
+--- perl:
+stderr: syntax error at - line 2, near ")("
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+

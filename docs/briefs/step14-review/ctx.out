@@ -1,0 +1,249 @@
+### last-stmt-array-scalar
+my @a = (4, 5, 6); my $f = sub { @a }; my $c = $f->(); say $c;
+--- perl:
+3
+[exit 0]
+
+### last-stmt-list-scalar
+my $f = sub { (4, 5, 6) }; my $c = $f->(); say $c;
+--- perl:
+6
+[exit 0]
+
+### return-nothing-scalar
+my $f = sub { return }; my $c = $f->(); say defined $c ? "def" : "undef";
+--- perl:
+undef
+[exit 0]
+
+### return-nothing-list
+my $f = sub { return }; my @l = ($f->(), 1); say scalar(@l);
+--- perl:
+1
+[exit 0]
+
+### empty-body
+my $f = sub { }; my @l = ($f->()); my $c = $f->(); say scalar(@l), defined $c ? "def" : "undef";
+--- perl:
+0undef
+[exit 0]
+
+### if-last-scalar
+my $f = sub ($x) { if ($x) { "yes" } }; my $c = $f->(0); say "[$c]";
+--- perl:
+[0]
+[exit 0]
+
+### say-last
+my $f = sub { say "hi" }; my $c = $f->(); say $c;
+--- perl:
+hi
+1
+[exit 0]
+
+### loop-last
+my $f = sub { for my $i (1..2) { } }; my @l = $f->(); say scalar(@l);
+--- perl:
+1
+[exit 0]
+
+### bool-test
+my $f = sub { return (0, 0) }; say $f->() ? "t" : "f";
+--- perl:
+f
+[exit 0]
+
+### bool-test-arr
+my @e = (); my $f = sub { return @e }; say $f->() ? "t" : "f";
+--- perl:
+f
+[exit 0]
+
+### index
+my @a = (10, 20, 30); my $f = sub { return (2, 0) }; say $a[$f->()];
+--- perl:
+10
+[exit 0]
+
+### hash-value
+my $f = sub { return (1, 2) }; my $r = { k => $f->() }; say join ",", sort keys $r->%*;
+--- perl:
+2,k
+stderr: Odd number of elements in anonymous hash at - line 2.
+[exit 0]
+
+### ternary-list
+my $f = sub { return (1, 2) }; my @l = (1 ? $f->() : 0); say scalar(@l);
+--- perl:
+2
+[exit 0]
+
+### or-scalar
+my $f = sub { return (0, 7) }; my $c = $f->() || 9; say $c;
+--- perl:
+7
+[exit 0]
+
+### defor-scalar
+my $f = sub { return (undef) x 2 }; my $c = $f->() // 9; say $c;
+--- perl:
+
+stderr: Use of uninitialized value in repeat (x) at - line 2.
+[exit 0]
+
+### repeat-left
+my $f = sub { return (1, 2) }; say $f->() x 2;
+--- perl:
+22
+[exit 0]
+
+### repeat-right
+my $f = sub { return (1, 3) }; say "a" x $f->();
+--- perl:
+aaa
+[exit 0]
+
+### list-repeat
+my $f = sub { return (1, 2) }; my @l = ($f->()) x 2; say "@l";
+--- perl:
+1 2 1 2
+[exit 0]
+
+### push
+my @a; my $f = sub { return (1, 2) }; push @a, $f->(); say scalar(@a);
+--- perl:
+2
+[exit 0]
+
+### scalar-of
+my $f = sub { return (1, 2, 3) }; say scalar($f->());
+--- perl:
+3
+[exit 0]
+
+### countof
+my $f = sub { return (1, 2, 3) }; my $n = () = $f->(); say $n;
+--- perl:
+3
+[exit 0]
+
+### my-list
+my $f = sub { return (1, 2, 3) }; my ($x) = $f->(); say $x;
+--- perl:
+1
+[exit 0]
+
+### return-through
+my $f = sub { return (5, 6) }; sub g() { return $f->() } my $c = g(); my @l = g(); say $c, scalar(@l);
+--- perl:
+62
+[exit 0]
+
+### last-stmt-through
+my $f = sub { return (5, 6) }; sub g2() { $f->() } my $c = g2(); say $c;
+--- perl:
+6
+[exit 0]
+
+### concat
+my $f = sub { return (1, 2) }; say "x" . $f->();
+--- perl:
+x2
+[exit 0]
+
+### arith
+my $f = sub { return (1, 2) }; say 10 + $f->();
+--- perl:
+12
+[exit 0]
+
+### compare
+my $f = sub { return (1, 2) }; say $f->() == 2 ? "eq" : "ne";
+--- perl:
+eq
+[exit 0]
+
+### not
+my $f = sub { return (1, 0) }; say !$f->() ? "t" : "f";
+--- perl:
+t
+[exit 0]
+
+### arg-of-length
+my $f = sub { return ("ab", "cde") }; say length $f->();
+--- perl:
+3
+[exit 0]
+
+### sort-block-uses
+my $f = sub ($p, $q) { return ($q, $p) }; my @l = sort { $f->($a, $b) } 1, 2, 3; say "@l";
+--- perl:
+3 2 1
+[exit 0]
+
+### in-interp-not
+my $f = sub { 1 }; say "@{[ $f->() ]}";
+--- perl:
+1
+[exit 0]
+
+### return-scalar-reverse
+my $f = sub { return reverse("ab", "c") }; my $c = $f->(); say $c;
+--- perl:
+cba
+[exit 0]
+
+### keys-count
+my %h = (a=>1,b=>2); my $f = sub { return keys %h }; my $c = $f->(); say $c;
+--- perl:
+2
+[exit 0]
+
+### last-stmt-hash
+my %h = (a=>1,b=>2); my $f = sub { %h }; my $c = $f->(); say $c;
+--- perl:
+2
+[exit 0]
+
+### last-stmt-map
+my $f = sub { map { $_ } 1, 2, 3 }; my $c = $f->(); say $c;
+--- perl:
+3
+[exit 0]
+
+### last-stmt-grep
+my $f = sub { grep { $_ } 1, 2, 3 }; my $c = $f->(); say $c;
+--- perl:
+3
+[exit 0]
+
+### last-stmt-sort
+my $f = sub { sort 3, 2, 1 }; my $c = $f->(); say defined $c ? "def:$c" : "undef";
+--- perl:
+undef
+[exit 0]
+
+### last-stmt-assign-list
+my $f = sub { my @x = (1, 2, 3) }; my $c = $f->(); say $c;
+--- perl:
+3
+[exit 0]
+
+### last-stmt-listassign
+my $f = sub { my ($p, $q) = (7, 8, 9) }; my $c = $f->(); say $c;
+--- perl:
+3
+[exit 0]
+
+### last-stmt-slice
+my @a = (1, 2, 3); my $f = sub { @a[0, 1] }; my $c = $f->(); say $c;
+--- perl:
+2
+[exit 0]
+
+### last-stmt-call
+sub two() { return (8, 9) } my $f = sub { two() }; my $c = $f->(); say $c;
+--- perl:
+9
+[exit 0]
+

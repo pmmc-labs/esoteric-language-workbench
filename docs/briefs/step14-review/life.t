@@ -1,0 +1,25 @@
+### self-free-while-running
+my $f;
+{ my $x = "kept"; $f = sub { $f = undef; return $x . "!" } }
+say $f->();
+say defined $f ? "def" : "undef";
+### self-free-twice-in-list
+my $f;
+{ my @a = (1, 2, 3); $f = sub { $f = sub { 0 }; return @a } }
+my @l = $f->(); say "@l";
+### outlive-frame
+sub mk() { my @a = (1); return sub { push @a, 2; scalar(@a) } }
+my $c = mk(); $c->(); say $c->();
+### cell-shared-closure-and-ref
+my $x = 1; my $r = \$x; my $f = sub { $x++ }; $f->(); $r->$* += 10; say $x, " ", $f->(), " ", $x;
+### cycle
+my @a; push @a, sub { scalar(@a) }; say $a[0]->();
+### recursion-closure-old-still-running
+my @s;
+sub rec($n) { my $v = $n; my $f = sub { $v }; if ($n > 0) { rec($n - 1); } push @s, $f->(); return }
+rec(2); say "@s";
+### mutual-closures
+my ($even, $odd);
+$even = sub ($n) { $n == 0 ? 1 : $odd->($n - 1) };
+$odd = sub ($n) { $n == 0 ? 0 : $even->($n - 1) };
+say $even->(10), $odd->(7);

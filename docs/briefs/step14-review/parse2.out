@@ -1,0 +1,187 @@
+### named-call-index
+sub mk() { return [1, 2] } say mk()[1];
+--- perl:
+stderr: syntax error at - line 2, near ")["
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### named-call-arrow-index
+sub mk() { return [1, 2] } say mk()->[1];
+--- perl:
+2
+[exit 0]
+
+### named-call-call-arrow
+sub mk() { return sub { 3 } } say mk()->()();
+--- perl:
+stderr: Can't use string ("3") as a subroutine ref while "strict refs" in use at - line 2.
+[exit 255]
+
+### paren-sub-call
+say((sub { 4 })->());
+--- perl:
+4
+[exit 0]
+
+### paren-sub-call-noarrow
+say((sub { 4 })());
+--- perl:
+stderr: syntax error at - line 2, near ")("
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### call-call-call
+my $f = sub { sub { sub { 5 } } }; say $f->()()();
+--- perl:
+5
+[exit 0]
+
+### elem-call-call
+my @a = (sub { sub { 6 } }); say $a[0]()();
+--- perl:
+6
+[exit 0]
+
+### ref-call-index-call
+my $r = [sub { [sub { 7 }] }]; say $r->[0]()[0]();
+--- perl:
+7
+[exit 0]
+
+### deref-block-call
+my $f = sub { 8 }; say &{ $f };
+--- perl:
+8
+[exit 0]
+
+### call-ampersand-name
+sub nm() { 9 } say &nm;
+--- perl:
+9
+[exit 0]
+
+### call-ampersand-name-paren
+sub nm() { 9 } say &nm();
+--- perl:
+9
+[exit 0]
+
+### chain-arrow-call-after-key
+my %h = (k => [sub { 10 }]); say $h{k}[0]();
+--- perl:
+10
+[exit 0]
+
+### ref-ref-name-call-bareword
+sub nm($x) { $x } my $r = \&nm; say $r->(1), &$r(2), &{$r}(3);
+--- perl:
+123
+[exit 0]
+
+### stringify-code
+my $f = sub { 1 }; say "f=$f" =~ /^f=CODE\(0x[0-9a-f]+\)$/ ? "addr" : "other";
+--- perl:
+addr
+[exit 0]
+
+### code-numeric
+my $f = sub { 1 }; say $f + 0 > 0 ? "num" : "zero";
+--- perl:
+num
+[exit 0]
+
+### code-eq-string
+my $f = sub { 1 }; my $g = $f; say $f eq $g ? "eq" : "ne";
+--- perl:
+eq
+[exit 0]
+
+### ref-of-call-result-arrow
+my $r = [sub { 1 }]; say ref $r->[0];
+--- perl:
+CODE
+[exit 0]
+
+### ref-unary-sub
+say ref sub { 1 };
+--- perl:
+CODE
+[exit 0]
+
+### ref-unary-sub-call
+say ref sub { [1] }->();
+--- perl:
+ARRAY
+[exit 0]
+
+### defined-sub
+my $f = sub { 1 }; say defined $f ? "d" : "u";
+--- perl:
+d
+[exit 0]
+
+### defined-ampersand
+sub nm() { 1 } say defined &nm ? "d" : "u";
+--- perl:
+d
+[exit 0]
+
+### var-paren-not-say
+my $f = sub { 1 }; my $v = $f(1); say $v;
+--- perl:
+stderr: syntax error at - line 2, near "$f("
+stderr: Execution of - aborted due to compilation errors.
+[exit 255]
+
+### ref-name-arrow-call
+sub nm() { sub { 5 } } my $r = \&nm->(); say ref($r);
+--- perl:
+SCALAR
+[exit 0]
+
+### ref-name-brackets-arrow-call
+sub nm() { 6 } say ((\&nm)->());
+--- perl:
+6
+[exit 0]
+
+### ref-name-then-index
+sub nm() { [7] } my $r = \&nm; say ref $r;
+--- perl:
+CODE
+[exit 0]
+
+### ampersand-name-statement-passes-args
+sub nm(@x) { scalar(@x) } sub wrap(@y) { &nm } say wrap(1, 2, 3);
+--- perl:
+3
+stderr: Implicit use of @_ in subroutine entry with signatured subroutine is experimental at - line 2.
+[exit 0]
+
+### ref-name-arrow-call-clean
+sub nm() { return sub { 42 } }
+my $r = \&nm->();
+say ref($r);
+say $r->$*;
+--- perl:
+SCALAR
+42
+[exit 0]
+
+### ref-name-arrow-index
+sub nm() { return [8, 9] }
+my $r = \&nm->[1];
+say ref($r), " ", $r->$*;
+--- perl:
+SCALAR 9
+[exit 0]
+
+### ref-name-arrow-call-in-sub-with-args
+sub nm() { return sub { 42 } }
+sub outer($x) { my $r = \&nm->(); return ref($r) }
+say outer(1);
+--- perl:
+stderr: Implicit use of @_ in subroutine entry with signatured subroutine is experimental at - line 3.
+stderr: Too many arguments for subroutine 'main::nm' (got 1; expected 0) at - line 3.
+[exit 255]
+

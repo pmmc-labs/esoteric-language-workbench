@@ -1,0 +1,54 @@
+### claim01-T360 expect: 1,2,3
+my @s; for my $i (1..3) { push @s, sub { return $i } } say join ",", map { $_->() } @s;
+### claim02-T360 expect: 3,3,3
+my @s; for (my $i = 0; $i < 3; $i++) { push @s, sub { $i } } say join ",", map { $_->() } @s;
+### claim03-T360 expect: 122
+my @s; for my $i (1..3) { my $j = $i; push @s, sub { $j++ } } say $s[0]->(), $s[0]->(), $s[1]->();
+### claim04-T360 expect: 121
+sub counter() { my $n = 0; return sub { return ++$n } } my $c = counter(); my $d = counter(); say $c->(), $c->(), $d->();
+### claim05-T360 expect: 2|5
+my $x = 1; my $f = sub { $x }; $x = 2; say $f->(); my $g = sub { $x = 5 }; $g->(); say $x;
+### claim06-T11 expect: 9
+my @a=(1,2); my @s; for my $x (@a) { push @s, sub { $x } } $a[0]=9; say $s[0]->();
+### claim07-T361 expect: 9
+my %h = (a => 1); my @s; for my $v (values %h) { push @s, sub { $v } } $h{a} = 9; say $s[0]->();
+### claim08-T361 expect: a
+my %h = (a => 1); my @s; for my $k (keys %h) { push @s, sub { $k } } delete $h{a}; say $s[0]->();
+### claim09-T361 expect: 9
+my ($p, $q) = (1, 2); my @s; for my $x ($p, $q) { push @s, sub { $x } } $p = 9; say $s[0]->();
+### claim10-T361 expect: 13
+my @a = (1,2,3); my @s; for my $x (@a) { push @s, sub { $x } } push @a, 4; shift @a; say $s[0]->(), $s[2]->();
+### claim11-T362 expect: undef
+my @a = (1,2); my @s = map { sub { $_ } } @a; say defined $s[0]->() ? "def" : "undef";
+### claim12-T363 expect: same
+my @s; for my $i (1..2) { push @s, sub { 1 } } say $s[0] == $s[1] ? "same" : "diff";
+### claim13-T363 expect: diff
+my @s; for my $i (1..2) { push @s, sub { $i } } say $s[0] == $s[1] ? "same" : "diff";
+### claim14-T363 expect: diff
+my $g = 1; sub mk() { return sub { $g } } say mk() == mk() ? "same" : "diff";
+### claim15-T363 expect: same
+sub mk() { return sub { 1 } } say mk() == mk() ? "same" : "diff";
+### claim16-T364 expect: 33
+my $f = sub { return (1,2,3) }; my @l = $f->(); my $c = $f->(); say scalar(@l), $c;
+### claim17-T364 expect: 106
+my $total = 5; my $step = sub { $total += 100; return 1 }; say $total + $step->();
+### claim18-T364 expect: 9 0
+my @l; my $x = 1; my $bump = sub { $x = 9; 0 }; @l = ($x, $bump->()); say "@l";
+### claim19-T365 expect: 1|done, and a warning Exiting subroutine via last
+my $f = sub { last }; for my $i (1..3) { say $i; $f->() } say "done";
+### claim20-T366 expect: dies, Too many arguments for subroutine
+my $f = sub () { 42 }; say $f->(1);
+### claim21-T366 expect: dies, Can't use an undefined value as a subroutine reference
+my $f; $f->();
+### claim22-T366 expect: dies, Not a CODE reference
+my $f = [1]; $f->();
+### claim23-T366 expect: dies, as a subroutine ref while "strict refs"
+my $f = 5; $f->();
+### claim24-T367 expect: 377|33|3
+my %d = (add => sub ($x, $y) { $x + $y }); my @fs = (sub { 7 }); say $d{add}->(1,2), $fs[0](), $d{add}(3,4); my $add = sub ($x) { sub ($y) { $x + $y } }; say $add->(1)->(2), $add->(1)(2); say sub { 3 }->();
+### claim25-T368 expect: 2CODEsame|120
+sub named($x) { return $x + 1 } my $r = \&named; say $r->(1), ref($r), $r == \&named ? "same" : "diff"; my $f = sub ($n) { return $n <= 1 ? 1 : $n * __SUB__->($n - 1) }; say $f->(5);
+### claim26-T369 expect: dies, Undefined subroutine &main::fact
+my sub fact($n) { return $n <= 1 ? 1 : $n * fact($n - 1) } say fact(5);
+### claim27-T369 expect: 121
+my @s; for my $i (1..2) { push @s, sub { state $n = 0; return ++$n } } say $s[0]->(), $s[0]->(), $s[1]->();

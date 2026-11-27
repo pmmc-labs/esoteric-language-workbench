@@ -1,0 +1,223 @@
+### callee-reassigned-in-args
+my $f = sub ($x) { "old$x" }; my $g = sub ($x) { "new$x" };
+say $f->(($f = $g) ? 1 : 0);
+--- perl:
+new1
+[exit 0]
+
+### callee-reassigned-by-sub-in-args
+my $f = sub ($x) { "old$x" };
+sub swap() { $f = sub ($x) { "new$x" }; return 1 }
+say $f->(swap());
+--- perl:
+new1
+[exit 0]
+
+### callee-key-changed-in-args
+my %d = (a => sub ($x) { "A$x" }, b => sub ($x) { "B$x" }); my $k = "a";
+say $d{$k}->($k = "b");
+--- perl:
+Bb
+[exit 0]
+
+### callee-elem-shift-in-args
+my @a = (sub ($x) { "first$x" }, sub ($x) { "second$x" });
+say $a[0]->(scalar(shift @a) ? 1 : 0);
+--- perl:
+second1
+[exit 0]
+
+### callee-noarrow-elem
+my @a = (sub ($x) { "first$x" }, sub ($x) { "second$x" });
+say $a[0](scalar(shift @a) ? 1 : 0);
+--- perl:
+second1
+[exit 0]
+
+### callee-chain-call
+my $f = sub { sub ($x) { "inner-old$x" } }; my $g = sub { sub ($x) { "inner-new$x" } };
+say $f->()->(($f = $g) ? 1 : 0);
+--- perl:
+inner-new1
+[exit 0]
+
+### callee-closure-changes-itself
+my $f; $f = sub ($x) { "one$x" };
+my $set = sub { $f = sub ($x) { "two$x" }; 7 };
+say $f->($set->());
+--- perl:
+two7
+[exit 0]
+
+### callee-ref-name
+sub one($x) { "one$x" } sub two($x) { "two$x" }
+my $r = \&one; say $r->(($r = \&two) ? 1 : 0);
+--- perl:
+two1
+[exit 0]
+
+### callee-in-concat
+my $f = sub { "old" };
+say "x" . $f->() . (($f = sub { "new" }) ? "" : "");
+--- perl:
+xold
+[exit 0]
+
+### callee-counts
+my $n = 0; my $f = sub ($x) { "f$x" };
+say $f->($n++), $n;
+--- perl:
+f01
+[exit 0]
+
+### callee-after-args-order-print
+my $f = sub ($x) { say "called"; $x };
+sub arg() { say "arg"; 1 }
+sub fn() { say "fn"; $f }
+fn()->(arg());
+--- perl:
+arg
+fn
+called
+[exit 0]
+
+### callee-call-order-two-args
+sub arg($n) { say "arg$n"; $n }
+sub fn() { say "fn"; sub ($p, $q) { "done" } }
+say fn()->(arg(1), arg(2));
+--- perl:
+arg1
+arg2
+fn
+done
+[exit 0]
+
+### callee-elem-index-call-order
+sub idx() { say "idx"; 0 }
+sub arg() { say "arg"; 1 }
+my @a = (sub ($x) { "called$x" });
+say $a[idx()]->(arg());
+--- perl:
+arg
+idx
+called1
+[exit 0]
+
+### callee-changes-arg-value
+my $x = 1;
+sub mk() { $x = 5; return sub ($v) { $v } }
+say mk()->($x + 0);
+--- perl:
+1
+[exit 0]
+
+### callee-changes-arg-var
+my $x = 1;
+sub mk() { $x = 5; return sub ($v) { $v } }
+say mk()->($x);
+--- perl:
+5
+[exit 0]
+
+### callee-changes-arg-elem
+my @a = (1);
+sub mk() { $a[0] = 5; return sub ($v) { $v } }
+say mk()->($a[0] * 1);
+--- perl:
+1
+[exit 0]
+
+### callee-index-reads-var-changed-by-arg
+my $i = 0; my @fs = (sub { "zero" }, sub { "one" });
+say $fs[$i]->($i = 1);
+--- perl:
+one
+[exit 0]
+
+### callee-concat-arg
+my $x = "a";
+sub mk() { $x = "b"; return sub ($v) { $v } }
+say mk()->($x . "!");
+--- perl:
+a!
+[exit 0]
+
+### callee-string-arg
+my $x = "a";
+sub mk() { $x = "b"; return sub ($v) { $v } }
+say mk()->("$x!");
+--- perl:
+a!
+[exit 0]
+
+### callee-count-faults-order
+sub mk() { say "mk"; return sub ($v) { $v } }
+sub two() { say "two"; return (1, 2) }
+say mk()->(two());
+--- perl:
+two
+mk
+stderr: Too many arguments for subroutine 'main::__ANON__' (got 2; expected 1) at - line 4.
+[exit 255]
+
+### callee-undef-order
+my $f;
+sub arg() { say "arg ran"; 1 }
+$f->(arg());
+--- perl:
+arg ran
+stderr: Can't use an undefined value as a subroutine reference at - line 4.
+[exit 255]
+
+### callee-not-code-order
+my $f = [1];
+sub arg() { say "arg ran"; 1 }
+$f->(arg());
+--- perl:
+arg ran
+stderr: Not a CODE reference at - line 4.
+[exit 255]
+
+### order-curried
+sub p($s) { say $s; 1 }
+my $f = sub ($a1) { say "f called"; sub ($b1) { say "inner called"; 0 } };
+$f->(p("a1"))->(p("a2"));
+--- perl:
+a2
+a1
+f called
+inner called
+[exit 0]
+
+### order-curried-noarrow
+sub p($s) { say $s; 1 }
+my $f = sub ($a1) { say "f called"; sub ($b1) { say "inner called"; 0 } };
+$f->(p("a1"))(p("a2"));
+--- perl:
+a2
+a1
+f called
+inner called
+[exit 0]
+
+### order-dispatch-key-call
+sub p($s) { say $s; $s }
+my %d = (k => sub ($x) { say "called $x"; 0 });
+$d{p("k")}->(p("arg"));
+--- perl:
+arg
+k
+called arg
+[exit 0]
+
+### order-callee-in-list
+sub p($s) { say $s; 1 }
+my $f = sub ($x) { say "called"; 2 };
+my @l = (p("before"), $f->(p("arg")), p("after"));
+--- perl:
+before
+arg
+called
+after
+[exit 0]
+
