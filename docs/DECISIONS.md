@@ -2174,3 +2174,33 @@ perl with every warning that is not the program's own `warn` marked,
 and fails the test for one. Rejected: stderr in a `same` test (D10's
 empty stderr is what shows a warning of perl's); the two streams
 mixed (their order is the buffers').
+
+**D150 and D151. What the review of step 15 found: each answered with
+its recommendation.** *(User, by the same standing instruction as
+D140 to D149; Fable 5.2's defaults, his to overturn.)*
+**D150. A `die` or a `warn` whose message is not written to end in a
+newline may not stand in a statement, a test, a loop's header or a
+default that is over more than one line, nor in the test of a
+`while` or an `until`** (T316, T317): perl names there a line its
+lexer had reached, or the last statement the loop ran, and the line
+is in the message, which a program can print. "Written to end in a
+newline": the last of its arguments is a string whose last character
+is a newline as written, so that no line is added. A `die` in a
+statement of a block, in a sub the statement calls or in a `map`'s
+block is in a statement of its own, and only that statement counts.
+Rejected: modelling perl's line (a lexer's state, with corners at
+`(`, `@a` and a word alone in a hash's braces, and a store at every
+statement of a loop's block); refusing every `die` in such a
+statement (the newline is what most messages end in). D34 stands for
+faults, whose text is the language's own.
+**D151. An uncaught `die` after a string read as a number, or a
+`**`, underflowed is a fault** (T319): perl's errno is ERANGE from then
+on, and perl exits with it, 34 and not 255. The runtime notes the
+underflow (the C library's ERANGE, a subnormal, or a zero from digits
+that are not all zero) and faults at the `die`, which never exits
+with a status perl would not. D12's rejection of following `$!` said
+"it would drag in `$!` after every system call"; a read of a number
+is enough, and this is the one place it shows today. Rejected:
+keeping an errno of the runtime's own (a model of perl's every call
+that sets it); faulting at the underflow itself (a fault where
+nothing could show it).

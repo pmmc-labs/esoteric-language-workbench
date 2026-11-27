@@ -640,6 +640,21 @@ line is `use v5.42;`.
 | T314 | `my $r = warn "w\n"; say $r;`; `warn;`; `warn "";`; `warn "a", "b";`; `warn $u` with `$u` undef; `print STDERR`, `say STDERR` with a list | `1`; `Warning: something's wrong at FILE line N.` twice; `ab at FILE line N.`; `Use of uninitialized value $u in warn`; on stderr, in order | 15 | Agree (15b), and fault for the undef (D48) |
 | T315 | `... if 1;`; `my $x = ...;`; `sub f() { ... } f();` | Do not compile; do not compile; `Unimplemented at FILE line N.` | 15 | Agree, as a statement alone (D145) |
 
+## Found by the review of step 15
+
+The review (an independent session, given the proposal and perl 5.42;
+its report is summarised in `PLAN.md`, step 15, "What the review
+found") found three ways to be WRONG and two gaps. Each row is in
+`briefs/claims.py`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T316 | A `die` in a `while`'s or an `until`'s test, after the block has run: `while ($i < 2 \|\| die "w") { $i++; say "body"; say "more"; }` over five lines | `w at FILE line 6.`: the last statement the block ran, a nested block counting as the statement that opens it; the loop's line after a `next`, or the first time. T124's kin | 15 | Refuse a `die` or a `warn` in a `while`'s or an `until`'s test whose message is not written to end in a newline (D150) |
+| T317 | A statement over several lines that begins with `(` or `@a`, or has a word alone as a hash key in it: `(` newline `$x,` newline `$y)` newline `= (1, die "b");`, `$h{k} =` newline `die "a";`, `my $v = 1 +` newline `$h{k} +` newline `die "c";` | The line after the statement's first, or its last: the line perl's lexer had reached. `%h` newline `= (1, die "c")` gives the first | 15 | Refuse a `die` or a `warn` whose message is not written to end in a newline in a statement, a test, a loop's header or a default over more than one line (D150) |
+| T318 | `sub f($x,` newline `$y = die "default")`, called from a statement over two lines | `default at FILE line 3.`: the parameter's line, not the call's | 15 | Agree: a default's line is its parameter's, which the generated code stores |
+| T319 | `my $s = "1e-310"; my $v = $s + 0;` (or `10 ** -400`), a `die` caught, a `say`, then an uncaught `die "x\n"` | `out`, `x`, and **exit 34**: the read of the string set errno to ERANGE, and perl exits with `$!`. A literal that underflows is read as perl compiles, and leaves 255 | 15 | Fault, at an uncaught `die` after a read of a string or a `**` underflowed (D151); D12's reason for not following `$!`, "every system call", was too narrow |
+| T320 | `say STDERR ("x"), "y";` | `xy`: the brackets are not the whole list | 15 | Refuse brackets of its own after `STDERR` (15b), as T76 and T100 have it for `say` |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

@@ -392,8 +392,11 @@ full when its step is, and its rows join the sections above then.
   of an operator is refused, and so is `$x or die ...;` as a
   statement (D146); a `# line` directive is refused (D147). A test
   that writes to stderr is of a kind of its own (D149). `...` is a
-  `die` (D145); 15a and 15b (D140). The rows join the sections above
-  as they are built.
+  `die` (D145); 15a and 15b (D140). A `die` whose message does not
+  end in a newline is refused in a statement over several lines and
+  in a `while`'s test (D150); an uncaught `die` after a number
+  underflowed faults (D151). The rows join the sections above as
+  they are built.
 - **Regexes** (steps 19, 20). Perl's syntax and matching order, a
   subset, compiled. No `s///e`, no `(?{ })`, no string interpolated
   as a pattern. **How `s///` and a match read with `$_` read-only

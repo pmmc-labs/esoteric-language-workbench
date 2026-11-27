@@ -1095,5 +1095,21 @@ CLAIMS += [
     c('15-deep', 'PLAN 15', 'sub f($n) { die "deep\\n" if $n == 0; return f($n - 1) } try { f(50) } catch ($e) { print $e } say "ok";', out='deep\nok\n'),
 ]
 
+# ---- step 15, what its review found (PLAN 15; TRAPS T316 to T320)
+CLAIMS += [
+    c('T316', 'TRAPS; PLAN 15', 'my $i = 0;\ntry {\n  while ($i < 2 || die "w") {\n    $i++;\n    next if $i == 2;\n    say "body";\n  }\n} catch ($e) { print "caught: $e" }\nmy $j = 0;\ntry {\n  until ($j >= 1 && die "u") {\n    $j++;\n    if ($j) {\n      say "in";\n    }\n  }\n} catch ($e) { print "caught: $e" }', out='body\ncaught: w at claim.pl line 4.\nin\ncaught: u at claim.pl line 14.\n'),
+    c('T316-body', 'TRAPS; PLAN 15', 'my $i = 0;\nwhile ($i < 2 || die "w") {\n  $i++;\n  say "body";\n  say "more";\n}', outre='(body\nmore\n){2}', exit=255, err=r'^w at claim\.pl line 6\.\n$'),
+    c('T317', 'TRAPS; PLAN 15', 'my ($x, $y);\ntry {\n(\n $x,\n $y)\n = (1, die "b");\n} catch ($e) { print $e }\nmy %h = (k => 1);\ntry {\n$h{k} =\n  die "a";\n} catch ($e) { print $e }\ntry {\nmy $v = 1 +\n  $h{k} +\n  die "c";\n} catch ($e) { print $e }', out='b at claim.pl line 5.\na at claim.pl line 12.\nc at claim.pl line 17.\n'),
+    c('T317-array', 'TRAPS; PLAN 15', 'my @a;\ntry {\n@a\n = (1, die "b");\n} catch ($e) { print $e }\nmy %h;\ntry {\n%h\n = (1, die "c");\n} catch ($e) { print $e }', out='b at claim.pl line 5.\nc at claim.pl line 9.\n'),
+    c('T318', 'TRAPS; PLAN 15', 'sub f($x,\n      $y = die "default") {\n  return $x;\n}\ntry {\n  f(\n    2);\n} catch ($e) { print $e }', out='default at claim.pl line 3.\n'),
+    c('T319', 'TRAPS; PLAN 15', 'my $s = "1e-310"; my $v = $s + 0;\ntry { die "a" } catch ($e) {}\nsay "out";\ndie "x\\n";', out='out\n', exit=34, err=r'^x\n$'),
+    c('T319-pow', 'TRAPS; PLAN 15', 'my $n = 10; my $v = $n ** -400; die "x\\n";', out='', exit=34, err=r'^x\n$'),
+    c('T319-truth', 'TRAPS; PLAN 15', 'my $s = "1e-310"; say "ok" if $s; die "x\\n";', out='ok\n', exit=255, err=r'^x\n$'),
+    c('T320', 'TRAPS; PLAN 15', 'say STDERR ("x"), "y";', out='', err=r'^xy\n$'),
+    c('15-not-die', 'PLAN 15', 'my $x = !die("x");', out='', exit=255, err=r'^x at claim\.pl line 2\.\n$'),
+    c('15-list', 'PLAN 15', 'my @a = (1, 2, 3); try { die map { $_ * 2 } @a } catch ($e) { print $e } try { die reverse @a } catch ($e) { print $e } my $x = 0; try { my $v = $x || die "a", "b" } catch ($e) { print $e }', out='246 at claim.pl line 2.\n321 at claim.pl line 2.\nab at claim.pl line 2.\n'),
+    c('15-defined-or', 'PLAN 15', 'sub boom() { die "x\\n" } my %i; try { $i{k} //= boom() } catch ($e) { } my @e; try { $e[2] ||= boom() } catch ($e) { } say exists $i{k} ? "made" : "not", scalar(@e);', out='made3\n'),
+]
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

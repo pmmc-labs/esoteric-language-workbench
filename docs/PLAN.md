@@ -4752,7 +4752,7 @@ and the checks gain a kind).
 in another tree and step 16 in a third. Stevan, before it was
 written: "do not ask me questions, I will only agree with your
 recommendations anyway", so each question is answered with its
-recommendation, as D140 to D149, his to overturn.** The outline this
+recommendation, as D140 to D149 (and D150, D151 from its review), his to overturn.** The outline this
 replaces said: a `die` with a string (and perl's ` at FILE line N.`
 when there's no newline, byte for byte) or with an object; `try` and
 `catch`; an uncaught `die` (D12, tests of kind `dies`); `warn`, and
@@ -5008,6 +5008,58 @@ with a program); `die` tested or first (accident, rarely, errors);
 files make it common); the line directive (accident, rarely,
 layout); and "Errors" leaves "Decided, not built". The census: its
 `later 15` rows go, and the account says where each probe went.
+
+#### What the review found
+
+An independent session was given this proposal and perl 5.42, and
+nothing else of this tree, and asked for a program the proposal
+would run, not fault, and print differently from perl. Its report
+was handed back as text (the builder had no tool to give it the
+tree, and saved its findings here and in `TRAPS.md`, T316 to T320;
+the report itself is in that session's transcript). Three ways to
+be WRONG, two gaps, and a list of what held; each is answered by
+agreeing, faulting or refusing, as the working rules order:
+
+1. **A `die` in a `while`'s or `until`'s test names the last
+   statement the block ran**, not the loop's line, after the first
+   time (T316, T124's kin). D34's line is the language's own for a
+   fault, but a `die`'s line is in a message a program prints.
+   **Refused** (D150), unless the message is written to end in a
+   newline, when there is no line in it.
+2. **A statement over several lines has a line of perl's lexer's
+   choosing** (T317): one that begins with `(` or `@a`, or that has a
+   word alone in a hash's braces anywhere in it, names a later line.
+   **Refused** the same way (D150): a `die` or `warn` whose message
+   is not written to end in a newline may not stand in a statement,
+   a test, a loop's header or a default over more than one line.
+   Only the innermost statement counts: a `die` in a block's own
+   statement, a sub or a `map`'s block is judged by that statement.
+3. **An uncaught `die` exits with perl's errno**, which a string read
+   as a number or a `**` that underflows sets to ERANGE: exit 34
+   (T319). **A fault** at the uncaught `die` after such an underflow
+   (D151); D12's reason for not following `$!` was too narrow.
+4. **A default names its parameter's line** (T318): the generated
+   code already stores it; now tested.
+5. **The line directive with no blank after `#`** is perl's too: the
+   rule was written "blanks" and built as "any blanks, none
+   included"; tested.
+6. Stated now: `!die` and `-die`, which perl takes in silence, are
+   not tests, and are in; every assigning operator makes its element
+   before its right side dies, `//=` and `||=` too (claim
+   `15-defined-or`); the faults for printing past ASCII are where the
+   message is written, an uncaught `die` or a `warn`, and never a
+   caught `$e`; `say STDERR ("x"), "y"` prints `xy` (T320), and
+   brackets of its own after `STDERR` are refused; `die`'s arguments
+   are a list, `map`, `grep`, `sort` and `reverse` in it (claim
+   `15-list`); a sub that ends in `try` is idiomatic in 5.40 code, and
+   `DIFFERENCES.md` gets a row for its fault.
+
+What held, by the reviewer's runs: every message shape, numbers in
+messages, the state after a caught `die` over every container
+operation tried (an in-place sort over 11 lengths, 30 seeds and dies
+at comparisons 0 to 40), `return`, `last` and `next` out of `try` and
+`catch`, `$@` empty after a `try`, the exit status 255 otherwise,
+`warn`'s value and messages.
 
 ### 16. Strings, the rest
 
