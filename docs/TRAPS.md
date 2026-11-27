@@ -684,6 +684,49 @@ found") found three ways to be WRONG and two gaps. Each row is in
 | T319 | `my $s = "1e-310"; my $v = $s + 0;` (or `10 ** -400`), a `die` caught, a `say`, then an uncaught `die "x\n"` | `out`, `x`, and **exit 34**: the read of the string set errno to ERANGE, and perl exits with `$!`. A literal that underflows is read as perl compiles, and leaves 255 | 15 | Fault, at an uncaught `die` after a read of a string or a `**` underflowed (D151); D12's reason for not following `$!`, "every system call", was too narrow |
 | T320 | `say STDERR ("x"), "y";` | `xy`: the brackets are not the whole list | 15 | Refuse brackets of its own after `STDERR` (15b), as T76 and T100 have it for `say` |
 
+## Found proposing step 16
+
+T9, T22, T23 and T79 are this step's from before. About 300 programs
+were run to write the proposal, in a worktree beside steps 13 to 15.
+Each row is in `briefs/claims16.py`, which `briefs/claims.py` reads.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T260 | `say qw(a b c)[1]; my @l = qw(a b) x 2;`; and `for my $x qw(a b) {...}`, `if qw(a) {...}` | `b`, `a b a b`; the last two do not compile | 16 | `qw` is a bracketed list, and brackets for nothing else (D122) |
+| T261 | `q(a\(b)`, `q(a\\b\c)`; `qw(a\ b c\\d)`, `qw(a\(b c)`; `qw(a,b c)`, `qw(a #b c)` | `a(b`, `a\b\c`; `a\` `b` `c\d`, `a(b` `c`; the last two warn | 16 | A backslash in a `qw` is refused, and a comma and a `#` (D121) |
+| T262 | `print <<'EOT';` with `a\\b\'c` in the body | `a\\b\'c`, every backslash kept, where `'a\\b\'c'` is `a\b'c` | 16 | Agree: a single-quoted heredoc is every character as it is (D123) |
+| T263 | `print <<~EOT;` with a body line indented less than the terminator, or by a tab where the terminator has blanks | Dies as it compiles: `Indentation on line 2 of here-doc doesn't match delimiter` | 16 | Refuse (D123) |
+| T264 | `say <<EOT . "a⏎b";`, and `say "a⏎b" . <<EOT;`, a string across a line on the heredoc's line | The first does not compile; the second takes the body after the string's last line | 16 | Refuse anything on a heredoc's line that goes on past the end of it (D123) |
+| T265 | `sprintf("%d", 1e30)`, `sprintf("%d", 9.3e18)`, `sprintf("%x", 1e30)`, `sprintf("%d", 1.5e19)` | `-1`, `-9146744073709551616`, `ffffffffffffffff`, `-3446744073709551616`: the machine's conversion of a double past the Ints | 16 | Fault outside the Ints, and for the unsigned conversions outside -2^63 to 2^64 (D127) |
+| T266 | `sprintf("%x", -1)`, `%o`, `%u` | `ffffffffffffffff`, `1777777777777777777777`, `18446744073709551615` | 16 | Agree: a negative Int as its 64 bits (D127) |
+| T267 | `my $x = 0.0; sprintf("%g", -$x)`, and with `$x = 0` | `-0`, then `0` (T79) | 16 | Fault on a negative zero to `%e`, `%f`, `%g` (D127) |
+| T268 | `sprintf("%05s", "ab")` | `000ab`, which C's printf leaves undefined | 16 | Agree, padding strings by hand |
+| T269 | `sprintf("%3s", "é")`, `sprintf("%.1s", "éa")` | `  é`, `é`: width and precision in characters | 16 | Agree |
+| T270 | `sprintf("%s-%s", "a")`, `sprintf("%s", "a", "b")`, `sprintf("%y")`, `sprintf("abc%")`; `printf` the same | `a-`, `a`, `%y`, `abc%`, each with a warning | 16 | Fault on the count (D126); refuse a bad conversion (D125) |
+| T271 | `sprintf("%99999999999d", 1)` | perl runs out of memory as it compiles | 16 | Refuse a width or precision of 2^31 or more (D125) |
+| T272 | `my $s = 1e15; chomp($s); say $s + 1;`; `chomp` of `"ab\r\n"`; `chop` of 1.5 | `1000000000000001`; `ab\r`; `1.`. (Proposed as "the string `1e+15` added as a float": wrong, T279) | 16 | `chop` makes its variable a string as `.` does; `chomp` leaves a number (D131) |
+| T273 | `printf ("%s\n", "a");` with one blank | `a`, and no warning | 16 | Agree: T76's look along the line, for every statement word |
+| T274 | `my @a = ("%s-%s", 2, 3); say sprintf(@a);` (T22), `sprintf($f, 3)` | `3`: the count of `@a` is the format; `3` | 16 | Refuse a format that is not a literal (D124) |
+| T275 | `sprintf("%.0f", 0.5)`, 1.5, 2.5, -0.5; `%.2f` of 2.675 and 1.005 | `0`, `2`, `2`, `-0`; `2.67`, `1.00`: C's rounding of the double | 16 | Agree, through C's `snprintf` |
+| T276 | `sprintf("%vd", "1.22.333")`, `sprintf("%2\$s %1\$s", ...)`, `sprintf("%n", 1)` | a version format, arguments by number, and a write to a read-only value | 16 | Refuse each (D125) |
+| T277 | `sprintf("%3c", 0xE9)`, `sprintf("%3c", 0x100)`, `sprintf("%3c", 0x263A)`, `sprintf("%c%3c", 0x263A, 0xE9)` | `  é`, ` Ā`, `☺`, `☺ é`: a wide character padded by its bytes, and a Latin-1 one too once the string is wide | 16 | Refuse a width on `%c` (D125) |
+
+## Found by the review of step 16
+
+A reader who did not write the proposal, given it and perl
+(`briefs/step16-review/FINDINGS.md`). Each row is in
+`briefs/claims16.py`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T278 | `my $x = "X"; my @x = ("Y"); say qq[$x\[0\]];`, against `"$x\[0\]"`; `qq{$x\{a\}}` | `Y`, the element, against `X[0]`; `H` | 16 | Refuse a backslash before a bracket of a `qq`'s own delimiter (D131) |
+| T279 | `my $x = 1/3; chomp $x; say $x * 3;`; `0.1 + 0.2` chomped, `- 0.3` | `1`; `5.55111512312578e-17`: `chomp` leaves a number | 16 | Agree: `chomp` changes a Str alone (D131) |
+| T280 | `sprintf("%.0f", 0.5000000000000001)`, and the negative; with a width or a flag | `0`, `-0`, where C prints `1` and `-1`; C's answer with a width or a flag | 16 | Agree: perl's own rounding for a bare `%.0f` (D131) |
+| T281 | `rindex("abc", "a", -1)`, `rindex("abc", "", -1)`; near 2^63 | `-1`, `0`; near 2^63 the answer turns on whether the string is UTF-8 inside | 16 | Agree, and fault where the position and the length pass 2^63 - 1 (D131) |
+| T282 | `sprintf("%g", "-0")`, `"-0.0"`, `"-0e0"`; and after `"-0" + 0` | `-0`; after the sum, `0` | 16 | Fault: a minus and a zero, in a string, under `%e`, `%f`, `%g` (D131) |
+| T283 | `sprintf("%*s|%.*f", -4, "a", -2, 1.25)`; `sprintf("%*d", 4294967297, 1)`; `sprintf("%*d", 2**62, 1)` | `a   |1.250000`; a string of 4294967297; `Integer overflow in format string` | 16 | Agree within 2^31 - 1, fault outside (D131) |
+| T284 | `my @a = (<<A,⏎"x");⏎body⏎A` | Does not compile: `"x");` is in the body | 16 | The same: the body is the lines after the heredoc's own line, and the rest is refused |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

@@ -1,0 +1,2 @@
+fault: a character past ASCII printed without 'use open' at t/2746-fault-format-printf-past-ascii-without-use-open.pl line 4.
+exit: 1

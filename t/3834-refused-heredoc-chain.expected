@@ -1,0 +1,2 @@
+t/3834-refused-heredoc-chain.pl:6:3: '->[' hard after $r in a string: a dereference, to perl, and a dereference in a string is not in the language yet (step 13d); write $r\->[
+exit: 1

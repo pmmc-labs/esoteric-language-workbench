@@ -66,15 +66,24 @@ export type Name =
     | { kind: 'try' }
     | { kind: 'catch' }
     | { kind: 'yada' }
-    | { kind: 'handle'; say: string; print: string };
+    | { kind: 'handle'; say: string; print: string }
+    // `chomp` and `chop` (step 16c, D130): a statement on one scalar
+    // variable, built as the variable assigned what `rt` makes of it.
+    | { kind: 'changer'; rt: string };
 
 export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['use', { kind: 'use' }],
     ['say', { kind: 'statement', rt: 'rt_say_list' }],
     ['print', { kind: 'statement', rt: 'rt_print_list' }],
+    // Step 16b (D128): `printf` is a statement as `print` is, and
+    // `sprintf` a value as `join` is; the list's first value is the
+    // format, which compiler/src/format.ts reads.
+    ['printf', { kind: 'statement', rt: 'rt_printf' }],
     ['length', { kind: 'unary', rt: 'rt_length' }],
     ['uc', { kind: 'unary', rt: 'rt_uc' }],
     ['lc', { kind: 'unary', rt: 'rt_lc' }],
+    ['ucfirst', { kind: 'unary', rt: 'rt_ucfirst' }],
+    ['lcfirst', { kind: 'unary', rt: 'rt_lcfirst' }],
     ['ord', { kind: 'unary', rt: 'rt_ord' }],
     ['chr', { kind: 'unary', rt: 'rt_chr' }],
     ['defined', { kind: 'unary', rt: 'rt_defined' }],
@@ -104,6 +113,7 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['splice', { kind: 'arrayop', shape: 'splice', rt: 'rt_splice' }],
     ['scalar', { kind: 'arrayop', shape: 'scalar', rt: 'rt_count' }],
     ['join', { kind: 'listop', rt: 'rt_join' }],
+    ['sprintf', { kind: 'listop', rt: 'rt_sprintf' }],
     ['map', { kind: 'binder' }],
     ['grep', { kind: 'binder' }],
     ['sort', { kind: 'sort' }],
@@ -122,6 +132,9 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['...', { kind: 'yada' }],
     ['STDERR', { kind: 'handle', say: 'rt_say_err_list', print: 'rt_print_err_list' }],
     ['index', { kind: 'function', min: 2, rt: ['rt_index2', 'rt_index3'] }],
+    ['rindex', { kind: 'function', min: 2, rt: ['rt_rindex2', 'rt_rindex3'] }],
+    ['chomp', { kind: 'changer', rt: 'rt_chomp' }],
+    ['chop', { kind: 'changer', rt: 'rt_chop' }],
 ]);
 
 // Every word perl 5.42 gives a meaning to: its own keyword table, whole

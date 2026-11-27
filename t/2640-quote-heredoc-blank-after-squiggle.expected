@@ -1,0 +1,2 @@
+t/2640-quote-heredoc-blank-after-squiggle.pl:4:7: a blank after '<<~': a heredoc's terminator is a word hard against it, <<~"END"
+exit: 1

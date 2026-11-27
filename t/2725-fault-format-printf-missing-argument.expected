@@ -1,0 +1,2 @@
+fault: missing argument in printf at t/2725-fault-format-printf-missing-argument.pl line 4.
+exit: 1

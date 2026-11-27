@@ -1,0 +1,3 @@
+before
+fault: a reference where a number is wanted at t/3826-fault-printf-f-reference.pl line 4.
+exit: 1

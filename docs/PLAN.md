@@ -5379,6 +5379,494 @@ remaining string builtins. Decides: exactly which shapes interpolate
 (perl guesses at `"$x[1]"`, `"$h{a}"`, `"@name"` and an email address;
 D21 says refuse what it has to guess). Traps: T9, T22, T23.
 
+**Proposed 2026-11-27, by Fable 5.2, working alone overnight in a
+worktree of its own while another session builds steps 13 to 15 in
+the main tree; pulled ahead of them by that session's lead. Stevan,
+of step 13 and of this: "do not ask me questions, I will only agree
+with your recommendations anyway". So each question below is
+answered by its recommendation, recorded as D120 to D130 by that
+standing instruction, each his to overturn. Its adversarial review
+found five ways to be WRONG: "What the review found", at the end,
+and D131, which answers each. The text is kept as it was proposed.**
+The shapes that
+interpolate were decided at step 11a and 12b (D91 to D99) and are not
+reopened: a `qq` and a heredoc use them whole. Nothing here needs a
+reference, a closure or `die`; where a construct would (`"@{[ ]}"`,
+`sprintf` of a reference), it stays refused with step 13's name.
+Regexes are step 19: `split`, `tr`, `s///` and `=~` stay out.
+
+**The size.** The outline says large. By `MODELS.md` it is medium in
+the compiler (the lexer gains the quoting forms; the parser gains one
+token and two builtins) and medium in the runtime (a formatter, a
+file of its own, `runtime/format.c`); large only taken whole, with
+`substr` of four arguments and the case escapes, which need lvalues
+and perl's case tables. So the night builds 16a to 16c and leaves
+16d, below.
+
+Everything here about perl was run under 5.42.0 and is in
+`briefs/claims16.py` (rows `T260` to `T277` and `16-...`), which
+`claims.py` reads. Traps: T9, T22, T23, T79 from before, and T260 to
+T277, found writing this.
+
+**The census**: 130 probes are refused today with "later 16" as the
+reason, by the first thing each meets: `qw` (48), `sprintf` (25),
+`chomp` (20), a heredoc (7), `ucfirst` (5), `printf` (4), `rindex`
+(3), `qq` (1); and `int` (12), `abs` (3) and `sqrt` (2), which the
+census's table had put here and `SURFACE.md` puts at step 22 (the
+table is mended, and those 17 move to "later 22"). Of the formats in
+`t/census/run/`, `%s` and `%d` are most of them, then `%g`, `%x`,
+`%03d`, `%.2f`, `%e`, `%o`; `%v`, `%n`, `%p` and `%2$s` appear once
+or twice each, in probes written to find perl's corners. That order
+is the build's: the quoting forms first (qw is the one most probes
+meet first), then the formats, then the builtins.
+
+#### The picture
+
+**Every string here is a string the language has already.** `q()` is
+single quotes, `qq()` double quotes, a heredoc either one spread over
+lines, and `qw()` a bracketed list of single-quoted words; the lexer
+turns each into the token the parser already reads, so no pass but
+the lexer, and the parser's one case for `qw`, learns anything. The
+risk is entirely where a string ends and what its characters mean,
+and perl's rules there are text rules, not grammar.
+
+**`sprintf` is one runtime function over a list**, as `join` is: its
+format is first, its values after, and the list is built as any
+list is. The format is a literal, so the compiler checks every
+conversion and knows how many values it takes; the runtime does the
+formatting, through C's `snprintf` for the numbers (perl's own
+numbers come from the same C library, and `%.0f` of 2.5 is 2 in
+both) and by hand for strings, which perl pads in characters.
+
+**`chomp` and `chop` change a variable**: they are statements, an
+assignment of the variable to itself less its newline or its last
+character, so every rule about assignment already holds of them.
+
+#### The language at step 16
+
+16a, the quoting forms:
+
+- **`q(...)`, `qq(...)`, `qw(...)`**, with `[...]`, `{...}` or
+  `<...>` in place of the brackets, hard against the word. The string
+  ends where perl's ends: brackets of its kind nest, and a backslash
+  takes the character after it with it. In `q` a backslash before a
+  backslash or either bracket is that character, and any other
+  backslash is itself (T261). `qq` is a double-quoted string, its
+  escapes and its variables exactly D43's and D91 to D99's. `qw` is
+  the words between blanks (new lines among them).
+- **`qw(a b c)` is `('a', 'b', 'c')`**, a bracketed list, and
+  everything the language says of one holds: `qw(a b c)[1]` is a
+  slice (`b`, T260), `qw(a b) x 2` a list repeated, `my ($p, $q) =
+  qw(a b);` a list assignment; where one value is wanted it is refused
+  unless it has one word, as `('a', 'b')` is (perl warns `Useless use
+  of a constant`).
+- **Heredocs**: `<<"END"`, `<<END` (the same), `<<'END'`, and each
+  with `~` after the `<<`. The body is the lines after the line the
+  heredoc stands on, up to a line that is `END` alone (with `~`,
+  blanks and then `END`); `"END"` is a double-quoted string, `'END'`
+  takes every character as it is, backslashes included (T262). With
+  `~` the blanks before the last `END` are taken off every line of the
+  body; a line that does not begin with them, and is not empty, is
+  refused (perl dies: T263). A heredoc is a value where it stands:
+  `lc <<END`, `<<END . "x"`, `print(<<END);`.
+
+16b, formats:
+
+- **`sprintf(FORMAT, LIST)`**, with brackets or without, as `join`
+  is; **`printf(FORMAT, LIST);`** and `printf FORMAT, LIST;`, a
+  statement, as `print` is, to stdout. **The format is a string
+  literal with no variable in it** (any of the quoting forms that has
+  none).
+- **The conversions**: `%%`, `%s`, `%c`, `%d`, `%u`, `%o`, `%x`,
+  `%X`, `%b`, `%B`, `%e`, `%E`, `%f`, `%g`, `%G`; the flags `-`,
+  `+`, a blank, `0` and `#`; a width, and a precision after a point,
+  each digits or `*` (taken from the list, before the value). What
+  perl prints for each, as C's `printf` does, `%b` and `%B` too.
+- **A value is taken as its conversion wants it**: `%s` as `.` makes
+  a string, the width and the precision counted in characters and `0`
+  padding with zeros (T268, T269); `%c` as `chr` takes a number, with
+  its faults, and with no width (T277); `%d` a number cut toward zero to a whole number, as
+  `substr` cuts one, and a fault outside the Ints (T265); `%u`, `%o`,
+  `%x`, `%X`, `%b` and `%B` the same, a negative one as its 64 bits
+  (`%x` of -1 is `ffffffffffffffff`, T266), and a Num from 2^63 up to
+  2^64 as the whole number it is; `%e`, `%f` and `%g` the number as a
+  double. undef is D48's fault, a string that is no number D40's.
+- **The count is the format's**: one value too few or too many is a
+  fault (T270), after the list is built.
+
+16c, the rest of the builtins:
+
+- **`ucfirst` and `lcfirst`**, named unary operators as `uc` and `lc`
+  are: the first character, if it is an ASCII letter, changed; a
+  first character past ASCII is a fault, as it is in `uc`.
+- **`rindex(STR, SUB)` and `rindex(STR, SUB, POSITION)`**, in
+  brackets, as `index`: where `SUB` last begins at or before the
+  position, which is moved into the string; -1 if nowhere.
+- **`chomp($x);` and `chop($x);`**, with brackets or without, of a
+  scalar variable, as statements: the variable made a string as `.`
+  makes one, less a newline at its end (`chomp`) or its last
+  character (`chop`). An undef is D48's fault.
+
+#### What perl does that the obvious build gets wrong
+
+- **`qw(a b c)[1]` is `b`** (T260). A build that spliced the words
+  in as a list with no brackets refuses it, or worse, reads `[1]` as
+  something else.
+- **`qw(a\ b)` is two words, `a\` and `b`**, and `qw(a\(b c)` is
+  `a(b` and `c` (T261): the backslash goes before a bracket and
+  nowhere else. So a backslash in a `qw` is refused.
+- **`<<'END'` keeps every backslash** (T262): `a\\b\'c` is printed
+  as it stands, where `'a\\b\'c'` is `a\b'c`.
+- **A string that goes on past the end of a heredoc's line hides the
+  body** (T264): `say <<END . "a⏎b";` does not compile, and `say "a⏎b"
+  . <<END;` takes the body after the string's last line. A build that
+  read the body from the next line in the file would be WRONG for the
+  second.
+- **`sprintf("%d", 1e30)` is -1, and `sprintf("%d", 9.3e18)` is
+  -9146744073709551616** (T265): perl converts a double past the Ints
+  as the machine does. A build that clamped, or wrapped, would agree
+  with one and not the other.
+- **`sprintf("%g", -$x)` is `-0` when `$x` holds `0.0` and `0` when
+  it holds `0`** (T267, T79's second half): perl negates an integer
+  zero to an integer. Here `-0.0` is a Num, and `%e`, `%f` and `%g` of
+  a negative zero is a fault.
+- **`sprintf("%05s", "ab")` is `000ab`** (T268), which C leaves
+  undefined, and **`sprintf("%3s", "é")` is `  é`** (T269): the
+  width is characters. So strings are padded by hand.
+- **But `sprintf("%3c", 0x263A)` is `☺` with no blanks, and
+  `sprintf("%3c", 0x100)` has one** (T277): perl pads a character
+  past U+00FF by its bytes, and one from U+0080 by its bytes too once
+  the string has a wide character in it. A width on `%c` is refused.
+- **`sprintf("%s-%s", "a")` prints `a-` and warns `Missing argument
+  in sprintf`; `sprintf("%s", "a", "b")` warns `Redundant argument`**
+  (T270). Faults here (D15).
+- **`sprintf(@a)` takes `scalar(@a)` for its format** (T22): `3` for
+  `("%s-%s", 2, 3)`. A literal format refuses it.
+- **`my $s = 1e15; chomp($s); say $s + 1;` prints
+  `1000000000000001`** (T272): `chomp` made the number the string
+  `1e+15`, and the sum is a float's. Here `chomp` makes its variable a
+  string as `.` does, and a whole Num from 10^15 is D36's fault.
+  (Wrong: the review's second finding, T279. `chomp` leaves a number.)
+- **`chomp` of `"ab\r\n"` leaves `ab\r`** (T272's kin): only `$/`,
+  which is a newline and is not in the language.
+- **`printf ("%s\n", "a");` with one blank does not warn** (T273): the
+  bracket closes and `;` follows, as T76 has it for `say`. The lexer's
+  look along the line, which every statement word has, holds for
+  `printf` too.
+- **`sprintf("%vd", "1.22.333")` is `49.46.50...`**, a version string
+  format (T276); `%n` writes to its argument, `%p` prints an address,
+  `%2$s` picks an argument by number. Refused, each.
+
+#### The questions, each answered by its recommendation
+
+**Q1. Which sub-steps, and what is left (D120).** 16a the quoting
+forms, 16b `sprintf` and `printf`, 16c `ucfirst`, `lcfirst`,
+`rindex`, `chomp`, `chop`. Left as 16d, not proposed: the case
+escapes `\U \L \u \l \Q \E \F` (perl's case tables, and they reach
+across interpolation), `substr` with four arguments and on the left
+of `=` (lvalues), `reverse` of a string where one value is wanted
+(T23; refused today, `scalar reverse` needs `scalar` of a value),
+`__FILE__` and `__LINE__` (`__FILE__` is the path perl was given,
+which the oracle check and the compiled program see differently),
+POD and `__END__`, `printf` to a handle (21), `fc`, `trim`, `uc` and
+`lc` past ASCII. Recommended: build the most-used three whole.
+Rejected: all of it in one night, partly.
+
+**Q2. Which delimiters (D121).** perl takes any character that is not
+a blank or a word character after `q`, `qq`, `qw`, and a blank or a
+comment between (`q #a#` is not `q#a#`). Recommended: the four
+bracket pairs, hard against the word: the census's programs have
+`qw(` 124 times, and `qw` or `qq` with another delimiter four times. Rejected: perl's whole
+rule (a `#` that is a delimiter in one place and a comment in another;
+`q =x=`; a delimiter that is also a quote, which the oracle's reading
+rule would then have to pair); brackets with a blank before them
+(perl's, but one spelling is enough).
+
+**Q3. What `qw` is (D122).** Recommended: a token of its own that the
+parser reads as a bracketed list of strings, so that `qw(a b)[1]`,
+`(qw(a b)) x 2` and `qw(a b) x 2` mean what they do to perl, and
+`for my $x qw(a b) {...}`, `if qw(a) {...}` and `f qw(a)` are refused
+as perl refuses them or guesses. Rejected: the lexer handing the
+parser `(`, strings and commas (the parser would then take `for my $x
+qw(a b)`, which perl does not compile since 5.18); a list without
+brackets (refuses `qw(a b)[1]`, which perl runs).
+
+**Q4. Heredocs (D123).** Recommended: `<<"END"`, `<<END`, `<<'END'`,
+each with `~` or without; the terminator a word, hard after `<<`, the
+`~` or the quote; one heredoc on a line, and nothing after it on that
+line that goes on past the end of the line (T264). Rejected: perl's
+quoted terminators with blanks (`<<"E O"`) and the empty one (`<<""`,
+a body that ends at the first empty line); `<< "END"` (perl's, a
+second spelling); two on a line (perl's, and rare; the second waits
+behind the first, which the lexer can do when someone wants it).
+
+**Q5. The format (D124).** Recommended: a literal, with no variable
+in it, so that every conversion is checked as the program compiles
+and its count is known. Rejected: a format made as the program runs
+(perl takes `sprintf(@a)`'s count for one, T22; every mistake in it
+would be a fault instead of a refusal, and the census has no probe
+that needs it); a format with variables in it (a `%` in a variable
+would be a conversion).
+
+**Q6. Which conversions (D125).** Recommended: the fifteen above,
+with the five flags, widths and precisions. Cut: `%i`, `%D`, `%U`,
+`%O` and `%F` (perl's other spellings of `%d`, `%ld`, `%lu`, `%lo`
+and `%f`: write those); `%a` and `%A` (hex floats, which the
+language has no literal for); `%n`, `%p`, `%v`, an argument's
+number (`%2$s`); the size letters `h`, `l`, `q`, `L`, `V`, `z`, `t`,
+`j`, which perl ignores; a flag, width or precision on `%%`; a width on `%c` (T277); a width
+or precision of 2^31 or more, which perl does not survive (T271); an
+unfinished or unknown conversion, which perl prints as it is and
+warns of. Rejected: perl's whole list (each of the cut has a
+spelling here, or no use).
+
+**Q7. Which numbers, and how (D127).** perl converts a value for
+`%d` and the unsigned conversions as the machine converts a double,
+which past 2^63 is clamped on one side and garbage on the other
+(T265), and a negative zero has a past (T267). Recommended: a whole
+number, cut toward zero as `substr` cuts one; for `%d` an Int, for the
+unsigned ones an Int (a negative one as its 64 bits) or a Num up to
+2^64; a fault outside; a negative-zero Num to `%e`, `%f` or `%g` a
+fault. Rejected: perl's conversions as they are (the language's Num
+past the Ints has no answer to agree with); faulting a negative
+value under `%x` (perl's answer is the 64 bits, one answer, and
+`%x` of -1 is the idiom).
+
+**Q8. `printf` and `sprintf` in the grammar (D128).** Recommended:
+`printf` a statement as `print` is (perl's value for it is 1, and
+`say` has none here either); `sprintf` a value as `join` is, so its
+list names what `join`'s names for D76, and is built and read the
+same. Rejected: `printf` to a handle (21).
+
+**Q9. `ucfirst`, `lcfirst`, `rindex` (D129).** Recommended: as `uc`,
+`lc` and `index` are; past ASCII, `ucfirst` and `lcfirst` look at the
+first character only, so `ucfirst("aé")` is `Aé` and only a first
+character past ASCII faults. Nothing rejected.
+
+**Q10. `chomp` and `chop` (D130).** perl gives a value (how many
+characters `chomp` took, the character `chop` took), takes a list, an
+array or a hash, and reads `$/`. Recommended: a statement on one
+scalar variable, `chomp($x);` or `chomp $x;`, built as `$x =
+chomp-of($x)`. Cut: its value (`my $n = chomp($s)`, `if (chomp
+$s)`), arrays, hashes, elements, `chomp(my $x = ...)`, `chomp;` and
+`chomp for ...` (`$_` is read-only), and `$/`. Rejected: values (a
+`chomp` in the middle of an expression changes a variable there, and
+D76's walk would have to learn it as a change); elements (the index
+would be worked out twice).
+
+#### What has nothing to choose
+
+- `qq` and heredocs interpolate with 11a's lexer, called on the body:
+  every refusal D92 to D99 has holds there unchanged.
+- A string past ASCII in a `q`, a `qq`, a `qw` or a heredoc needs
+  `use utf8` on a line before it, as in quotes (T73).
+- `q`, `qq` and `qw` before `=>` or alone in a hash's braces are the
+  words they are (T214, already built).
+- `sprintf`'s list is a list as `join`'s is: D76 and D77 hold, a sub
+  that returns nothing is no value in it (D79), an array flattens.
+- A format's `%` is one character; `%` in a value is printed as it is
+  (`sprintf("%s", "%d")` is `%d`).
+- `printf`'s and `sprintf`'s numbers are C's: `%.0f` of 0.5, 1.5 and
+  2.5 is `0`, `2`, `2` under perl and C alike (T275); `%f` of 1e300
+  prints the double's 301 digits in both.
+
+#### The tests
+
+- 16a: a model, `t/models/quote.py`, of `q`, `qq`, `qw` and heredocs
+  (what each body stands for), writing `same` tests; refusals from a
+  table by hand, `briefs/step16a-refusals.py`.
+- 16b: a model, `t/models/fmt.py`, whose formatter is Python's `%`
+  operator (C's printf, written again) with the language's rules for
+  values in front of it, writing `same` tests over every conversion,
+  flag, width and precision, and a fault test for each fault at its
+  edge (a value too few, one too many, `%d` of 2^63 as a Num and of
+  -2^63 - 2048, `%x` of 2^64, `%c` of a surrogate, a negative zero to
+  `%g`, undef, a string that is no number); refusals from a table.
+- 16c: `ucfirst`, `lcfirst`, `rindex`, `chomp` and `chop` in a model
+  too (`t/models/strfn.py`), their faults, and refusals.
+- Golden numbers 2600 to 2999: 2600s for 16a, 2700s for 16b, 2800s
+  for 16c.
+
+#### How it moves the documents and the census
+
+- `SURFACE.md`: `q`, `qq`, `qw`, heredocs In (16); `qw` with commas
+  stays Cut; the builtins row splits: `ucfirst`, `lcfirst`, `rindex`,
+  `sprintf`, `printf`, `chomp` and `chop` of a variable In (16),
+  `substr` with four arguments and `reverse` of a string Later (16d).
+- `DIFFERENCES.md`: gains rows for what a Perl programmer meets cut:
+  a delimiter that is not a bracket, a format that is not a literal,
+  `chomp` as a value; D120 to D130 each cited or listed as saying
+  nothing.
+- The census: about 100 of the 130 should get past their first
+  refusal; how many come through SAME is the build's account.
+
+#### What the review found
+
+**Five ways to be WRONG, two ambiguities an obvious build would get
+WRONG, and four risks** (`briefs/step16-review/FINDINGS.md`, by a
+reader who did not write the proposal, given it and perl 5.42: a
+separate Claude Code process, Opus, run from the command line, since
+this session could spawn no agent of its own). Each is answered by
+agreeing with perl, faulting or refusing, in that order, as D131
+records; T278 to T284 have the programs, and `briefs/claims16.py` the
+rows.
+
+- **1, WRONG: in `qq` a backslash before the delimiter's bracket is
+  gone before perl interpolates** (T278): `qq[$x\[0\]]` is the element
+  `$x[0]` to perl, where `"$x\[0\]"` is `$x` and the text. Refused: a
+  backslash before either bracket of a `qq`'s own delimiter. (In `q` it
+  stays what 16a says: that bracket.)
+- **2, WRONG: `chomp` of a number leaves the number** (T279): perl's
+  `chomp` does nothing to a value whose string has no newline, and a
+  number's never has, so `my $x = 1/3; chomp $x; say $x * 3;` is `1`.
+  T272's account was wrong (its `1000000000000001` is the integer add,
+  `chomp` or not). Agreed: `chomp` changes a Str and leaves any other
+  value as it is (undef still D48's fault). `chop` makes the string, as
+  proposed (`chop` of 1.5 is `1.`).
+- **3, WRONG: a bare `%.0f` is perl's own, not C's** (T280): with no
+  flag and no width, perl rounds by adding 0.5 (`F0convert`), and
+  `sprintf("%.0f", 0.5000000000000001)` is `0` where C prints `1`.
+  Agreed: the runtime does what perl does there, statement for
+  statement, and the model too.
+- **4, WRONG: `rindex` with a negative position finds nothing** (T281):
+  perl adds the length of what it looks for to the position, and then
+  moves it into the string; `rindex("abc", "a", -1)` is `-1`. Agreed;
+  and where that sum passes 2^63 - 1 perl has two answers, by whether
+  the string is UTF-8 inside: a fault.
+- **5, WRONG: the string `"-0"` is a negative zero to `%e`, `%f` and
+  `%g`** (T282), where D40 makes it the Int 0, and perl's answer turns
+  on the string's past. A fault: a string whose number is zero and
+  which has a minus sign, under those three, as for the Num.
+- **6, ambiguous: what a `*` takes** (T283). A whole number, taken as
+  `%d` takes one; a negative width is the `-` flag, a negative
+  precision none (perl's, and C's); outside 2^31 - 1 either way a fault
+  (perl prints a width of 4294967297 whole, and refuses 2^62 as it
+  runs); undef D48's fault.
+- **7, ambiguous: the format is checked as its value**, after D43's
+  escapes (`"\x25d"` is `%d`), and a `qw` of more than one word is no
+  format (it is a list).
+- **8, risk: C's `printf` is glibc's here.** macOS's has no `%b`, and C
+  leaves `#` on `%d` and `+` on `%x` undefined. So the integer
+  conversions are formatted by hand, as perl formats them itself;
+  `snprintf` is kept for `%e`, `%f` and `%g`.
+- **9, risk: Python's `%` is not C's** (`%.0d` of 0, `%#o`, `%u` of -1,
+  no `%b`). The model formats integers by hand too, and these rows are
+  among its tests.
+- **10, minor: flags perl ignores.** Refused, since none means
+  anything (and `%.0c` is not ignored: it prints nothing, which the
+  review's own paste missed): a flag or a precision on `%c`, and `+`, a blank or `#` on
+  `%s`.
+- **11, minor: a heredoc's body is the lines after its own line even
+  when the statement goes on** (T284): `my @a = (<<A,⏎"x");` takes
+  `"x");` into the body, under perl and here, and both then refuse what
+  is left. `<<123` is refused (a word starts with a letter or `_`);
+  `q(ab)x3` is refused as `"ab" x3` is (T57).
+
+What it checked and found to hold: the integer conversions against
+glibc over 29,190 cases and the float ones over 16 values with every
+flag, all agreeing but `%.0f`; `%s` padded in characters, so T277 is
+`%c`'s alone; D127's ranges; the `q` backslash rules; `qw`; `<<~`;
+`ucfirst`; `index`; `chop`; repeated flags.
+
+#### 16, as built
+
+**Built** (2026-11-27, by Fable 5.2, in a worktree beside steps 13 to
+15): 16a, 16b and 16c, each green and committed; 16d is left (D120).
+
+**16a, the quoting forms.** The lexer alone, in functions of its own
+that call 11a's `escape` and `variable` and change neither: `closing`
+finds where perl's string ends, `body` reads what is between (for a
+`qq` and a double-quoted heredoc as double quotes, refusing whatever
+runs past the end perl found), `quoteLike` is `q`, `qq` and `qw`,
+`hereDoc` reads a heredoc's body where it is met and leaves a note
+that the main loop takes up at the end of the line: it jumps the
+body, and refuses anything that crossed the line first (T264). `qw`
+is a token of its own, and the parser's `primary` reads it as a
+bracketed list, sliced as one. `sub q(...)` is still the refusal it
+was (a sub named for a word of perl's), which the first full run
+caught. **The oracle check's reading rule learned the four forms**
+(a heredoc's apostrophe had been listed as open in `TRAPS.md`, "The
+checks themselves"): three fixtures, each failing the old rule.
+
+**16b, formats.** `compiler/src/format.ts` reads the literal's value
+and refuses what D125 cuts; `sprintf` is a `listop` beside `join`,
+`printf` a statement beside `print`, and the format is the list's
+first value. `runtime/format.c` works through the format twice, as
+`join` does its list: once to count, where every fault is met, and
+once to write, after the one allocation. Integers by hand; floats
+through `snprintf`, but for the bare `%.0f`, which is perl's
+`F0convert` ported (T280). The 2^31 limit is tested from C
+(`runtime/tests/format.c`).
+
+**16c.** `ucfirst`, `lcfirst` and `rindex` are rows of `names.ts` and
+functions of `runtime/strfn.c`. `chomp` and `chop` are a new kind of
+name, `changer`: the parser builds `{ $x = chomp-of($x); }`, an
+assignment in a block of its own, so that every rule about assignment
+holds (a loop's variable is refused by D17's own check) and it is the
+value of nothing: a sub that ends in `chomp $x` has no value, where
+perl's has the count.
+
+**Tests**: 2600 to 2603 from `t/models/quote.py`, 2620 to 2656
+refusals (`briefs/step16a-refusals.py`); 2700 to 2703 from
+`t/models/fmt.py` (about 860 lines), 2720 to 2746 faults and 2760 to
+2790 refusals (`briefs/step16b-tests.py`); 2800 and 2801 from
+`t/models/strfn.py`, 2820 to 2828 faults and 2840 to 2854 refusals
+(`briefs/step16c-tests.py`); 1,382 golden tests and 147 unit tests on
+this branch, 935 statements about perl (77 of them this step's).
+
+**Broken on purpose** (`briefs/step16-mutations.py`): 77 of 83 caught
+the first time. Three were holes, closed: nothing told a `qw` of one
+word from a string under `x` (`qw(a) x 3` is three values), no
+`rindex` had a piece that was there and a position below zero, and
+nothing showed that a sub ending in `chomp` has no value (2828). Three
+change nothing a program can see: `%s` of undef faults in the string
+it makes anyway, `rindex` can't match in the middle of a character
+since a piece never begins with a later byte, and a literal format
+reads the same in either context.
+
+**The census** (`make census`, then `--sort`): of the 130 probes that
+waited for step 16, **64 are SAME now**, 7 LOUD (each a fault perl
+warns at: a missing argument, a negative zero, a string that is no
+number), 30 refused by design and moved to `by-design/` (22 by D130,
+`chomp` as a value or of an array; 3 by D125, 2 by D121, the rest
+behind older decisions), 20 wait for step 22 (`int`, `abs`, `sqrt`,
+which the census's table had wrongly put here, and the left shift),
+1 for step 19, and 8 are open. **1,083 SAME, 131 LOUD, 2,019 REFUSED
+(1,124 for a later step, 895 open), 1 UNJUDGED, of 3,234 run; 2,346
+by design; no WRONG**, and no probe left SAME. The table gained rows
+for D121, D125 and D130.
+
+**The documents**: `LANGUAGE.md` four sections; `SURFACE.md` the
+quoting rows and the builtins row split; `DIFFERENCES.md` nine rows
+and 16d under "Decided, not built"; `DESIGN.md` the negative zero;
+`briefs/step16-status.md` what CLAUDE.md's Status should gain, since
+this branch does not edit it.
+
+**What is left, 16d**: the case escapes `\U \L \u \l \Q \E \F`;
+`substr` of four arguments and on the left of `=`; `reverse` of a
+string where one value is wanted (T23); `__FILE__` and `__LINE__`;
+POD and `__END__`; `printf` to a handle (21); `uc` and `lc` past
+ASCII; `chomp`'s value, if the census's 22 probes are thought worth
+D76 learning it. **Not done on this branch**: Stevan's Mac (the
+integer formats are by hand for it, but `%e %f %g` are its libc's);
+and the review was one reader, a separate process, not the usual
+sub-agent.
+
+#### 16 merged with 13a and 15
+
+Merged 2026-11-27 after 13a and 15. The code merged without a conflict
+of meaning: names.ts has both kinds, the parser's refusals of `try`,
+`...` and `chomp` as values stand together, codegen has `die`, `warn`
+and `sprintf` at the head of `listop`, rt.c includes all four files.
+**A reference in what 16 added** is D112's fault, through `to_str` and
+the numbers 13a already guards: `sprintf` and `printf` under every
+conversion, `ucfirst`, `lcfirst`, `rindex` (either string or the
+position), `chop`, and a reference interpolated by `qq` or a heredoc;
+`chomp` of a reference leaves it, as perl does (it had faulted `not a
+value`). A chain in `qq` or a heredoc is refused for step 13d, as in
+double quotes, by the same function; `sprintf`'s and `printf`'s lists
+are walked for D109 as `join`'s. Tests 3820 to 3837.
+
 ### 17. Classes
 
 Referee: perl. Size: large.

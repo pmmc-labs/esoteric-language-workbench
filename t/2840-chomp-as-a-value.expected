@@ -1,0 +1,2 @@
+t/2840-chomp-as-a-value.pl:5:9: chomp is a statement here, and has no value: perl gives how many characters it took (D130)
+exit: 1

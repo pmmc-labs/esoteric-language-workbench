@@ -1,0 +1,2 @@
+t/2649-quote-heredoc-string-past-its-line.pl:4:5: this goes on past the end of the line a heredoc stands on: perl reads the body after it, or does not find it (T264)
+exit: 1

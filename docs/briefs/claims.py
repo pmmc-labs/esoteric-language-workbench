@@ -975,6 +975,12 @@ CLAIMS = [
     c('D105-element', 'PLAN', 'my @a = (1); sub f { 1 } f($a[5]); say scalar(@a);', out='1\n'),
 ]
 
+# Step 16's rows are a file of their own, docs/briefs/claims16.py, so that
+# it merges beside the steps built at the same time.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from claims16 import STEP16  # noqa: E402
+CLAIMS += STEP16
+
 def run(perl, prelude, code, flags):
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, 'claim.pl')

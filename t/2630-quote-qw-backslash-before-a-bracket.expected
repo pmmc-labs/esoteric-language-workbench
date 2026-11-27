@@ -1,0 +1,2 @@
+t/2630-quote-qw-backslash-before-a-bracket.pl:4:19: a backslash in qw(...): perl keeps it, or takes it away before a bracket (T261); write the list in quotes
+exit: 1

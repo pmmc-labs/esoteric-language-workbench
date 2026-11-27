@@ -1,0 +1,2 @@
+t/2853-rindex-one-argument.pl:4:5: rindex takes 2 to 3 arguments, and here are 1
+exit: 1

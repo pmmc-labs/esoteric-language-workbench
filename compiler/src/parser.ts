@@ -635,6 +635,18 @@ export const parse = (tokens: readonly Token[]): Program => {
             return { kind: 'str', text: t.text, value: t.value, pos: t.pos };
         }
         if (t.kind === 'hash') return { kind: 'array', name: t.name, hash: true, pos: t.pos };
+        if (t.kind === 'qw') {
+            // `qw(a b)` is `('a', 'b')`, a bracketed list (step 16a, D122;
+            // T260), and may be sliced as one.
+            const items: Expr[] = t.words.map(w => ({ kind: 'str', text: `'${w}'`, value: w, pos: t.pos }));
+            const inner: Expr = items.length === 1 ? { ...items[0]!, bracketed: true } : { kind: 'list', items, pos: t.pos, bracketed: true };
+            if (peek().kind !== '[') return inner;
+            const open = next();
+            const indexes = itemsTo(']');
+            if (indexes.length === 0) refuse('a slice with no index', open.pos);
+            if (peek().kind === '[') refuse('an element of an element: an array of arrays is not in the language yet', peek().pos);
+            return { kind: 'slice', items, indexes, pos: open.pos };
+        }
         if (t.kind === '(') {
             // A list, if a comma stands in the brackets or nothing does;
             // otherwise an expression, grouped. And either may be sliced.
@@ -742,6 +754,7 @@ export const parse = (tokens: readonly Token[]): Program => {
         // perl refuses each of these where a value stands (T315, D143).
         if (name?.kind === 'try' || name?.kind === 'catch') return refuse(`${t.text} is a statement, not a value: perl does not compile it here`, t.pos);
         if (t.kind === 'op' && NAMES.get(t.text)?.kind === 'yada') return refuse("'...' is a statement alone, which dies: perl does not compile it anywhere else", t.pos);
+        if (name?.kind === 'changer') return refuse(`${t.text} is a statement here, and has no value: perl gives ${t.text === 'chomp' ? 'how many characters it took' : 'the character it took'} (D130)`, t.pos);
         if (callable(t)) {
             if (peek().kind === '(') return stepAfter(chained(invoke(t)));
             return refuse(`'${t.text}' is not in the language; a call of a sub of the program's has brackets: ${t.text}(...)`, t.pos);
@@ -976,6 +989,22 @@ export const parse = (tokens: readonly Token[]): Program => {
                 refuse(`'${after.text}' after ${head.text}'s argument: it binds more loosely than ${head.text} does, and joins what ${head.text} returns, to perl; bracket the argument, ${head.text}(... ${after.text} ...)`, after.pos);
             }
             return stderr ? { kind: 'call', name: head.text, args, stderr: true, pos: head.pos } : { kind: 'call', name: head.text, args, pos: head.pos };
+        }
+        if (name?.kind === 'changer') {
+            // `chomp($x);` and `chop $x;` (step 16c, D130): `$x` assigned
+            // what is made of it, in a block of its own, so that it is no
+            // sub's value and no block's: perl's would be a count or the
+            // character taken.
+            next();
+            const open = peek().kind === '(' ? next() : undefined;
+            const v = next();
+            const one = `${head.text} takes one scalar variable here, ${head.text}($x): its value, an array, a hash, an element and $_ are not in the language (D130)`;
+            if (v.kind !== 'var') return refuse(one, v.pos);
+            if (v.name === '_' || peek().kind === '[' || peek().kind === '{') refuse(one, v.pos);
+            if (open !== undefined && next().kind !== ')') refuse(one, v.pos);
+            const target: Expr = { kind: 'var', name: v.name, pos: v.pos };
+            const change: Stmt = { kind: 'do', expr: { kind: 'assign', op: '=', target: { kind: 'var', name: v.name, pos: v.pos }, value: { kind: 'apply', name: head.text, args: [target], pos: head.pos }, pos: head.pos }, pos: head.pos };
+            return { kind: 'block', body: [change], pos: head.pos };
         }
         if (name?.kind === 'elsif' || name?.kind === 'else') return refuse(`${head.text} without an if before it`, head.pos);
         // `last;`, `next NAME;`, and nothing else after either but an

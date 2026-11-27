@@ -1,0 +1,2 @@
+t/2627-quote-qw-comma.pl:4:19: a comma in qw(...): perl warns that it may be meant to separate the words, and keeps it in one
+exit: 1

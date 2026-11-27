@@ -522,6 +522,8 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
             b.lines.push(`rt_die(cx, ${values.c});`);
             return { c: 'rt_undef()', place: false };
         }
+        // `sprintf` (step 16b): the format and the values, one list.
+        if (e.op === 'sprintf') return temp(b, `rt_sprintf(cx, ${genList(e.args, b).c})`);
         if (e.op !== 'join') throw new Error(`${e.op} where one value is wanted`);
         const sep = genExpr(e.args[0]!, b);
         const kept = sep.place ? sep : temp(b, sep.c);
@@ -683,7 +685,7 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
         // a literal by the time the call is made.
         const args = e.args.map(a => genExpr(a, b).c);
         const name = NAMES.get(e.name);
-        const rt = name?.kind === 'unary' ? name.rt : name?.kind === 'function' ? name.rt[e.args.length - name.min] : undefined;
+        const rt = name?.kind === 'unary' || name?.kind === 'changer' ? name.rt : name?.kind === 'function' ? name.rt[e.args.length - name.min] : undefined;
         if (rt === undefined) throw new Error(`no runtime function for ${e.name}`);
         return temp(b, `${rt}(${['cx', ...args].join(', ')})`);
     }

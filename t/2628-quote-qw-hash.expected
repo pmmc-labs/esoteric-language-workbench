@@ -1,0 +1,2 @@
+t/2628-quote-qw-hash.pl:4:20: a '#' in qw(...): perl warns that it may be meant for a comment, and keeps it in a word
+exit: 1

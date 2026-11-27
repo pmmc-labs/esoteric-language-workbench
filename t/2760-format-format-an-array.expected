@@ -1,0 +1,2 @@
+t/2760-format-format-an-array.pl:5:13: sprintf's format is a string literal with no variable in it (D124): perl takes the first value of an array, or a string made as the program runs, for one (T274)
+exit: 1

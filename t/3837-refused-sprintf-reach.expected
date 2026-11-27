@@ -1,0 +1,2 @@
+t/3837-refused-sprintf-reach.pl:6:31: a later part of sprintf can change what references reach, which an earlier part names: perl reads it after the change; take the value into a my first
+exit: 1

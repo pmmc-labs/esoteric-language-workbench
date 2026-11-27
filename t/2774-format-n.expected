@@ -1,0 +1,2 @@
+t/2774-format-n.pl:4:13: %n, which is not in the language (a write to its argument; T276), in sprintf's format
+exit: 1

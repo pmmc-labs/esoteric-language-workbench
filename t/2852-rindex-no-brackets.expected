@@ -1,0 +1,2 @@
+t/2852-rindex-no-brackets.pl:4:5: rindex needs brackets round its arguments: rindex(...)
+exit: 1

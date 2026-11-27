@@ -2040,6 +2040,88 @@ making the hop in the loop variable's copy (WRONG: perl's lands in
 the list); freezing only the last container of a chain (perl
 prints freed values, T251).
 
+**D120 to D130. Step 16, strings: each question answered with its
+recommendation.** *(User, 2026-11-26, of step 13 and standing for
+this one, which another session's lead pulled ahead of steps 13 to
+15 and handed to Fable 5.2 to build overnight in a worktree: "do not
+ask me questions, I will only agree with your recommendations
+anyway." The recommendations are Fable 5.2's, 2026-11-27; each is his
+to overturn. `PLAN.md`, step 16, has the text, the evidence and what
+was rejected.)*
+**D120.** Three sub-steps: 16a `q`, `qq`, `qw` and heredocs, 16b
+`sprintf` and `printf`, 16c `ucfirst`, `lcfirst`, `rindex`, `chomp`,
+`chop`. Left as 16d, not proposed: the case escapes, `substr` with
+four arguments, `reverse` of a string where one value is wanted,
+`__FILE__` and `__LINE__`, POD, `fc`, `trim`.
+**D121. `q`, `qq` and `qw` take one of the four bracket pairs, hard
+against the word.** The string ends where perl's ends (brackets of
+its kind nest; a backslash takes the next character with it); `q` is
+single quotes with the bracket for the quote, `qq` double quotes with
+D43 and D91 to D99, `qw` words between blanks. Cut: every other
+delimiter, a blank before the bracket, and in `qw` a comma, a `#` or
+a backslash (T261). Rejected: perl's whole rule (a `#` that is a
+delimiter or a comment by the blank before it).
+**D122. `qw(...)` is a bracketed list of strings and nothing else**
+(T260): it can be sliced and repeated as `('a', 'b')` can, and is not
+the brackets of a `for`, an `if` or a call.
+**D123. Heredocs: `<<"END"`, `<<END`, `<<'END'`, each with `~` or
+without**, the terminator a word hard against what is before it; one
+on a line, and nothing after it on that line going past the end of
+the line (T264); `'END'` keeps every character (T262); with `~` a
+body line that does not begin with the terminator's blanks, and is not
+empty, is refused (T263). Rejected: perl's quoted terminators with
+blanks, the empty terminator, `<< "END"`, two on a line.
+**D124. A format is a string literal with no variable in it** (T22,
+T274), checked as the program compiles. Rejected: a format made as
+the program runs.
+**D125. The conversions are `%% %s %c %d %u %o %x %X %b %B %e %E %f
+%g %G`, with the flags `- + 0 #` and a blank, a width and a
+precision as digits or `*`.** Cut: `%i %D %U %O %F` (write the other
+spelling), `%a %A`, `%n`, `%p`, `%v`, `%N$`, the size letters, a
+flag, width or precision on `%%`, a width on `%c` (T277), a width or
+precision of 2^31 or more (T271), an unknown or unfinished one (T270).
+**D126. A format wants exactly as many values as its conversions and
+stars take: one too few or too many is a fault** (T270; perl warns
+`Missing argument` and `Redundant argument`).
+**D127. A value is taken as its conversion wants it.** `%s` as `.`
+makes a string, padded and cut in characters, `0` padding with zeros
+(T268, T269); `%c` as `chr` takes a number; `%d` a whole number cut
+toward zero, an Int or a fault (T265); `%u %o %x %X %b %B` the same,
+a negative Int as its 64 bits (T266), a Num up to 2^64 as the whole
+number it is; `%e %f %g` the double, and a negative-zero Num a fault
+(T267, T79). undef is D48's fault.
+**D128. `printf` is a statement, as `print` is, to stdout; `sprintf`
+is a value, with brackets or without, as `join` is**, and its list is
+a list as `join`'s is for D76 and D77.
+**D129. `ucfirst` and `lcfirst` are named unary operators, as `uc`
+and `lc`, and fault on a first character past ASCII; `rindex` is
+`index` from the other end**, in brackets, two or three arguments.
+**D130. `chomp` and `chop` are statements on one scalar variable**,
+built as the variable assigned itself less its newline or its last
+character, made a string as `.` makes one first (T272). Cut: their
+values, arrays, hashes, elements, `chomp(my $x = ...)`, `$_`, `$/`.
+Rejected: values (a change in the middle of an expression, for D76 to
+learn).
+**D131. The review of step 16: each finding answered by agreeing,
+faulting or refusing, in that order.** *(By the same standing
+instruction; the builder's, 2026-11-27, for him to overturn.
+`PLAN.md`, step 16, "What the review found".)* A backslash before a
+bracket of a `qq`'s own delimiter is refused (T278). `chomp` changes
+a Str and leaves any other value as it is; `chop` makes the string
+(T279; it amends D130). A bare `%.0f`, no flag and no width, rounds
+as perl's own `F0convert` does (T280). `rindex` adds the length of
+what it looks for to the position before moving it into the string,
+and a sum past 2^63 - 1 is a fault (T281; it amends D129). Under `%e`,
+`%f` and `%g` a string whose number is zero and which has a minus sign
+is a fault, as a negative-zero Num is (T282). A `*` is a whole number
+taken as `%d` takes one, a negative width the `-` flag, a negative
+precision none, beyond 2^31 - 1 either way a fault (T283). The format
+is checked as its value. The integer conversions are formatted by
+hand (C's `%b` is glibc's alone), and so is the model's. A flag or a
+precision on `%c`, and `+`, a blank or `#` on `%s`, are refused: perl
+ignores them, but for `%.0c`, which it prints as nothing (it amends
+D125).
+
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`
 count code points. The source is ASCII, or UTF-8 with `use utf8`, as

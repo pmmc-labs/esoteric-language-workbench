@@ -1,0 +1,2 @@
+t/2631-quote-qw-for-without-brackets.pl:4:11: expected '(' after for my $x, found 'qw'
+exit: 1

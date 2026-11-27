@@ -1,0 +1,2 @@
+t/2851-ucfirst-no-argument.pl:4:5: ucfirst needs an argument
+exit: 1

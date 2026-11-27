@@ -1,0 +1,2 @@
+t/2632-quote-qw-if-without-brackets.pl:4:4: expected '(' after if, found 'qw(a)'
+exit: 1

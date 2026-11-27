@@ -1,0 +1,2 @@
+fault: not a numeric string at t/2827-fault-rindex-position-not-a-number.pl line 4.
+exit: 1

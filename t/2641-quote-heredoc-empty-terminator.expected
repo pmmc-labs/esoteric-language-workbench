@@ -1,0 +1,2 @@
+t/2641-quote-heredoc-empty-terminator.pl:4:7: a heredoc's terminator is a word, a letter or '_' first: <<"END"
+exit: 1

@@ -83,6 +83,9 @@ test is tested apart, on `t/000-say.pl`.)
 | `dies-perl-warns` | A `dies` test in which perl also warns: the hole "The checks themselves" left for step 15 |
 | `fault-warned-ok` | A fault after a `warn`, the warn the start of perl's stderr (`.stderr` stands in for it) |
 | `fault-warned-wrong` | A fault after the program wrote to stderr what perl does not |
+| `same-heredoc-ok` | A heredoc, a `q{}` and a `qw()` holding an apostrophe, a `%` and the words `keys` and `values`: none is code (step 16a) |
+| `same-heredoc-hides` | An apostrophe in a heredoc, and unsorted `keys` after its body: a reader that paired the apostrophe would pass it (step 16a) |
+| `same-q-hides` | A `"` in a `q{}`, and unsorted `keys` after it (step 16a) |
 
 When the check changes, break it on purpose and see one of these go
 red; when it gains a rule, it gains a fixture that only that rule

@@ -1,0 +1,3 @@
+before
+fault: f has no value: it does not end in a return or an expression at t/2828-fault-chomp-last-in-a-sub.pl line 4.
+exit: 1

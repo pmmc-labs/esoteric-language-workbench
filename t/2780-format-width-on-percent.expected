@@ -1,0 +1,2 @@
+t/2780-format-width-on-percent.pl:4:13: a flag, width or precision on %%, %5%, which perl pads: write the padding, in sprintf's format
+exit: 1

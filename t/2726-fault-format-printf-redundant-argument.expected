@@ -1,0 +1,2 @@
+fault: redundant argument in printf at t/2726-fault-format-printf-redundant-argument.pl line 4.
+exit: 1

@@ -1,0 +1,2 @@
+t/2654-quote-qq-backslash-before-its-closing-bracket.pl:4:9: a backslash before ')' in a qq with that bracket: perl takes it away before it reads the variables, so that what follows can go on with one (T278); write the string with other brackets
+exit: 1

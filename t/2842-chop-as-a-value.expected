@@ -1,0 +1,2 @@
+t/2842-chop-as-a-value.pl:5:5: chop is a statement here, and has no value: perl gives the character it took (D130)
+exit: 1

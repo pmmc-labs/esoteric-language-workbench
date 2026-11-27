@@ -376,6 +376,62 @@ A string may run over several lines, and then it holds the newlines. A
 tab may be written as itself; any other control character is written
 as an escape.
 
+### q, qq, qw and heredocs
+
+`q(...)` is a string in single quotes, `qq(...)` one in double quotes,
+and the bracket is the quote, so a string can hold both kinds of quote
+as they are:
+
+    say q(it's "here");          # it's "here"
+    say qq(it's "$name");        # the variable's value between the quotes
+
+The bracket may be `( )`, `[ ]`, `{ }` or `< >`, hard against the
+word, and a bracket of the same kind inside nests: `q(a (b) c)` is `a
+(b) c`. In `q` a backslash before a backslash or before either bracket
+is that character, and every other backslash is itself. In `qq` the
+escapes and the variables are those of double quotes, exactly; a
+backslash before the `qq`'s own bracket is refused, since perl takes it
+away before it reads the variables (`qq[$x\[0\]]` is an element of
+`@x` to perl): write such a string with another bracket.
+
+Refused: any other delimiter (`q/.../`, `q!...!`, `q#...#`) and a
+blank before the bracket. One spelling is enough.
+
+**`qw(...)` is a list of words**, the characters between blanks, and is
+exactly the bracketed list of those words in quotes:
+
+    my @days = qw(mon tue wed);
+    say qw(a b c)[1];            # b, a slice of the list
+    my @twice = qw(x y) x 2;     # x y x y
+
+So it is not the brackets of anything else: `for my $d qw(a b) {...}`
+is refused, as perl refuses it, and so is `qw(a b)` where one value is
+wanted. A word may not hold a comma or a `#` (perl warns that you may
+have meant something else) or a backslash (perl keeps it, or takes it
+away before a bracket).
+
+**A heredoc** is a string over the lines after the line it stands on:
+
+    print <<"END";
+    Dear $name,
+      your total is $total.
+    END
+
+The body ends at a line that is the terminator alone. `<<"END"` and
+`<<END` are double-quoted, with escapes and variables; `<<'END'` takes
+every character as it is, a backslash too. With a `~`, `<<~"END"`, the
+terminator may be indented, and its indentation is taken off every line
+of the body; a line of the body that does not begin with it, and is not
+empty, is refused (perl dies). A heredoc is a value where it stands:
+`lc <<END`, `<<END . "more"`, `print(<<END);`.
+
+The terminator is a word hard against the `<<`, the `~` or the quote.
+One heredoc on a line, and nothing after it on that line may go on past
+the end of the line (a string, a `qw`): perl reads the body after the
+line the heredoc is on, and a string that goes on hides it. Refused too:
+a blank after `<<`, an empty terminator or one with a blank in it, and a
+heredoc that never finds its terminator.
+
 ### A variable in a string
 
 In double quotes a variable is replaced by its value:
@@ -592,6 +648,110 @@ to be an Int is a fault. So is a string with a point that is a hair
 below a whole number, `"1.99999999999999999"`, here and as a count or
 for `chr`: its nearest double is 2, and perl cuts it to 1 or to 2 by
 what was done with the string before.
+
+### ucfirst, lcfirst and rindex
+
+`ucfirst` and `lcfirst` change the first character of a string, if it
+is an ASCII letter, to a capital or a small letter; a first character
+past ASCII is a fault, as it is for `uc` and `lc`. They are written as
+`uc` and `lc` are, with brackets or without, and without them take
+everything up to what binds more loosely than the dot:
+
+    say ucfirst "hello";       # Hello
+    say lcfirst("ABC");        # aBC
+
+`rindex(STRING, PIECE)` is the position where the piece last begins,
+or -1, and `rindex(STRING, PIECE, POSITION)` the last place it begins
+that it can end by the position plus its own length, as perl has it.
+So a position below zero finds nothing but the empty piece:
+
+    say rindex("abcabc", "b");      # 4
+    say rindex("abcabc", "b", 3);   # 1
+    say rindex("abc", "a", -1);     # -1
+
+It is always written with brackets. A position so large that the sum
+passes the largest Int is a fault: perl has two answers there.
+
+### chomp and chop
+
+`chomp($line);` takes a newline off the end of a variable's string, if
+it ends in one, and `chop($line);` takes off its last character,
+whatever it is. They are statements, on one scalar variable, with
+brackets or without:
+
+    my $line = "text\n";
+    chomp $line;              # text
+    chop $line;               # tex
+
+A variable that holds a number is left alone by `chomp` (a number's
+string never ends in a newline, and perl keeps the number); `chop`
+makes it a string first, as `.` would, so `chop` of 1.5 is `1.`. An
+undef is a fault. A reference is left alone by `chomp`, as perl leaves
+it, and `chop` of one is a fault, `a reference where a string is
+wanted`: perl would chop its address. So is a reference handed to
+`sprintf`, `printf`, `ucfirst`, `lcfirst` or `rindex`, as everywhere a
+string or a number is wanted.
+
+**Their values are not in the language**: perl gives how many
+characters `chomp` took and the character `chop` took, and a change in
+the middle of an expression is what the language keeps out. So `my $n
+= chomp($s);`, `if (chomp $s)`, `chomp(my $x = ...)`, and `chomp` of
+an array, a hash, an element, `$_` or two variables are refused. A
+loop's variable can't be chomped either: it is read-only.
+
+### sprintf and printf
+
+`sprintf(FORMAT, LIST)` makes a string from a format and values, and
+`printf(FORMAT, LIST);` prints one, as `print` would:
+
+    my $line = sprintf("%-8s %5.2f %03d", $name, $price, $count);
+    printf("%d%% done\n", $percent);
+
+`sprintf` is written with brackets or without, as `join` is, and is
+one value; `printf` is a statement, as `print` is, to standard
+output. **The format is a string literal with no variable in it**, in
+any of the quotes (a heredoc too), so that the compiler can read it:
+perl takes the first value of an array for a format (`sprintf(@a)`
+formats the array's count), and a `%` in a variable would be a
+conversion.
+
+The conversions are `%s` (a string), `%c` (a character, by its
+number), `%d` (a whole number), `%u`, `%o`, `%x`, `%X`, `%b` and `%B`
+(the same with no sign, in decimal, octal, hex and binary), `%e`,
+`%E`, `%f`, `%g` and `%G` (a number as a float), and `%%` for the
+character. Between the `%` and the letter may come the flags `-`
+(padded on the right), `+` and a blank (a sign for a positive `%d` or
+float), `0` (padded with zeros) and `#` (`0x`, `0b`, a leading `0` for
+`%o`, a point for a float), then a width, then a point and a
+precision; a width or a precision may be `*`, taken from the list
+before the value (a negative width pads on the right, a negative
+precision is none). What each prints is what perl prints, which is
+C's, but for a bare `%.0f`, where perl rounds by adding a half, and so
+does the language.
+
+**The format takes exactly as many values as it has conversions and
+stars**: one too few or too many is a fault (perl warns, and prints a
+blank or ignores the rest).
+
+Each value is taken as its conversion wants it. `%s` makes it a string
+as `.` does, and its width and precision count characters; `0` pads
+`%s` with zeros, as perl does. `%c` takes a character's number, as
+`chr` does. `%d` cuts a number toward zero; past the Ints it is a
+fault (perl prints what the machine gives, `-1` for 1e30). The
+unsigned conversions take a negative Int as its 64 bits (`%x` of -1
+is `ffffffffffffffff`) and a Num up to 2^64; past that, a fault. A
+zero with a minus sign, a Num or a string, is a fault to `%e`, `%f`
+and `%g`: perl prints `-0` or `0` by what the zero was used as before.
+undef is a fault, as everywhere.
+
+Refused: `%i`, `%D`, `%U`, `%O` and `%F` (perl's other spellings:
+write `%d`, `%d`, `%u`, `%o`, `%f`); `%a`, `%n`, `%p`, `%v` and an
+argument by its number, `%2$s`; the size letters `h`, `l`, `q` and the
+rest, which perl ignores; a flag or a width on `%%`; a width, a
+precision or a flag on `%c` (perl pads a wide character by its bytes);
+`+`, a blank or `#` on `%s`; a width or precision of 2^31 or more; and
+a conversion perl doesn't know or that the format cuts short. A string
+of more than 2^31 - 1 characters is a fault.
 
 ## Comparing, and true and false
 

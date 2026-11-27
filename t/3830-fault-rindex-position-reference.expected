@@ -1,0 +1,3 @@
+before
+fault: a reference where a number is wanted at t/3830-fault-rindex-position-reference.pl line 4.
+exit: 1

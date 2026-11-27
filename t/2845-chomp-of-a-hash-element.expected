@@ -1,0 +1,2 @@
+t/2845-chomp-of-a-hash-element.pl:5:7: chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
+exit: 1

@@ -6,11 +6,12 @@ be met, and where. It decides nothing. Where it and a decision
 disagree, [`DECISIONS.md`](DECISIONS.md) is right and this file has a
 mistake.
 
-**Built** means steps 0 to 12, 13a and 15: numbers, strings, booleans,
-variables, control, subs, arrays and lists, `map`, `grep`, `sort`,
-interpolation, hashes, references to arrays and hashes with
-elements through them, and `die`, `try`, `catch` and `warn`. What is
-decided and not built is at the end.
+**Built** means steps 0 to 12, 13a, 15 and 16a to 16c: numbers,
+strings, booleans, variables, control, subs, arrays and lists, `map`,
+`grep`, `sort`, interpolation, hashes, references to arrays and hashes
+with elements through them, `die`, `try`, `catch` and `warn`, and `q`,
+`qq`, `qw`, heredocs, `sprintf`, `printf` and the rest of the string
+builtins. What is decided and not built is at the end.
 
 ## How this file is kept
 
@@ -195,6 +196,8 @@ is where the feel changes.
 | `BEGIN`, `eval STRING`, a `require` at run time, `do FILE`, `__DATA__` | Cut: the compiler sees the whole program before any of it runs | idiom | sometimes | layout | D20 |
 | A dereference without braces: `@$r`, `%$r`, `$$r[0]`, `$#$r`, the commonest spelling in old Perl | The arrow: `$r->[0]`, `$r->{k}`; and for the whole container `$r->@*` or `@{ $r }` (step 13b). (237 of the 795 census programs that wait for references use a spelling without braces) | idiom | often | data, old code | D108 |
 | `open(...) or die "...";`, `$ok or die "...";`: a statement joined to `die` by a word operator | Refused, as every statement joined by one is: `die "..." unless $ok;` (a guess: files, at step 21, will make it common) | idiom | sometimes | errors | D146 |
+| `chomp(my $line = <STDIN>)`, `my $n = chomp($s)`, `chomp(@lines)`, `chomp;` | `chomp` and `chop` are statements on one scalar variable, `chomp $line;` (about 20 of the census's programs use the rest) | idiom | sometimes | strings | D130, D131 |
+| `sprintf($fmt, @args)`, a format made as the program runs | A format is a string literal with no variable in it; pick between literals, or join | idiom | sometimes | printing | D124 |
 
 ## 2. Habits that now stop
 
@@ -234,6 +237,7 @@ feels like.
 | A later part reads through a reference that an earlier one stores through, or a sub it calls does: `say $o->{name}, bump($o);` | Refused when a later part, or anything it calls, can store through any reference at all (a guess at how often: no program has met it yet). Take the value into a `my` first | habit | sometimes | data | D109, D114 † |
 | perl's own errors, `Illegal division by zero` and the rest, are caught by `try` (or `eval`) | A fault, which nothing catches: only a `die` is caught | habit | sometimes | errors | D13, D143 |
 | A message split over lines, `die "no such ",` newline `$name;` | Refused, unless the message is written to end in a newline: perl names a line of its own choosing in a statement over several lines, or in a `while`'s test | habit | sometimes | errors | D150 † |
+| `q/.../`, `qq{...}` and `qw/a b/` with any delimiter, `q (x)` with a blank | A bracket hard against the word: `q(...)`, `qq[...]`, `qw<...>` | habit | sometimes | strings | D121 † |
 
 ## 3. Rare, but you meant it
 
@@ -272,6 +276,9 @@ someone.
 | `use open qw(:std :encoding(UTF-8));`, `':utf8'` | The one spelling | habit | rarely | layout | D39 † |
 | `try { ... } catch ($e) { ... } finally { ... }`; `defer { ... }` | Not in: `finally` is experimental in 5.42 and `defer` needs `use feature` | idiom | rarely | errors | D144 |
 | A sub that ends in a `try`, worth its last statement's value | A fault where its value is used, as for a sub that ends in an `if` | idiom | rarely | errors, subs | D143, D18 |
+| Two heredocs on a line, `<< "END"`, `<<""`, a terminator with a blank in it | One heredoc on a line, its terminator a word hard against `<<` | habit | rarely | strings | D123 † |
+| `%i`, `%ld`, `%F`, `%2$s`, `%v`, `%n` in a format; a flag perl ignores | `%d`, `%f`; no argument by its number | habit | rarely | printing | D125 |
+| `sprintf("%s-%s", "a")`: a missing value printed as nothing, a value too many dropped | A fault, both ways | habit | rarely | printing | D126 |
 
 ## 4. Accidents
 
@@ -329,6 +336,9 @@ quiet has met few of them.
 | `die("a") . "b"`, `if (die ...)`, `say 1 if die ...;`: perl warns of a precedence problem, and dies with `a` | Refused: a `die` is never tested or a left operand | accident | rarely | errors | D146 † |
 | `# line 100 "other.pl"`, a comment that changes the line and the file a `die` names | Refused | accident | rarely | layout | D147 |
 | After a string read as a number underflows (`"1e-310" + 0`), an uncaught `die` exits 34, perl's `$!`, not 255 | A fault at the `die` | accident | rarely | errors | D151 |
+| `sprintf("%d", 1e30)` is `-1`; `%g` of `-$x` is `-0` or `0` by what `$x` was; `%3c` pads a wide character by its bytes | A fault where perl's conversion is the machine's or has two answers; `%c` takes no width | accident | rarely | printing | D127, D131 |
+| `qq[$x\[0\]]` is an element of `@x`: the backslash before the bracket goes before the variables are read | A backslash before a `qq`'s own bracket is refused | accident | rarely | strings | D131 |
+| `ucfirst("éa")` is `Éa`, by perl's tables | A first character past ASCII is a fault, as for `uc` | accident | rarely | strings | D129 |
 
 The thread through the last six rows: **in perl a value remembers
 what was done with it, and in Curly a value has no past.** `my $x =
@@ -406,6 +416,11 @@ full when its step is, and its rows join the sections above then.
   (D107), as perl does for half the operators and not the other half;
   `\$x` and `$r->$*`; and in a string, chains and the whole-container
   forms, with no code in a string, `"@{[ ... ]}"` (D111).
+- **Strings, the rest, 16d** (D120): the case escapes `\U \L \u \l
+  \Q \E`, `substr` of four arguments, `reverse` of a string where one
+  value is wanted, `__FILE__` and `__LINE__`, POD, `printf` to a handle
+  (step 21). 16a to 16c (D121 to D131) are built, and their rows are in
+  the sections above.
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
 - **Regexes** (steps 19, 20). Perl's syntax and matching order, a

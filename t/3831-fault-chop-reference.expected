@@ -1,0 +1,3 @@
+before
+fault: a reference where a string is wanted at t/3831-fault-chop-reference.pl line 4.
+exit: 1

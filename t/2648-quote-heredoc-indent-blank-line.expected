@@ -1,0 +1,2 @@
+t/2648-quote-heredoc-indent-blank-line.pl:6:1: a line of a <<~ heredoc that does not begin with the blanks before its terminator: perl dies (T263)
+exit: 1

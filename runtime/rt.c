@@ -1699,3 +1699,5 @@ void rt_internal(rt_ctx *cx, const char *what) {
 #include "hash.c"
 #include "ref.c"
 #include "unwind.c"
+#include "format.c"
+#include "strfn.c"

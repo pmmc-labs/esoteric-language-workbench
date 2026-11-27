@@ -1,0 +1,2 @@
+fault: missing argument in sprintf at t/2723-fault-format-missing-argument-from-an-array.pl line 5.
+exit: 1

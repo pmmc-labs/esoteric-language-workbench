@@ -1,0 +1,7 @@
+ann has 3, 003
+AnnaBC2
+A,B
+2rARRAY
+name: ann
+
+n=ann->[0]

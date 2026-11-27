@@ -220,7 +220,8 @@ Precedence and associativity are `perlop`'s. Chalk's
 | `"$r->[0]"`, `"$h{a}{b}"`, `"$r->@*"`, `"@{ CHAIN }"` | In | 13d | D111 |
 | `"$$r"`, `"@$r"` | Cut | | D108 |
 | `"@{[ ... ]}"`, `"${\ ... }"`: code in a string | Cut | | D111 |
-| `q`, `qq`, `qw`, heredocs | In | 16 | Chalk left heredocs out; a hand-written lexer needn't |
+| `q`, `qq`, `qw`, heredocs | In | 16a | D121 to D123, D131. A bracket for the delimiter, hard against the word; `qw` a bracketed list (T260); a heredoc's terminator a word, one heredoc on a line, `~` taking the indentation off (T263). A backslash before a `qq`'s own bracket is refused (T278); `'END'` keeps every backslash (T262) |
+| `q/.../`, `q!...!`, any delimiter but a bracket; `q (x)`; `<< "END"`, `<<""`, two heredocs on a line | Cut | | D121, D123: one spelling |
 | `true`, `false`, `undef`, `defined` | In | 4 | D47: a boolean is 1 or 0 as a number, `"1"` or `""` as a string. D48: an undef where a number or a string is wanted faults; bare `undef` only where perl can't take what follows for its argument (T105) |
 | Arrays: `my @a`, lists that flatten, `$a[i]`, negative index, `$#a`, `scalar(@a)` | In | 9 | D80. A read past either end is undef and makes nothing; a store past the end grows the array, before the start faults; `@a[one index]`, `$a[0][0]`, `length(@a)`, `defined(@a)`: Cut (T167, T168) |
 | List assignment, `my ($p, $q) = @x`, swaps, an element as a target | In | 9 | D80. The right side, then every target's index, then the stores (T158) |
@@ -266,7 +267,10 @@ Opal's notation, `docs/BUILTINS.md`.
 |---|---|---|
 | `say`, `print` to stdout | In | 0, 3 |
 | `length`, `uc`, `lc`, `ord`, `chr`, with brackets or as named unary operators (D41); `substr` (reading, 2 or 3 arguments) and `index` (2 or 3), in brackets | In | 3 |
-| `ucfirst`, `lcfirst`, `rindex`, `substr` with 4 arguments, `reverse` of a string, `sprintf`, `printf`, `chomp` and `chop` of a variable | In | 16 |
+| `sprintf`, `printf` to stdout | In | 16b | D124 to D128, D131. The format a literal; fifteen conversions, five flags, widths, precisions, stars; the count checked; a value past what perl converts exactly, or a negative zero to `%e %f %g`, a fault (T265, T267, T282) |
+| A format that is not a literal (T22); `%i %D %U %O %F %a %n %p %v`, `%2$s`, size letters; a width on `%c` (T277); `printf` to a handle | Cut; the handle Later | 21 | D124, D125, D131 |
+| `ucfirst`, `lcfirst`, `rindex`, `chomp` and `chop` of a variable | In | 16c |
+| `substr` with 4 arguments, `reverse` of a string where one value is wanted | Later | 16d | D120 |
 | `uc`, `lc` of a character past ASCII (T45, until perl's tables are in) | Fault | 3 |
 | `chr` of a surrogate, of a number past U+10FFFF or below zero; printing a noncharacter | Fault | 3 |
 | `substr` and `index` without brackets; a sign after a named unary operator that perl calls ambiguous, `length - 5` | Cut | |

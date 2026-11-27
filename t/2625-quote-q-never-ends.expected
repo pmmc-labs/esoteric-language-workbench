@@ -1,0 +1,2 @@
+t/2625-quote-q-never-ends.pl:4:5: q(...) that never ends: it begins here
+exit: 1

@@ -1,0 +1,2 @@
+fault: undef where a string is wanted at t/2822-fault-chomp-undef.pl line 5.
+exit: 1

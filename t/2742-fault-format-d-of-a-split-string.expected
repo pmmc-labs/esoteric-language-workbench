@@ -1,0 +1,2 @@
+fault: a string with a point this close to the next whole number has two values in perl at t/2742-fault-format-d-of-a-split-string.pl line 4.
+exit: 1

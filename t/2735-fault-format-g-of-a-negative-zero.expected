@@ -1,0 +1,3 @@
+0
+fault: a negative zero to %e, %f or %g: perl prints 0 or -0 by what the zero was used as at t/2735-fault-format-g-of-a-negative-zero.pl line 6.
+exit: 1

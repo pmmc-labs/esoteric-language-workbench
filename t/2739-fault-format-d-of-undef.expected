@@ -1,0 +1,2 @@
+fault: undef where a number is wanted at t/2739-fault-format-d-of-undef.pl line 5.
+exit: 1

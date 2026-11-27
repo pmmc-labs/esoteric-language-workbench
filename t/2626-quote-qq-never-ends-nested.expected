@@ -1,0 +1,2 @@
+t/2626-quote-qq-never-ends-nested.pl:4:5: qq{...} that never ends: it begins here
+exit: 1
