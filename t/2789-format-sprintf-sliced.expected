@@ -1,0 +1,2 @@
+t/2789-format-sprintf-sliced.pl:4:21: '[' after sprintf(...): perl does not compile it; bracket the whole, (sprintf(...))[...]
+exit: 1

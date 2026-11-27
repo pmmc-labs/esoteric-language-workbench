@@ -1,0 +1,2 @@
+fault: a format's width or precision of 2^31 or more at t/2745-fault-format-star-of-minus-2-to-the-62.pl line 4.
+exit: 1

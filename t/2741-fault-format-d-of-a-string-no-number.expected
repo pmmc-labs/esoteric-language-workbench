@@ -1,0 +1,2 @@
+fault: not a numeric string at t/2741-fault-format-d-of-a-string-no-number.pl line 4.
+exit: 1

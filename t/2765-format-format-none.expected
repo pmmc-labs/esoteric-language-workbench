@@ -1,0 +1,2 @@
+t/2765-format-format-none.pl:4:7: printf() with nothing to print: perl prints $_
+exit: 1

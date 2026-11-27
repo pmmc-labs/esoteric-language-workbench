@@ -413,6 +413,8 @@ const genExpr = (e: Expr, b: Code, want: Want = 'scalar'): C => {
     // `join`: the separator, which is read when the list has been built
     // (T186), and the list.
     case 'listop': {
+        // `sprintf` (step 16b): the format and the values, one list.
+        if (e.op === 'sprintf') return temp(b, `rt_sprintf(cx, ${genList(e.args, b).c})`);
         if (e.op !== 'join') throw new Error(`${e.op} where one value is wanted`);
         const sep = genExpr(e.args[0]!, b);
         const kept = sep.place ? sep : temp(b, sep.c);

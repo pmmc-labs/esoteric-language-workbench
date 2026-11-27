@@ -1,0 +1,2 @@
+fault: missing argument in sprintf at t/2724-fault-format-missing-argument-for-a-star.pl line 4.
+exit: 1

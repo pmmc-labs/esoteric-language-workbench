@@ -65,6 +65,10 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['use', { kind: 'use' }],
     ['say', { kind: 'statement', rt: 'rt_say_list' }],
     ['print', { kind: 'statement', rt: 'rt_print_list' }],
+    // Step 16b (D128): `printf` is a statement as `print` is, and
+    // `sprintf` a value as `join` is; the list's first value is the
+    // format, which compiler/src/format.ts reads.
+    ['printf', { kind: 'statement', rt: 'rt_printf' }],
     ['length', { kind: 'unary', rt: 'rt_length' }],
     ['uc', { kind: 'unary', rt: 'rt_uc' }],
     ['lc', { kind: 'unary', rt: 'rt_lc' }],
@@ -95,6 +99,7 @@ export const NAMES: ReadonlyMap<string, Name> = new Map<string, Name>([
     ['splice', { kind: 'arrayop', shape: 'splice', rt: 'rt_splice' }],
     ['scalar', { kind: 'arrayop', shape: 'scalar', rt: 'rt_count' }],
     ['join', { kind: 'listop', rt: 'rt_join' }],
+    ['sprintf', { kind: 'listop', rt: 'rt_sprintf' }],
     ['map', { kind: 'binder' }],
     ['grep', { kind: 'binder' }],
     ['sort', { kind: 'sort' }],

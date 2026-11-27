@@ -1,0 +1,2 @@
+t/2769-format-i.pl:4:13: %i, perl's other spelling of %d: write that, in sprintf's format
+exit: 1

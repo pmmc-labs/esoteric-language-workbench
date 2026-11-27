@@ -6,6 +6,7 @@ import { BASED_MAX, DECIMAL_MAX_LENGTH, INT_MAX, PRAGMAS, VERSION, infixOp, pref
 import type { Expr, Invoke, My, Pragma, Program, Stmt, Sub, Var } from './ast.ts';
 import type { Resolution } from './resolver.ts';
 import { handsOn } from './shapes.ts';
+import { checkFormat } from './format.ts';
 import type { Gives } from './shapes.ts';
 
 // What the checks need of the whole program (D20): the names, and for
@@ -249,7 +250,7 @@ const children = (e: Expr, ctx: Ctx): [Expr, Ctx][] => {
     // A block's statements are checked as statements, by `checkExpr`.
     case 'binder': return [];
     case 'sort': return [];
-    case 'listop': return e.op === 'join' ? [...all(e.args.slice(0, 1), 'scalar'), ...all(e.args.slice(1), 'list')] : all(e.args, 'list');
+    case 'listop': return e.op === 'join' || e.op === 'sprintf' ? [...all(e.args.slice(0, 1), 'scalar'), ...all(e.args.slice(1), 'list')] : all(e.args, 'list');
     case 'listassign': return [[e.value, 'list'], ...all(e.targets, 'list')];
     default: return [];
     }
@@ -431,6 +432,7 @@ const checkExpr = (w: World, e: Expr, my: boolean, ctx: Ctx = 'scalar', root = f
     if (e.kind === 'arrayop') checkOrder(w, e.op, e.args, true);
     // `join`'s separator is read when `join` runs, so it is the first
     // item of its list (T186, D87).
+    if (e.kind === 'listop' && e.op === 'sprintf') checkFormat(e.args, 'sprintf', e.pos);
     if (e.kind === 'listop') checkOrder(w, e.op, e.args, true);
     if (e.kind === 'sort' && e.body === undefined) {
         checkOrder(w, "sort's list", e.items, true);
@@ -626,6 +628,7 @@ const checkStmt = (w: World, s: Stmt, modified = false, last = false): void => {
     case 'use': return refuse(`'use ${s.version};' here: the version is the first statement, and is said once`, s.pos);
     case 'pragma': return refuse(`'${said(s.name)}' goes at the top, after 'use ${VERSION};' and before anything else`, s.pos);
     case 'call':
+        if (s.name === 'printf') checkFormat(s.args, 'printf', s.pos);
         checkOrder(w, `${s.name}'s list`, s.args, true);
         return s.args.forEach(a => checkExpr(w, a, false, 'list'));
     case 'do':

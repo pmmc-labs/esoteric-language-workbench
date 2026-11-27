@@ -103,6 +103,10 @@ test('a repeated string of 2^31 characters is too long', () => {
     assert.deepEqual(run('limit'), { status: 1, output: '2000\nfault: repeated string too long at limit.pl line 5.\n' });
 });
 
+test('a formatted string of 2^31 characters is too long, and is counted before it is made (step 16b)', () => {
+    assert.deepEqual(run('format'), { status: 1, output: '11\nfault: formatted string too long at format.pl line 6.\n' });
+});
+
 // ---- the collector (step 7; D26, D63 to D66). Each count below is worked
 // out from the case in collect.c, which says how.
 

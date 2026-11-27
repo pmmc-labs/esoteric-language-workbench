@@ -122,7 +122,7 @@ test('what a statement may start with', () => {
     refused(')', "expected a statement, found ')'", 1, 1);
     refused('else { say 1; }', 'else without an if before it', 1, 1);
     refused('elsif (1) { say 1; }', 'elsif without an if before it', 1, 1);
-    refused('use v5.42;\nprintf 42;', "'printf' is not in the language", 2, 1);
+    refused('use v5.42;\nwrite 42;', "'write' is not in the language", 2, 1);
     // A word perl has no meaning for could be a sub's name (D72).
     refused('say42;', "'say42' is not in the language; a call of a sub of the program's has brackets: say42(...)", 1, 1);
     refused('redo;', "'redo' is not in the language", 1, 1);

@@ -1624,3 +1624,4 @@ void rt_internal(rt_ctx *cx, const char *what) {
 // perl's merge sort, ported: a file of its own, for its origin (D82).
 #include "sort.c"
 #include "hash.c"
+#include "format.c"

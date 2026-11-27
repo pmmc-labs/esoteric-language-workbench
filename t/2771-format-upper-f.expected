@@ -1,0 +1,2 @@
+t/2771-format-upper-f.pl:4:13: %F, perl's other spelling of %f: write that, in sprintf's format
+exit: 1

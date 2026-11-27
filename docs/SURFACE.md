@@ -252,7 +252,10 @@ Opal's notation, `docs/BUILTINS.md`.
 |---|---|---|
 | `say`, `print` to stdout | In | 0, 3 |
 | `length`, `uc`, `lc`, `ord`, `chr`, with brackets or as named unary operators (D41); `substr` (reading, 2 or 3 arguments) and `index` (2 or 3), in brackets | In | 3 |
-| `ucfirst`, `lcfirst`, `rindex`, `substr` with 4 arguments, `reverse` of a string, `sprintf`, `printf`, `chomp` and `chop` of a variable | In | 16 |
+| `sprintf`, `printf` to stdout | In | 16b | D124 to D128, D131. The format a literal; fifteen conversions, five flags, widths, precisions, stars; the count checked; a value past what perl converts exactly, or a negative zero to `%e %f %g`, a fault (T265, T267, T282) |
+| A format that is not a literal (T22); `%i %D %U %O %F %a %n %p %v`, `%2$s`, size letters; a width on `%c` (T277); `printf` to a handle | Cut; the handle Later | 21 | D124, D125, D131 |
+| `ucfirst`, `lcfirst`, `rindex`, `chomp` and `chop` of a variable | In | 16c |
+| `substr` with 4 arguments, `reverse` of a string where one value is wanted | Later | 16d | D120 |
 | `uc`, `lc` of a character past ASCII (T45, until perl's tables are in) | Fault | 3 |
 | `chr` of a surrogate, of a number past U+10FFFF or below zero; printing a noncharacter | Fault | 3 |
 | `substr` and `index` without brackets; a sign after a named unary operator that perl calls ambiguous, `length - 5` | Cut | |

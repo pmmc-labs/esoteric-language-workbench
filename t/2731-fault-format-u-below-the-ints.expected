@@ -1,0 +1,2 @@
+fault: a number outside 64 bits where a format wants a whole number at t/2731-fault-format-u-below-the-ints.pl line 4.
+exit: 1

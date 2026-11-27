@@ -1,0 +1,2 @@
+fault: a number outside the integers where a whole number is wanted at t/2729-fault-format-d-of-1e30.pl line 4.
+exit: 1

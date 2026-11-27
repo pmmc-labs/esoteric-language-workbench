@@ -1,0 +1,2 @@
+fault: a whole float this size prints two ways in perl (add 0 to print the integer) at t/2743-fault-format-s-of-a-whole-float.pl line 4.
+exit: 1

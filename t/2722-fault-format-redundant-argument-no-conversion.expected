@@ -1,0 +1,2 @@
+fault: redundant argument in sprintf at t/2722-fault-format-redundant-argument-no-conversion.pl line 4.
+exit: 1

@@ -644,6 +644,60 @@ below a whole number, `"1.99999999999999999"`, here and as a count or
 for `chr`: its nearest double is 2, and perl cuts it to 1 or to 2 by
 what was done with the string before.
 
+### sprintf and printf
+
+`sprintf(FORMAT, LIST)` makes a string from a format and values, and
+`printf(FORMAT, LIST);` prints one, as `print` would:
+
+    my $line = sprintf("%-8s %5.2f %03d", $name, $price, $count);
+    printf("%d%% done\n", $percent);
+
+`sprintf` is written with brackets or without, as `join` is, and is
+one value; `printf` is a statement, as `print` is, to standard
+output. **The format is a string literal with no variable in it**, in
+any of the quotes (a heredoc too), so that the compiler can read it:
+perl takes the first value of an array for a format (`sprintf(@a)`
+formats the array's count), and a `%` in a variable would be a
+conversion.
+
+The conversions are `%s` (a string), `%c` (a character, by its
+number), `%d` (a whole number), `%u`, `%o`, `%x`, `%X`, `%b` and `%B`
+(the same with no sign, in decimal, octal, hex and binary), `%e`,
+`%E`, `%f`, `%g` and `%G` (a number as a float), and `%%` for the
+character. Between the `%` and the letter may come the flags `-`
+(padded on the right), `+` and a blank (a sign for a positive `%d` or
+float), `0` (padded with zeros) and `#` (`0x`, `0b`, a leading `0` for
+`%o`, a point for a float), then a width, then a point and a
+precision; a width or a precision may be `*`, taken from the list
+before the value (a negative width pads on the right, a negative
+precision is none). What each prints is what perl prints, which is
+C's, but for a bare `%.0f`, where perl rounds by adding a half, and so
+does the language.
+
+**The format takes exactly as many values as it has conversions and
+stars**: one too few or too many is a fault (perl warns, and prints a
+blank or ignores the rest).
+
+Each value is taken as its conversion wants it. `%s` makes it a string
+as `.` does, and its width and precision count characters; `0` pads
+`%s` with zeros, as perl does. `%c` takes a character's number, as
+`chr` does. `%d` cuts a number toward zero; past the Ints it is a
+fault (perl prints what the machine gives, `-1` for 1e30). The
+unsigned conversions take a negative Int as its 64 bits (`%x` of -1
+is `ffffffffffffffff`) and a Num up to 2^64; past that, a fault. A
+zero with a minus sign, a Num or a string, is a fault to `%e`, `%f`
+and `%g`: perl prints `-0` or `0` by what the zero was used as before.
+undef is a fault, as everywhere.
+
+Refused: `%i`, `%D`, `%U`, `%O` and `%F` (perl's other spellings:
+write `%d`, `%d`, `%u`, `%o`, `%f`); `%a`, `%n`, `%p`, `%v` and an
+argument by its number, `%2$s`; the size letters `h`, `l`, `q` and the
+rest, which perl ignores; a flag or a width on `%%`; a width, a
+precision or a flag on `%c` (perl pads a wide character by its bytes);
+`+`, a blank or `#` on `%s`; a width or precision of 2^31 or more; and
+a conversion perl doesn't know or that the format cuts short. A string
+of more than 2^31 - 1 characters is a fault.
+
 ## Comparing, and true and false
 
 ### Booleans

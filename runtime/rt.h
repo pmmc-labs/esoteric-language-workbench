@@ -409,6 +409,9 @@ void rt_sort_in_place(rt_ctx *cx, rt_value list);
 // makes one.
 void rt_list_add_reversed(rt_ctx *cx, rt_value list, rt_value values);
 rt_value rt_join(rt_ctx *cx, rt_value separator, rt_value list);
+// runtime/format.c (step 16b): the list is the format and its values.
+rt_value rt_sprintf(rt_ctx *cx, rt_value list);
+void rt_printf(rt_ctx *cx, rt_value list);
 
 // A fault (D13): stdout as far as it got, then
 // `fault: WHAT at FILE line N.` on stderr, and exit 1. Never returns, and

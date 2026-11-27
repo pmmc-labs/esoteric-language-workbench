@@ -1,0 +1,2 @@
+t/2767-format-unknown-conversion.pl:4:13: %y, which is no conversion: perl prints it as it is and warns (T270), in sprintf's format
+exit: 1
