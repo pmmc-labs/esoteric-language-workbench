@@ -614,6 +614,32 @@ programs were run to write the proposal. Each row is in
 | T247 | In a string: `$r->[0]$r->[1]`, `$r->[$i+1]`, `$r->@*`, `$r->$#*`, `@{$r}`, `$r ->[0]`, `$r->`, `$r->foo`, `%$r`, `email@$r`; `$r->[0]->[1]`; `$r->[0]{x`; `$$r[0]` with a scalar's reference; `@{[ ... ]}` | Elements; perl takes an expression; the array, its last index, the array; text for the next four; interpolated; a second subscript, and dies; does not compile; an element, and dies; code | 13 | D111: a chain goes on, by shapes; no code in a string |
 | T248 | `my $r; $r->{a}{b}[2] = 1;`; `$$s = 5`; `$t->[0]++`; `push $u->@*, 1`; `$v->@* = (1, 2)`; `push $a[2]->@*, 1`; `$h{y}{z} //= 4`; `($o->[0], $o->[1]) = (1, 2)` | Each makes every container on the way | 13 | Agree |
 
+## Found proposing step 15
+
+T53, T65, T70 and T74 are this step's from before. About 260
+programs were run to write the proposal. Each row is in
+`briefs/claims.py`, where the program is `claim.pl` and its first
+line is `use v5.42;`.
+
+| | Program | perl prints | Step | Way out |
+|---|---|---|---|---|
+| T300 | `die;`, `die "";`, `die false;`, `die "", "";`, `my @a; die @a;`; and `die "a", @a, 1.5, true` with `@a = (1, 2)` | `Died at FILE line N.` for each of the first five; `a121.51 at FILE line N.` | 15 | Agree: the list joined with nothing between, each value as `.` makes it a string, and `Died` for an empty message |
+| T301 | `die "a\nb";`; `die "x\n\n";`; `die 0;` | `a` newline `b at FILE line N.`; `x` and two newlines; `0 at FILE line N.` | 15 | Agree: ` at FILE line N.` when the message does not *end* in a newline |
+| T302 | A `die` in a statement over several lines: after `//` on the next line, in a list's second line, in a `map` block's second statement and in its one statement over two lines, in an `elsif`'s and a `while`'s test, a `for`'s third part, a default, a sub called from a two-line `say`, a modifier's test | The line the innermost statement starts on, every time; a test's, the line of its `if`, `elsif` or `while`; a `for`'s parts, the `for`'s | 15 | Agree: D34's line, which the generated code already stores |
+| T303 | `die("x") . "y"`; `if (die "u")`; `say 1 if die "q"`; `die ("a") . "b"`; but `(die "x") \|\| 1`, `until (die "x")` and `1 + ($u // die "undef\n")` | `Possible precedence issue with control flow operator (die)`, for the first four, and `a` from the fourth: the brackets are all of `die`'s arguments; nothing for the last three | 15 | Refuse a `die` that is tested or is the left operand of any operator, in brackets or not (D146) |
+| T304 | `return` in a `try` in a sub; `next` and `last` in a `try` in a loop, with a label too; `last` in a `catch` | The sub returns; the loop goes on or ends, in silence | 15 | Agree: the `try` is closed on the way out, by the code that gives back a loop's freezes (D141) |
+| T305 | A `die` in a `catch` inside a `try`; `die $e` again; `die;` alone in a `catch` | The outer `catch` has `mid: in`; the message unchanged; `Died at FILE line N.`, not perl's `...propagated`, since `$@` is empty | 15 | Agree |
+| T306 | `try { my $x = 1 / 0 } catch ($e) { print "caught: $e" }` | `caught: Illegal division by zero at FILE line N.` | 15 | Fault (D13): the language's faults are not catchable |
+| T307 | An uncaught `die "caf\x{e9}"`; `die "\x{263a}"`; the same with `use open`; `die "\x{fdd0}"` with `use open`; `warn "\x{263a}"` | One byte E9; `Wide character in die` and the UTF-8; the UTF-8 alone; `Unicode non-character U+FDD0`; `Wide character in warn` | 15 | Fault as `say` does: past ASCII without `use open`, and a noncharacter |
+| T308 | `@b = sort { die ... if ++$n == $k; $a <=> $b } @b` caught, for every `$k` from 1 to 20; `@a = map { die ... } @a` | `@b` and `@a` as they were, every time: perl sorts in place into a buffer of its own | 15 | Agree: the runtime sorts a copy and stores it at the end |
+| T309 | `$h{x} .= d()` and `$a[3] += d()` with `d` dying, caught; and `push`, a list assignment, `%h = LIST`, `splice`, `@s = LIST` with `d()` in the list | `made`, and 4; and nothing changed by the rest | 15 | Agree: D80's orders, the element made before the right side |
+| T310 | `my $e = 1; try { die } catch ($e) { my $e = 2; say $e }`; `catch ($e) { $e = "c" }`; `catch ($_)` | `2`, no warning; `c`; the outer `$e` is 1 after both; `$_` does not compile | 15 | Agree: the catch's variable is a scope round its block; `$a`, `$b`, `$_` refused (D55) |
+| T311 | `# line 0`; `#line 7 "a b.pl"`; `# line 100 other.pl`; `#` tab `line` tab `100`; but an indented one, `# line 100x`, `# LINE 100`, one after a statement, one in a string | `x.` with no place at all; `at a b.pl line 7.`; `at other.pl line 100.`; `line 100`; the rest are comments | 15 | Refuse (D147): a line whose first character is `#`, blanks, `line`, blanks and a digit |
+| T312 | `try { die "x\n" } catch ($e) { print "[$@]" } say "[$@]";` | `[][]` | 15 | Nothing: `$@` is not in the language (D20) |
+| T313 | `try { } catch ($e) { } finally { }`; `{ defer { say "d" } say "b" }` | `try/catch/finally is experimental`; does not compile | 15 | Refuse both (D144) |
+| T314 | `my $r = warn "w\n"; say $r;`; `warn;`; `warn "";`; `warn "a", "b";`; `warn $u` with `$u` undef; `print STDERR`, `say STDERR` with a list | `1`; `Warning: something's wrong at FILE line N.` twice; `ab at FILE line N.`; `Use of uninitialized value $u in warn`; on stderr, in order | 15 | Agree (15b), and fault for the undef (D48) |
+| T315 | `... if 1;`; `my $x = ...;`; `sub f() { ... } f();` | Do not compile; do not compile; `Unimplemented at FILE line N.` | 15 | Agree, as a statement alone (D145) |
+
 ## The checks themselves
 
 - A `fault` test that perl can't compile passes a check that only

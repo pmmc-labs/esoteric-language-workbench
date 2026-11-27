@@ -2109,3 +2109,68 @@ each result in a temporary.** *(User: accepted as proposed, 2026-11-24.)* C does
 arguments and clang stops at 256 nested brackets; the workbench met
 both (its D25 and D26, and the limit that's still open there) and
 called this shape "also right". Starting with it costs nothing here.
+
+## Step 15: `die`, `try`, `catch`
+
+**D140 to D149. Step 15, `die`, `try` and `catch`: each question
+answered with its recommendation.** *(User, 2026-11-26, before the
+proposal was written: "do not ask me questions, I will only agree
+with your recommendations anyway." The recommendations are Fable
+5.2's; each is his to overturn. `PLAN.md`, step 15, has the text, the
+evidence and what was rejected; `TRAPS.md`, T300 to T315, the
+programs.)*
+**D140.** Two sub-steps: 15a `die`, `try`, `catch`, `...`, the
+unwinding and the line directive; 15b `warn`, `say STDERR` and
+`print STDERR`, and the `warns` kind of test. Rejected: one step;
+leaving `warn` to a later step.
+**D141. Unwinding is `setjmp` and `longjmp`.** A `try` records how
+many frames, sorts and freezes are open (the freezes become a stack
+in the context) and a `die` puts each back and jumps; `return`,
+`last` and `next` leave a `try` by a `goto` that closes it, as they
+give back a loop's freezes. It works because the runtime calls no
+generated code (D83) and everything a `die` must undo is in the
+context; the cost is at a `try` alone. The value thrown is handed
+over in the context, and the generated code keeps nothing in a C
+local across a `try`. Rejected: a test after every call (a branch at
+every call of every program, and a way out through every loop, `map`,
+`grep` and sort at each one); C++'s exceptions (D3).
+**D142. A `die` throws a value: the message perl makes**, the list
+joined as `.` joins, `Died` when it is empty, and ` at FILE line N.`
+when it does not end in a newline, N by D34, which is perl's line in
+every shape run (T300 to T302). The runtime is handed the list, so
+that a reference or an object can be thrown as itself when steps 13
+and 17 merge; until then a `die` given one faults. Rejected: making
+the message in the generated code.
+**D143. `try BLOCK catch ($e) BLOCK`, as perl 5.42 has it**: a
+statement, the variable always (T53); `return`, `last` and `next` in
+it as anywhere (T304); a fault never caught (D13, T306); a sub that
+ends in one has no value (D18, T65). Rejected: `try` as a value (perl
+refuses it).
+**D144. `finally` and `defer` stay Later, refused** (T313): perl 5.42
+warns of `finally`, and has no `defer` without `use feature`; both
+are for cleanup, and memory is collected. To revisit with files at
+step 21. Rejected: `finally` under a second experimental pragma.
+**D145. `...` is a statement alone, a `die "Unimplemented"`** (T70,
+T315).
+**D146. A `die` is never tested and never the left operand of an
+operator**, a refusal stricter than perl's warning (T303); and `$x
+or die ...;` is refused as D56 refuses every statement joined by a
+word operator: `die ... unless $x;`. Rejected: `or die` as a
+statement (a second spelling of `unless`; with files, step 21 may
+want it, and nothing that compiles now would change).
+**D147. A comment perl reads as a line directive is refused** (T74,
+T311): a line whose first character is `#`, then blanks, `line`,
+blanks and a digit. Rejected: agreeing (a second file name, and
+every fault's line moved); refusing only perl's exact shape.
+**D148. The text of a `die` and a `warn` is perl's, byte for byte**,
+since a program can catch a message and print it; and a `dies` or a
+`warns` test compares stderr. A fault's text stays the language's
+(D12).
+**D149. The `warns` kind of golden test, and stdout and stderr kept
+apart**: `t/run.sh` compares stdout, then stderr, as the oracle has
+always written a `dies` test; a test that writes to stderr and ends
+normally is `warns`; for `warns` and `dies` the oracle check reruns
+perl with every warning that is not the program's own `warn` marked,
+and fails the test for one. Rejected: stderr in a `same` test (D10's
+empty stderr is what shows a warning of perl's); the two streams
+mixed (their order is the buffers').

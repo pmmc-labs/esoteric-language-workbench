@@ -382,7 +382,18 @@ full when its step is, and its rows join the sections above then.
   (D106).
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
-- **Errors** (step 15; D13). `die`, `try`, `catch`.
+- **Errors** (step 15; D13; D140 to D149, proposed and not yet
+  built). `die`, `try`, `catch`, `...` and `warn`, as perl has them,
+  the message byte for byte (D142, D148); unwound by `setjmp`, which
+  nothing a program prints can tell (D141); `return`, `last` and
+  `next` in a `try` as anywhere (D143). **A fault is not caught by
+  `try`**, where perl's own errors are (D13). `finally` and `defer`
+  are refused (D144). A `die` that is tested or is the left operand
+  of an operator is refused, and so is `$x or die ...;` as a
+  statement (D146); a `# line` directive is refused (D147). A test
+  that writes to stderr is of a kind of its own (D149). `...` is a
+  `die` (D145); 15a and 15b (D140). The rows join the sections above
+  as they are built.
 - **Regexes** (steps 19, 20). Perl's syntax and matching order, a
   subset, compiled. No `s///e`, no `(?{ })`, no string interpolated
   as a pattern. **How `s///` and a match read with `$_` read-only
