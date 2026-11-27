@@ -2084,6 +2084,25 @@ character, made a string as `.` makes one first (T272). Cut: their
 values, arrays, hashes, elements, `chomp(my $x = ...)`, `$_`, `$/`.
 Rejected: values (a change in the middle of an expression, for D76 to
 learn).
+**D131. The review of step 16: each finding answered by agreeing,
+faulting or refusing, in that order.** *(By the same standing
+instruction; the builder's, 2026-11-27, for him to overturn.
+`PLAN.md`, step 16, "What the review found".)* A backslash before a
+bracket of a `qq`'s own delimiter is refused (T278). `chomp` changes
+a Str and leaves any other value as it is; `chop` makes the string
+(T279; it amends D130). A bare `%.0f`, no flag and no width, rounds
+as perl's own `F0convert` does (T280). `rindex` adds the length of
+what it looks for to the position before moving it into the string,
+and a sum past 2^63 - 1 is a fault (T281; it amends D129). Under `%e`,
+`%f` and `%g` a string whose number is zero and which has a minus sign
+is a fault, as a negative-zero Num is (T282). A `*` is a whole number
+taken as `%d` takes one, a negative width the `-` flag, a negative
+precision none, beyond 2^31 - 1 either way a fault (T283). The format
+is checked as its value. The integer conversions are formatted by
+hand (C's `%b` is glibc's alone), and so is the model's. A flag or a
+precision on `%c`, and `+`, a blank or `#` on `%s`, are refused: perl
+ignores them, but for `%.0c`, which it prints as nothing (it amends
+D125).
 
 **D24. A string is a sequence of Unicode code points, and the standard
 streams are UTF-8.** *(User: picked from three options, 2026-11-24.)* `length`, `substr`, `ord` and `chr`

@@ -4771,7 +4771,10 @@ the main tree; pulled ahead of them by that session's lead. Stevan,
 of step 13 and of this: "do not ask me questions, I will only agree
 with your recommendations anyway". So each question below is
 answered by its recommendation, recorded as D120 to D130 by that
-standing instruction, each his to overturn.** The shapes that
+standing instruction, each his to overturn. Its adversarial review
+found five ways to be WRONG: "What the review found", at the end,
+and D131, which answers each. The text is kept as it was proposed.**
+The shapes that
 interpolate were decided at step 11a and 12b (D91 to D99) and are not
 reopened: a `qq` and a heredoc use them whole. Nothing here needs a
 reference, a closure or `die`; where a construct would (`"@{[ ]}"`,
@@ -4929,6 +4932,7 @@ character, so every rule about assignment already holds of them.
   `1000000000000001`** (T272): `chomp` made the number the string
   `1e+15`, and the sum is a float's. Here `chomp` makes its variable a
   string as `.` does, and a whole Num from 10^15 is D36's fault.
+  (Wrong: the review's second finding, T279. `chomp` leaves a number.)
 - **`chomp` of `"ab\r\n"` leaves `ab\r`** (T272's kin): only `$/`,
   which is a newline and is not in the language.
 - **`printf ("%s\n", "a");` with one blank does not warn** (T273): the
@@ -5081,6 +5085,74 @@ would be worked out twice).
   nothing.
 - The census: about 100 of the 130 should get past their first
   refusal; how many come through SAME is the build's account.
+
+#### What the review found
+
+**Five ways to be WRONG, two ambiguities an obvious build would get
+WRONG, and four risks** (`briefs/step16-review/FINDINGS.md`, by a
+reader who did not write the proposal, given it and perl 5.42: a
+separate Claude Code process, Opus, run from the command line, since
+this session could spawn no agent of its own). Each is answered by
+agreeing with perl, faulting or refusing, in that order, as D131
+records; T278 to T284 have the programs, and `briefs/claims16.py` the
+rows.
+
+- **1, WRONG: in `qq` a backslash before the delimiter's bracket is
+  gone before perl interpolates** (T278): `qq[$x\[0\]]` is the element
+  `$x[0]` to perl, where `"$x\[0\]"` is `$x` and the text. Refused: a
+  backslash before either bracket of a `qq`'s own delimiter. (In `q` it
+  stays what 16a says: that bracket.)
+- **2, WRONG: `chomp` of a number leaves the number** (T279): perl's
+  `chomp` does nothing to a value whose string has no newline, and a
+  number's never has, so `my $x = 1/3; chomp $x; say $x * 3;` is `1`.
+  T272's account was wrong (its `1000000000000001` is the integer add,
+  `chomp` or not). Agreed: `chomp` changes a Str and leaves any other
+  value as it is (undef still D48's fault). `chop` makes the string, as
+  proposed (`chop` of 1.5 is `1.`).
+- **3, WRONG: a bare `%.0f` is perl's own, not C's** (T280): with no
+  flag and no width, perl rounds by adding 0.5 (`F0convert`), and
+  `sprintf("%.0f", 0.5000000000000001)` is `0` where C prints `1`.
+  Agreed: the runtime does what perl does there, statement for
+  statement, and the model too.
+- **4, WRONG: `rindex` with a negative position finds nothing** (T281):
+  perl adds the length of what it looks for to the position, and then
+  moves it into the string; `rindex("abc", "a", -1)` is `-1`. Agreed;
+  and where that sum passes 2^63 - 1 perl has two answers, by whether
+  the string is UTF-8 inside: a fault.
+- **5, WRONG: the string `"-0"` is a negative zero to `%e`, `%f` and
+  `%g`** (T282), where D40 makes it the Int 0, and perl's answer turns
+  on the string's past. A fault: a string whose number is zero and
+  which has a minus sign, under those three, as for the Num.
+- **6, ambiguous: what a `*` takes** (T283). A whole number, taken as
+  `%d` takes one; a negative width is the `-` flag, a negative
+  precision none (perl's, and C's); outside 2^31 - 1 either way a fault
+  (perl prints a width of 4294967297 whole, and refuses 2^62 as it
+  runs); undef D48's fault.
+- **7, ambiguous: the format is checked as its value**, after D43's
+  escapes (`"\x25d"` is `%d`), and a `qw` of more than one word is no
+  format (it is a list).
+- **8, risk: C's `printf` is glibc's here.** macOS's has no `%b`, and C
+  leaves `#` on `%d` and `+` on `%x` undefined. So the integer
+  conversions are formatted by hand, as perl formats them itself;
+  `snprintf` is kept for `%e`, `%f` and `%g`.
+- **9, risk: Python's `%` is not C's** (`%.0d` of 0, `%#o`, `%u` of -1,
+  no `%b`). The model formats integers by hand too, and these rows are
+  among its tests.
+- **10, minor: flags perl ignores.** Refused, since none means
+  anything (and `%.0c` is not ignored: it prints nothing, which the
+  review's own paste missed): a flag or a precision on `%c`, and `+`, a blank or `#` on
+  `%s`.
+- **11, minor: a heredoc's body is the lines after its own line even
+  when the statement goes on** (T284): `my @a = (<<A,⏎"x");` takes
+  `"x");` into the body, under perl and here, and both then refuse what
+  is left. `<<123` is refused (a word starts with a letter or `_`);
+  `q(ab)x3` is refused as `"ab" x3` is (T57).
+
+What it checked and found to hold: the integer conversions against
+glibc over 29,190 cases and the float ones over 16 values with every
+flag, all agreeing but `%.0f`; `%s` padded in characters, so T277 is
+`%c`'s alone; D127's ranges; the `q` backslash rules; `qw`; `<<~`;
+`ucfirst`; `index`; `chop`; repeated flags.
 
 ### 17. Classes
 

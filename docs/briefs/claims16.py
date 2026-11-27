@@ -76,4 +76,15 @@ STEP16 = [
     c('16-rindex-chars', 'PLAN 16', 'use utf8; use open ":std", ":encoding(UTF-8)";\nsay rindex("éaéa", "é"), rindex("éaé", "");', out='23\n'),
     c('16-chomp', 'PLAN 16', r"""my $s = "ab\n"; my $n = chomp($s); say "[$s] $n"; my $t = "ab\n\n"; chomp $t; say length $t; my $u = "ab"; chomp($u); say $u; my $v = "ab"; my $c = chop($v); say "[$v] $c"; my $w = ""; chop($w); say "[$w]"; my $z = 5; chop($z); say "[$z]";""", out='[ab] 1\n3\nab\n[a] b\n[]\n[]\n'),
     c('16-chop-loop-variable', 'PLAN 16', r"""my @a = ("ab", "cd"); for my $x (@a) { chop $x } say "@a";""", out='a c\n'),
+    # ---- found by the review of step 16 (TRAPS; PLAN 16; briefs/step16-review)
+    c('T278', 'TRAPS; PLAN 16', r"""my $x = "X"; my @x = ("Y"); my %x = (a => "H"); say qq[$x\[0\]]; say "$x\[0\]"; say qq{$x\{a\}};""", out='Y\nX[0]\nH\n'),
+    c('T279', 'TRAPS; PLAN 16', r"""my $x = 1/3; chomp $x; say $x * 3; my $y = 0.1 + 0.2; chomp $y; say $y - 0.3; my $s = 1e15; say $s + 1; my $n = 5; chomp $n; say $n;""", out='1\n5.55111512312578e-17\n1000000000000001\n5\n'),
+    c('T280', 'TRAPS; PLAN 16', r"""say sprintf("%.0f|%.0f|%.f|%1.0f|%+.0f|% .0f|%.0f|%.0f", 0.5000000000000001, -0.5000000000000001, 0.5000000000000001, 0.5000000000000001, 0.5000000000000001, 0.5000000000000001, -0.4, 2.5);""", out='0|-0|0|1|+1| 1|-0|2\n'),
+    c('T281', 'TRAPS; PLAN 16', r"""say join ",", rindex("abc", "a", -1), rindex("abc", "c", -1), rindex("abc", "", -1), rindex("abc", "ab", 0), rindex("abc", "", 100), index("abc", "c", -1);""", out='-1,-1,0,0,3,2\n'),
+    c('T281-two', 'TRAPS; PLAN 16', r"""my $w = substr("abc\x{263A}", 0, 3); my $p = "abc"; say $w eq $p ? "same" : "differ"; say rindex($p, "a", 9223372036854775807), " ", rindex($w, "a", 9223372036854775807);""", out='same\n-1 0\n'),
+    c('T282', 'TRAPS; PLAN 16', r"""say sprintf("%g|%e|%.1f|%g|%g", "-0", "-0", "-0", "-0.0", "-0e0"); my $s = "-0"; my $t = $s + 0; say sprintf("%g", $s); my $u = "-0"; my $v = $u * 1.5; say sprintf("%g", $u);""", out='-0|-0.000000e+00|-0.0|-0|-0\n0\n-0\n'),
+    c('T283', 'TRAPS; PLAN 16', r"""say "[", sprintf("%*s|%-*s|%0*d|%.*s|%.*f|%*s|%.*s", -4, "a", -4, "b", -5, 42, -1, "abc", -2, 1.25, 2.9, "a", 1.9, "abc"), "]"; say length sprintf("%*d", 4294967297, 1);""", out='[a   |b   |42   |abc|1.250000| a|a]\n4294967297\n'),
+    c('T283-overflow', 'TRAPS; PLAN 16', r"""say length sprintf("%*d", 2**62, 1);""", exit='nonzero', err='Integer overflow in format string'),
+    c('T284', 'TRAPS; PLAN 16', 'my @a = (<<A,\n"x");\nbody\nA\nsay scalar @a;', compiles=False, err='Global symbol'),
+    c('16-percent-c-flags', 'PLAN 16', r"""print sprintf("[%.0c|%.3c|%-c|%+c|%#c|%0c]", 65, 65, 65, 65, 65, 65), "\n";""", out='[|A|A|A|A|A]\n'),
 ]
