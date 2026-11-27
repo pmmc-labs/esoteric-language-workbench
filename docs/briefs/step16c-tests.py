@@ -29,6 +29,7 @@ f('chop-whole-float', 'perl makes the string 1e+15, and chops it to 1e+1 (D36).'
 f('rindex-past-the-ints', 'perl gives -1 or 0 by whether the string is UTF-8 inside (T281).', 'say rindex("abc", "a", 9223372036854775806);\nsay rindex("abc", "a", 9223372036854775807);', '0\n', 'an rindex position this far past the end has two answers in perl', 2)
 f('rindex-of-undef', 'perl warns: Use of uninitialized value in rindex.', 'my $u;\nsay rindex($u, "a");', '', 'undef where a string is wanted', 2)
 f('rindex-position-not-a-number', 'perl warns: Argument "x" isn\'t numeric in rindex.', 'say rindex("abc", "a", "x");', '', 'not a numeric string', 1)
+f('chomp-last-in-a-sub', 'perl gives the count chomp took: 1. Here chomp is no value, a sub\'s either (D130).', 'sub f($s) { chomp $s }\nsay "before";\nsay f("a\\n");', 'before\n', 'f has no value: it does not end in a return or an expression', 1)
 
 # ---- refusals
 ONE = lambda w: f'{w} takes one scalar variable here, {w}($x): its value, an array, a hash, an element and $_ are not in the language (D130)'

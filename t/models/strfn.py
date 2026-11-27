@@ -76,6 +76,9 @@ def case_first(rnd):
             p = rnd.randint(-4, len(s) + 3)
             lines.append(f'say rindex({lit(s)}, {lit(t)}, {p if p >= 0 else f"({p})"});')
             out.append(str(rindex(s, t, p)))
+    # A position below zero finds only the empty piece (T281).
+    lines.append('say rindex("abc", "a", -1), rindex("abc", "abc", -3), rindex("abc", "", -1), rindex("aaa", "a", 0), rindex("abc", "ab", 0);')
+    out.append(f'{rindex("abc", "a", -1)}{rindex("abc", "abc", -3)}{rindex("abc", "", -1)}{rindex("aaa", "a", 0)}{rindex("abc", "ab", 0)}')
     lines.append('say rindex("abcabc", "c", 4.9), rindex("abc", "", 9223372036854775807 - 1), rindex(123123, 2), rindex("x1.5", 1.5);')
     out.append(f'{rindex("abcabc", "c", 4)}{rindex("abc", "", 10)}{rindex("123123", "2")}{rindex("x1.5", "1.5")}')
     return lines, out

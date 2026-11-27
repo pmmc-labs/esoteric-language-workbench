@@ -14,6 +14,7 @@ pvm/adjacency-05_scoping-01.pl	D16	'use feature' is not in the language
 pvm/adjacency-06_control-01.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 pvm/adjacency-08_references-01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 pvm/adjacency-12_packages-01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+pvm/adjacency-13_opaque-01.pl	D17	'format' is not in the language
 pvm/aggregate-operators-08.pl	D17	expected a value, found 'each'
 pvm/aggregates-in-context-03.pl	D80	a list where one value is wanted: perl gives its last value, and warns of the others
 pvm/argument-extent-01.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -53,6 +54,7 @@ pvm/numeric-radix-04.pl	D38	0377 starts with a zero: perl reads that as octal, w
 pvm/packages-01.pl	D19	'package' is not in the language
 pvm/packages-02.pl	D19	'package' is not in the language
 pvm/packages-03.pl	D19	'package' is not in the language
+pvm/quote-like-terms-05.pl	D121	qq takes a bracket hard against it, and no other delimiter: qq(...), qq[...], qq{...} or qq<...> (D121)
 pvm/range-03.pl	D80	a range where one value is wanted: '..' is another operator to perl there
 pvm/strings-03.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 pvm/subroutines-01.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -175,6 +177,7 @@ son-audit/a/aun31.pl	D78	an assignment of a list is a statement: perl gives the 
 son-audit/a/aun4.pl	D19	'our' is not in the language
 son-audit/a/aun40.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/a/aun41.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/a/aun47.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
 son-audit/a/aun48.pl	D80	splice where one value is wanted: perl gives the last element it removed; assign it to an array
 son-audit/a/aun49.pl	D80	a list where one value is wanted: perl gives its last value, and warns of the others
 son-audit/a/aun5.pl	D19	'our' is not in the language
@@ -290,6 +293,8 @@ son-audit/f/b43.pl	D78	an assignment of a list is a statement: perl gives the co
 son-audit/f/b45.pl	D56	my $y here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached
 son-audit/f/b46.pl	D56	my $x here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached
 son-audit/f/b53.pl	D19	'our' is not in the language
+son-audit/f/b55.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
+son-audit/f/b56.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/f/b57.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 son-audit/f/b59.pl	D13	'wantarray' is not in the language
 son-audit/f/b65.pl	D19	'our' is not in the language
@@ -456,6 +461,7 @@ son-audit/f/j06.pl	D17	$_ is read-only: in perl, changing it changes the list's 
 son-audit/f/j07.pl	D19	'our' is not in the language
 son-audit/f/j08.pl	D19	'our' is not in the language
 son-audit/f/j09.pl	D19	'our' is not in the language
+son-audit/f/j11.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/f/j12.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/f/j15.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/f/j19.pl	D19	'our' is not in the language
@@ -463,6 +469,7 @@ son-audit/f/j20.pl	D19	'our' is not in the language
 son-audit/f/j22.pl	D19	'our' is not in the language
 son-audit/f/j23.pl	D19	'our' is not in the language
 son-audit/f/j24.pl	D19	'our' is not in the language
+son-audit/f/j26.pl	D17	$v is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/f/k06.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k11.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/k14.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -529,19 +536,24 @@ son-audit/f/l68.pl	D17	expected a value, found 'chop'
 son-audit/f/m01.pl	D17	expected a value, found 'chop'
 son-audit/f/m02.pl	D17	expected a value, found 'chop'
 son-audit/f/m03.pl	D17	expected a value, found 'chop'
+son-audit/f/m04.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
 son-audit/f/m06.pl	D17	'chop' is not in the language
+son-audit/f/m07.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/f/m09.pl	D80	splice where one value is wanted: perl gives the last element it removed; assign it to an array
 son-audit/f/m10.pl	D80	reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function
 son-audit/f/m26.pl	D56	my $u here: a my begins a statement or a for, or stands in the test of an if or a while, where it is always reached
+son-audit/f/m27.pl	D80	reverse where one value is wanted: perl joins its arguments and reverses the characters there, which is another function
 son-audit/f/m30.pl	D17	expected a value, found 'chop'
 son-audit/f/m31.pl	D17	expected a value, found 'chop'
 son-audit/f/m32.pl	D17	expected a value, found 'chop'
+son-audit/f/m33.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
 son-audit/f/m34.pl	D17	expected a value, found 'chop'
 son-audit/f/m35.pl	D19	'our' is not in the language
 son-audit/f/m36.pl	D17	expected a value, found 'chop'
 son-audit/f/m37.pl	D17	expected a value, found 'chop'
 son-audit/f/m38.pl	D17	expected a value, found 'chop'
 son-audit/f/m39.pl	D17	expected a value, found 'chop'
+son-audit/f/m40.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
 son-audit/f/n02.pl	D13	'eval' is not in the language
 son-audit/f/n03.pl	D13	'eval' is not in the language
 son-audit/f/n05.pl	D13	'eval' is not in the language
@@ -714,6 +726,7 @@ son-audit/p/ag32.pl	D19	'our' is not in the language
 son-audit/p/ag35.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag36.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag38.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/ag39.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
 son-audit/p/ag4.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag5.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ag6.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -765,6 +778,8 @@ son-audit/p/ca6.pl	D17	$_[ is an element of perl's own @_ or %_, which are not i
 son-audit/p/ca7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/ca8.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/p/ca9.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/p/chop2.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
+son-audit/p/chop3.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/p/cl23.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/cl7.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/p/cr5.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -904,6 +919,7 @@ son-audit/q/vp11.pl	D19	'our' is not in the language
 son-audit/q/vp15.pl	D55	$_ outside the block of a for, a map or a grep: it is the value they give their block, and is seen there alone (D17)
 son-audit/q/vp20.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/q/vp21.pl	D57	a later piece of a concatenation changes %h, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own
+son-audit/q/vp4.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
 son-audit/q/vp5.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/q/vp8.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/r/a01.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -988,6 +1004,7 @@ son-audit/r/e02.pl	D17	$x is its loop's variable, and read-only: in perl, changi
 son-audit/r/e03.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/r/e04.pl	D17	$v is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/r/e05.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/r/e08.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/r/e09.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/r/e10.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/r/e11.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -1239,6 +1256,7 @@ son-audit/y/yb48.pl	D17	$y is its loop's variable, and read-only: in perl, chang
 son-audit/y/yb49.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yb54.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yc08.pl	D17	'chop' is not in the language
+son-audit/y/yc09.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/y/yc104.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yc108.pl	D76	a later part of '+' can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc109.pl	D57	a later piece of a concatenation changes @a, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the change a statement of its own
@@ -1271,6 +1289,7 @@ son-audit/y/yc155.pl	D76	a later part of print's list can change @a, which an ea
 son-audit/y/yc156.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/y/yc158.pl	D76	a later part of join can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc159.pl	D76	a later part of push can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
+son-audit/y/yc161.pl	D76	a later part of sprintf can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc162.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc163.pl	D76	a later part of the loop's list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yc164.pl	D76	a later part of reverse can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
@@ -1369,6 +1388,7 @@ son-audit/y/yf105.pl	D77	this can change $n, which the list of the loop it is in
 son-audit/y/yf17.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yf19.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yf38.pl	D17	'chop' is not in the language
+son-audit/y/yf39.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yf41.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yf42.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/y/yf43.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -1398,6 +1418,10 @@ son-audit/y/yg28.pl	D17	$_ is read-only: in perl, changing it changes the list's
 son-audit/y/yg29.pl	D16	'no warnings' goes at the top, after 'use v5.42;' and before anything else
 son-audit/y/yg30.pl	D38	017 starts with a zero: perl reads that as octal, which the language writes 0o17
 son-audit/y/yg31.pl	D38	100000000000000000000 is past the largest integer, 9223372036854775807
+son-audit/y/yg47.pl	D125	an argument by its number, %3$s..., which is not in the language (T276), in sprintf's format
+son-audit/y/yg49.pl	D125	%v, which is not in the language (a version string's format; T276), in sprintf's format
+son-audit/y/yg51.pl	D38	017 starts with a zero: perl reads that as octal, which the language writes 0o17
+son-audit/y/yg58.pl	D130	chomp is a statement here, and has no value: perl gives how many characters it took (D130)
 son-audit/y/yg67.pl	D99	'{' hard after @h in a string: a slice of a hash, to perl, which is not in a string (D99): join it first; or write @{h}{ or @h\{
 son-audit/y/yg76.pl	D38	18446744073709551615 is past the largest integer, 9223372036854775807
 son-audit/y/yg77.pl	D38	18446744073709551615 is past the largest integer, 9223372036854775807
@@ -1566,10 +1590,12 @@ son-audit/y/yn24.pl	D19	'local' is not in the language
 son-audit/y/yn27.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/y/yn29.pl	D13	'eval' is not in the language
 son-audit/y/yn41.pl	D21	print is a statement, and has no value
+son-audit/y/yn52.pl	D16	'no warnings' goes at the top, after 'use v5.42;' and before anything else
 son-audit/y/yn55.pl	D92	'[' hard after $h{k} in a string: another index, to perl; write $h{k}\[
 son-audit/y/yn57.pl	D17	'srand' is not in the language
 son-audit/y/yo20.pl	D16	'use strict' is not in the language
 son-audit/y/yo39.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
+son-audit/y/yp100.pl	D76	a later part of this list can change %h, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yp101.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yp102.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/y/yp103.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
@@ -1695,6 +1721,7 @@ son-audit/z/cp62.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/cp63.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/cp64.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/cp65.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/z/cp76.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/z/cp87.pl	D19	'local' is not in the language
 son-audit/z/fl01.pl	D76	a later part of this list can change @a, which an earlier part names: perl reads it after the change; take the value into a my first
 son-audit/z/fl03.pl	D17	@_ is not in the language: a sub has a signature (D17)
@@ -1708,6 +1735,7 @@ son-audit/z/fl25.pl	D17	expected a value, found 'chop'
 son-audit/z/fl27.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/fl28.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-audit/z/lv19.pl	D17	'chop' is not in the language
+son-audit/z/lv20.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/z/lv28.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/lv32.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/z/lv33.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -1841,6 +1869,7 @@ son-audit/z/ps03.pl	D17	'chop' is not in the language
 son-audit/z/ps05.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/ps08.pl	D17	$x is its loop's variable, and read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/ps09.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-audit/z/ps15.pl	D130	chomp takes one scalar variable here, chomp($x): its value, an array, a hash, an element and $_ are not in the language (D130)
 son-audit/z/ps17.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/ps18.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-audit/z/ps19.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
@@ -2113,6 +2142,7 @@ son-corpus/ia3.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/ib1.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-corpus/ln-al1.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
 son-corpus/ln-al2.pl	D17	$_ is read-only: in perl, changing it changes the list's own element; take the value into a my
+son-corpus/ln-al3.pl	D121	q takes a bracket hard against it, and no other delimiter: q(...), q[...], q{...} or q<...> (D121)
 son-corpus/ln-r1.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/ln-r2.pl	D17	@_ is not in the language: a sub has a signature (D17)
 son-corpus/ln-r3.pl	D17	@_ is not in the language: a sub has a signature (D17)

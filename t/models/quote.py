@@ -157,11 +157,12 @@ def case_qw(rnd):
         '{ my @l = qw(a b) x 2; say "@l"; }',
         '{ my ($p, $q, @r) = qw(p q r s); say $p, $q, "@r"; }',
         '{ my $one = qw(only); say $one; }',
+        '{ my @l = qw(a) x 3; say scalar(@l), "@l"; }',
         'say join(",", map { uc($_) } qw(x y)), " ", join(",", sort { $b cmp $a } qw(m z a));',
         'for my $w (qw(i j)) { say $w }',
         'say "a" . qw(b) . "c";',
     ]
-    out += ['bcac', 'a b a b', 'pqr s', 'only', 'X,Y z,m,a', 'i', 'j', 'abc']
+    out += ['bcac', 'a b a b', 'pqr s', 'only', '3a a a', 'X,Y z,m,a', 'i', 'j', 'abc']
     return lines, out
 
 

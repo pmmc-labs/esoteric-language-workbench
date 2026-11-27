@@ -8,7 +8,8 @@ mistake.
 
 **Built** means steps 0 to 12: numbers, strings, booleans, variables,
 control, subs, arrays and lists, `map`, `grep`, `sort`,
-interpolation, hashes. What is decided and not built is at the end.
+interpolation, hashes; and 16a to 16c: `q`, `qq`, `qw`, heredocs,
+`sprintf`, `printf` and the rest of the string builtins. What is decided and not built is at the end.
 
 ## How this file is kept
 
@@ -181,6 +182,8 @@ is where the feel changes.
 | `each %h`; `while (my ($k, $v) = each %h)` | Cut: `for my $k (sort keys %h)` | idiom | sometimes | data | D22, D101 |
 | A set or an index built by `map`: `my %seen = map { $_ => 1 } @list;` | Refused, for the comma in the block (perl has to guess whether the braces are a block or a hash): `map { ($_ => 1) } @list` | idiom | sometimes | data | D102 † |
 | `BEGIN`, `eval STRING`, a `require` at run time, `do FILE`, `__DATA__` | Cut: the compiler sees the whole program before any of it runs | idiom | sometimes | layout | D20 |
+| `chomp(my $line = <STDIN>)`, `my $n = chomp($s)`, `chomp(@lines)`, `chomp;` | `chomp` and `chop` are statements on one scalar variable, `chomp $line;` (about 20 of the census's programs use the rest) | idiom | sometimes | strings | D130, D131 |
+| `sprintf($fmt, @args)`, a format made as the program runs | A format is a string literal with no variable in it; pick between literals, or join | idiom | sometimes | printing | D124 |
 
 ## 2. Habits that now stop
 
@@ -216,6 +219,7 @@ feels like.
 | `sort(@a)`, `map(...)`, `grep(...)` with brackets of their own | Without: `sort @a` | habit | sometimes | data | D89 † |
 | `reverse` where one value is wanted reverses a string's characters; `sort` there is undef | Both refused there. `grep` and `map` are their count, as in perl | habit | sometimes | strings, data | D84 |
 | `do { ... } while (...);` | Left out, for the step that takes `do BLOCK`. It is not a loop to perl either: `last` in it leaves the loop round it | habit | sometimes | control | D58 † |
+| `q/.../`, `qq{...}` and `qw/a b/` with any delimiter, `q (x)` with a blank | A bracket hard against the word: `q(...)`, `qq[...]`, `qw<...>` | habit | sometimes | strings | D121 † |
 
 ## 3. Rare, but you meant it
 
@@ -251,6 +255,9 @@ someone.
 | No limit on recursion | `recursion too deep`, about 3,800 calls for a small sub today. The number is the implementation's | habit | rarely | subs | D68 |
 | The file's last statement needs no semicolon | It does; the last of a block doesn't | habit | rarely | layout | D75 † |
 | `use open qw(:std :encoding(UTF-8));`, `':utf8'` | The one spelling | habit | rarely | layout | D39 † |
+| Two heredocs on a line, `<< "END"`, `<<""`, a terminator with a blank in it | One heredoc on a line, its terminator a word hard against `<<` | habit | rarely | strings | D123 † |
+| `%i`, `%ld`, `%F`, `%2$s`, `%v`, `%n` in a format; a flag perl ignores | `%d`, `%f`; no argument by its number | habit | rarely | printing | D125 |
+| `sprintf("%s-%s", "a")`: a missing value printed as nothing, a value too many dropped | A fault, both ways | habit | rarely | printing | D126 |
 
 ## 4. Accidents
 
@@ -303,6 +310,9 @@ quiet has met few of them.
 | `++` on a float past 2^53 warns `Lost precision`; `"009"++` is `"010"` or 10 | Fault | accident | rarely | numbers | D52 |
 | `"Inf"`, `"NaN"` and `"0 but true"` are numbers, in silence | Fault | accident | rarely | numbers | D40 |
 | `substr("abc", 0, 1e30)` is `ab`: the machine's own cut of a float | Where a whole number is wanted it is cut toward zero and must then be an Int | accident | rarely | strings | D41 |
+| `sprintf("%d", 1e30)` is `-1`; `%g` of `-$x` is `-0` or `0` by what `$x` was; `%3c` pads a wide character by its bytes | A fault where perl's conversion is the machine's or has two answers; `%c` takes no width | accident | rarely | printing | D127, D131 |
+| `qq[$x\[0\]]` is an element of `@x`: the backslash before the bracket goes before the variables are read | A backslash before a `qq`'s own bracket is refused | accident | rarely | strings | D131 |
+| `ucfirst("éa")` is `Éa`, by perl's tables | A first character past ASCII is a fault, as for `uc` | accident | rarely | strings | D129 |
 
 The thread through the last six rows: **in perl a value remembers
 what was done with it, and in Curly a value has no past.** `my $x =
@@ -380,17 +390,11 @@ full when its step is, and its rows join the sections above then.
   (D111). Where perl guesses between a block and a hash, a refusal
   (D113). The rows join the sections above as 13a to 13d are built
   (D106).
-- **Strings, the rest** (step 16; D120 to D130, proposed and being
-  built in sub-steps). `q`, `qq` and `qw` with a bracket for their
-  delimiter and nothing else (D121); `qw` is a bracketed list (D122);
-  heredocs with a word for the terminator, one on a line (D123).
-  **A format is a literal** (D124), its conversions perl's commonest
-  fifteen (D125), its count checked (D126), its values taken as the
-  language takes them, a fault where perl's conversion is the
-  machine's (D127); `printf` a statement, `sprintf` a value (D128).
-  `ucfirst`, `lcfirst`, `rindex` (D129); `chomp` and `chop` of a
-  scalar variable, as statements, with no value (D130). The rest is
-  16d (D120). The review's findings are answered by D131.
+- **Strings, the rest, 16d** (D120): the case escapes `\U \L \u \l
+  \Q \E`, `substr` of four arguments, `reverse` of a string where one
+  value is wanted, `__FILE__` and `__LINE__`, POD, `printf` to a handle
+  (step 21). 16a to 16c (D121 to D131) are built, and their rows are in
+  the sections above.
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
 - **Errors** (step 15; D13). `die`, `try`, `catch`.

@@ -77,6 +77,7 @@ say qw(a b c)[1], qw<a b c>[-1], join("", (qw(a b c))[0, 2]);
 { my @l = qw(a b) x 2; say "@l"; }
 { my ($p, $q, @r) = qw(p q r s); say $p, $q, "@r"; }
 { my $one = qw(only); say $one; }
+{ my @l = qw(a) x 3; say scalar(@l), "@l"; }
 say join(",", map { uc($_) } qw(x y)), " ", join(",", sort { $b cmp $a } qw(m z a));
 for my $w (qw(i j)) { say $w }
 say "a" . qw(b) . "c";

@@ -5154,6 +5154,90 @@ flag, all agreeing but `%.0f`; `%s` padded in characters, so T277 is
 `%c`'s alone; D127's ranges; the `q` backslash rules; `qw`; `<<~`;
 `ucfirst`; `index`; `chop`; repeated flags.
 
+#### 16, as built
+
+**Built** (2026-11-27, by Fable 5.2, in a worktree beside steps 13 to
+15): 16a, 16b and 16c, each green and committed; 16d is left (D120).
+
+**16a, the quoting forms.** The lexer alone, in functions of its own
+that call 11a's `escape` and `variable` and change neither: `closing`
+finds where perl's string ends, `body` reads what is between (for a
+`qq` and a double-quoted heredoc as double quotes, refusing whatever
+runs past the end perl found), `quoteLike` is `q`, `qq` and `qw`,
+`hereDoc` reads a heredoc's body where it is met and leaves a note
+that the main loop takes up at the end of the line: it jumps the
+body, and refuses anything that crossed the line first (T264). `qw`
+is a token of its own, and the parser's `primary` reads it as a
+bracketed list, sliced as one. `sub q(...)` is still the refusal it
+was (a sub named for a word of perl's), which the first full run
+caught. **The oracle check's reading rule learned the four forms**
+(a heredoc's apostrophe had been listed as open in `TRAPS.md`, "The
+checks themselves"): three fixtures, each failing the old rule.
+
+**16b, formats.** `compiler/src/format.ts` reads the literal's value
+and refuses what D125 cuts; `sprintf` is a `listop` beside `join`,
+`printf` a statement beside `print`, and the format is the list's
+first value. `runtime/format.c` works through the format twice, as
+`join` does its list: once to count, where every fault is met, and
+once to write, after the one allocation. Integers by hand; floats
+through `snprintf`, but for the bare `%.0f`, which is perl's
+`F0convert` ported (T280). The 2^31 limit is tested from C
+(`runtime/tests/format.c`).
+
+**16c.** `ucfirst`, `lcfirst` and `rindex` are rows of `names.ts` and
+functions of `runtime/strfn.c`. `chomp` and `chop` are a new kind of
+name, `changer`: the parser builds `{ $x = chomp-of($x); }`, an
+assignment in a block of its own, so that every rule about assignment
+holds (a loop's variable is refused by D17's own check) and it is the
+value of nothing: a sub that ends in `chomp $x` has no value, where
+perl's has the count.
+
+**Tests**: 2600 to 2603 from `t/models/quote.py`, 2620 to 2656
+refusals (`briefs/step16a-refusals.py`); 2700 to 2703 from
+`t/models/fmt.py` (about 860 lines), 2720 to 2746 faults and 2760 to
+2790 refusals (`briefs/step16b-tests.py`); 2800 and 2801 from
+`t/models/strfn.py`, 2820 to 2828 faults and 2840 to 2854 refusals
+(`briefs/step16c-tests.py`); 1,382 golden tests and 147 unit tests on
+this branch, 935 statements about perl (77 of them this step's).
+
+**Broken on purpose** (`briefs/step16-mutations.py`): 77 of 83 caught
+the first time. Three were holes, closed: nothing told a `qw` of one
+word from a string under `x` (`qw(a) x 3` is three values), no
+`rindex` had a piece that was there and a position below zero, and
+nothing showed that a sub ending in `chomp` has no value (2828). Three
+change nothing a program can see: `%s` of undef faults in the string
+it makes anyway, `rindex` can't match in the middle of a character
+since a piece never begins with a later byte, and a literal format
+reads the same in either context.
+
+**The census** (`make census`, then `--sort`): of the 130 probes that
+waited for step 16, **64 are SAME now**, 7 LOUD (each a fault perl
+warns at: a missing argument, a negative zero, a string that is no
+number), 30 refused by design and moved to `by-design/` (22 by D130,
+`chomp` as a value or of an array; 3 by D125, 2 by D121, the rest
+behind older decisions), 20 wait for step 22 (`int`, `abs`, `sqrt`,
+which the census's table had wrongly put here, and the left shift),
+1 for step 19, and 8 are open. **1,083 SAME, 131 LOUD, 2,019 REFUSED
+(1,124 for a later step, 895 open), 1 UNJUDGED, of 3,234 run; 2,346
+by design; no WRONG**, and no probe left SAME. The table gained rows
+for D121, D125 and D130.
+
+**The documents**: `LANGUAGE.md` four sections; `SURFACE.md` the
+quoting rows and the builtins row split; `DIFFERENCES.md` nine rows
+and 16d under "Decided, not built"; `DESIGN.md` the negative zero;
+`briefs/step16-status.md` what CLAUDE.md's Status should gain, since
+this branch does not edit it.
+
+**What is left, 16d**: the case escapes `\U \L \u \l \Q \E \F`;
+`substr` of four arguments and on the left of `=`; `reverse` of a
+string where one value is wanted (T23); `__FILE__` and `__LINE__`;
+POD and `__END__`; `printf` to a handle (21); `uc` and `lc` past
+ASCII; `chomp`'s value, if the census's 22 probes are thought worth
+D76 learning it. **Not done on this branch**: Stevan's Mac (the
+integer formats are by hand for it, but `%e %f %g` are its libc's);
+and the review was one reader, a separate process, not the usual
+sub-agent.
+
 ### 17. Classes
 
 Referee: perl. Size: large.

@@ -75,4 +75,5 @@ say rindex("☺bb ☺ ", "", (-1));
 say rindex("ba", "", (-3));
 say rindex("bbaa", "b ", 2);
 say rindex("ébéb", "", 6);
+say rindex("abc", "a", -1), rindex("abc", "abc", -3), rindex("abc", "", -1), rindex("aaa", "a", 0), rindex("abc", "ab", 0);
 say rindex("abcabc", "c", 4.9), rindex("abc", "", 9223372036854775807 - 1), rindex(123123, 2), rindex("x1.5", 1.5);

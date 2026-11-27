@@ -274,8 +274,8 @@ step, roughly in the order it will matter:
    past ASCII it must, and the oracle runs perl plain.
 3. **The exact line of D23**: settled, D35 to D38 (step 2), and for a
    string used as a number, D40 and D45 (step 3). Left to later steps:
-   a negative zero given to `atan2` or formatted with `%g` (T79; steps
-   16 and 22); `--` on a Num (T93, step 5); and **whether a variable's
+   a negative zero given to `atan2` (T79; step 22), where formatted
+   with `%e`, `%f` or `%g` it is a fault (D127, D131: step 16); `--` on a Num (T93, step 5); and **whether a variable's
    past can show anywhere the rules don't fault**, which step 5 has to
    ask again once there are variables to have one.
 4. **How deep a program may recurse**: settled for now, D67 and D68

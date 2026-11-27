@@ -117,6 +117,11 @@ REASONS = [
     (r"alone in a hash's braces is the string", 'design', 'D102'),
     (r"^a comma in the block of a map, a grep or a sort", 'design', 'D102'),
     (r"perl reads on for (exists|delete|keys|values)'s argument", 'design', 'D102'),
+    # Step 16's (D121, D125, D130).
+    (r"takes a bracket hard against it, and no other delimiter", 'design', 'D121'),
+    (r"in (s)?printf's format$", 'design', 'D125'),
+    (r"^(chomp|chop) is a statement here, and has no value", 'design', 'D130'),
+    (r"^(chomp|chop) takes one scalar variable here", 'design', 'D130'),
     (r"^expected a value, found '(chop|each)'$", 'design', 'D17'),
     # ---- later, by the step
     (r"^'\{' hard after .* in a string: an element of what that holds", 'later', '13'),
@@ -130,9 +135,12 @@ REASONS = [
     (r"^'&' is not in the language yet", 'later', '14'),
     (r"^'(die|warn|try|catch)' is not in the language$", 'later', '15'),
     (r"^expected a value, found '(die|warn)'$", 'later', '15'),
-    (r"^expected a value, found '(sprintf|qw|q|qq|ucfirst|lcfirst|rindex|join|reverse|sprintf|chomp|abs|int|sqrt)'$", 'later', '16'),
+    (r"^expected a value, found '(sprintf|qw|q|qq|ucfirst|lcfirst|rindex|join|reverse|sprintf|chomp)'$", 'later', '16'),
+    # (Step 16's own build: these three are numbers, step 22, as SURFACE.md has them.)
+    (r"^expected a value, found '(abs|int|sqrt)'$", 'later', '22'),
     (r"^'(printf|chomp|qw|q|qq)' is not in the language$", 'later', '16'),
-    (r"^'<<' is not in the language yet", 'later', '16'),
+    # A heredoc is in from step 16a; `<<` after a value is the left shift.
+    (r"^'<<' is not in the language yet", 'later', '22'),
     (r"^'(class|method|field|bless)' is not in the language$", 'later', '17'),
     (r"^expected a value, found 'bless'$", 'later', '17'),
     (r"^'use \w+' is not in the language$", 'later', '18'),
