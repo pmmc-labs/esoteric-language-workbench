@@ -1,0 +1,2 @@
+t/3142-try-say-stderr-of-nothing.pl:4:11: say STDERR with nothing to print: perl prints $_
+exit: 1

@@ -242,8 +242,8 @@ optimization plan.
 
 ## Testing
 
-- **Golden tests** are `.pl` files, in five kinds (D10): `same`,
-  `dies`, `fault`, `refused`, `new`. `t/run.sh` compiles and runs them;
+- **Golden tests** are `.pl` files, in six kinds (D10, D149): `same`,
+  `dies`, `warns`, `fault`, `refused`, `new`. `t/run.sh` compiles and runs them;
   `t/checks.py oracle` runs perl on them.
 - **Models** (`t/models/`) are for the edges: a model writes a test
   program over the values that find them, and the expected output from
@@ -298,7 +298,10 @@ step, roughly in the order it will matter:
    cut, leaving `->@*` and `@{ }`, as Stevan's style guide has it.
 8. **A closure over a loop variable** (step 14): refused until then,
    and too common an idiom to leave refused.
-9. **`finally` and `defer`; how `warn` is tested** (step 15).
+9. **`finally` and `defer`; how `warn` is tested**: settled, D144
+   and D149 (step 15). Both are refused, to be revisited with files at
+   step 21; a test that writes to stderr is of kind `warns`, and the
+   oracle marks every warning of perl's own.
 10. **Modules** (step 18): `package Name;` is decided (D19); imports,
    and how files are found, are not.
 11. **Regex captures** (step 19): `$1`, or only named and returned.

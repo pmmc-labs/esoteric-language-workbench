@@ -719,7 +719,12 @@ found") found three ways to be WRONG and two gaps. Each row is in
   and each has a fixture in `t/checks/`. What is left:
   - A `dies` test in which perl also warns, or which ends with `exit
     255` and no `die`, is accepted: perl's stderr is the `.expected`,
-    whatever is in it. Step 15, with `die` and `warn`.
+    whatever is in it. Step 15, with `die` and `warn`. **Closed at
+    step 15** (D149): perl is run once more with every warning that is
+    not the program's own `warn` marked (`t/oracle/Warned.pm`, which
+    overrides `warn` to tell the two apart), and `t/checks/dies-perl-warns`
+    goes red if the mark is not looked for. One that exits 255 without
+    a `die` would need `exit`, which is step 21's.
   - A test that writes a file leaves it for the next of perl's nine
     runs (one to compile, eight seeds), so the check fails it the
     first time, blaming the seed, and passes it ever after. Step 21:

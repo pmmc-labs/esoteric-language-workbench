@@ -1,0 +1,3 @@
+x
+fault: not a numeric string at t/3088-fault-in-a-catch.pl line 4.
+exit: 1

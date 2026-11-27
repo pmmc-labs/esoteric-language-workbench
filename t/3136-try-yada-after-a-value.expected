@@ -1,0 +1,2 @@
+t/3136-try-yada-after-a-value.pl:4:11: '...' is not in the language yet
+exit: 1

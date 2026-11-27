@@ -1,0 +1,2 @@
+t/3127-try-finally.pl:4:43: finally: perl 5.42 warns that it is experimental, and it is not in the language (D144)
+exit: 1

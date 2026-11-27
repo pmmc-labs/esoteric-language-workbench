@@ -479,6 +479,13 @@ export const lex = (src: string): Token[] => {
             if (src[i + 1] === '!' && lastLine !== line) {
                 refuse("a line that starts '#!' is not in the language: perl can take switches from it", start);
             }
+            // perl takes the line and the file a `die` names from a comment
+            // that begins its line `# line N`, with any blanks (T74, T311,
+            // D147). Refused wherever perl might read one, and a little
+            // more.
+            if (start.col === 1 && /^#[ \t]*line[ \t]+[0-9]/.test(src.slice(i, src.indexOf('\n', i) < 0 ? src.length : src.indexOf('\n', i)))) {
+                refuse("a comment that begins its line '# line' and a number is a line directive, to perl, which changes the line and the file a die names: reword it", start);
+            }
             run(ch => ch !== '\n', true);
         } else if (c === '"' || c === "'") {
             push(string(start));
@@ -689,7 +696,11 @@ export const lex = (src: string): Token[] => {
             const last = tokens.at(-1);
             const between = src.slice(lastEnd, i);
             for (const _ of op) take();
-            if (!prefixOp(op) && !infixOp(op) && !stepOp(op)) refuse(`'${op}' is not in the language yet`, start);
+            // `...` where a value or a statement may begin is the statement
+            // that dies (D145), and the parser says where it may stand;
+            // after a value it is perl's other range, and not in.
+            const yada = NAMES.get(op)?.kind === 'yada' && !afterValue();
+            if (!prefixOp(op) && !infixOp(op) && !stepOp(op) && !yada) refuse(`'${op}' is not in the language yet`, start);
             // `$x =- $y`: perl warns `Reversed -= operator` when a sign is
             // hard after a `=` and a blank follows the sign (T127).
             if (infixOp(op)?.assign && op.length === 1 && prefixOp(at())?.sign && isBlank(src[i + 1] ?? '')) {

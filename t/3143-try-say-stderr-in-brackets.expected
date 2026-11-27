@@ -1,0 +1,2 @@
+t/3143-try-say-stderr-in-brackets.pl:4:12: say STDERR (...): write the list without brackets of its own, say STDERR ...;
+exit: 1

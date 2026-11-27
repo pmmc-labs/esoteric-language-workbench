@@ -1,0 +1,2 @@
+t/3138-try-line-directive-hard-against.pl:4:1: a comment that begins its line '# line' and a number is a line directive, to perl, which changes the line and the file a die names: reword it
+exit: 1

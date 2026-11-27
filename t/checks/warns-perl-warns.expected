@@ -1,0 +1,2 @@
+Use of uninitialized value $u in concatenation (.) or string at t/checks/warns-perl-warns.pl line 6.
+w

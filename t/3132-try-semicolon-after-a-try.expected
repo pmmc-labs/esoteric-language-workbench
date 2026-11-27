@@ -1,0 +1,2 @@
+t/3132-try-semicolon-after-a-try.pl:4:40: expected a statement, found ';'
+exit: 1

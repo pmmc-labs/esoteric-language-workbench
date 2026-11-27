@@ -1,8 +1,8 @@
 # Golden tests
 
 `NNN-name.pl` is a program and `NNN-name.expected` is what it must
-print: stdout and stderr together, in order, plus a last line `exit: N`
-when the exit status isn't 0. Numbers are never reused. Every test is
+print: stdout, then stderr (each kept apart as it runs, D149), plus a
+last line `exit: N` when the exit status isn't 0. Numbers are never reused. Every test is
 a file perl 5.42 can be given as it is. `run.sh` compiles one, runs it
 with the environment every test assumes, and diffs; `checks.py oracle`
 asks perl whether the `.expected` is right.
@@ -10,7 +10,7 @@ asks perl whether the `.expected` is right.
 Header lines a test may carry, as comments before the first statement
 (before `use v5.42;` too), each starting its line:
 
-- `# kind: same | dies | fault | refused | new`. Without one, `same`.
+- `# kind: same | dies | warns | fault | refused | new`. Without one, `same`.
 - `# stdin: bytes` (printf `%b` escapes), the test's standard input;
   `# args: words`, its arguments; `# env: NAME=value ...`, its
   environment. perl is given the same three.
@@ -24,7 +24,7 @@ environment is perl's too when the check runs it.
 
 A test that writes files writes under `build/t/`.
 
-## The five kinds, and where each one's expected output comes from
+## The six kinds, and where each one's expected output comes from
 
 **Never from the compiler** (D7). And for most tests, not from a
 person either:
@@ -41,13 +41,21 @@ person either:
   `PERL_HASH_SEED=1` to `8` set one byte of perl's seed and leave the
   keys of a small hash in the same buckets every time.
 - **`dies`**: from perl. An uncaught `die`: perl's stdout, then its
-  stderr, then `exit: 255` (D12).
+  stderr, then `exit: 255` (D12). perl is run once more with every
+  warning that is not the program's own `warn` marked
+  (`oracle/Warned.pm`), and a warning of perl's own fails the test
+  (D149).
+- **`warns`**: from perl, for a program that writes to stderr, by
+  `warn` or `say STDERR`, and ends without a `die`: perl's stdout, then
+  its stderr, then its exit status if that isn't 0; held to perl's own
+  warnings as `dies` is (D149, step 15b).
 - **`fault`**: by hand. The lines the program prints before it stops,
   then `fault: MESSAGE at FILE line N.`, then `exit: 1`. The check
   requires perl to compile the file, runs the compiled program, and
   requires its stdout to be the start of perl's stdout for the same
   file (D12): the language stopped early, and said nothing perl
-  wouldn't have. The program must end under perl, within the time
+  wouldn't have. What the program wrote to stderr before the fault,
+  by `warn`, must be the start of perl's stderr too (D148). The program must end under perl, within the time
   allowed: where the language faults perl may only warn and carry on,
   so a loop that the fault alone would end never ends under perl
   (T131). Count such a loop by something the fault doesn't touch.
@@ -94,9 +102,8 @@ in it shows the hash's order**, and two tied keys come out the same
 way under all eight seeds about once in 128 tests: break every tie
 (`sort { $n{$b} <=> $n{$a} or $a cmp $b }`).
 The rest are the author's to keep out, and a test that fails on
-Stevan's machine and not the cloud's has usually found one. Nor, until
-steps 8 and 15 say how, may it go 100 calls deep or call `warn`: perl
-writes to stderr for both.
+Stevan's machine and not the cloud's has usually found one. Nor may it call `warn` or
+print to `STDERR`: that is a `warns` test (step 15).
 
 What the check doesn't see, the compiler mostly refuses: a test must
 compile, and `no warnings`, `$SIG{__WARN__}`, `BEGIN`, string `eval`

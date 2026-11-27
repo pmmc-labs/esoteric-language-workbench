@@ -1,0 +1,3 @@
+before
+fault: undef where a string is wanted at t/3082-fault-undef-in-die.pl line 6.
+exit: 1

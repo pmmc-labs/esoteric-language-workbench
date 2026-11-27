@@ -1,0 +1,2 @@
+t/3140-try-warn-in-a-while-test.pl:5:20: a warn in the test of a while or an until: perl names the line of the last statement the loop's block ran, and the message would carry it; end the message in a newline, or work the test out in the block
+exit: 1

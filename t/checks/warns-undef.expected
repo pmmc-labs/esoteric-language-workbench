@@ -1,0 +1,2 @@
+Use of uninitialized value $u in warn at t/checks/warns-undef.pl line 6.
+Warning: something's wrong at t/checks/warns-undef.pl line 6.

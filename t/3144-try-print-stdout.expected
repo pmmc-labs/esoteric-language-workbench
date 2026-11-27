@@ -1,0 +1,2 @@
+t/3144-try-print-stdout.pl:4:7: expected a value, found 'STDOUT'
+exit: 1

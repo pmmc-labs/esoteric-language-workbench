@@ -47,10 +47,12 @@ header() {
 # The watchdog leaves a file to say it killed the test, since its own
 # output can't go down the pipe to diff: diff would wait for it.
 output() {
-    rm -f "$1.killed" "$1.output"
+    rm -f "$1.killed" "$1.output" "$1.errors"
     set -f                                  # $3 and $4 are split into words, not globbed
-    # What it prints goes to a file, which is what the limit is on.
-    ( ulimit -f "$OUTPUT_BLOCKS"; exec env $4 "./$1" $3 <"$2" >"$1.output" 2>&1 ) &
+    # What it prints goes to a file, which is what the limit is on. stdout
+    # and stderr apart, and then stdout first: perl's order for a `dies` or
+    # a `warns` test, whatever the two buffers did (D149).
+    ( ulimit -f "$OUTPUT_BLOCKS"; exec env $4 "./$1" $3 <"$2" >"$1.output" 2>"$1.errors" ) &
     set +f
     pid=$!
     ( sleep "$TIMEOUT" && : >"$1.killed" && kill "$pid" ) >/dev/null 2>&1 &
@@ -66,9 +68,9 @@ output() {
     if [ $status -eq 153 ]; then
         echo "stopped: it printed more than $OUTPUT_BLOCKS blocks of 512 bytes"
     else
-        cat "$1.output"
+        cat "$1.output" "$1.errors"
     fi
-    rm -f "$1.output"
+    rm -f "$1.output" "$1.errors"
     [ -f "$1.killed" ] && echo "killed after ${TIMEOUT}s"
     [ $status -eq 0 ] || echo "exit: $status"
 }
@@ -96,7 +98,7 @@ if [ "$1" = "--one" ]; then
         fi
         echo "FAIL $name"
         exit 1 ;;
-    same|dies|fault|new) ;;
+    same|dies|warns|fault|new) ;;
     *)
         echo "unknown kind: $kind" >"$bin.fail"
         echo "FAIL $name"

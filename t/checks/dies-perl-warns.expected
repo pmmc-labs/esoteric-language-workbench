@@ -1,0 +1,3 @@
+Use of uninitialized value $u in concatenation (.) or string at t/checks/dies-perl-warns.pl line 6.
+x
+exit: 255

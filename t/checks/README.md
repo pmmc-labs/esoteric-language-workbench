@@ -75,6 +75,14 @@ test is tested apart, on `t/000-say.pl`.)
 | `refused-line-zero` | A diagnostic at line 0, column 0 |
 | `refused-past-end` | A diagnostic at a line the file doesn't have |
 | `kind-unknown` | A kind that isn't one |
+| `warns-ok` | A good `warns` test: stdout, then stderr (D149) |
+| `warns-exit` | And its exit status, when that is not 0 |
+| `warns-perl-warns` | perl warns of an undef as well as the program's `warn`: the marked run sees it |
+| `warns-undef` | An undef in `warn`'s list is a warning of perl's |
+| `warns-died` | A `warns` test that dies: it is a `dies` test |
+| `dies-perl-warns` | A `dies` test in which perl also warns: the hole "The checks themselves" left for step 15 |
+| `fault-warned-ok` | A fault after a `warn`, the warn the start of perl's stderr (`.stderr` stands in for it) |
+| `fault-warned-wrong` | A fault after the program wrote to stderr what perl does not |
 
 When the check changes, break it on purpose and see one of these go
 red; when it gains a rule, it gains a fixture that only that rule

@@ -1,0 +1,2 @@
+t/3145-try-say-stderr-in-braces.pl:4:5: expected a value, found '{'
+exit: 1

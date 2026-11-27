@@ -1,0 +1,10 @@
+top: L3: L2: core at t/3013-die-nested.pl line 3.
+top: L1: L0: core at t/3013-die-nested.pl line 4.
+L3 kept: L2: new0 at t/3013-die-nested.pl line 5.
+top: new0 at t/3013-die-nested.pl line 6.
+L2 kept: new1 at t/3013-die-nested.pl line 7.
+L2 kept: new1 at t/3013-die-nested.pl line 8.
+top: new1 at t/3013-die-nested.pl line 9.
+L1 kept: new0 at t/3013-die-nested.pl line 10.
+L0 kept: core at t/3013-die-nested.pl line 11.
+L1 kept: L0: core at t/3013-die-nested.pl line 12.

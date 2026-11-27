@@ -12,9 +12,16 @@ models` write what perl and the models say.
                        are the same, and are the .expected.
               dies     the same, but perl's status is 255, and the
                        .expected is its stdout, then its stderr, then
-                       `exit: 255`.
+                       `exit: 255`; and perl, run once more with every
+                       warning that is not the program's own `warn`
+                       marked (t/oracle/Warned.pm), marks none (D149).
+              warns    as dies, for a program that writes to stderr and
+                       ends otherwise: the .expected is perl's stdout,
+                       its stderr, and its exit status if it isn't 0.
               fault    perl compiles the file, in silence; the compiled program's
-                       stdout is the start of perl's, under each seed;
+                       stdout is the start of perl's, under each seed,
+                       and what it wrote to stderr before the fault the
+                       start of perl's stderr;
                        perl ends within the time allowed; the .expected
                        is that stdout, a `fault:` line, and `exit: 1`.
               refused  perl isn't asked. The .expected is one line,
@@ -72,7 +79,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 IMPL = ('compiler/', 'runtime/', 'lib/', 'bin/')
 TEST_DIRS = ['t', 'examples', 'docs/guide/code']
 EXT = '.pl'
-KINDS = ('same', 'dies', 'fault', 'refused', 'new')
+KINDS = ('same', 'dies', 'warns', 'fault', 'refused', 'new')
 # Found once, so that the perl that is vetted is the perl that is run,
 # whatever a test's `# env:` does.
 PERL = shutil.which(os.environ.get('CURLY_PERL', 'perl')) or os.environ.get('CURLY_PERL', 'perl')
@@ -520,22 +527,34 @@ def perl_says(path, hdr, kind, limit):
             if r.stderr:
                 return f'perl wrote to stderr, so the language should fault or refuse (D15): {clip(r.stderr)}', None
             outputs.append(r.stdout + (f'exit: {r.returncode}\n'.encode() if r.returncode else b''))
+        elif kind == 'warns':
+            if r.returncode == 255:
+                return 'perl\'s exit status is 255: an uncaught die, which is a dies test (D149)', None
+            outputs.append(r.stdout + r.stderr + (f'exit: {r.returncode}\n'.encode() if r.returncode else b''))
         else:
             if r.returncode != 255:
                 return f'perl\'s exit status is {r.returncode}, not 255: not an uncaught die (D12)', None
             outputs.append(r.stdout + r.stderr + b'exit: 255\n')
+    # stderr is the program's own `warn`s and `die`, and no warning of
+    # perl's (D15, D149): perl once more, with every other warning marked.
+    marked = None if kind == 'same' else run_perl(['-I' + os.path.join(ROOT, 't', 'oracle'), '-MWarned'], path, hdr, SEEDS[0], limit)
+    if marked is not None and b'PERL WARNED: ' in marked.stderr:
+        return f'perl warned as it ran, so the language should fault or refuse (D15): {clip(marked.stderr)}', None
     if len(set(outputs)) > 1:
         return 'perl\'s output changes from run to run: with the hash seed, or with something else D14 lists', None
     return None, outputs[0]
 
-def program_stdout(path, hdr):
-    """(problem, stdout) of the compiled program. For the check's own
+def program_stdout(path, hdr, errors=False):
+    """(problem, stdout) of the compiled program, and with `errors` what
+    it wrote to stderr before a fault's line too. For the check's own
     tests, and only those, a file PATH.stdout stands in for it: they are
     Perl the language can't compile yet, with what a binary would have
-    printed."""
+    printed, and PATH.stderr for what it wrote to stderr first."""
     stood = path[:-len(EXT)] + '.stdout'
     if path.startswith('t/checks/') and os.path.exists(stood):
-        return None, open(stood, 'rb').read()
+        err = path[:-len(EXT)] + '.stderr'
+        warned = open(err, 'rb').read() if os.path.exists(err) else b''
+        return (None, open(stood, 'rb').read(), warned) if errors else (None, open(stood, 'rb').read())
     os.makedirs('build/oracle', exist_ok=True)
     binary = 'build/oracle/' + os.path.basename(path)[:-len(EXT)]
     c = subprocess.run(['node', 'bin/curlyc.ts', '-o', binary, path], capture_output=True)
@@ -546,8 +565,9 @@ def program_stdout(path, hdr):
     env.update(pair.split('=', 1) for pair in words(hdr.get('env', '')))
     r = run_capped([binary, *words(hdr.get('args', ''))], env, printf_b(hdr.get('stdin', '')), int(os.environ.get('TIMEOUT', '60')))
     if r is None:
-        return 'the compiled program did not finish', None
-    return None, r.stdout
+        return ('the compiled program did not finish', None, None) if errors else ('the compiled program did not finish', None)
+    cut = r.stderr.rfind(b'fault: ')
+    return (None, r.stdout, r.stderr[:cut] if cut >= 0 else r.stderr) if errors else (None, r.stdout)
 
 def oracle_one(path, write=False):
     """What is wrong with one test, as a list; empty if nothing is."""
@@ -584,7 +604,7 @@ def oracle_kind(path, hdr, write):
     if shown:
         return [f'{s}: perl\'s order is its own, and a test can\'t show it (D10, D14)' for s in shown]
 
-    if kind in ('same', 'dies'):
+    if kind in ('same', 'dies', 'warns'):
         problem = perl_compiles(path, hdr, limit, silent=True)
         if problem is None:
             problem, says = perl_says(path, hdr, kind, limit)
@@ -605,18 +625,22 @@ def oracle_kind(path, hdr, write):
     problem = perl_compiles(path, hdr, limit, silent=True)
     if problem:
         return [problem]
-    problem, printed = program_stdout(path, hdr)
+    problem, printed, warned = program_stdout(path, hdr, errors=True)
     if problem:
         return [problem]
-    shape = re.escape(printed) + rb'fault: [^\n]+ at ' + re.escape(path).encode() + rb' line \d+\.\nexit: 1\n'
+    shape = re.escape(printed + warned) + rb'fault: [^\n]+ at ' + re.escape(path).encode() + rb' line \d+\.\nexit: 1\n'
     if expected is None or not re.fullmatch(shape, expected):
-        return [f'the .expected is not what the program printed, `fault: MESSAGE at {path} line N.` and `exit: 1`']
+        return [f'the .expected is not what the program printed, then wrote to stderr, `fault: MESSAGE at {path} line N.` and `exit: 1`']
     for seed in SEEDS:
         r = run_perl([], path, hdr, seed, limit)
         if r is None:
             return [f'perl did not finish in {limit} seconds: a fault test is a program that ends under perl (D10)']
         if not r.stdout.startswith(printed):
             return [f'the program printed something perl does not (D12); perl: {clip(r.stdout)!r}, the program: {clip(printed)!r}']
+        # What it said on stderr before the fault is the start of perl's
+        # stderr too (D148, D149).
+        if not r.stderr.startswith(warned):
+            return [f'the program wrote to stderr what perl does not (D148); perl: {clip(r.stderr)!r}, the program: {clip(warned)!r}']
     return []
 
 def check_oracle_itself():

@@ -1,0 +1,4 @@
+caught one
+1
+in the loop at 2 at t/3063-dies-after-a-catch.pl line 5.
+exit: 255

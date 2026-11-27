@@ -1,0 +1,2 @@
+t/3124-try-catch-dollar-a.pl:4:26: $a is not a name a program may declare: $a and $b are the two values a sort gives its block
+exit: 1

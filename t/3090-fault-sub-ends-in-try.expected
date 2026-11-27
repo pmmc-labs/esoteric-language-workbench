@@ -1,0 +1,2 @@
+fault: f has no value: it does not end in a return or an expression at t/3090-fault-sub-ends-in-try.pl line 4.
+exit: 1

@@ -1,0 +1,2 @@
+t/3125-try-catch-dollar-underscore.pl:4:26: $_ is not a name a program may declare: it is what a for, a map or a grep gives its block
+exit: 1

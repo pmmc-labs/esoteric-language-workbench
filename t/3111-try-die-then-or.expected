@@ -1,0 +1,2 @@
+t/3111-try-die-then-or.pl:4:9: 'or' in a list of arguments takes the whole list for its left side, to perl: bracket what it joins
+exit: 1

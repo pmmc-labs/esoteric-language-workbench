@@ -6,9 +6,9 @@ be met, and where. It decides nothing. Where it and a decision
 disagree, [`DECISIONS.md`](DECISIONS.md) is right and this file has a
 mistake.
 
-**Built** means steps 0 to 12: numbers, strings, booleans, variables,
-control, subs, arrays and lists, `map`, `grep`, `sort`,
-interpolation, hashes. What is decided and not built is at the end.
+**Built** means steps 0 to 12 and 15: numbers, strings, booleans,
+variables, control, subs, arrays and lists, `map`, `grep`, `sort`,
+interpolation, hashes, and `die`, `try`, `catch` and `warn`. What is decided and not built is at the end.
 
 ## How this file is kept
 
@@ -156,6 +156,9 @@ every one under both.
 | `my %h = (1, 2, 3); say scalar(%h);` | `2`, and warns | Fault: `an odd number of values for a hash` |
 | `my %h = (if => 1, q => 2); say $h{if} + $h{q}, exists $h{x} ? "x" : "no x";` | `3no x` | Same |
 | `my %h = (a => 1); my @a = (0); say exists $a[0] ? "yes" : "no";` | `yes` | Refused |
+| `try { my $x = 1 / 0; } catch ($e) { say "caught"; }` | `caught` | Fault: `division by zero` |
+| `sub f($n) { try { return $n * 2; } catch ($e) { return 0; } } say f(4);` | `8` | Same |
+| `my $x = 0; $x or die "zero\n";` | dies | Refused |
 
 ## 1. Idioms you will miss
 
@@ -181,6 +184,7 @@ is where the feel changes.
 | `each %h`; `while (my ($k, $v) = each %h)` | Cut: `for my $k (sort keys %h)` | idiom | sometimes | data | D22, D101 |
 | A set or an index built by `map`: `my %seen = map { $_ => 1 } @list;` | Refused, for the comma in the block (perl has to guess whether the braces are a block or a hash): `map { ($_ => 1) } @list` | idiom | sometimes | data | D102 † |
 | `BEGIN`, `eval STRING`, a `require` at run time, `do FILE`, `__DATA__` | Cut: the compiler sees the whole program before any of it runs | idiom | sometimes | layout | D20 |
+| `open(...) or die "...";`, `$ok or die "...";`: a statement joined to `die` by a word operator | Refused, as every statement joined by one is: `die "..." unless $ok;` (a guess: files, at step 21, will make it common) | idiom | sometimes | errors | D146 |
 
 ## 2. Habits that now stop
 
@@ -216,6 +220,8 @@ feels like.
 | `sort(@a)`, `map(...)`, `grep(...)` with brackets of their own | Without: `sort @a` | habit | sometimes | data | D89 † |
 | `reverse` where one value is wanted reverses a string's characters; `sort` there is undef | Both refused there. `grep` and `map` are their count, as in perl | habit | sometimes | strings, data | D84 |
 | `do { ... } while (...);` | Left out, for the step that takes `do BLOCK`. It is not a loop to perl either: `last` in it leaves the loop round it | habit | sometimes | control | D58 † |
+| perl's own errors, `Illegal division by zero` and the rest, are caught by `try` (or `eval`) | A fault, which nothing catches: only a `die` is caught | habit | sometimes | errors | D13, D143 |
+| A message split over lines, `die "no such ",` newline `$name;` | Refused, unless the message is written to end in a newline: perl names a line of its own choosing in a statement over several lines, or in a `while`'s test | habit | sometimes | errors | D150 † |
 
 ## 3. Rare, but you meant it
 
@@ -251,6 +257,8 @@ someone.
 | No limit on recursion | `recursion too deep`, about 3,800 calls for a small sub today. The number is the implementation's | habit | rarely | subs | D68 |
 | The file's last statement needs no semicolon | It does; the last of a block doesn't | habit | rarely | layout | D75 † |
 | `use open qw(:std :encoding(UTF-8));`, `':utf8'` | The one spelling | habit | rarely | layout | D39 † |
+| `try { ... } catch ($e) { ... } finally { ... }`; `defer { ... }` | Not in: `finally` is experimental in 5.42 and `defer` needs `use feature` | idiom | rarely | errors | D144 |
+| A sub that ends in a `try`, worth its last statement's value | A fault where its value is used, as for a sub that ends in an `if` | idiom | rarely | errors, subs | D143, D18 |
 
 ## 4. Accidents
 
@@ -303,6 +311,9 @@ quiet has met few of them.
 | `++` on a float past 2^53 warns `Lost precision`; `"009"++` is `"010"` or 10 | Fault | accident | rarely | numbers | D52 |
 | `"Inf"`, `"NaN"` and `"0 but true"` are numbers, in silence | Fault | accident | rarely | numbers | D40 |
 | `substr("abc", 0, 1e30)` is `ab`: the machine's own cut of a float | Where a whole number is wanted it is cut toward zero and must then be an Int | accident | rarely | strings | D41 |
+| `die("a") . "b"`, `if (die ...)`, `say 1 if die ...;`: perl warns of a precedence problem, and dies with `a` | Refused: a `die` is never tested or a left operand | accident | rarely | errors | D146 † |
+| `# line 100 "other.pl"`, a comment that changes the line and the file a `die` names | Refused | accident | rarely | layout | D147 |
+| After a string read as a number underflows (`"1e-310" + 0`), an uncaught `die` exits 34, perl's `$!`, not 255 | A fault at the `die` | accident | rarely | errors | D151 |
 
 The thread through the last six rows: **in perl a value remembers
 what was done with it, and in Curly a value has no past.** `my $x =
@@ -316,7 +327,8 @@ The only places a program that Curly runs to its end can be told from
 the same program under perl. None is on stdout but hash order.
 
 - **stderr is Curly's own** (D12): a fault's text needn't match
-  perl's. Only stdout and the exit status are promised. A fault
+  perl's. Only stdout and the exit status are promised, and the text
+  of a `die` and a `warn`, which is perl's byte for byte (D148). A fault
   names the line its statement starts on (D34).
 - **A fault exits 1**, where perl, when it dies itself, exits 255;
   an uncaught `die` exits 255 always, where perl takes the status
@@ -361,6 +373,11 @@ took work, and was done.
   a block's last statement may leave its semicolon out (D75).
 - **A string is characters** (D24), and what perl does to a string
   in silence stays (D15).
+- **A `die`'s message is perl's, byte for byte** (D142, D148): the
+  list joined, `Died` when it is empty, ` at FILE line N.` when it
+  does not end in a newline, on the line perl names; `return`, `last`
+  and `next` in a `try` do what they do anywhere (D143); `...` is a
+  `die` (D145).
 
 ## Decided, not built
 
@@ -382,21 +399,6 @@ full when its step is, and its rows join the sections above then.
   (D106).
 - **Objects** (step 17; D19). `class` as 5.42 has it. Roles are
   wanted, and perl has none: an exception to D2 (D5).
-- **Errors** (step 15; D13; D140 to D149, proposed and not yet
-  built). `die`, `try`, `catch`, `...` and `warn`, as perl has them,
-  the message byte for byte (D142, D148); unwound by `setjmp`, which
-  nothing a program prints can tell (D141); `return`, `last` and
-  `next` in a `try` as anywhere (D143). **A fault is not caught by
-  `try`**, where perl's own errors are (D13). `finally` and `defer`
-  are refused (D144). A `die` that is tested or is the left operand
-  of an operator is refused, and so is `$x or die ...;` as a
-  statement (D146); a `# line` directive is refused (D147). A test
-  that writes to stderr is of a kind of its own (D149). `...` is a
-  `die` (D145); 15a and 15b (D140). A `die` whose message does not
-  end in a newline is refused in a statement over several lines and
-  in a `while`'s test (D150); an uncaught `die` after a number
-  underflowed faults (D151). The rows join the sections above as
-  they are built.
 - **Regexes** (steps 19, 20). Perl's syntax and matching order, a
   subset, compiled. No `s///e`, no `(?{ })`, no string interpolated
   as a pattern. **How `s///` and a match read with `$_` read-only
@@ -414,7 +416,7 @@ project is run, how the compiler and the runtime are built, and
 decisions since retired.
 
 D1, D3, D4, D6, D7, D8, D9, D10, D11, D25, D28, D29, D30, D31, D32,
-D64, D71, D86, D90, D94, D96, D97, D98.
+D64, D71, D86, D90, D94, D96, D97, D98, D140, D141, D149.
 
 ## What this leaves out
 
