@@ -31,6 +31,7 @@ pvm/comparison-06.pl	D55	$a is not a name a program may declare: $a and $b are t
 pvm/comparison-07.pl	D50	'<' after '<': perl chains two comparisons, or refuses them, and never reads them from the left; bracket one, or join two with &&
 pvm/compile-phase-01.pl	D13	'END' is not in the language
 pvm/compile-phase-02.pl	D19	'package' is not in the language
+pvm/compile-phase-03.pl	D147	a comment that begins its line '# line' and a number is a line directive, to perl, which changes the line and the file a die names: reword it
 pvm/compound-assignment-01.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
 pvm/context-from-inside-01.pl	D13	expected a value, found 'wantarray'
 pvm/context-from-inside-02.pl	D13	expected a value, found 'caller'
@@ -82,6 +83,7 @@ son-audit/a/auk11.pl	D13	expected a value, found 'eval'
 son-audit/a/auk12.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/auk13.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/auk14.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
+son-audit/a/auk16.pl	D13	expected a value, found 'eval'
 son-audit/a/auk2.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/auk3.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/auk4.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
@@ -198,6 +200,7 @@ son-audit/a/aun84.pl	D92	'$' in a double-quoted string begins a variable, and no
 son-audit/a/aun85.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/a/aun87.pl	D19	'our' is not in the language
 son-audit/a/aun88.pl	D13	'eval' is not in the language
+son-audit/a/aun89.pl	D13	'eval' is not in the language
 son-audit/a/aun9.pl	D19	'our' is not in the language
 son-audit/a/aun90.pl	D13	'eval' is not in the language
 son-audit/a/aun91.pl	D13	'eval' is not in the language
@@ -343,6 +346,7 @@ son-audit/f/d26.pl	D13	expected a value, found 'eval'
 son-audit/f/d27.pl	D13	expected a value, found 'eval'
 son-audit/f/d29.pl	D13	'eval' is not in the language
 son-audit/f/d30.pl	D13	'eval' is not in the language
+son-audit/f/d31.pl	D13	'eval' is not in the language
 son-audit/f/d33.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/f/d34.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/f/d35.pl	D13	'eval' is not in the language
@@ -354,6 +358,10 @@ son-audit/f/d40.pl	D16	'use feature' is not in the language
 son-audit/f/d41.pl	D16	'use feature' is not in the language
 son-audit/f/d42.pl	D13	'eval' is not in the language
 son-audit/f/d43.pl	D55	$a is not a name a program may declare: $a and $b are the two values a sort gives its block
+son-audit/f/d44.pl	D13	'eval' is not in the language
+son-audit/f/d45.pl	D13	'eval' is not in the language
+son-audit/f/d46.pl	D13	'eval' is not in the language
+son-audit/f/d47.pl	D13	'eval' is not in the language
 son-audit/f/d48.pl	D19	'our' is not in the language
 son-audit/f/d49.pl	D19	'our' is not in the language
 son-audit/f/d50.pl	D19	'our' is not in the language
@@ -382,7 +390,10 @@ son-audit/f/e02.pl	D13	'eval' is not in the language
 son-audit/f/e03.pl	D13	expected a value, found 'eval'
 son-audit/f/e05.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/f/e06.pl	D13	expected a value, found 'eval'
+son-audit/f/e07.pl	D13	expected a value, found 'eval'
+son-audit/f/e17.pl	D13	expected a value, found 'eval'
 son-audit/f/e18.pl	D13	'eval' is not in the language
+son-audit/f/e19.pl	D13	expected a value, found 'eval'
 son-audit/f/e20.pl	D13	expected a value, found 'wantarray'
 son-audit/f/e22.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/e23.pl	D13	'eval' is not in the language
@@ -402,6 +413,7 @@ son-audit/f/e41.pl	D13	'eval' is not in the language
 son-audit/f/e43.pl	D13	'eval' is not in the language
 son-audit/f/e44.pl	D13	expected a value, found 'eval'
 son-audit/f/e45.pl	D13	expected a value, found 'eval'
+son-audit/f/e46.pl	D13	expected a value, found 'eval'
 son-audit/f/e47.pl	D19	'our' is not in the language
 son-audit/f/e48.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
 son-audit/f/e49.pl	D17	$_[ is an element of perl's own @_ or %_, which are not in the language
@@ -544,7 +556,9 @@ son-audit/f/m38.pl	D17	expected a value, found 'chop'
 son-audit/f/m39.pl	D17	expected a value, found 'chop'
 son-audit/f/n02.pl	D13	'eval' is not in the language
 son-audit/f/n03.pl	D13	'eval' is not in the language
+son-audit/f/n04.pl	D13	'eval' is not in the language
 son-audit/f/n05.pl	D13	'eval' is not in the language
+son-audit/f/n06.pl	D13	'eval' is not in the language
 son-audit/f/n07.pl	D13	'eval' is not in the language
 son-audit/f/n08.pl	D13	'eval' is not in the language
 son-audit/f/n09.pl	D13	'eval' is not in the language
@@ -777,6 +791,7 @@ son-audit/p/ev10.pl	D16	'use feature' is not in the language
 son-audit/p/ev11.pl	D13	expected a value, found 'eval'
 son-audit/p/ev12.pl	D19	'our' is not in the language
 son-audit/p/ev13.pl	D13	'eval' is not in the language
+son-audit/p/ev14.pl	D13	'eval' is not in the language
 son-audit/p/ev15.pl	D13	'eval' is not in the language
 son-audit/p/ev16.pl	D13	'eval' is not in the language
 son-audit/p/ev18.pl	D13	'eval' is not in the language
@@ -944,6 +959,7 @@ son-audit/r/b18.pl	D92	'$' in a double-quoted string begins a variable, and no n
 son-audit/r/b19.pl	D13	'eval' is not in the language
 son-audit/r/b20.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/r/b21.pl	D19	'our' is not in the language
+son-audit/r/b23.pl	D13	'eval' is not in the language
 son-audit/r/b24.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
 son-audit/r/b25.pl	D19	'our' is not in the language
 son-audit/r/b26.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
@@ -1958,6 +1974,7 @@ son-audit/z/un25.pl	D16	'use feature' is not in the language
 son-audit/z/un26.pl	D13	'eval' is not in the language
 son-audit/z/un27.pl	D13	'eval' is not in the language
 son-audit/z/un28.pl	D13	'eval' is not in the language
+son-audit/z/un30.pl	D13	'eval' is not in the language
 son-audit/z/un31.pl	D13	'eval' is not in the language
 son-audit/z/un32.pl	D13	'eval' is not in the language
 son-audit/z/un40.pl	D92	'$' in a double-quoted string begins a variable, and no name is hard against it: write \$ for the character
@@ -1978,6 +1995,7 @@ son-audit/z/un54.pl	D19	'our' is not in the language
 son-audit/z/un55.pl	D19	'our' is not in the language
 son-audit/z/un56.pl	D13	'eval' is not in the language
 son-audit/z/un57.pl	D13	'eval' is not in the language
+son-audit/z/un58.pl	D13	'eval' is not in the language
 son-audit/z/un59.pl	D13	'eval' is not in the language
 son-audit/z/un60.pl	D13	'eval' is not in the language
 son-audit/z/un61.pl	D13	'eval' is not in the language

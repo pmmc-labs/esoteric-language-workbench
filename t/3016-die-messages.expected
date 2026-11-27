@@ -23,29 +23,33 @@ lines at t/3016-die-messages.pl line 5.
 ]
 [end
 ]
-[Died at t/3016-die-messages.pl line 16.
+[end
 ]
-[ab at t/3016-die-messages.pl line 17.
+[a at t/3016-die-messages.pl line 16.
+]
+[Died at t/3016-die-messages.pl line 18.
+]
+[ab at t/3016-die-messages.pl line 19.
 ]
 [ab
 ]
-[n=3 at t/3016-die-messages.pl line 19.
+[n=3 at t/3016-die-messages.pl line 21.
 ]
 [3
 ]
-[6x at t/3016-die-messages.pl line 21.
+[6x at t/3016-die-messages.pl line 23.
 ]
-[1.5 at t/3016-die-messages.pl line 22.
+[1.5 at t/3016-die-messages.pl line 24.
 ]
-[0.3 at t/3016-die-messages.pl line 23.
+[0.3 at t/3016-die-messages.pl line 25.
 ]
-[-3 at t/3016-die-messages.pl line 24.
+[-3 at t/3016-die-messages.pl line 26.
 ]
-[a b at t/3016-die-messages.pl line 25.
+[a b at t/3016-die-messages.pl line 27.
 ]
-[a-b! at t/3016-die-messages.pl line 26.
+[a-b! at t/3016-die-messages.pl line 28.
 ]
-Unimplemented at t/3016-die-messages.pl line 27.
+Unimplemented at t/3016-die-messages.pl line 29.
 inner
 changed
 outer

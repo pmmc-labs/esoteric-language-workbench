@@ -143,6 +143,8 @@ REASONS = [
     (r"^expected a value, found '(time|localtime|gmtime|rand)'$", 'later', '22'),
     (r"^expected a value, found '(STDOUT|STDIN|open)'$", 'later', '21'),
     (r"^'(finally|defer)' is not in the language|^finally: perl 5.42 warns", 'later', '21'),
+    (r"^'exit' is not in the language$", 'later', '21'),
+    (r"is a line directive, to perl", 'design', 'D147'),
     (r"^a die (on the left|that is tested)", 'design', 'D146'),
     (r"^'(or|and) die' after a statement", 'design', 'D146'),
     (r"^a (die|warn) in (a statement, a test|the test of a while)", 'design', 'D150'),

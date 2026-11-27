@@ -4742,7 +4742,7 @@ loop has ended; `for my $x (@list) { push @subs, sub { $x } }` is too
 common an idiom to leave refused, so this step either gives it perl's
 meaning or finds the fault that makes a copy safe). Traps: T11.
 
-### 15. `die`, `try`, `catch`
+### 15. `die`, `try`, `catch` (done)
 
 Referee: perl. Size: large (the builder, Fable 5.2, agrees: the
 language is small, the unwinding touches every way out of a block,
@@ -5060,6 +5060,91 @@ operation tried (an in-place sort over 11 lengths, 30 seeds and dies
 at comparisons 0 to 40), `return`, `last` and `next` out of `try` and
 `catch`, `$@` empty after a `try`, the exit status 255 otherwise,
 `warn`'s value and messages.
+
+#### 15, as built
+
+Built 2026-11-27 by Fable 5.2, 15a and 15b together, in a tree of its
+own while steps 13 and 14 were built in another and 16 in a third; all
+of it as proposed and as the review amended it (D140 to D151).
+
+**In the runtime**, `runtime/unwind.c`, included by rt.c as sort.c and
+hash.c are. A `try` is an `rt_try` on the C stack of the function it is
+in: `rt_try_begin` notes the newest frame, the depth, the newest sort
+and how many freezes are held, and links it into the context; the
+generated code `setjmp`s; `rt_try_end` unlinks it. `rt_throw` with no
+`try` open writes the message (after `say`'s checks for what may be
+printed) and exits 255, or faults after an underflow (D151, the
+context's `underflowed`, set by the read of a string as a number and by
+`**`); with one, it gives back every freeze above the mark (the count on
+the container, and the entry on the context's new stack of freezes, which
+`rt_freeze` and `rt_thaw` keep), frees every sort above it
+(`sorts_release_to`, sort.c's one addition), puts the frames and the
+depth back, unlinks the `try`, leaves the value in the context and
+`longjmp`s. `rt_caught` hands it to the catch's variable before anything
+can allocate. `rt_die` and `rt_warn` make perl's message of a list in one
+allocation (`message`), and refuse a value that is not a scalar, for the
+references and objects to come (D142). `rt_say_err_list` and
+`rt_print_err_list` are `say STDERR` and `print STDERR`. rt.h gained the
+`rt_try` struct, `<setjmp.h>`, five fields of the context and eight
+functions; rt.c four one-line hooks. **What a merge with 13 and 14 must
+see**: a new kind of value reaches `message` and faults until it is
+decided what a `die` of a reference throws (D142); a new collector that
+walks from the frames needs nothing, since nothing a `die` puts back is
+a root but the frames, and the thrown value is in a slot before anything
+allocates.
+
+**In the compiler**: `die` and `warn` are list operators in the table
+(`listop`), so every walk that knows `join` knows them; `try`, `catch`,
+`...` and `STDERR` are rows of their own. The tree has one new statement,
+`try` (its body, its variable as a `my`, its handler), and `say` and
+`print` an `stderr` flag. The parser reads `try`, its one `catch`, `...`
+alone, `STDERR`, and keeps a stack of **units** (a statement with its
+modifier, a test, a loop's header, a default): each `die` and `warn` is
+noted in the innermost, and one whose message is not written to end in a
+newline is refused in a unit over more than one line, or anywhere in a
+`while`'s or an `until`'s test (D150). The resolver gives the catch's
+variable a scope round the catch's block; the checker refuses a `die`
+tested or first (D146) and walks a `try`'s blocks in all four of its
+walks; `shapes.ts` finds a `return` in a `try`. The code generator writes
+a `try` as above, and puts an entry in the list of what every way out
+does (`open`, which held a loop's thaws), so that `return`, `last` and
+`next` close the `try` they leave, exactly as they give back a loop's
+freezes: an entry no loop's number matches. The lexer refuses a line
+directive (D147) and lets `...` through where a value may begin.
+
+**The checks**: `t/run.sh` keeps stdout and stderr apart and prints
+stdout first; the `warns` kind (D149); for `dies` and `warns`, a run of
+perl with `t/oracle/Warned.pm`, which overrides `warn` and marks every
+other warning, closes the hole "The checks themselves" kept for this
+step; a fault test's stderr before the fault must be the start of
+perl's. Eight fixtures in `t/checks/`, 63 in all. The census judges a
+`die` and a `warn` by perl's stderr too (six more of its own tests, 39).
+
+**Tests**: 3000 to 3004 by hand, from perl; 3010 to 3016 from
+`t/models/die.py`, in which Python's `try` is the model; 3050 to 3065
+`dies`, from perl; 3080 to 3095 faults by hand, every fault of the step
+and five that go through a `try` (D13); 3100 to 3148 refusals from
+`briefs/step15-refusals.py`; 3200 to 3203 `warns`, from perl; and
+`runtime/tests/unwind.c`, which unwinds through frames, freezes and a
+sort by hand, under stress and poison. 1,350 golden tests and 149 unit
+tests in all; 941 statements about perl. 008's expected moved: its `#
+line 1` is now refused before its `#!` line is.
+
+**Broken on purpose** (`briefs/step15-mutations.py`): 52 of 58 caught
+the first time. Five holes closed: a message whose last value is empty
+(3016), a `try` that ends with no `die` left open (3004), what is in a
+`try`'s blocks unchecked (3146, 3147), D69 blind inside a `try` (3148),
+and a `return` of a list in a `try` not making its sub one that gives
+lists (3004). One cannot be seen: which of two entries for the same
+container a thaw takes from the stack of freezes, since the entries are
+the same pointer.
+
+**What was left out, on purpose**: `finally` and `defer` (D144), `eval`
+(D20), `$@`, a `die` of a reference or an object (steps 13 and 17), any
+handle but `STDERR`, `exit` (step 21), and `X or die` as a statement
+(D146), which step 21 may want with `open`.
+
+**The census** (`make census`, rerun): of the 19 probes that waited for step 15, 17 use `eval`, which D20 cut, and moved to `by-design/` (2,334 there now, with the one below); `warn` alone came through (`io8`), and one that printed to `STDERR` (`bl-h2`), which had waited for step 21; `rl-q5`, the one probe with a `try`, is refused for its `no warnings;`. One probe with a `# line` directive is refused by design now (D147). **1,021 SAME, 124 LOUD, 1 UNJUDGED, no WRONG**, and no probe left SAME.
 
 ### 16. Strings, the rest
 

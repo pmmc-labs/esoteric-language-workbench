@@ -12,6 +12,8 @@ try { die 0 } catch ($e) { print "[", $e, "]\n" }
 try { die 1e21 } catch ($e) { print "[", $e, "]\n" }
 try { die -7, "\n" } catch ($e) { print "[", $e, "]\n" }
 try { die "", "end\n" } catch ($e) { print "[", $e, "]\n" }
+try { die "end\n", "" } catch ($e) { print "[", $e, "]\n" }
+try { die "a", "", false } catch ($e) { print "[", $e, "]\n" }
 my @e; my @two = ("a", "b"); my $n = 3;
 try { die @e } catch ($e) { print "[", $e, "]\n" }
 try { die @two } catch ($e) { print "[", $e, "]\n" }

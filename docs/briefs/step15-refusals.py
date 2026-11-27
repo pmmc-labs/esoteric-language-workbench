@@ -68,6 +68,10 @@ r('say-stderr-of-nothing', 'perl prints $_, which is not in the language here.',
 r('say-stderr-in-brackets', 'perl prints xy: the brackets are not the whole list (T320).', 'say STDERR ("x"), "y";', '("x")', 'say STDERR (...): write the list without brackets of its own, say STDERR ...;')
 r('print-stdout', 'perl prints x; STDERR is the one handle.', 'print STDOUT "x\n";', 'STDOUT', "expected a value, found 'STDOUT'")
 r('say-stderr-in-braces', 'perl prints x; the braces are not in the language.', 'say {STDERR} "x";', '{', "expected a value, found '{'")
+# ---- what is in a try's blocks is checked as anywhere (closed by the breakages)
+r('value-alone-in-a-try', 'perl warns: Useless use of addition in void context.', 'my $x = 1;\ntry { $x + 1; } catch ($e) { say "c"; }', '$x + 1', 'this statement only has a value, and nothing is done with it: perl warns that it is useless')
+r('value-alone-in-a-catch', 'perl warns: Useless use of a constant in void context.', 'try { die "x\\n" } catch ($e) { "c"; }', '"c"', 'this statement only has a value, and nothing is done with it: perl warns that it is useless')
+r('row-of-dots-and-a-sub-that-changes-in-a-try', 'perl reads $x after ch has run: bc (D69).', 'my $x = "a";\nsub ch() { try { $x = "b"; } catch ($e) { } return "c"; }\nsay $x . ch();', 'ch();', 'a later piece of a concatenation calls ch, which can change $x, which an earlier piece reads: perl joins the pieces as one operation and reads each late; make the call a statement of its own')
 
 def write(first):
     n = first

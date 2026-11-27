@@ -1,0 +1,2 @@
+t/3147-try-value-alone-in-a-catch.pl:4:32: this statement only has a value, and nothing is done with it: perl warns that it is useless
+exit: 1
